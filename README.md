@@ -1,6 +1,8 @@
 Redis-shake is mainly used to synchronize data from one redis database to another.<br>
 Thanks to the Douyu's WSD team for the support. <br>
 
+* [中文文档](https://yq.aliyun.com/articles/691794?spm=a2c4e.11155435.0.0.7c3f3312RCZgel)
+
 # Redis-Shake
 ---
 Redis-shake is developed and maintained by NoSQL Team in Alibaba-Cloud Database department.<br>
