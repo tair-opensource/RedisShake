@@ -47,7 +47,7 @@ func main() {
 	defer utils.Goodbye()
 
 	// argument options
-	configuration := flag.String("conf", "", "configure file absolute path")
+	configuration := flag.String("conf", "", "configuration path")
 	tp := flag.String("type", "", "run type: decode, restore, dump, sync")
 	version := flag.Bool("version", false, "show version")
 	flag.Parse()
