@@ -53,7 +53,7 @@ Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.
 *  cd redis-shake/src/vendor
 *  GOPATH=\`pwd\`/../..; govendor sync     #please note: must install govendor first and then pull all dependencies
 *  cd ../../ && ./build.sh
-*  ./bin/collector -type=$(type_must_be_sync,_dump,_restore_or_decode) -conf=conf/redis-shake.conf #please note: user must modify collector.conf first to match needs.
+*  ./bin/collector -type=$(type_must_be_sync_dump_restore_or_decode) -conf=conf/redis-shake.conf #please note: user must modify collector.conf first to match needs.
 
 # Shake series tool
 ---
