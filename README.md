@@ -1,5 +1,5 @@
-Redis-shake is mainly used to synchronize data from one redis databases to another.<br>
-Thanks to the Douyu's WSD team for the support. 感谢斗鱼公司的web服务部提供的支持。<br>
+Redis-shake is mainly used to synchronize data from one redis database to another.<br>
+Thanks to the Douyu's WSD team for the support. <br>
 
 # Redis-Shake
 ---
