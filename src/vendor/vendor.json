@@ -1,0 +1,66 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "1/Kf0ihi6RtfNt0JjAtZLKvfqJY=",
+			"path": "github.com/cupcake/rdb",
+			"revision": "43ba34106c765f2111c0dc7b74cdf8ee437411e0",
+			"revisionTime": "2016-08-25T15:38:14Z"
+		},
+		{
+			"checksumSHA1": "vAbNAfcRbUYe8mO/t/C2266gvxc=",
+			"path": "github.com/cupcake/rdb/crc64",
+			"revision": "43ba34106c765f2111c0dc7b74cdf8ee437411e0",
+			"revisionTime": "2016-08-25T15:38:14Z"
+		},
+		{
+			"checksumSHA1": "VbYBp7hfr7vdfliXjcqwrxSsMVg=",
+			"path": "github.com/docopt/docopt-go",
+			"revision": "ee0de3bc6815ee19d4a46c7eb90f829db0e014b1",
+			"revisionTime": "2018-01-11T23:17:33Z"
+		},
+		{
+			"checksumSHA1": "+T1INwDFb2OfA5AfJlREhKdRZgM=",
+			"path": "github.com/garyburd/redigo",
+			"revision": "569eae59ada904ea8db7a225c2b47165af08735a",
+			"revisionTime": "2018-04-04T16:07:26Z"
+		},
+		{
+			"checksumSHA1": "2UmMbNHc8FBr98mJFN1k8ISOIHk=",
+			"path": "github.com/garyburd/redigo/internal",
+			"revision": "569eae59ada904ea8db7a225c2b47165af08735a",
+			"revisionTime": "2018-04-04T16:07:26Z"
+		},
+		{
+			"checksumSHA1": "3kM5bMyfqvdCfgQdOb01CR1aA74=",
+			"path": "github.com/garyburd/redigo/redis",
+			"revision": "569eae59ada904ea8db7a225c2b47165af08735a",
+			"revisionTime": "2018-04-04T16:07:26Z"
+		},
+		{
+			"checksumSHA1": "63olncsMU/K9MMKxt4zuKSyoNg0=",
+			"path": "github.com/gugemichael/nimo4go",
+			"revision": "cbcfac21339d78efaed9ed09dcba7296d9976118",
+			"revisionTime": "2018-09-04T03:08:18Z"
+		},
+		{
+			"checksumSHA1": "W7TFJ3aRSUenZvYVnzrOZPoIOjs=",
+			"path": "github.com/nightlyone/lockfile",
+			"revision": "0ad87eef1443f64d3d8c50da647e2b1552851124",
+			"revisionTime": "2018-06-18T18:06:23Z"
+		},
+		{
+			"checksumSHA1": "Tutue3nEgM/87jitUcYv6ODwyNE=",
+			"path": "github.com/satori/go.uuid",
+			"revision": "b2ce2384e17bbe0c6d34077efa39dbab3e09123b",
+			"revisionTime": "2018-10-28T12:50:25Z"
+		},
+		{
+			"checksumSHA1": "TM3Neoy1xRAKyZYMGzKc41sDFW4=",
+			"path": "gopkg.in/natefinch/lumberjack.v2",
+			"revision": "a96e63847dc3c67d17befa69c303767e2f84e54f",
+			"revisionTime": "2017-05-31T16:03:50Z"
+		}
+	]
+}

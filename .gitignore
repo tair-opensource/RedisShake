@@ -1,26 +1,26 @@
-*.log
-*.rdb
-*.sw[ap]
-*.out
-*.aof
-*.dump
-*.log.*
-.idea
 bin
+pkg
+.gopath
+.idea
+*.iml
+logs
+*.pprof
+*.output
+*.data
+*.sw[ap]
+*.yml
+tags
+result.db.*
+
+dump.data
+runtime.trace
 
 .DS_Store
 
-/Godeps/_workspace
-/cmd/version.go
-.htaccess
+data
 
-tags
-
-logs
 .cache/
 diagnostic/
 *.pid
-src/vendor/
-!vendor.json
-
-*.tar.gz
+src/vendor/*
+!src/vendor/vendor.json
