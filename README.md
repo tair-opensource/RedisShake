@@ -63,3 +63,4 @@ We also provide some tools for synchronization in Shake series.<br>
 * [redis-shake](https://github.com/aliyun/redis-shake): redis data synchronization tool.
 * [redis-full-check](https://github.com/aliyun/redis-full-check): redis data synchronization verification tool.
 
+Plus, we have a WeChat group so that users can join and discuss, but the group user number is limited. So please add my WeChat number: `vinllen_xingge` first, and I will add you to this group.<br>
