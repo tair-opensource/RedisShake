@@ -419,10 +419,15 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 				}
 			}
 
-			if node != nil && node.id == recvId.Get() {
-				// cmd.SyncStat.Delay.Add(time.Now().Sub(node.t).Nanoseconds())
-				metric.MetricVar.AddDelay(uint64(time.Now().Sub(node.t).Nanoseconds()) / 1000000) // ms
-				node = nil
+			if node != nil {
+				id := recvId.Get() // receive id
+				if node.id == id {
+					// cmd.SyncStat.Delay.Add(time.Now().Sub(node.t).Nanoseconds())
+					metric.MetricVar.AddDelay(uint64(time.Now().Sub(node.t).Nanoseconds()) / 1000000) // ms
+					node = nil
+				} else if node.id > id {
+					log.Panicf("receive id invalid: node-id[%v] > receive-id[%v]", node.id, id)
+				}
 			}
 		}
 	}()
