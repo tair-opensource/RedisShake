@@ -52,7 +52,10 @@ func main() {
 	version := flag.Bool("version", false, "show version")
 	flag.Parse()
 
-	if *configuration == "" || *version {
+	if *configuration == "" || *tp == "" || *version {
+		if !*version {
+			fmt.Println("Please show me the '-conf' and '-type'")
+		}
 		fmt.Println(utils.Version)
 		flag.PrintDefaults()
 		return
