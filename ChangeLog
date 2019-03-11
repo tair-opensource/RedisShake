@@ -1,3 +1,6 @@
+2019-03-11 Alibaba Cloud.
+	* version: 1.2.0
+	* redis-shake: support 5.0.
 2019-02-21 Alibaba Cloud.
 	* version: 1.0.0
-	* mongo-shake: initial release.
+	* redis-shake: initial release.
