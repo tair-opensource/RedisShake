@@ -16,7 +16,7 @@ import (
 	// "libs/log"
 )
 
-var FromVersion int64 = 8
+var FromVersion int64 = 9
 var ToVersion int64 = 6
 
 const (
