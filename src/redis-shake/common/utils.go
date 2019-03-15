@@ -34,7 +34,10 @@ func OpenRedisConnWithTimeout(target, auth_type, passwd string, readTimeout, wri
 }
 
 func OpenNetConn(target, auth_type, passwd string) net.Conn {
-	c, err := net.Dial("tcp", target)
+	d := net.Dialer{
+		KeepAlive: time.Duration(conf.Options.KeepAlive) * time.Second,
+	}
+	c, err := d.Dial("tcp", target)
 	if err != nil {
 		log.PanicErrorf(err, "cannot connect to '%s'", target)
 	}
