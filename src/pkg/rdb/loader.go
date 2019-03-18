@@ -154,12 +154,13 @@ func (l *Loader) NextBinEntry() (*BinEntry, error) {
 		default:
 			var key []byte
 			if l.remainMember == 0 {
+				// first time visit this key.
 				rkey, err := l.ReadString()
 				if err != nil {
 					return nil, err
 				}
 				key = rkey
-				entry.NeedReadLen = 1
+				entry.NeedReadLen = 1 // read value length when it's the first time.
 			} else {
 				key = l.lastEntry.Key
 			}
@@ -178,6 +179,7 @@ func (l *Loader) NextBinEntry() (*BinEntry, error) {
 			if l.lastReadCount == l.totMemberCount {
 				entry.RealMemberCount = 0
 			} else {
+				// RealMemberCount > 0 means this is big entry which also is a split key.
 				entry.RealMemberCount = l.lastReadCount
 			}
 			l.lastEntry = entry
