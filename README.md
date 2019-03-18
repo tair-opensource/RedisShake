@@ -61,8 +61,9 @@ Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.
 ---
 We also provide some tools for synchronization in Shake series.<br>
 
-* [mongo-shake](https://github.com/aliyun/mongo-shake): mongodb data synchronization tool.
-* [redis-shake](https://github.com/aliyun/redis-shake): redis data synchronization tool.
-* [redis-full-check](https://github.com/aliyun/redis-full-check): redis data synchronization verification tool.
+* [MongoShake](https://github.com/aliyun/MongoShake): mongodb data synchronization tool.
+* [RedisShake](https://github.com/aliyun/RedisShake): redis data synchronization tool.
+* [RedisFullCheck](https://github.com/aliyun/RedisFullCheck): redis data synchronization verification tool.
 
 Plus, we have a WeChat group so that users can join and discuss, but the group user number is limited. So please add my WeChat number: `vinllen_xingge` first, and I will add you to this group.<br>
+
