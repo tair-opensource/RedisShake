@@ -34,7 +34,10 @@ func OpenRedisConnWithTimeout(target, auth_type, passwd string, readTimeout, wri
 }
 
 func OpenNetConn(target, auth_type, passwd string) net.Conn {
-	c, err := net.Dial("tcp", target)
+	d := net.Dialer{
+		KeepAlive: time.Duration(conf.Options.KeepAlive) * time.Second,
+	}
+	c, err := d.Dial("tcp", target)
 	if err != nil {
 		log.PanicErrorf(err, "cannot connect to '%s'", target)
 	}
@@ -301,15 +304,16 @@ func restoreQuicklistEntry(c redigo.Conn, e *rdb.BinEntry) {
 	if err != nil {
 		log.PanicError(err, "read rdb ")
 	}
-	//log.Info("restore quicklist key: ", string(e.Key), ", type: ", t)
+	// log.Info("restore quicklist key: ", string(e.Key), ", type: ", e.Type)
 
 	count := 0
 	if n, err := r.ReadLength(); err != nil {
 		log.PanicError(err, "read rdb ")
 	} else {
-		//log.Info("quicklist item size: ", int(n))
+		// log.Info("quicklist item size: ", int(n))
 		for i := 0; i < int(n); i++ {
 			ziplist, err := r.ReadString()
+			// log.Info("zipList: ", ziplist)
 			if err != nil {
 				log.PanicError(err, "read rdb ")
 			}
@@ -317,12 +321,13 @@ func restoreQuicklistEntry(c redigo.Conn, e *rdb.BinEntry) {
 			if zln, err := r.ReadZiplistLength(buf); err != nil {
 				log.PanicError(err, "read rdb")
 			} else {
-				//log.Info("ziplist one of quicklist, size: ", int(zln))
+				// log.Info("ziplist one of quicklist, size: ", int(zln))
 				for i := int64(0); i < zln; i++ {
 					entry, err := r.ReadZiplistEntry(buf)
 					if err != nil {
 						log.PanicError(err, "read rdb ")
 					}
+					// log.Info("rpush key: ", e.Key, " value: ", entry)
 					count++
 					c.Send("RPUSH", e.Key, entry)
 					if count == 100 {
@@ -674,7 +679,9 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		return
 	}
 
-	if uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0 {
+	// TODO, need to judge big key
+	if e.Type != rdb.RDBTypeStreamListPacks &&
+			(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {
 		//use command
 		if conf.Options.Rewrite && e.NeedReadLen == 1 {
 			if !conf.Options.Metric {
@@ -694,6 +701,8 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		}
 		return
 	}
+
+	// fmt.Printf("kkkey: %v, value: %v\n", string(e.Key), e.Value)
 	s, err := redigo.String(c.Do("restore", e.Key, ttlms, e.Value))
 	if err != nil {
 		/*The reply value of busykey in 2.8 kernel is "target key name is busy",
