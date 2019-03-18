@@ -1,4 +1,3 @@
-bin
 pkg
 .gopath
 .idea
@@ -9,6 +8,8 @@ logs
 *.data
 *.sw[ap]
 *.yml
+*.pid
+*.tar.gz
 tags
 result.db.*
 
