@@ -21,7 +21,7 @@ Please check out the `conf/redis-shake.conf` to see the detailed parameters desc
 
 # Verification
 ---
-User can use [redis-full-check](https://github.com/alibaba/RedisFullCheck) to verify correctness.<br>
+User can use [RedisFullCheck](https://github.com/alibaba/RedisFullCheck) to verify correctness.<br>
 
 # Metric
 ---
