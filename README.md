@@ -10,7 +10,7 @@ Redis-shake has made some improvements based on [redis-port](https://github.com/
 
 # Main Functions
 ---
-The type can be one of the following:<br>
+The type can be one of the followings:<br>
 
 * **decode**: Decode dumped payload to human readable format (hex-encoding).
 * **restore**: Restore RDB file to target redis.
