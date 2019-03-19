@@ -81,6 +81,7 @@ func main() {
 	initFreeOS()
 	nimo.Profiling(int(conf.Options.SystemProfile))
 	utils.Welcome()
+	utils.StartTime = fmt.Sprintf("%v", time.Now().Format(utils.GolangSecurityTime))
 
 	if err = utils.WritePidById(conf.Options.Id); err != nil {
 		crash(fmt.Sprintf("write pid failed. %v", err), -5)
