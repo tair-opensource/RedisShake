@@ -679,6 +679,15 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		return
 	}
 
+	// load lua script
+	if e.Type == rdb.RdbFlagAUX && string(e.Key) == "lua" {
+		_, err := c.Do("script", "load", e.Value)
+		if err != nil {
+			log.Panicf(err.Error())
+		}
+		return
+	}
+
 	// TODO, need to judge big key
 	if e.Type != rdb.RDBTypeStreamListPacks &&
 			(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {
