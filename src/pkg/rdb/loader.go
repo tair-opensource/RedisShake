@@ -121,10 +121,18 @@ func (l *Loader) NextBinEntry() (*BinEntry, error) {
 			t = rtype
 		}
 		switch t {
-		case rdbFlagAUX:
+		case RdbFlagAUX:
 			aux_key, _ := l.ReadString()
 			aux_value, _ := l.ReadString()
 			log.Info("Aux information key:", string(aux_key), " value:", string(aux_value))
+			if string(aux_key) == "lua" {
+				// we should handle the lua script
+				entry.DB = l.db
+				entry.Key = aux_key
+				entry.Type = t
+				entry.Value = aux_value
+				return entry, nil
+			}
 		case rdbFlagResizeDB:
 			db_size, _ := l.ReadLength()
 			expire_size, _ := l.ReadLength()
