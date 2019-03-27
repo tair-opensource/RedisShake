@@ -10,8 +10,13 @@ logs
 *.yml
 *.pid
 *.tar.gz
+*.log
 tags
 result.db.*
+bin/*
+!/bin/redis-shake.*
+conf/*
+!conf/redis-shake.conf
 
 dump.data
 runtime.trace
