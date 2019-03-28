@@ -204,7 +204,7 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if conf.Options.LogFile != "" {
-		conf.Options.LogFile = fmt.Sprintf("%s.log", conf.Options.Id)
+		//conf.Options.LogFile = fmt.Sprintf("%s.log", conf.Options.Id)
 
 		utils.LogRotater = &logRotate.Logger{
 			Filename:   conf.Options.LogFile,
