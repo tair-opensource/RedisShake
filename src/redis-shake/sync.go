@@ -452,17 +452,19 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			ignorecmd := false
 			isselect = false
 			resp, err = redis.MustDecodeOpt(decoder)
-			if conf.Options.RedisConnectTTL == 0 {
-				log.PanicError(err, "decode redis resp failed")
-			} else if errStartTime == 0 {
-				errStartTime = time.Now().Unix()
-				log.Error(err, "decode redis resp failed")
-				continue
-			} else if errStartTime-time.Now().Unix() > conf.Options.RedisConnectTTL {
-				log.PanicError(err, "decode redis resp failed")
-			} else {
-				log.Error(err, "decode redis resp failed")
-				continue
+			if err != nil {
+				if conf.Options.RedisConnectTTL == 0 {
+					log.PanicError(err, "decode redis resp failed")
+				} else if errStartTime == 0 {
+					errStartTime = time.Now().Unix()
+					log.Error(err, "decode redis resp failed")
+					continue
+				} else if errStartTime-time.Now().Unix() > conf.Options.RedisConnectTTL {
+					log.PanicError(err, "decode redis resp failed")
+				} else {
+					log.Error(err, "decode redis resp failed")
+					continue
+				}
 			}
 
 			if scmd, argv, err = redis.ParseArgs(resp); err != nil {
