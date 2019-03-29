@@ -18,10 +18,10 @@ import (
 	"pkg/libs/io/pipe"
 	"pkg/libs/log"
 	"pkg/redis"
-	"redis-shake/common"
-	"redis-shake/configure"
-	"redis-shake/command"
 	"redis-shake/base"
+	"redis-shake/command"
+	utils "redis-shake/common"
+	conf "redis-shake/configure"
 	"redis-shake/heartbeat"
 	"redis-shake/metric"
 )
@@ -48,7 +48,7 @@ type CmdSync struct {
 
 	// sending queue
 	sendBuf chan cmdDetail
-	
+
 	wait_full chan struct{}
 
 	status string
@@ -61,8 +61,8 @@ type cmdSyncStat struct {
 }
 
 type cmdDetail struct {
-	Cmd       string
-	Args      [][]byte
+	Cmd  string
+	Args [][]byte
 }
 
 func (c *cmdDetail) String() string {
@@ -267,7 +267,7 @@ func (cmd *CmdSync) PSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer
 }
 
 func (cmd *CmdSync) SyncRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
-	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, conf.Options.Parallel * 32)
+	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, conf.Options.Parallel*32)
 	wait := make(chan struct{})
 	go func() {
 		defer close(wait)
@@ -437,9 +437,11 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 		var bypass bool = false
 		var isselect bool = false
 
-        var scmd string
-        var argv, new_argv [][]byte
-        var err error
+		var scmd string
+		var argv, new_argv [][]byte
+		var err error
+		var resp redis.Resp
+		var errStartTime int64
 
 		decoder := redis.NewDecoder(reader)
 
@@ -449,7 +451,19 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 		for {
 			ignorecmd := false
 			isselect = false
-			resp := redis.MustDecodeOpt(decoder)
+			resp, err = redis.MustDecodeOpt(decoder)
+			if conf.Options.RedisConnectTTL == 0 {
+				log.PanicError(err, "decode redis resp failed")
+			} else if errStartTime == 0 {
+				errStartTime = time.Now().Unix()
+				log.Error(err, "decode redis resp failed")
+				continue
+			} else if errStartTime-time.Now().Unix() > conf.Options.RedisConnectTTL {
+				log.PanicError(err, "decode redis resp failed")
+			} else {
+				log.Error(err, "decode redis resp failed")
+				continue
+			}
 
 			if scmd, argv, err = redis.ParseArgs(resp); err != nil {
 				log.PanicError(err, "parse command arguments failed")
@@ -546,7 +560,7 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			}
 
 			if noFlushCount > conf.Options.SenderCount || cachedSize > conf.Options.SenderSize ||
-					len(cmd.sendBuf) == 0 { // 5000 cmd in a batch
+				len(cmd.sendBuf) == 0 { // 5000 cmd in a batch
 				err := c.Flush()
 				noFlushCount = 0
 				cachedSize = 0
@@ -581,9 +595,9 @@ func (cmd *CmdSync) addDelayChan(id int64) {
 	 */
 	used := cap(cmd.delayChannel) - len(cmd.delayChannel)
 	if used >= 4096 ||
-			used >= 1024 && id % 10 == 0 ||
-			used >= 128 && id % 100 == 0 ||
-			id % 1000 == 0 {
+		used >= 1024 && id%10 == 0 ||
+		used >= 128 && id%100 == 0 ||
+		id%1000 == 0 {
 		// non-blocking add
 		select {
 		case cmd.delayChannel <- &delayNode{t: time.Now(), id: id}:
