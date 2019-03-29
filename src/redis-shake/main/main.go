@@ -5,36 +5,36 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-	"runtime/debug"
-	"time"
-	"runtime"
 	"math"
 	_ "net/http/pprof"
-	"strings"
-	"strconv"
-	"encoding/json"
+	"os"
+	"os/signal"
 	"reflect"
+	"runtime"
+	"runtime/debug"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
 
+	"pkg/libs/log"
+	"redis-shake"
+	"redis-shake/base"
 	"redis-shake/common"
 	"redis-shake/configure"
 	"redis-shake/metric"
-	"redis-shake"
-	"redis-shake/base"
 	"redis-shake/restful"
-	"pkg/libs/log"
 
 	"github.com/gugemichael/nimo4go"
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )
 
-type Exit struct {Code int}
+type Exit struct{ Code int }
 
-const(
+const (
 	TypeDecode  = "decode"
 	TypeRestore = "restore"
 	TypeDump    = "dump"
@@ -83,7 +83,7 @@ func main() {
 	utils.Welcome()
 	utils.StartTime = fmt.Sprintf("%v", time.Now().Format(utils.GolangSecurityTime))
 
-	if err = utils.WritePidById(conf.Options.Id); err != nil {
+	if err = utils.WritePidById(conf.Options.Id, conf.Options.PidPath); err != nil {
 		crash(fmt.Sprintf("write pid failed. %v", err), -5)
 	}
 
@@ -240,7 +240,7 @@ func sanitizeOptions(tp string) error {
 			if n, err := strconv.ParseInt(conf.Options.FakeTime[1:], 10, 64); err != nil {
 				return fmt.Errorf("parse fake_time failed[%v]", err)
 			} else {
-				conf.Options.ShiftTime = time.Duration(n * int64(time.Millisecond) - time.Now().UnixNano())
+				conf.Options.ShiftTime = time.Duration(n*int64(time.Millisecond) - time.Now().UnixNano())
 			}
 		default:
 			if t, err := time.Parse("2006-01-02 15:04:05", conf.Options.FakeTime); err != nil {
@@ -291,7 +291,7 @@ func sanitizeOptions(tp string) error {
 	if tp == TypeRestore || tp == TypeSync {
 		// get target redis version and set TargetReplace.
 		if conf.Options.TargetRedisVersion, err = utils.GetRedisVersion(conf.Options.TargetAddress,
-				conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw); err != nil {
+			conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw); err != nil {
 			return fmt.Errorf("get target redis version failed[%v]", err)
 		} else {
 			if strings.HasPrefix(conf.Options.TargetRedisVersion, "4.") ||
