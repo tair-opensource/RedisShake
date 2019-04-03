@@ -35,13 +35,23 @@ const (
 	RdbTypeQuicklist       = 14
 	RDBTypeStreamListPacks = 15 // stream
 
-	rdbFlagOnlyValue = 0xf9
+	rdbFlagModuleAux = 0xf7
+	rdbFlagIdle      = 0xf8
+	rdbFlagFreq      = 0xf9
 	RdbFlagAUX       = 0xfa
 	rdbFlagResizeDB  = 0xfb
 	rdbFlagExpiryMS  = 0xfc
 	rdbFlagExpiry    = 0xfd
 	rdbFlagSelectDB  = 0xfe
 	rdbFlagEOF       = 0xff
+
+	// Module serialized values sub opcodes
+	rdbModuleOpcodeEof    = 0
+	rdbModuleOpcodeSint   = 1
+	rdbModuleOpcodeUint   = 2
+	rdbModuleOpcodeFloat  = 3
+	rdbModuleOpcodeDouble = 4
+	rdbModuleOpcodeString = 5
 )
 
 const (
