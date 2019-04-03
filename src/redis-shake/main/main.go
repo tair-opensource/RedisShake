@@ -39,6 +39,11 @@ const (
 	TypeRestore = "restore"
 	TypeDump    = "dump"
 	TypeSync    = "sync"
+
+	defaultHttpPort    = 20881
+	defaultSystemPort  = 20882
+	defaultSenderSize  = 65535
+	defaultSenderCount = 1024
 )
 
 func main() {
@@ -172,7 +177,9 @@ func sanitizeOptions(tp string) error {
 		runtime.GOMAXPROCS(conf.Options.NCpu)
 	}
 
-	if conf.Options.Parallel == 0 || conf.Options.Parallel > 1024 {
+	if conf.Options.Parallel == 0 { // not set
+		conf.Options.Parallel = 1
+	} else if conf.Options.Parallel > 1024 {
 		return fmt.Errorf("parallel[%v] should in (0, 1024]", conf.Options.Parallel)
 	} else {
 		conf.Options.Parallel = int(math.Max(float64(conf.Options.Parallel), float64(conf.Options.NCpu)))
@@ -215,9 +222,9 @@ func sanitizeOptions(tp string) error {
 		log.StdLog = log.New(utils.LogRotater, "")
 	}
 
-	// heartbeat
-	if conf.Options.HeartbeatInterval <= 0 || conf.Options.HeartbeatInterval > 86400 {
-		return fmt.Errorf("HeartbeatInterval[%v] should in (0, 86400]", conf.Options.HeartbeatInterval)
+	// heartbeat, 86400 = 1 day
+	if conf.Options.HeartbeatInterval > 86400 {
+		return fmt.Errorf("HeartbeatInterval[%v] should in [0, 86400]", conf.Options.HeartbeatInterval)
 	}
 	if conf.Options.HeartbeatNetworkInterface == "" {
 		conf.Options.HeartbeatIp = "127.0.0.1"
@@ -273,19 +280,32 @@ func sanitizeOptions(tp string) error {
 		// pass, >= 0 means enable
 	}
 
-	if conf.Options.HttpProfile <= 0 || conf.Options.HttpProfile > 65535 {
-		return fmt.Errorf("HttpProfile[%v] should in (0, 65535]", conf.Options.HttpProfile)
-	}
-	if conf.Options.SystemProfile <= 0 || conf.Options.SystemProfile > 65535 {
-		return fmt.Errorf("SystemProfile[%v] should in (0, 65535]", conf.Options.SystemProfile)
-	}
-
-	if conf.Options.SenderSize <= 0 || conf.Options.SenderSize >= 1073741824 {
-		return fmt.Errorf("SenderSize[%v] should in (0, 1073741824]", conf.Options.SenderSize)
+	if conf.Options.HttpProfile < 0 || conf.Options.HttpProfile > 65535 {
+		return fmt.Errorf("HttpProfile[%v] should in [0, 65535]", conf.Options.HttpProfile)
+	} else if conf.Options.HttpProfile  == 0 {
+		// set to default when not set
+		conf.Options.HttpProfile = defaultHttpPort
 	}
 
-	if conf.Options.SenderCount <= 0 || conf.Options.SenderCount >= 100000 {
-		return fmt.Errorf("SenderCount[%v] should in (0, 100000]", conf.Options.SenderCount)
+	if conf.Options.SystemProfile < 0 || conf.Options.SystemProfile > 65535 {
+		return fmt.Errorf("SystemProfile[%v] should in [0, 65535]", conf.Options.SystemProfile)
+	} else if conf.Options.SystemProfile  == 0 {
+		// set to default when not set
+		conf.Options.SystemProfile = defaultSystemPort
+	}
+
+	if conf.Options.SenderSize < 0 || conf.Options.SenderSize >= 1073741824 {
+		return fmt.Errorf("SenderSize[%v] should in [0, 1073741824]", conf.Options.SenderSize)
+	} else if conf.Options.SenderSize  == 0 {
+		// set to default when not set
+		conf.Options.SenderSize = defaultSenderSize
+	}
+
+	if conf.Options.SenderCount < 0 || conf.Options.SenderCount >= 100000 {
+		return fmt.Errorf("SenderCount[%v] should in [0, 100000]", conf.Options.SenderCount)
+	} else if conf.Options.SenderCount  == 0 {
+		// set to default when not set
+		conf.Options.SenderCount = defaultSenderCount
 	}
 
 	if tp == TypeRestore || tp == TypeSync {
