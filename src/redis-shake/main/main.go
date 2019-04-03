@@ -172,7 +172,9 @@ func sanitizeOptions(tp string) error {
 		runtime.GOMAXPROCS(conf.Options.NCpu)
 	}
 
-	if conf.Options.Parallel == 0 || conf.Options.Parallel > 1024 {
+	if conf.Options.Parallel == 0 {
+		conf.Options.Parallel = 1
+	} else if conf.Options.Parallel > 1024 {
 		return fmt.Errorf("parallel[%v] should in (0, 1024]", conf.Options.Parallel)
 	} else {
 		conf.Options.Parallel = int(math.Max(float64(conf.Options.Parallel), float64(conf.Options.NCpu)))
