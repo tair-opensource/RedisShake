@@ -5,40 +5,45 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-	"runtime/debug"
-	"time"
-	"runtime"
 	"math"
 	_ "net/http/pprof"
-	"strings"
-	"strconv"
-	"encoding/json"
+	"os"
+	"os/signal"
 	"reflect"
+	"runtime"
+	"runtime/debug"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
 
+	"pkg/libs/log"
+	"redis-shake"
+	"redis-shake/base"
 	"redis-shake/common"
 	"redis-shake/configure"
 	"redis-shake/metric"
-	"redis-shake"
-	"redis-shake/base"
 	"redis-shake/restful"
-	"pkg/libs/log"
 
 	"github.com/gugemichael/nimo4go"
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )
 
-type Exit struct {Code int}
+type Exit struct{ Code int }
 
-const(
+const (
 	TypeDecode  = "decode"
 	TypeRestore = "restore"
 	TypeDump    = "dump"
 	TypeSync    = "sync"
+
+	defaultHttpPort    = 20881
+	defaultSystemPort  = 20882
+	defaultSenderSize  = 65535
+	defaultSenderCount = 1024
 )
 
 func main() {
@@ -83,7 +88,7 @@ func main() {
 	utils.Welcome()
 	utils.StartTime = fmt.Sprintf("%v", time.Now().Format(utils.GolangSecurityTime))
 
-	if err = utils.WritePidById(conf.Options.Id); err != nil {
+	if err = utils.WritePidById(conf.Options.Id, conf.Options.PidPath); err != nil {
 		crash(fmt.Sprintf("write pid failed. %v", err), -5)
 	}
 
@@ -172,7 +177,9 @@ func sanitizeOptions(tp string) error {
 		runtime.GOMAXPROCS(conf.Options.NCpu)
 	}
 
-	if conf.Options.Parallel == 0 || conf.Options.Parallel > 1024 {
+	if conf.Options.Parallel == 0 { // not set
+		conf.Options.Parallel = 1
+	} else if conf.Options.Parallel > 1024 {
 		return fmt.Errorf("parallel[%v] should in (0, 1024]", conf.Options.Parallel)
 	} else {
 		conf.Options.Parallel = int(math.Max(float64(conf.Options.Parallel), float64(conf.Options.NCpu)))
@@ -204,7 +211,7 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if conf.Options.LogFile != "" {
-		conf.Options.LogFile = fmt.Sprintf("%s.log", conf.Options.Id)
+		//conf.Options.LogFile = fmt.Sprintf("%s.log", conf.Options.Id)
 
 		utils.LogRotater = &logRotate.Logger{
 			Filename:   conf.Options.LogFile,
@@ -215,9 +222,9 @@ func sanitizeOptions(tp string) error {
 		log.StdLog = log.New(utils.LogRotater, "")
 	}
 
-	// heartbeat
-	if conf.Options.HeartbeatInterval <= 0 || conf.Options.HeartbeatInterval > 86400 {
-		return fmt.Errorf("HeartbeatInterval[%v] should in (0, 86400]", conf.Options.HeartbeatInterval)
+	// heartbeat, 86400 = 1 day
+	if conf.Options.HeartbeatInterval > 86400 {
+		return fmt.Errorf("HeartbeatInterval[%v] should in [0, 86400]", conf.Options.HeartbeatInterval)
 	}
 	if conf.Options.HeartbeatNetworkInterface == "" {
 		conf.Options.HeartbeatIp = "127.0.0.1"
@@ -240,7 +247,7 @@ func sanitizeOptions(tp string) error {
 			if n, err := strconv.ParseInt(conf.Options.FakeTime[1:], 10, 64); err != nil {
 				return fmt.Errorf("parse fake_time failed[%v]", err)
 			} else {
-				conf.Options.ShiftTime = time.Duration(n * int64(time.Millisecond) - time.Now().UnixNano())
+				conf.Options.ShiftTime = time.Duration(n*int64(time.Millisecond) - time.Now().UnixNano())
 			}
 		default:
 			if t, err := time.Parse("2006-01-02 15:04:05", conf.Options.FakeTime); err != nil {
@@ -273,25 +280,38 @@ func sanitizeOptions(tp string) error {
 		// pass, >= 0 means enable
 	}
 
-	if conf.Options.HttpProfile <= 0 || conf.Options.HttpProfile > 65535 {
-		return fmt.Errorf("HttpProfile[%v] should in (0, 65535]", conf.Options.HttpProfile)
-	}
-	if conf.Options.SystemProfile <= 0 || conf.Options.SystemProfile > 65535 {
-		return fmt.Errorf("SystemProfile[%v] should in (0, 65535]", conf.Options.SystemProfile)
-	}
-
-	if conf.Options.SenderSize <= 0 || conf.Options.SenderSize >= 1073741824 {
-		return fmt.Errorf("SenderSize[%v] should in (0, 1073741824]", conf.Options.SenderSize)
+	if conf.Options.HttpProfile < 0 || conf.Options.HttpProfile > 65535 {
+		return fmt.Errorf("HttpProfile[%v] should in [0, 65535]", conf.Options.HttpProfile)
+	} else if conf.Options.HttpProfile  == 0 {
+		// set to default when not set
+		conf.Options.HttpProfile = defaultHttpPort
 	}
 
-	if conf.Options.SenderCount <= 0 || conf.Options.SenderCount >= 100000 {
-		return fmt.Errorf("SenderCount[%v] should in (0, 100000]", conf.Options.SenderCount)
+	if conf.Options.SystemProfile < 0 || conf.Options.SystemProfile > 65535 {
+		return fmt.Errorf("SystemProfile[%v] should in [0, 65535]", conf.Options.SystemProfile)
+	} else if conf.Options.SystemProfile  == 0 {
+		// set to default when not set
+		conf.Options.SystemProfile = defaultSystemPort
+	}
+
+	if conf.Options.SenderSize < 0 || conf.Options.SenderSize >= 1073741824 {
+		return fmt.Errorf("SenderSize[%v] should in [0, 1073741824]", conf.Options.SenderSize)
+	} else if conf.Options.SenderSize  == 0 {
+		// set to default when not set
+		conf.Options.SenderSize = defaultSenderSize
+	}
+
+	if conf.Options.SenderCount < 0 || conf.Options.SenderCount >= 100000 {
+		return fmt.Errorf("SenderCount[%v] should in [0, 100000]", conf.Options.SenderCount)
+	} else if conf.Options.SenderCount  == 0 {
+		// set to default when not set
+		conf.Options.SenderCount = defaultSenderCount
 	}
 
 	if tp == TypeRestore || tp == TypeSync {
 		// get target redis version and set TargetReplace.
 		if conf.Options.TargetRedisVersion, err = utils.GetRedisVersion(conf.Options.TargetAddress,
-				conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw); err != nil {
+			conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw); err != nil {
 			return fmt.Errorf("get target redis version failed[%v]", err)
 		} else {
 			if strings.HasPrefix(conf.Options.TargetRedisVersion, "4.") ||

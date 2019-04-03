@@ -157,8 +157,28 @@ func (l *Loader) NextBinEntry() (*BinEntry, error) {
 			l.db = dbnum
 		case rdbFlagEOF:
 			return nil, nil
-		case rdbFlagOnlyValue:
-			fallthrough
+		case rdbFlagModuleAux:
+			// currently, ignore this filed
+			_, err := l.ReadLength() // module-id
+			if err != nil {
+				return nil, err
+			}
+			// skip module
+			if err = rdbLoadCheckModuleValue(l); err != nil {
+				return nil, err
+			}
+		case rdbFlagIdle:
+			// ignore idle because target redis doesn't support this for given key
+			_, err := l.ReadLength()
+			if err != nil {
+				return nil, err
+			}
+		case rdbFlagFreq:
+			// ignore freq because target redis doesn't support this for given key
+			_, err := l.readUint8()
+			if err != nil {
+				return nil, err
+			}
 		default:
 			var key []byte
 			if l.remainMember == 0 {
