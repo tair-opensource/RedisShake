@@ -1,3 +1,7 @@
+2019-04-03 Alibaba Cloud.
+	* version: 1.2.2
+	* BUGFIX: support 5.0 rdb RDB_OPCODE_MODULE_AUX, RDB_OPCODE_IDLE and
+	RDB_OPCODE_FREQ type.
 2019-03-27 Alibaba Cloud.
 	* version: 1.2.1
 	* IMPROVE: support syncing lua script in RDB syncing.
