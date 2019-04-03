@@ -172,7 +172,7 @@ func sanitizeOptions(tp string) error {
 		runtime.GOMAXPROCS(conf.Options.NCpu)
 	}
 
-	if conf.Options.Parallel == 0 {
+	if conf.Options.Parallel == 0 { // not set
 		conf.Options.Parallel = 1
 	} else if conf.Options.Parallel > 1024 {
 		return fmt.Errorf("parallel[%v] should in (0, 1024]", conf.Options.Parallel)
@@ -217,9 +217,9 @@ func sanitizeOptions(tp string) error {
 		log.StdLog = log.New(utils.LogRotater, "")
 	}
 
-	// heartbeat
-	if conf.Options.HeartbeatInterval <= 0 || conf.Options.HeartbeatInterval > 86400 {
-		return fmt.Errorf("HeartbeatInterval[%v] should in (0, 86400]", conf.Options.HeartbeatInterval)
+	// heartbeat, 86400 = 1 day
+	if conf.Options.HeartbeatInterval > 86400 {
+		return fmt.Errorf("HeartbeatInterval[%v] should in [0, 86400]", conf.Options.HeartbeatInterval)
 	}
 	if conf.Options.HeartbeatNetworkInterface == "" {
 		conf.Options.HeartbeatIp = "127.0.0.1"
