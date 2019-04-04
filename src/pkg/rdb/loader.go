@@ -63,6 +63,8 @@ type BinEntry struct {
 	ExpireAt        uint64
 	RealMemberCount uint32
 	NeedReadLen     byte
+	IdleTime        uint32
+	Freq            uint8
 }
 
 func (e *BinEntry) ObjEntry() (*ObjEntry, error) {
@@ -169,16 +171,18 @@ func (l *Loader) NextBinEntry() (*BinEntry, error) {
 			}
 		case rdbFlagIdle:
 			// ignore idle because target redis doesn't support this for given key
-			_, err := l.ReadLength()
+			idle, err := l.ReadLength()
 			if err != nil {
 				return nil, err
 			}
+			entry.IdleTime = idle
 		case rdbFlagFreq:
 			// ignore freq because target redis doesn't support this for given key
-			_, err := l.readUint8()
+			freq, err := l.readUint8()
 			if err != nil {
 				return nil, err
 			}
+			entry.Freq = freq
 		default:
 			var key []byte
 			if l.remainMember == 0 {
