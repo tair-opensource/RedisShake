@@ -711,12 +711,22 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		return
 	}
 
-	// fmt.Printf("kkkey: %v, value: %v\n", string(e.Key), e.Value)
-	s, err := redigo.String(c.Do("restore", e.Key, ttlms, e.Value))
+	params := []interface{}{e.Key, ttlms, e.Value}
+	if e.IdleTime != 0 {
+		params = append(params, "IDLETIME")
+		params = append(params, e.IdleTime)
+	}
+	if e.Freq != 0 {
+		params = append(params, "FREQ")
+		params = append(params, e.Freq)
+	}
+	// fmt.Printf("key: %v, value: %v params: %v\n", string(e.Key), e.Value, params)
+	s, err := redigo.String(c.Do("restore", params...))
 	if err != nil {
 		/*The reply value of busykey in 2.8 kernel is "target key name is busy",
 		  but in 4.0 kernel is "BUSYKEY Target key name already exists"*/
-		if strings.Contains(err.Error(), "Target key name is busy") || strings.Contains(err.Error(), "BUSYKEY Target key name already exists") {
+		if strings.Contains(err.Error(), "Target key name is busy") ||
+			strings.Contains(err.Error(), "BUSYKEY Target key name already exists") {
 			if conf.Options.Rewrite {
 				if !conf.Options.Metric {
 					log.Infof("warning, rewrite key: %v", string(e.Key))
@@ -724,10 +734,11 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 				var s2 string
 				var rerr error
 				if conf.Options.TargetReplace {
-					s2, rerr = redigo.String(c.Do("restore", e.Key, ttlms, e.Value, "replace"))
+					params = append(params, "REPLACE")
+					s2, rerr = redigo.String(c.Do("restore", params...))
 				} else {
 					_, _ = redigo.String(c.Do("del", e.Key))
-					s2, rerr = redigo.String(c.Do("restore", e.Key, ttlms, e.Value))
+					s2, rerr = redigo.String(c.Do("restore", params...))
 				}
 				if rerr != nil {
 					log.Info(s2, rerr, "key ", string(e.Key))
