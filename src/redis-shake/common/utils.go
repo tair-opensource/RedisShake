@@ -84,7 +84,6 @@ func OpenReadWriteFile(name string) *os.File {
 }
 
 func SendPSyncListeningPort(c net.Conn, port int) {
-
 	_, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand("replconf", "listening-port", port)))
 	if err != nil {
 		log.PanicError(errors.Trace(err), "write replconf listening-port failed")
