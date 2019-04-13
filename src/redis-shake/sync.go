@@ -119,7 +119,7 @@ func (cmd *CmdSync) Main() {
 	}
 	defer input.Close()
 
-	log.Infof("rdb file = %d\n", nsize)
+	log.Infof("rdb file size = %d\n", nsize)
 
 	if sockfile != nil {
 		r, w := pipe.NewFilePipe(int(conf.Options.SockFileSize), sockfile)
@@ -134,6 +134,7 @@ func (cmd *CmdSync) Main() {
 		input = r
 	}
 
+	// start heartbeat
 	if len(conf.Options.HeartbeatUrl) > 0 {
 		heartbeatCtl := heartbeat.HeartbeatController{
 			ServerUrl: conf.Options.HeartbeatUrl,
@@ -144,9 +145,11 @@ func (cmd *CmdSync) Main() {
 
 	reader := bufio.NewReaderSize(input, utils.ReaderBufferSize)
 
+	// sync rdb
 	base.Status = "full"
 	cmd.SyncRDBFile(reader, target, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw, nsize)
 
+	// sync increment
 	base.Status = "incr"
 	close(cmd.wait_full)
 	cmd.SyncCommand(reader, target, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw)
@@ -183,6 +186,7 @@ func (cmd *CmdSync) SendPSyncCmd(master, auth_type, passwd string) (pipe.Reader,
 	cmd.targetOffset.Set(offset)
 	log.Infof("psync runid = %s offset = %d, fullsync", runid, offset)
 
+	// get rdb file size
 	var nsize int64
 	for nsize == 0 {
 		select {
