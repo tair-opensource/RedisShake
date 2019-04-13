@@ -21,8 +21,8 @@ import (
 	"pkg/libs/stats"
 	"pkg/rdb"
 	"pkg/redis"
-	redigo "github.com/garyburd/redigo/redis"
 	"redis-shake/configure"
+	redigo "github.com/garyburd/redigo/redis"
 )
 
 func OpenRedisConn(target, auth_type, passwd string) redigo.Conn {
@@ -42,6 +42,7 @@ func OpenNetConn(target, auth_type, passwd string) net.Conn {
 		log.PanicErrorf(err, "cannot connect to '%s'", target)
 	}
 
+	log.Infof("try to auth address[%v] with type[%v]", target, auth_type)
 	AuthPassword(c, auth_type, passwd)
 	return c
 }
@@ -88,17 +89,19 @@ func SendPSyncListeningPort(c net.Conn, port int) {
 	if err != nil {
 		log.PanicError(errors.Trace(err), "write replconf listening-port failed")
 	}
-	var b = make([]byte, 5)
-	if _, err := io.ReadFull(c, b); err != nil {
+
+	ret, err := ReadRESPEnd(c)
+	if err != nil {
 		log.PanicError(errors.Trace(err), "read auth response failed")
 	}
-	if strings.ToUpper(string(b)) != "+OK\r\n" {
-		log.Panic("repl listening-port failed: ", string(b))
+	if strings.ToUpper(ret) != "+OK\r\n" {
+		log.Panicf("repl listening-port failed[%v]", RemoveRESPEnd(ret))
 	}
 }
 
 func AuthPassword(c net.Conn, auth_type, passwd string) {
 	if passwd == "" {
+		log.Infof("input password is empty, skip auth address[%v] with type[%v].", c.RemoteAddr(), auth_type)
 		return
 	}
 
@@ -106,12 +109,13 @@ func AuthPassword(c net.Conn, auth_type, passwd string) {
 	if err != nil {
 		log.PanicError(errors.Trace(err), "write auth command failed")
 	}
-	var b = make([]byte, 5)
-	if _, err := io.ReadFull(c, b); err != nil {
+
+	ret, err := ReadRESPEnd(c)
+	if err != nil {
 		log.PanicError(errors.Trace(err), "read auth response failed")
 	}
-	if strings.ToUpper(string(b)) != "+OK\r\n" {
-		log.Panicf("auth failed[%s]", string(b))
+	if strings.ToUpper(ret) != "+OK\r\n" {
+		log.Panicf("auth failed[%v]", RemoveRESPEnd(ret))
 	}
 }
 
@@ -125,6 +129,7 @@ func OpenSyncConn(target string, auth_type, passwd string) (net.Conn, <-chan int
 
 func waitRdbDump(r io.Reader) <-chan int64 {
 	size := make(chan int64)
+	// read rdb size
 	go func() {
 		var rsp string
 		for {
