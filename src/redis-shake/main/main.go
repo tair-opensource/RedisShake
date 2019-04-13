@@ -178,7 +178,7 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if conf.Options.Parallel == 0 { // not set
-		conf.Options.Parallel = 1
+		conf.Options.Parallel = 64 // default is 64
 	} else if conf.Options.Parallel > 1024 {
 		return fmt.Errorf("parallel[%v] should in (0, 1024]", conf.Options.Parallel)
 	} else {
