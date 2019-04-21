@@ -39,6 +39,7 @@ const (
 	TypeRestore = "restore"
 	TypeDump    = "dump"
 	TypeSync    = "sync"
+	TypeRump    = "rump"
 
 	defaultHttpPort    = 20881
 	defaultSystemPort  = 20882
@@ -103,6 +104,8 @@ func main() {
 		runner = new(run.CmdDump)
 	case TypeSync:
 		runner = new(run.CmdSync)
+	case TypeRump:
+		runner = new(run.CmdRump)
 	}
 
 	// create metric
@@ -161,7 +164,7 @@ func startHttpServer() {
 // sanitize options
 func sanitizeOptions(tp string) error {
 	var err error
-	if tp != TypeDecode && tp != TypeRestore && tp != TypeDump && tp != TypeSync {
+	if tp != TypeDecode && tp != TypeRestore && tp != TypeDump && tp != TypeSync && tp != TypeRump {
 		return fmt.Errorf("unknown type[%v]", tp)
 	}
 
@@ -195,6 +198,9 @@ func sanitizeOptions(tp string) error {
 	if (tp == TypeDump || tp == TypeSync) && conf.Options.SourceAddress == "" {
 		return fmt.Errorf("source address shouldn't be empty when type in {dump, sync}")
 	}
+	if tp == TypeRump && (conf.Options.SourceAddress == "" || conf.Options.TargetAddress == "") {
+		return fmt.Errorf("source and target address shouldn't be empty when type in {rump}")
+	}
 
 	if conf.Options.SourcePasswordRaw != "" && conf.Options.SourcePasswordEncoding != "" {
 		return fmt.Errorf("only one of source password_raw or password_encoding should be given")
@@ -221,6 +227,25 @@ func sanitizeOptions(tp string) error {
 		}
 		log.StdLog = log.New(utils.LogRotater, "")
 	}
+	// set log level
+	var logDeepLevel log.LogLevel
+	switch conf.Options.LogLevel {
+	case "none":
+		logDeepLevel = log.LEVEL_NONE
+	case "error":
+		logDeepLevel = log.LEVEL_ERROR
+	case "warn":
+		logDeepLevel = log.LEVEL_WARN
+	case "":
+		fallthrough
+	case "info":
+		logDeepLevel = log.LEVEL_INFO
+	case "all":
+		logDeepLevel = log.LEVEL_DEBUG
+	default:
+		return fmt.Errorf("invalid log level[%v]", conf.Options.LogLevel)
+	}
+	log.SetLevel(logDeepLevel)
 
 	// heartbeat, 86400 = 1 day
 	if conf.Options.HeartbeatInterval > 86400 {
@@ -320,6 +345,26 @@ func sanitizeOptions(tp string) error {
 			} else {
 				conf.Options.TargetReplace = false
 			}
+		}
+	}
+
+	if tp == TypeRump {
+		if conf.Options.ScanKeyNumber == 0 {
+			conf.Options.ScanKeyNumber = 100
+		}
+
+		if conf.Options.ScanSpecialCloud == run.TencentCluster {
+			if len(conf.Options.ScanSpecialCloudTencentUrls) == 0 {
+				return fmt.Errorf("`scan.special_cloud.tencent.urls` shouldn't be empty when " +
+					"`scan.special_cloud` is [%s]", run.TencentCluster)
+			}
+		} else if conf.Options.ScanSpecialCloud == run.AliyunCluster {
+			if conf.Options.ScanSpecialCloudAliyunNodeNumber == 0 {
+				return fmt.Errorf("`scan.special_cloud.aliyun.node_number` shouldn't be 0 when " +
+					"`scan.special_cloud` is [%s]", run.AliyunCluster)
+			}
+		} else if conf.Options.ScanSpecialCloud != "" {
+			return fmt.Errorf("special cloud type[%s] is not supported", conf.Options.ScanSpecialCloud)
 		}
 	}
 

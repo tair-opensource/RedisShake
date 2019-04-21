@@ -463,6 +463,7 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			} else {
 				// cmd.SyncStat.PullCmdCount.Incr()
 				metric.MetricVar.AddPullCmdCount(1)
+
 				if scmd != "ping" {
 					if strings.EqualFold(scmd, "select") {
 						if len(argv) != 1 {
