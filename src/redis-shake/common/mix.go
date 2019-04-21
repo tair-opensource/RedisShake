@@ -58,8 +58,8 @@ func Welcome() {
 /                             /                        (o)
 ------------------------------
 `
-
-	log.Warn("\n", welcome)
+	startMsg := "if you have any problem, please visit https://github.com/alibaba/RedisShake/wiki/FAQ"
+	log.Warnf("\n%s%s\n\n", welcome, startMsg)
 }
 
 func Goodbye() {
