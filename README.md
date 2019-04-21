@@ -15,7 +15,8 @@ The type can be one of the followings:<br>
 * **decode**: Decode dumped payload to human readable format (hex-encoding).
 * **restore**: Restore RDB file to target redis.
 * **dump**: Dump RDB file from souce redis.
-* **sync**: Sync data from source redis to target redis.
+* **sync**: Sync data from source redis to target redis by `sync` or `psync` command. Including full synchronization and incremental synchronization.
+* **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization.
 
 Please check out the `conf/redis-shake.conf` to see the detailed parameters description.<br>
 
