@@ -54,7 +54,7 @@ func main() {
 
 	// argument options
 	configuration := flag.String("conf", "", "configuration path")
-	tp := flag.String("type", "", "run type: decode, restore, dump, sync")
+	tp := flag.String("type", "", "run type: decode, restore, dump, sync, rump")
 	version := flag.Bool("version", false, "show version")
 	flag.Parse()
 
@@ -230,17 +230,17 @@ func sanitizeOptions(tp string) error {
 	// set log level
 	var logDeepLevel log.LogLevel
 	switch conf.Options.LogLevel {
-	case "none":
+	case utils.LogLevelNone:
 		logDeepLevel = log.LEVEL_NONE
-	case "error":
+	case utils.LogLevelError:
 		logDeepLevel = log.LEVEL_ERROR
-	case "warn":
+	case utils.LogLevelWarn:
 		logDeepLevel = log.LEVEL_WARN
 	case "":
 		fallthrough
-	case "info":
+	case utils.LogLevelInfo:
 		logDeepLevel = log.LEVEL_INFO
-	case "all":
+	case utils.LogLevelAll:
 		logDeepLevel = log.LEVEL_DEBUG
 	default:
 		return fmt.Errorf("invalid log level[%v]", conf.Options.LogLevel)

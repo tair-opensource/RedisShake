@@ -15,6 +15,12 @@ const (
 	// GolangSecurityTime = "2006-01-02 15:04:05"
 	ReaderBufferSize = bytesize.MB * 32
 	WriterBufferSize = bytesize.MB * 8
+
+	LogLevelNone  = "none"
+	LogLevelError = "error"
+	LogLevelWarn  = "warn"
+	LogLevelInfo  = "info"
+	LogLevelAll   = "all"
 )
 
 var (
