@@ -24,6 +24,7 @@ import (
 	"redis-shake/base"
 	"redis-shake/heartbeat"
 	"redis-shake/metric"
+	"unsafe"
 )
 
 type delayNode struct {
@@ -478,7 +479,7 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 					if conf.Options.LogLevel == utils.LogLevelAll {
 						strArgv := make([]string, len(argv))
 						for i, ele := range argv {
-							strArgv[i] = string(ele)
+							strArgv[i] = *(*string)(unsafe.Pointer(&ele))
 						}
 						log.Debugf("send command: [%s %v]", scmd, strArgv)
 					}
