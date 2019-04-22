@@ -54,7 +54,7 @@ func main() {
 
 	// argument options
 	configuration := flag.String("conf", "", "configuration path")
-	tp := flag.String("type", "", "run type: decode, restore, dump, sync")
+	tp := flag.String("type", "", "run type: decode, restore, dump, sync, rump")
 	version := flag.Bool("version", false, "show version")
 	flag.Parse()
 
