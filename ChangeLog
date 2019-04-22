@@ -2,6 +2,7 @@
 	* VERSION: 1.4.0
 	* FEATURE: support "rump" type to syncing data when `sync` and `psync`
 	commands are not supported.
+	* IMPROVE: add commands sending and receiving debug log.
 2019-04-13 Alibaba Cloud.
 	* VERSION: 1.2.3
 	* IMPROVE: polish log print to print more error info.
