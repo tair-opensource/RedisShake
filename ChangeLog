@@ -1,3 +1,7 @@
+2019-04-24 Alibaba Cloud.
+	* VERSION: 1.4.1
+	* IMPROVE: improve rump to better fetch data from aliyun_cluster and
+	tencent_cluster.
 2019-04-21 Alibaba Cloud.
 	* VERSION: 1.4.0
 	* FEATURE: support "rump" type to syncing data when `sync` and `psync`

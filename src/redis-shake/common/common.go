@@ -4,6 +4,7 @@ import (
 	"net"
 	"fmt"
 	"strings"
+	"bytes"
 
 	"pkg/libs/bytesize"
 
@@ -52,4 +53,17 @@ func RemoveRESPEnd(input string) string {
 		return input[: length - 2]
 	}
 	return input
+}
+
+func ParseInfo(content []byte) map[string]string {
+	result := make(map[string]string, 10)
+	lines := bytes.Split(content, []byte("\r\n"))
+	for i := 0; i < len(lines); i++ {
+		items := bytes.SplitN(lines[i], []byte(":"), 2)
+		if len(items) != 2 {
+			continue
+		}
+		result[string(items[0])] = string(items[1])
+	}
+	return result
 }
