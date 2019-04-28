@@ -44,8 +44,7 @@ type Configuration struct {
 	PidPath                          string   `config:"pid_path"`
 	ScanKeyNumber                    uint32   `config:"scan.key_number"`
 	ScanSpecialCloud                 string   `config:"scan.special_cloud"`
-	ScanSpecialCloudTencentUrls      string   `config:"scan.special_cloud.tencent.urls"`
-	ScanSpecialCloudAliyunNodeNumber uint8    `config:"scan.special_cloud.aliyun.node_number"`
+	ScanKeyFile                      string   `config:"scan.key_file"`
 
 	// inner variables
 	ReplaceHashTag bool   `config:"replace_hash_tag"`
