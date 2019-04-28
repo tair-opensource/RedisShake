@@ -1,4 +1,8 @@
 2019-04-24 Alibaba Cloud.
+	* VERSION: 1.4.2
+	* IMPROVE: improve rump to support fetching data from given keys in
+	the file.
+2019-04-24 Alibaba Cloud.
 	* VERSION: 1.4.1
 	* IMPROVE: improve rump to better fetch data from aliyun_cluster and
 	tencent_cluster.
