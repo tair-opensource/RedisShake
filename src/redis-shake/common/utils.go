@@ -44,6 +44,7 @@ func OpenNetConn(target, auth_type, passwd string) net.Conn {
 
 	log.Infof("try to auth address[%v] with type[%v]", target, auth_type)
 	AuthPassword(c, auth_type, passwd)
+	log.Info("auth OK!")
 	return c
 }
 
