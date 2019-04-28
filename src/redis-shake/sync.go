@@ -359,7 +359,7 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 
 	cmd.sendBuf = make(chan cmdDetail, conf.Options.SenderCount)
 	cmd.delayChannel = make(chan *delayNode, conf.Options.SenderDelayChannelSize)
-	var sendId, recvId atomic2.Int64
+	var sendId, recvId, sendMarkId atomic2.Int64 // sendMarkId is also used as mark the sendId in sender routine
 
 	go func() {
 		if conf.Options.Psync == false {
@@ -403,13 +403,15 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 		for {
 			reply, err := c.Receive()
 
+			recvId.Incr()
+			id := recvId.Get() // receive id
+
 			// print debug log of receive reply
-			log.Debugf("receive reply: [%v], error: [%v]", reply, err)
+			log.Debugf("receive reply[%v]: [%v], error: [%v]", id, reply, err)
 
 			if conf.Options.Metric == false {
 				continue
 			}
-			recvId.Incr()
 
 			if err == nil {
 				// cmd.SyncStat.SuccessCmdCount.Incr()
@@ -437,7 +439,6 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			}
 
 			if node != nil {
-				id := recvId.Get() // receive id
 				if node.id == id {
 					// cmd.SyncStat.Delay.Add(time.Now().Sub(node.t).Nanoseconds())
 					metric.MetricVar.AddDelay(uint64(time.Now().Sub(node.t).Nanoseconds()) / 1000000) // ms
@@ -474,16 +475,17 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 				// cmd.SyncStat.PullCmdCount.Incr()
 				metric.MetricVar.AddPullCmdCount(1)
 
-				if scmd != "ping" {
-					// print debug log of send command
-					if conf.Options.LogLevel == utils.LogLevelAll {
-						strArgv := make([]string, len(argv))
-						for i, ele := range argv {
-							strArgv[i] = *(*string)(unsafe.Pointer(&ele))
-						}
-						log.Debugf("send command: [%s %v]", scmd, strArgv)
+				// print debug log of send command
+				if conf.Options.LogLevel == utils.LogLevelAll {
+					strArgv := make([]string, len(argv))
+					for i, ele := range argv {
+						strArgv[i] = *(*string)(unsafe.Pointer(&ele))
 					}
+					sendMarkId.Incr()
+					log.Debugf("send command[%v]: [%s %v]", sendMarkId.Get(), scmd, strArgv)
+				}
 
+				if scmd != "ping" {
 					if strings.EqualFold(scmd, "select") {
 						if len(argv) != 1 {
 							log.Panicf("select command len(args) = %d", len(argv))
