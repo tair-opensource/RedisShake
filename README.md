@@ -16,7 +16,7 @@ The type can be one of the followings:<br>
 * **restore**: Restore RDB file to target redis.
 * **dump**: Dump RDB file from souce redis.
 * **sync**: Sync data from source redis to target redis by `sync` or `psync` command. Including full synchronization and incremental synchronization.
-* **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization.
+* **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization. Plus, RedisShake also supports fetching data from given keys in the input file when `scan` command is not supported on the source side.
 
 Please check out the `conf/redis-shake.conf` to see the detailed parameters description.<br>
 
@@ -55,8 +55,10 @@ Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.
 Run `./bin/redis-shake.darwin64` or `redis-shake.linux64` which is built in OSX and Linux respectively.<br>
 Or you can build redis-shake yourself according to the following steps:
 *  git clone https://github.com/alibaba/RedisShake.git
-*  cd RedisShake/src/vendor
-*  GOPATH=\`pwd\`/../..; govendor sync     #please note: must install govendor first and then pull all dependencies: `go get -u github.com/kardianos/govendor`
+*  cd RedisShake
+*  export GOPATH=\`pwd\`/../..
+*  cd src/sync
+*  govendor sync     #please note: must install govendor first and then pull all dependencies: `go get -u github.com/kardianos/govendor`
 *  cd ../../ && ./build.sh
 *  ./bin/redis-shake -type=$(type_must_be_sync_dump_restore_or_decode) -conf=conf/redis-shake.conf #please note: user must modify collector.conf first to match needs.
 

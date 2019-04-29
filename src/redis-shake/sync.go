@@ -94,12 +94,6 @@ func (cmd *CmdSync) GetDetailedInfo() []interface{} {
 
 func (cmd *CmdSync) Main() {
 	from, target := conf.Options.SourceAddress, conf.Options.TargetAddress
-	if len(from) == 0 {
-		log.Panic("invalid argument: from")
-	}
-	if len(target) == 0 {
-		log.Panic("invalid argument: target")
-	}
 
 	log.Infof("sync from '%s' to '%s' with http-port[%d]\n", from, target, conf.Options.HttpProfile)
 	cmd.wait_full = make(chan struct{})
@@ -179,10 +173,13 @@ func (cmd *CmdSync) SendPSyncCmd(master, auth_type, passwd string) (pipe.Reader,
 	utils.SendPSyncListeningPort(c, conf.Options.HttpProfile)
 	log.Infof("psync send listening port[%v] OK!", conf.Options.HttpProfile)
 
+	// reader buffer bind to client
 	br := bufio.NewReaderSize(c, utils.ReaderBufferSize)
+	// writer buffer bind to client
 	bw := bufio.NewWriterSize(c, utils.WriterBufferSize)
 
 	log.Infof("try to send 'psync' command")
+	// send psync command and decode the result
 	runid, offset, wait := utils.SendPSyncFullsync(br, bw)
 	cmd.targetOffset.Set(offset)
 	log.Infof("psync runid = %s offset = %d, fullsync", runid, offset)
@@ -200,21 +197,33 @@ func (cmd *CmdSync) SendPSyncCmd(master, auth_type, passwd string) (pipe.Reader,
 		}
 	}
 
+	// write -> pipew -> piper -> read
 	piper, pipew := pipe.NewSize(utils.ReaderBufferSize)
 
 	go func() {
 		defer pipew.Close()
 		p := make([]byte, 8192)
+		// read rdb in for loop
 		for rdbsize := int(nsize); rdbsize != 0; {
+			// br -> pipew
 			rdbsize -= utils.Iocopy(br, pipew, p, rdbsize)
 		}
+
 		for {
+			/*
+			 * read from br(source redis) and write into pipew.
+			 * Generally speaking, this function is forever run.
+			 */
 			n, err := cmd.PSyncPipeCopy(c, br, bw, offset, pipew)
 			if err != nil {
 				log.PanicErrorf(err, "psync runid = %s, offset = %d, pipe is broken", runid, offset)
 			}
+			// the 'c' is closed every loop
+
 			offset += n
 			cmd.targetOffset.Set(offset)
+
+			// reopen 'c' every time
 			for {
 				// cmd.SyncStat.SetStatus("reopen")
 				base.Status = "reopen"
@@ -242,6 +251,7 @@ func (cmd *CmdSync) SendPSyncCmd(master, auth_type, passwd string) (pipe.Reader,
 }
 
 func (cmd *CmdSync) PSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer, offset int64, copyto io.Writer) (int64, error) {
+	// TODO, two times call c.Close() ? maybe a bug
 	defer c.Close()
 	var nread atomic2.Int64
 	go func() {
@@ -275,7 +285,7 @@ func (cmd *CmdSync) PSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer
 }
 
 func (cmd *CmdSync) SyncRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
-	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, conf.Options.Parallel * 32)
+	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
 		defer close(wait)
