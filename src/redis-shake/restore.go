@@ -7,9 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"os"
 	"time"
 
 	"pkg/libs/atomic2"
@@ -50,34 +48,12 @@ func (cmd *CmdRestore) GetDetailedInfo() []interface{} {
 }
 
 func (cmd *CmdRestore) Main() {
-	input, target := conf.Options.InputRdb, conf.Options.TargetAddress
-	if len(target) == 0 {
-		log.Panic("invalid argument: target")
-	}
-	if len(input) == 0 {
-		input = "/dev/stdin"
-	}
-
-	log.Infof("restore from '%s' to '%s'\n", input, target)
+	log.Infof("restore from '%s' to '%s'\n",  conf.Options.InputRdb, conf.Options.TargetAddress)
 
 	base.Status = "waitRestore"
-	var readin io.ReadCloser
-	var nsize int64
-	if input != "/dev/stdin" {
-		readin, nsize = utils.OpenReadFile(input)
-		defer readin.Close()
-	} else {
-		readin, nsize = os.Stdin, 0
-	}
-
-	base.Status = "restore"
-	reader := bufio.NewReaderSize(readin, utils.ReaderBufferSize)
-
-	cmd.RestoreRDBFile(reader, target, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw, nsize)
-
-	base.Status = "extra"
-	if conf.Options.ExtraInfo && (nsize == 0 || nsize != cmd.rbytes.Get()) {
-		cmd.RestoreCommand(reader, target, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw)
+	for _, input := range conf.Options.InputRdb {
+		// restore one by one
+		cmd.restore(input)
 	}
 
 	if conf.Options.HttpProfile > 0 {
@@ -88,7 +64,24 @@ func (cmd *CmdRestore) Main() {
 	}
 }
 
-func (cmd *CmdRestore) RestoreRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
+func (cmd *CmdRestore) restore(input string) {
+	readin, nsize := utils.OpenReadFile(input)
+	defer readin.Close()
+	base.Status = "restore"
+
+	reader := bufio.NewReaderSize(readin, utils.ReaderBufferSize)
+
+	cmd.restoreRDBFile(reader, conf.Options.TargetAddress, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw,
+		nsize)
+
+	base.Status = "extra"
+	if conf.Options.ExtraInfo && (nsize == 0 || nsize != cmd.rbytes.Get()) {
+		cmd.restoreCommand(reader, conf.Options.TargetAddress, conf.Options.TargetAuthType,
+			conf.Options.TargetPasswordRaw)
+	}
+}
+
+func (cmd *CmdRestore) restoreRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
 	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
@@ -150,7 +143,7 @@ func (cmd *CmdRestore) RestoreRDBFile(reader *bufio.Reader, target, auth_type, p
 	log.Info("restore: rdb done")
 }
 
-func (cmd *CmdRestore) RestoreCommand(reader *bufio.Reader, target, auth_type, passwd string) {
+func (cmd *CmdRestore) restoreCommand(reader *bufio.Reader, target, auth_type, passwd string) {
 	c := utils.OpenNetConn(target, auth_type, passwd)
 	defer c.Close()
 
