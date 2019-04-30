@@ -20,6 +20,9 @@ The type can be one of the followings:<br>
 
 Please check out the `conf/redis-shake.conf` to see the detailed parameters description.<br>
 
+# Configuration
+Redis-shake has several parameters in the configuration(`conf/redis-shake.conf`) that maybe confusing, if this is your first time using, just configure the `source.address` and `target.address` parameters.
+
 # Verification
 ---
 User can use [RedisFullCheck](https://github.com/alibaba/RedisFullCheck) to verify correctness.<br>
@@ -30,6 +33,14 @@ Redis-shake offers metrics through restful api and log file.<br>
 
 * restful api: `curl 127.0.0.1:9320/metric`.
 * log: the metric info will be printed in the log periodically if enable.
+m
+
+# Redis Type
+---
+Both the source and target type can be single redis, master-slave architecture redis, redis cluster and codis. Although the architecture patterns of different vendors are different for the cluster architecture, we still support different cloud vendors like alibaba-cloud, tencent-cloud and so on.<br>
+If the target is open source redis cluster, redis-shake uses [redis-go-cluster](https://github.com/chasex/redis-go-cluster) driver to write data, otherwise, [redigo](https://github.com/garyburd/redigo) driver is used to insert data in round robin way.<br>
+If the source is redis cluster, redis-shake launches multiple goroutines for parallel pull. User can control the concurrency.<br>
+The "move slot" operations must be disabled on the source side.<br>
 
 # Code branch rules
 ---

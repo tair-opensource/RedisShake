@@ -196,11 +196,14 @@ func sanitizeOptions(tp string) error {
 	if (tp == TypeRestore || tp == TypeSync) && conf.Options.TargetAddress == "" {
 		return fmt.Errorf("target address shouldn't be empty when type in {restore, sync}")
 	}
-	if (tp == TypeDump || tp == TypeSync) && conf.Options.SourceAddress == "" {
+	if (tp == TypeDump || tp == TypeSync) && len(conf.Options.SourceAddress) == 0 {
 		return fmt.Errorf("source address shouldn't be empty when type in {dump, sync}")
 	}
-	if tp == TypeRump && (conf.Options.SourceAddress == "" || conf.Options.TargetAddress == "") {
+	if tp == TypeRump && (len(conf.Options.SourceAddress) == 0 || conf.Options.TargetAddress == "") {
 		return fmt.Errorf("source and target address shouldn't be empty when type in {rump}")
+	}
+	if tp == TypeDump && conf.Options.OutputRdb == "" {
+		conf.Options.OutputRdb = "output-rdb-dump"
 	}
 
 	if conf.Options.SourcePasswordRaw != "" && conf.Options.SourcePasswordEncoding != "" {
@@ -208,6 +211,10 @@ func sanitizeOptions(tp string) error {
 	} else if conf.Options.SourcePasswordEncoding != "" {
 		sourcePassword := "" // todo, inner version
 		conf.Options.SourcePasswordRaw = string(sourcePassword)
+	}
+
+	if conf.Options.SourceParallel == 0 || conf.Options.SourceParallel > uint(len(conf.Options.SourceAddress)) {
+		conf.Options.SourceParallel = uint(len(conf.Options.SourceAddress))
 	}
 
 	if conf.Options.TargetPasswordRaw != "" && conf.Options.TargetPasswordEncoding != "" {
