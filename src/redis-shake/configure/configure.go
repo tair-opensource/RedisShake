@@ -11,7 +11,7 @@ type Configuration struct {
 	HttpProfile               int      `config:"http_profile"`
 	NCpu                      int      `config:"ncpu"`
 	Parallel                  int      `config:"parallel"`
-	InputRdb                  string   `config:"input_rdb"`
+	InputRdb                  []string `config:"input_rdb"`
 	OutputRdb                 string   `config:"output_rdb"`
 	SourceAddress             []string `config:"source.address"`
 	SourcePasswordRaw         string   `config:"source.password_raw"`

@@ -9,8 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 	"time"
 
 	"pkg/libs/atomic2"
@@ -42,32 +40,23 @@ func (cmd *CmdDecode) GetDetailedInfo() []interface{} {
 }
 
 func (cmd *CmdDecode) Main() {
-	input, output := conf.Options.InputRdb, conf.Options.OutputRdb
-	if len(input) == 0 {
-		input = "/dev/stdin"
-	}
-	if len(output) == 0 {
-		output = "/dev/stdout"
+	log.Infof("decode from '%s' to '%s'\n", conf.Options.InputRdb, conf.Options.OutputRdb)
+
+	for i, input := range conf.Options.InputRdb {
+		// decode one by one
+		output := fmt.Sprintf("%s.%d", conf.Options.OutputRdb, i)
+		cmd.decode(input, output)
 	}
 
-	log.Infof("decode from '%s' to '%s'\n", input, output)
+	log.Info("decode: done")
+}
 
-	var readin io.ReadCloser
-	var nsize int64
-	if input != "/dev/stdin" {
-		readin, nsize = utils.OpenReadFile(input)
-		defer readin.Close()
-	} else {
-		readin, nsize = os.Stdin, 0
-	}
+func (cmd *CmdDecode) decode(input, output string) {
+	readin, nsize := utils.OpenReadFile(input)
+	defer readin.Close()
 
-	var saveto io.WriteCloser
-	if output != "/dev/stdout" {
-		saveto = utils.OpenWriteFile(output)
-		defer saveto.Close()
-	} else {
-		saveto = os.Stdout
-	}
+	saveto := utils.OpenWriteFile(output)
+	defer saveto.Close()
 
 	reader := bufio.NewReaderSize(readin, utils.ReaderBufferSize)
 	writer := bufio.NewWriterSize(saveto, utils.WriterBufferSize)
@@ -121,7 +110,6 @@ func (cmd *CmdDecode) Main() {
 		fmt.Fprintf(&b, "  entry=%-12d", stat.nentry)
 		log.Info(b.String())
 	}
-	log.Info("decode: done")
 }
 
 func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- string) {

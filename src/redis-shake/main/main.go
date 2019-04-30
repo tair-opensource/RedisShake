@@ -202,6 +202,9 @@ func sanitizeOptions(tp string) error {
 	if tp == TypeRump && (len(conf.Options.SourceAddress) == 0 || conf.Options.TargetAddress == "") {
 		return fmt.Errorf("source and target address shouldn't be empty when type in {rump}")
 	}
+	if (tp == TypeRestore || tp == TypeDecode) && len(conf.Options.InputRdb) == 0 {
+		return fmt.Errorf("input rdb shouldn't be empty when type in {restore, decode}")
+	}
 	if tp == TypeDump && conf.Options.OutputRdb == "" {
 		conf.Options.OutputRdb = "output-rdb-dump"
 	}
