@@ -370,6 +370,11 @@ func sanitizeOptions(tp string) error {
 			return fmt.Errorf("scan.special_cloud[%v] and scan.key_file[%v] cann't be given at the same time",
 				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
 		}
+
+		if (conf.Options.ScanSpecialCloud != "" || conf.Options.ScanKeyFile != "") && len(conf.Options.SourceAddress) > 1 {
+			return fmt.Errorf("source address should <= 1 when scan.special_cloud[%v] or scan.key_file[%v] given",
+				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
+		}
 	}
 
 	return nil
