@@ -33,8 +33,9 @@ func (cr *CmdRump) GetDetailedInfo() []interface{} {
 
 func (cr *CmdRump) Main() {
 	// build connection
-	cr.sourceConn = utils.OpenRedisConn(conf.Options.SourceAddress, conf.Options.SourceAuthType,
-		conf.Options.SourcePasswordRaw)
+	// todo
+	//cr.sourceConn = utils.OpenRedisConn(conf.Options.SourceAddress, conf.Options.SourceAuthType,
+	//	conf.Options.SourcePasswordRaw)
 	cr.targetConn = utils.OpenRedisConn(conf.Options.TargetAddress, conf.Options.TargetAuthType,
 		conf.Options.TargetPasswordRaw)
 

@@ -93,6 +93,7 @@ func (cmd *CmdSync) GetDetailedInfo() []interface{} {
 }
 
 func (cmd *CmdSync) Main() {
+	// todo
 	from, target := conf.Options.SourceAddress, conf.Options.TargetAddress
 
 	log.Infof("sync from '%s' to '%s' with http-port[%d]\n", from, target, conf.Options.HttpProfile)
@@ -108,9 +109,11 @@ func (cmd *CmdSync) Main() {
 	var input io.ReadCloser
 	var nsize int64
 	if conf.Options.Psync {
-		input, nsize = cmd.SendPSyncCmd(from, conf.Options.SourceAuthType, conf.Options.SourcePasswordRaw)
+		// todo
+		// input, nsize = cmd.SendPSyncCmd(from, conf.Options.SourceAuthType, conf.Options.SourcePasswordRaw)
 	} else {
-		input, nsize = cmd.SendSyncCmd(from, conf.Options.SourceAuthType, conf.Options.SourcePasswordRaw)
+		// todo
+		// input, nsize = cmd.SendSyncCmd(from, conf.Options.SourceAuthType, conf.Options.SourcePasswordRaw)
 	}
 	defer input.Close()
 
@@ -377,7 +380,9 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			return
 		}
 
-		srcConn := utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress, conf.Options.SourceAuthType,
+		// todo
+		// srcConn := utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress, conf.Options.SourceAuthType,
+		srcConn := utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress[0], conf.Options.SourceAuthType,
 			conf.Options.SourcePasswordRaw, time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
 		ticker := time.NewTicker(10 * time.Second)
 		for range ticker.C {
@@ -388,10 +393,14 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 
 				// Reconnect while network error happen
 				if err == io.EOF {
-					srcConn = utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress, conf.Options.SourceAuthType,
+					// todo
+					// srcConn = utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress, conf.Options.SourceAuthType,
+					srcConn = utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress[0], conf.Options.SourceAuthType,
 						conf.Options.SourcePasswordRaw, time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
 				} else if _, ok := err.(net.Error); ok {
-					srcConn = utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress, conf.Options.SourceAuthType,
+					// todo
+					// srcConn = utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress, conf.Options.SourceAuthType,
+					srcConn = utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress[0], conf.Options.SourceAuthType,
 						conf.Options.SourcePasswordRaw, time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
 				}
 			} else {

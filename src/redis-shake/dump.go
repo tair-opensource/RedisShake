@@ -5,10 +5,10 @@ package run
 
 import (
 	"bufio"
-	"io"
 	"net"
-	"os"
 	"time"
+	"fmt"
+	"sync"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
@@ -17,6 +17,13 @@ import (
 )
 
 type CmdDump struct {
+	dumpChan chan node
+	wg       sync.WaitGroup
+}
+
+type node struct {
+	source string
+	output string
 }
 
 func (cmd *CmdDump) GetDetailedInfo() []interface{} {
@@ -24,42 +31,71 @@ func (cmd *CmdDump) GetDetailedInfo() []interface{} {
 }
 
 func (cmd *CmdDump) Main() {
-	from, output := conf.Options.SourceAddress, conf.Options.OutputRdb
-	if len(from) == 0 {
-		log.Panic("invalid argument: from")
-	}
-	if len(output) == 0 {
-		output = "/dev/stdout"
-	}
+	cmd.dumpChan = make(chan node, len(conf.Options.SourceAddress))
 
-	log.Infof("dump from '%s' to '%s'\n", from, output)
-
-	var dumpto io.WriteCloser
-	if output != "/dev/stdout" {
-		dumpto = utils.OpenWriteFile(output)
-		defer dumpto.Close()
-	} else {
-		dumpto = os.Stdout
+	for i, source := range conf.Options.SourceAddress {
+		nd := node{
+			source: source,
+			output: fmt.Sprintf("%s.%d", conf.Options.OutputRdb, i),
+		}
+		cmd.dumpChan <- nd
 	}
 
-	master, nsize := cmd.SendCmd(from, conf.Options.SourceAuthType, conf.Options.SourcePasswordRaw)
+	var (
+		reader *bufio.Reader
+		writer *bufio.Writer
+		nsize  int64
+	)
+	cmd.wg.Add(len(conf.Options.SourceAddress))
+	for i := 0; i < int(conf.Options.SourceParallel); i++ {
+		go func(idx int) {
+			log.Infof("start routine[%v]", idx)
+			for {
+				select {
+				case nd, ok := <-cmd.dumpChan:
+					if !ok {
+						log.Infof("close routine[%v]", idx)
+						return
+					}
+					reader, writer, nsize = cmd.dump(nd.source, nd.output)
+					cmd.wg.Done()
+				}
+			}
+		}(i)
+	}
+
+	cmd.wg.Wait()
+
+	close(cmd.dumpChan)
+
+	if len(conf.Options.SourceAddress) != 1 || !conf.Options.ExtraInfo {
+		return
+	}
+
+	// inner usage
+	cmd.dumpCommand(reader, writer, nsize)
+}
+
+func (cmd *CmdDump) dump(source, output string) (*bufio.Reader, *bufio.Writer, int64) {
+	log.Infof("dump from '%s' to '%s'\n", source, output)
+
+	dumpto := utils.OpenWriteFile(output)
+	defer dumpto.Close()
+
+	master, nsize := cmd.sendCmd(source, conf.Options.SourceAuthType, conf.Options.SourcePasswordRaw)
 	defer master.Close()
 
-	log.Infof("rdb file = %d\n", nsize)
+	log.Infof("source db[%v] dump rdb file-size[%d]\n", source, nsize)
 
 	reader := bufio.NewReaderSize(master, utils.ReaderBufferSize)
 	writer := bufio.NewWriterSize(dumpto, utils.WriterBufferSize)
 
-	cmd.DumpRDBFile(reader, writer, nsize)
+	cmd.dumpRDBFile(reader, writer, nsize)
 
-	if !conf.Options.ExtraInfo {
-		return
-	}
-
-	cmd.DumpCommand(reader, writer, nsize)
+	return reader, writer, nsize
 }
 
-func (cmd *CmdDump) SendCmd(master, auth_type, passwd string) (net.Conn, int64) {
+func (cmd *CmdDump) sendCmd(master, auth_type, passwd string) (net.Conn, int64) {
 	c, wait := utils.OpenSyncConn(master, auth_type, passwd)
 	var nsize int64
 	for nsize == 0 {
@@ -75,7 +111,7 @@ func (cmd *CmdDump) SendCmd(master, auth_type, passwd string) (net.Conn, int64) 
 	return c, nsize
 }
 
-func (cmd *CmdDump) DumpRDBFile(reader *bufio.Reader, writer *bufio.Writer, nsize int64) {
+func (cmd *CmdDump) dumpRDBFile(reader *bufio.Reader, writer *bufio.Writer, nsize int64) {
 	var nread atomic2.Int64
 	wait := make(chan struct{})
 	go func() {
@@ -102,7 +138,7 @@ func (cmd *CmdDump) DumpRDBFile(reader *bufio.Reader, writer *bufio.Writer, nsiz
 	log.Info("dump: rdb done")
 }
 
-func (cmd *CmdDump) DumpCommand(reader *bufio.Reader, writer *bufio.Writer, nsize int64) {
+func (cmd *CmdDump) dumpCommand(reader *bufio.Reader, writer *bufio.Writer, nsize int64) {
 	var nread atomic2.Int64
 	go func() {
 		p := make([]byte, utils.ReaderBufferSize)
