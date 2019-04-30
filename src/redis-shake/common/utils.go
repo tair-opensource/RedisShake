@@ -22,6 +22,7 @@ import (
 	"pkg/rdb"
 	"pkg/redis"
 	"redis-shake/configure"
+
 	redigo "github.com/garyburd/redigo/redis"
 )
 
