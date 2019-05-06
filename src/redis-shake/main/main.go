@@ -27,10 +27,10 @@ import (
 	"redis-shake/configure"
 	"redis-shake/metric"
 	"redis-shake/restful"
+	"redis-shake/scanner"
 
 	"github.com/gugemichael/nimo4go"
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
-	"redis-shake/scanner"
 )
 
 type Exit struct{ Code int }
@@ -193,13 +193,14 @@ func sanitizeOptions(tp string) error {
 		return fmt.Errorf("BigKeyThreshold[%v] should <= 524288000", conf.Options.BigKeyThreshold)
 	}
 
-	if (tp == TypeRestore || tp == TypeSync) && conf.Options.TargetAddress == "" {
+	if (tp == TypeRestore || tp == TypeSync) && !isValidRedisAddress(conf.Options.TargetRedisType, conf.Options.TargetAddress, conf.Options.TargetSentinelAddress, conf.Options.TargetSentinelMasterName) {
 		return fmt.Errorf("target address shouldn't be empty when type in {restore, sync}")
 	}
-	if (tp == TypeDump || tp == TypeSync) && conf.Options.SourceAddress == "" {
+	if (tp == TypeDump || tp == TypeSync) && !isValidRedisAddress(conf.Options.SourceRedisType, conf.Options.SourceAddress, conf.Options.SourceSentinelAddress, conf.Options.SourceSentinelMasterName) {
 		return fmt.Errorf("source address shouldn't be empty when type in {dump, sync}")
 	}
-	if tp == TypeRump && (conf.Options.SourceAddress == "" || conf.Options.TargetAddress == "") {
+	if tp == TypeRump && (!isValidRedisAddress(conf.Options.TargetRedisType, conf.Options.TargetAddress, conf.Options.TargetSentinelAddress, conf.Options.TargetSentinelMasterName) ||
+		!isValidRedisAddress(conf.Options.SourceRedisType, conf.Options.SourceAddress, conf.Options.SourceSentinelAddress, conf.Options.SourceSentinelMasterName)) {
 		return fmt.Errorf("source and target address shouldn't be empty when type in {rump}")
 	}
 
@@ -308,35 +309,39 @@ func sanitizeOptions(tp string) error {
 
 	if conf.Options.HttpProfile < 0 || conf.Options.HttpProfile > 65535 {
 		return fmt.Errorf("HttpProfile[%v] should in [0, 65535]", conf.Options.HttpProfile)
-	} else if conf.Options.HttpProfile  == 0 {
+	} else if conf.Options.HttpProfile == 0 {
 		// set to default when not set
 		conf.Options.HttpProfile = defaultHttpPort
 	}
 
 	if conf.Options.SystemProfile < 0 || conf.Options.SystemProfile > 65535 {
 		return fmt.Errorf("SystemProfile[%v] should in [0, 65535]", conf.Options.SystemProfile)
-	} else if conf.Options.SystemProfile  == 0 {
+	} else if conf.Options.SystemProfile == 0 {
 		// set to default when not set
 		conf.Options.SystemProfile = defaultSystemPort
 	}
 
 	if conf.Options.SenderSize < 0 || conf.Options.SenderSize >= 1073741824 {
 		return fmt.Errorf("SenderSize[%v] should in [0, 1073741824]", conf.Options.SenderSize)
-	} else if conf.Options.SenderSize  == 0 {
+	} else if conf.Options.SenderSize == 0 {
 		// set to default when not set
 		conf.Options.SenderSize = defaultSenderSize
 	}
 
 	if conf.Options.SenderCount < 0 || conf.Options.SenderCount >= 100000 {
 		return fmt.Errorf("SenderCount[%v] should in [0, 100000]", conf.Options.SenderCount)
-	} else if conf.Options.SenderCount  == 0 {
+	} else if conf.Options.SenderCount == 0 {
 		// set to default when not set
 		conf.Options.SenderCount = defaultSenderCount
 	}
 
 	if tp == TypeRestore || tp == TypeSync {
 		// get target redis version and set TargetReplace.
-		if conf.Options.TargetRedisVersion, err = utils.GetRedisVersion(conf.Options.TargetAddress,
+		target, err := utils.GetReadableRedisAddress(conf.Options.TargetRedisType, conf.Options.TargetAddress, conf.Options.TargetSentinelAddress, conf.Options.TargetSentinelMasterName)
+		if err != nil {
+			return err
+		}
+		if conf.Options.TargetRedisVersion, err = utils.GetRedisVersion(target,
 			conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw); err != nil {
 			return fmt.Errorf("get target redis version failed[%v]", err)
 		} else {
@@ -355,7 +360,7 @@ func sanitizeOptions(tp string) error {
 		}
 
 		if conf.Options.ScanSpecialCloud != "" && conf.Options.ScanSpecialCloud != scanner.TencentCluster &&
-				conf.Options.ScanSpecialCloud != scanner.AliyunCluster {
+			conf.Options.ScanSpecialCloud != scanner.AliyunCluster {
 			return fmt.Errorf("special cloud type[%s] is not supported", conf.Options.ScanSpecialCloud)
 		}
 
@@ -380,4 +385,18 @@ func handleExit() {
 		}
 		panic(e)
 	}
+}
+
+// isValidRedisAddress check whether redis address is missing
+func isValidRedisAddress(redisType, redisAddr string, sentinelAddr []string, sentinelMasterName string) bool {
+	return (isRedisStandalone(redisType) && redisAddr != "") ||
+		(isRedisSentinel(redisType) && len(sentinelAddr) != 0 && sentinelMasterName != "")
+}
+
+func isRedisStandalone(redisType string) bool {
+	return redisType == conf.RedisTypeStandalone || redisType == ""
+}
+
+func isRedisSentinel(redisType string) bool {
+	return redisType == conf.RedisTypeSentinel
 }

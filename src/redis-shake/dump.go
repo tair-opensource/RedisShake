@@ -12,8 +12,8 @@ import (
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
-	"redis-shake/configure"
 	"redis-shake/common"
+	"redis-shake/configure"
 )
 
 type CmdDump struct {
@@ -24,7 +24,11 @@ func (cmd *CmdDump) GetDetailedInfo() []interface{} {
 }
 
 func (cmd *CmdDump) Main() {
-	from, output := conf.Options.SourceAddress, conf.Options.OutputRdb
+	from, err := utils.GetReadableRedisAddress(conf.Options.SourceRedisType, conf.Options.SourceAddress, conf.Options.SourceSentinelAddress, conf.Options.SourceSentinelMasterName)
+	if err != nil {
+		log.Panic("get source redis address fail:", err)
+	}
+	output := conf.Options.OutputRdb
 	if len(from) == 0 {
 		log.Panic("invalid argument: from")
 	}
