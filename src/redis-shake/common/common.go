@@ -7,7 +7,8 @@ import (
 	"bytes"
 
 	"pkg/libs/bytesize"
-
+	"redis-shake/configure"
+	
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -66,4 +67,8 @@ func ParseInfo(content []byte) map[string]string {
 		result[string(items[0])] = string(items[1])
 	}
 	return result
+}
+
+func GetTotalLink() int {
+	return len(conf.Options.SourceAddress)
 }
