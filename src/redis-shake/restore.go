@@ -43,7 +43,7 @@ func (cmd *CmdRestore) Stat() *cmdRestoreStat {
 	}
 }
 
-func (cmd *CmdRestore) GetDetailedInfo() []interface{} {
+func (cmd *CmdRestore) GetDetailedInfo() interface{} {
 	return nil
 }
 

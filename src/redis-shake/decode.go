@@ -35,7 +35,7 @@ func (cmd *CmdDecode) Stat() *cmdDecodeStat {
 	}
 }
 
-func (cmd *CmdDecode) GetDetailedInfo() []interface{} {
+func (cmd *CmdDecode) GetDetailedInfo() interface{} {
 	return nil
 }
 

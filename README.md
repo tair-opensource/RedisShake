@@ -2,6 +2,8 @@ RedisShake is mainly used to synchronize data from one redis database to another
 Thanks to the Douyu's WSD team for the support. <br>
 
 * [中文文档](https://yq.aliyun.com/articles/691794)
+*  [English tutorial](https://github.com/alibaba/RedisShake/wiki/tutorial-about-how-to-set-up)
+*  [中文使用文档](https://github.com/alibaba/RedisShake/wiki/%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BD%BF%E7%94%A8%EF%BC%8C%E5%A6%82%E4%BD%95%E8%BF%9B%E8%A1%8C%E9%85%8D%E7%BD%AE%EF%BC%9F)
 
 # Redis-Shake
 ---

@@ -12,5 +12,5 @@ var(
 type Runner interface{
 	Main()
 
-	GetDetailedInfo() []interface{}
+	GetDetailedInfo() interface{}
 }

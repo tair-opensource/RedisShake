@@ -9,6 +9,7 @@ import (
 	"redis-shake/base"
 	"redis-shake/configure"
 	"pkg/libs/log"
+	"sync"
 )
 
 const (
@@ -16,7 +17,7 @@ const (
 )
 
 var (
-	MetricVar *Metric
+	MetricMap = new(sync.Map)
 	runner base.Runner
 )
 
@@ -92,9 +93,21 @@ type Metric struct {
 
 func CreateMetric(r base.Runner) {
 	runner = r
-	MetricVar = &Metric{}
+}
 
-	go MetricVar.run()
+func AddMetric(id int) {
+	if _, ok := MetricMap.Load(id); ok {
+		return
+	}
+
+	singleMetric := new(Metric)
+	MetricMap.Store(id, singleMetric)
+	go singleMetric.run()
+}
+
+func GetMetric(id int) *Metric {
+	metric, _ := MetricMap.Load(id)
+	return metric.(*Metric)
 }
 
 func (m *Metric) resetEverySecond(items []Op) {
