@@ -29,7 +29,7 @@ type KeyNode struct {
 	pttl  int64
 }
 
-func (cr *CmdRump) GetDetailedInfo() []interface{} {
+func (cr *CmdRump) GetDetailedInfo() interface{} {
 	return nil
 }
 

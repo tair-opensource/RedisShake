@@ -26,7 +26,7 @@ type node struct {
 	output string
 }
 
-func (cmd *CmdDump) GetDetailedInfo() []interface{} {
+func (cmd *CmdDump) GetDetailedInfo() interface{} {
 	return nil
 }
 
