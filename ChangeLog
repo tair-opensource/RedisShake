@@ -1,4 +1,4 @@
-2019-04-21 Alibaba Cloud.
+2019-05-08 Alibaba Cloud.
 	* VERSION: 1.6.0
 	* FEATURE: source address supports cluster.
 	* FEATURE: target address supports several proxies to write data in
