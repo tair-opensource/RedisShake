@@ -80,11 +80,15 @@ func (cmd *CmdSync) Main() {
 	syncChan := make(chan syncNode, total)
 	cmd.dbSyncers = make([]*dbSyncer, total)
 	for i, source := range conf.Options.SourceAddress {
+		// round-robin pick
+		pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddress))
+		target := conf.Options.TargetAddress[pick]
+
 		nd := syncNode{
 			id:             i,
 			source:         source,
 			sourcePassword: conf.Options.SourcePasswordRaw,
-			target:         conf.Options.TargetAddress, // todo, target address load balance
+			target:         target,
 			targetPassword: conf.Options.TargetPasswordRaw,
 		}
 		syncChan <- nd
@@ -125,7 +129,7 @@ func (cmd *CmdSync) Main() {
 }
 
 /*------------------------------------------------------*/
-// one sync tunnel corresponding to one dbSyncer
+// one sync link corresponding to one dbSyncer
 func NewDbSyncer(id int, source, sourcePassword, target, targetPassword string, httpPort int) *dbSyncer {
 	ds := &dbSyncer{
 		id:              id,

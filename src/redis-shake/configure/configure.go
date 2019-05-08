@@ -11,20 +11,22 @@ type Configuration struct {
 	HttpProfile               int      `config:"http_profile"`
 	NCpu                      int      `config:"ncpu"`
 	Parallel                  int      `config:"parallel"`
-	InputRdb                  []string `config:"input_rdb"`
-	OutputRdb                 string   `config:"output_rdb"`
 	SourceAddress             []string `config:"source.address"`
 	SourcePasswordRaw         string   `config:"source.password_raw"`
 	SourcePasswordEncoding    string   `config:"source.password_encoding"`
 	SourceVersion             uint     `config:"source.version"`
 	SourceAuthType            string   `config:"source.auth_type"`
 	SourceParallel            uint     `config:"source.parallel"`
-	TargetAddress             string   `config:"target.address"`
+	TargetAddress             []string `config:"target.address"`
 	TargetPasswordRaw         string   `config:"target.password_raw"`
 	TargetPasswordEncoding    string   `config:"target.password_encoding"`
 	TargetVersion             uint     `config:"target.version"`
 	TargetDB                  int      `config:"target.db"`
 	TargetAuthType            string   `config:"target.auth_type"`
+	TargetType                string   `config:"target.type"`
+	RdbInput                  []string `config:"rdb.input"`
+	RdbOutput                 string   `config:"rdb.output"`
+	RdbParallel               int      `config:"rdb.parallel"`
 	FakeTime                  string   `config:"fake_time"`
 	Rewrite                   bool     `config:"rewrite"`
 	FilterDB                  string   `config:"filter.db"`
