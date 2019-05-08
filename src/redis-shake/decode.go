@@ -40,11 +40,11 @@ func (cmd *CmdDecode) GetDetailedInfo() interface{} {
 }
 
 func (cmd *CmdDecode) Main() {
-	log.Infof("decode from '%s' to '%s'\n", conf.Options.InputRdb, conf.Options.OutputRdb)
+	log.Infof("decode from '%s' to '%s'\n", conf.Options.RdbInput, conf.Options.RdbOutput)
 
-	for i, input := range conf.Options.InputRdb {
+	for i, input := range conf.Options.RdbInput {
 		// decode one by one
-		output := fmt.Sprintf("%s.%d", conf.Options.OutputRdb, i)
+		output := fmt.Sprintf("%s.%d", conf.Options.RdbOutput, i)
 		cmd.decode(input, output)
 	}
 

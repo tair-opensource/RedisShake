@@ -17,12 +17,10 @@ import (
 	"redis-shake/common"
 	"strconv"
 	"redis-shake/base"
+	"sync"
 )
 
 type CmdRestore struct {
-	rbytes, ebytes, nentry, ignore atomic2.Int64
-
-	forward, nbypass atomic2.Int64
 }
 
 type cmdRestoreStat struct {
@@ -31,30 +29,56 @@ type cmdRestoreStat struct {
 	forward, nbypass int64
 }
 
-func (cmd *CmdRestore) Stat() *cmdRestoreStat {
-	return &cmdRestoreStat{
-		rbytes: cmd.rbytes.Get(),
-		ebytes: cmd.ebytes.Get(),
-		nentry: cmd.nentry.Get(),
-		ignore: cmd.ignore.Get(),
-
-		forward: cmd.forward.Get(),
-		nbypass: cmd.nbypass.Get(),
-	}
-}
-
 func (cmd *CmdRestore) GetDetailedInfo() interface{} {
 	return nil
 }
 
 func (cmd *CmdRestore) Main() {
-	log.Infof("restore from '%s' to '%s'\n",  conf.Options.InputRdb, conf.Options.TargetAddress)
+	log.Infof("restore from '%s' to '%s'\n",  conf.Options.RdbInput, conf.Options.TargetAddress)
 
-	base.Status = "waitRestore"
-	for _, input := range conf.Options.InputRdb {
-		// restore one by one
-		cmd.restore(input)
+	type restoreNode struct {
+		id    int
+		input string
 	}
+	base.Status = "waitRestore"
+	total := utils.GetTotalLink()
+	restoreChan := make(chan restoreNode, total)
+
+	for i, rdb := range conf.Options.RdbInput {
+		restoreChan <- restoreNode{id: i, input: rdb}
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(conf.Options.RdbInput))
+	for i := 0; i < conf.Options.RdbParallel; i++ {
+		go func() {
+			for {
+				node, ok := <-restoreChan
+				if !ok {
+					break
+				}
+
+				// round-robin pick
+				pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddress))
+				target := conf.Options.TargetAddress[pick]
+
+				dr := &dbRestorer{
+					id:             node.id,
+					input:          node.input,
+					target:         target,
+					targetPassword: conf.Options.TargetPasswordRaw,
+				}
+				dr.restore()
+				log.Infof("routine[%v] starts restoring data from %v to %v",
+					dr.id, dr.input, dr.target)
+
+				wg.Done()
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(restoreChan)
 
 	if conf.Options.HttpProfile > 0 {
 		//fake status if set http_port. and wait forever
@@ -64,25 +88,50 @@ func (cmd *CmdRestore) Main() {
 	}
 }
 
-func (cmd *CmdRestore) restore(input string) {
-	readin, nsize := utils.OpenReadFile(input)
+/*------------------------------------------------------*/
+// one restore link corresponding to one dbRestorer
+type dbRestorer struct {
+	id             int    // id
+	input          string // input rdb
+	target         string
+	targetPassword string
+
+	// metric
+	rbytes, ebytes, nentry, ignore atomic2.Int64
+	forward, nbypass               atomic2.Int64
+}
+
+func (dr *dbRestorer) Stat() *cmdRestoreStat {
+	return &cmdRestoreStat{
+		rbytes: dr.rbytes.Get(),
+		ebytes: dr.ebytes.Get(),
+		nentry: dr.nentry.Get(),
+		ignore: dr.ignore.Get(),
+
+		forward: dr.forward.Get(),
+		nbypass: dr.nbypass.Get(),
+	}
+}
+
+func (dr *dbRestorer) restore() {
+	readin, nsize := utils.OpenReadFile(dr.input)
 	defer readin.Close()
 	base.Status = "restore"
 
 	reader := bufio.NewReaderSize(readin, utils.ReaderBufferSize)
 
-	cmd.restoreRDBFile(reader, conf.Options.TargetAddress, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw,
+	dr.restoreRDBFile(reader, dr.target, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw,
 		nsize)
 
 	base.Status = "extra"
-	if conf.Options.ExtraInfo && (nsize == 0 || nsize != cmd.rbytes.Get()) {
-		cmd.restoreCommand(reader, conf.Options.TargetAddress, conf.Options.TargetAuthType,
+	if conf.Options.ExtraInfo && (nsize == 0 || nsize != dr.rbytes.Get()) {
+		dr.restoreCommand(reader, dr.target, conf.Options.TargetAuthType,
 			conf.Options.TargetPasswordRaw)
 	}
 }
 
-func (cmd *CmdRestore) restoreRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
-	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, base.RDBPipeSize)
+func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
+	pipe := utils.NewRDBLoader(reader, &dr.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
 		defer close(wait)
@@ -97,9 +146,9 @@ func (cmd *CmdRestore) restoreRDBFile(reader *bufio.Reader, target, auth_type, p
 				var lastdb uint32 = 0
 				for e := range pipe {
 					if !base.AcceptDB(e.DB) {
-						cmd.ignore.Incr()
+						dr.ignore.Incr()
 					} else {
-						cmd.nentry.Incr()
+						dr.nentry.Incr()
 						if conf.Options.TargetDB != -1 {
 							if conf.Options.TargetDB != int(lastdb) {
 								lastdb = uint32(conf.Options.TargetDB)
@@ -127,12 +176,12 @@ func (cmd *CmdRestore) restoreRDBFile(reader *bufio.Reader, target, auth_type, p
 			done = true
 		case <-time.After(time.Second):
 		}
-		stat := cmd.Stat()
+		stat := dr.Stat()
 		var b bytes.Buffer
 		if nsize != 0 {
-			fmt.Fprintf(&b, "total = %d - %12d [%3d%%]", nsize, stat.rbytes, 100*stat.rbytes/nsize)
+			fmt.Fprintf(&b, "routine[%v] total = %d - %12d [%3d%%]", dr.id, nsize, stat.rbytes, 100*stat.rbytes/nsize)
 		} else {
-			fmt.Fprintf(&b, "total = %12d", stat.rbytes)
+			fmt.Fprintf(&b, "routine[%v] total = %12d", dr.id, stat.rbytes)
 		}
 		fmt.Fprintf(&b, "  entry=%-12d", stat.nentry)
 		if stat.ignore != 0 {
@@ -140,10 +189,10 @@ func (cmd *CmdRestore) restoreRDBFile(reader *bufio.Reader, target, auth_type, p
 		}
 		log.Info(b.String())
 	}
-	log.Info("restore: rdb done")
+	log.Info("routine[%v] restore: rdb done", dr.id)
 }
 
-func (cmd *CmdRestore) restoreCommand(reader *bufio.Reader, target, auth_type, passwd string) {
+func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target, auth_type, passwd string) {
 	c := utils.OpenNetConn(target, auth_type, passwd)
 	defer c.Close()
 
@@ -162,35 +211,35 @@ func (cmd *CmdRestore) restoreCommand(reader *bufio.Reader, target, auth_type, p
 		for {
 			resp := redis.MustDecode(reader)
 			if scmd, args, err := redis.ParseArgs(resp); err != nil {
-				log.PanicError(err, "parse command arguments failed")
+				log.PanicError(err, "routine[%v] parse command arguments failed", dr.id)
 			} else if scmd != "ping" {
 				if scmd == "select" {
 					if len(args) != 1 {
-						log.Panicf("select command len(args) = %d", len(args))
+						log.Panicf("routine[%v] select command len(args) = %d", dr.id, len(args))
 					}
 					s := string(args[0])
 					n, err := strconv.Atoi(s)
 					if err != nil {
-						log.PanicErrorf(err, "parse db = %s failed", s)
+						log.PanicErrorf(err, "routine[%v] parse db = %s failed", dr.id, s)
 					}
 					bypass = !base.AcceptDB(uint32(n))
 				}
 				if bypass {
-					cmd.nbypass.Incr()
+					dr.nbypass.Incr()
 					continue
 				}
 			}
-			cmd.forward.Incr()
+			dr.forward.Incr()
 			redis.MustEncode(writer, resp)
 			utils.FlushWriter(writer)
 		}
 	}()
 
-	for lstat := cmd.Stat(); ; {
+	for lstat := dr.Stat(); ; {
 		time.Sleep(time.Second)
-		nstat := cmd.Stat()
+		nstat := dr.Stat()
 		var b bytes.Buffer
-		fmt.Fprintf(&b, "restore: ")
+		fmt.Fprintf(&b, "routine[%v] restore: ", dr.id)
 		fmt.Fprintf(&b, " +forward=%-6d", nstat.forward-lstat.forward)
 		fmt.Fprintf(&b, " +nbypass=%-6d", nstat.nbypass-lstat.nbypass)
 		log.Info(b.String())

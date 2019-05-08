@@ -40,7 +40,8 @@ func (cr *CmdRump) Main() {
 	for i, address := range conf.Options.SourceAddress {
 		cr.sourceConn[i] = utils.OpenRedisConn(address, conf.Options.SourceAuthType, conf.Options.SourcePasswordRaw)
 	}
-	cr.targetConn = utils.OpenRedisConn(conf.Options.TargetAddress, conf.Options.TargetAuthType,
+	// TODO, current only support write data into 1 db or proxy
+	cr.targetConn = utils.OpenRedisConn(conf.Options.TargetAddress[0], conf.Options.TargetAuthType,
 		conf.Options.TargetPasswordRaw)
 
 	// init two channels
