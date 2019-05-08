@@ -22,6 +22,7 @@ import (
 	"pkg/rdb"
 	"pkg/redis"
 	"redis-shake/configure"
+
 	redigo "github.com/garyburd/redigo/redis"
 )
 
@@ -752,7 +753,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 				log.Panicf("target key name is busy:", string(e.Key))
 			}
 		} else {
-			log.PanicError(err, "restore command error key:", string(e.Key), "err:", err.Error())
+			log.PanicError(err, "restore command error key:", string(e.Key), " err:", err.Error())
 		}
 	} else {
 		if s != "OK" {
