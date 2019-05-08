@@ -65,11 +65,11 @@ Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.
 
 # Usage
 ---
-Run `./bin/redis-shake.darwin64` or `redis-shake.linux64` which is built in OSX and Linux respectively.<br>
-Or you can build redis-shake yourself according to the following steps:
+You can use the binary in the release package.<br>
+You can also build redis-shake yourself according to the following steps, the `go` and `govendor` must be installed before compile:
 *  git clone https://github.com/alibaba/RedisShake.git
 *  cd RedisShake
-*  export GOPATH=\`pwd\`/../..
+*  export GOPATH=\`pwd\`
 *  cd src/sync
 *  govendor sync     #please note: must install govendor first and then pull all dependencies: `go get -u github.com/kardianos/govendor`
 *  cd ../../ && ./build.sh
