@@ -7,6 +7,7 @@ import (
 	"bytes"
 
 	"pkg/libs/bytesize"
+	"redis-shake/configure"
 
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -25,9 +26,10 @@ const (
 )
 
 var (
-	Version = "$"
-	LogRotater *logRotate.Logger
-	StartTime string
+	Version          = "$"
+	LogRotater       *logRotate.Logger
+	StartTime        string
+	TargetRoundRobin int
 )
 
 // read until hit the end of RESP: "\r\n"
@@ -66,4 +68,19 @@ func ParseInfo(content []byte) map[string]string {
 		result[string(items[0])] = string(items[1])
 	}
 	return result
+}
+
+func GetTotalLink() int {
+	if len(conf.Options.SourceAddress) != 0 {
+		return len(conf.Options.SourceAddress)
+	} else {
+		return len(conf.Options.RdbInput)
+	}
+}
+
+func PickTargetRoundRobin(n int) int {
+	defer func() {
+		TargetRoundRobin = (TargetRoundRobin + 1) % n
+	}()
+	return TargetRoundRobin
 }

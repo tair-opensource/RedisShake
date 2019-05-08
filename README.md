@@ -2,6 +2,8 @@ RedisShake is mainly used to synchronize data from one redis database to another
 Thanks to the Douyu's WSD team for the support. <br>
 
 * [中文文档](https://yq.aliyun.com/articles/691794)
+*  [English tutorial](https://github.com/alibaba/RedisShake/wiki/tutorial-about-how-to-set-up)
+*  [中文使用文档](https://github.com/alibaba/RedisShake/wiki/%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BD%BF%E7%94%A8%EF%BC%8C%E5%A6%82%E4%BD%95%E8%BF%9B%E8%A1%8C%E9%85%8D%E7%BD%AE%EF%BC%9F)
 
 # Redis-Shake
 ---
@@ -16,9 +18,12 @@ The type can be one of the followings:<br>
 * **restore**: Restore RDB file to target redis.
 * **dump**: Dump RDB file from souce redis.
 * **sync**: Sync data from source redis to target redis by `sync` or `psync` command. Including full synchronization and incremental synchronization.
-* **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization.
+* **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization. Plus, RedisShake also supports fetching data from given keys in the input file when `scan` command is not supported on the source side.
 
 Please check out the `conf/redis-shake.conf` to see the detailed parameters description.<br>
+
+# Configuration
+Redis-shake has several parameters in the configuration(`conf/redis-shake.conf`) that maybe confusing, if this is your first time using, just configure the `source.address` and `target.address` parameters.
 
 # Verification
 ---
@@ -30,6 +35,14 @@ Redis-shake offers metrics through restful api and log file.<br>
 
 * restful api: `curl 127.0.0.1:9320/metric`.
 * log: the metric info will be printed in the log periodically if enable.
+m
+
+# Redis Type
+---
+Both the source and target type can be single redis, master-slave architecture redis, redis cluster and codis. Although the architecture patterns of different vendors are different for the cluster architecture, we still support different cloud vendors like alibaba-cloud, tencent-cloud and so on.<br>
+If the target is open source redis cluster, redis-shake uses [redis-go-cluster](https://github.com/chasex/redis-go-cluster) driver to write data, otherwise, [redigo](https://github.com/garyburd/redigo) driver is used to insert data in round robin way.<br>
+If the source is redis cluster, redis-shake launches multiple goroutines for parallel pull. User can control the concurrency.<br>
+The "move slot" operations must be disabled on the source side.<br>
 
 # Code branch rules
 ---
@@ -52,11 +65,13 @@ Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.
 
 # Usage
 ---
-Run `./bin/redis-shake.darwin64` or `redis-shake.linux64` which is built in OSX and Linux respectively.<br>
-Or you can build redis-shake yourself according to the following steps:
+You can use the binary in the release package.<br>
+You can also build redis-shake yourself according to the following steps, the `go` and `govendor` must be installed before compile:
 *  git clone https://github.com/alibaba/RedisShake.git
-*  cd RedisShake/src/vendor
-*  GOPATH=\`pwd\`/../..; govendor sync     #please note: must install govendor first and then pull all dependencies: `go get -u github.com/kardianos/govendor`
+*  cd RedisShake
+*  export GOPATH=\`pwd\`
+*  cd src/sync
+*  govendor sync     #please note: must install govendor first and then pull all dependencies: `go get -u github.com/kardianos/govendor`
 *  cd ../../ && ./build.sh
 *  ./bin/redis-shake -type=$(type_must_be_sync_dump_restore_or_decode) -conf=conf/redis-shake.conf #please note: user must modify collector.conf first to match needs.
 
