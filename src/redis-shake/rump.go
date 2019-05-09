@@ -6,9 +6,9 @@ import (
 
 	"redis-shake/common"
 	"redis-shake/configure"
+	"redis-shake/scanner"
 
 	"github.com/garyburd/redigo/redis"
-	"redis-shake/scanner"
 )
 
 type CmdRump struct {
@@ -32,10 +32,18 @@ func (cr *CmdRump) GetDetailedInfo() []interface{} {
 }
 
 func (cr *CmdRump) Main() {
+	var from, target string
+	var err error
+	if from, err = utils.GetReadableRedisAddress(conf.Options.SourceRedisType, conf.Options.SourceAddress, conf.Options.SourceSentinelAddress, conf.Options.SourceSentinelMasterName); err != nil {
+		log.Panic("get source redis address fail:", err)
+	}
+	if target, err = utils.GetWritableRedisAddress(conf.Options.TargetRedisType, conf.Options.TargetAddress, conf.Options.TargetSentinelAddress, conf.Options.TargetSentinelMasterName); err != nil {
+		log.Panic("get target redis address fail:", err)
+	}
 	// build connection
-	cr.sourceConn = utils.OpenRedisConn(conf.Options.SourceAddress, conf.Options.SourceAuthType,
+	cr.sourceConn = utils.OpenRedisConn(from, conf.Options.SourceAuthType,
 		conf.Options.SourcePasswordRaw)
-	cr.targetConn = utils.OpenRedisConn(conf.Options.TargetAddress, conf.Options.TargetAuthType,
+	cr.targetConn = utils.OpenRedisConn(target, conf.Options.TargetAuthType,
 		conf.Options.TargetPasswordRaw)
 
 	// init two channels

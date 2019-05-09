@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"os"
 	"strconv"
@@ -22,6 +23,8 @@ import (
 	"pkg/rdb"
 	"pkg/redis"
 	"redis-shake/configure"
+
+	"github.com/FZambia/go-sentinel"
 	redigo "github.com/garyburd/redigo/redis"
 )
 
@@ -695,7 +698,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 
 	// TODO, need to judge big key
 	if e.Type != rdb.RDBTypeStreamListPacks &&
-			(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {
+		(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {
 		//use command
 		if conf.Options.Rewrite && e.NeedReadLen == 1 {
 			if !conf.Options.Metric {
@@ -895,4 +898,77 @@ func GetLocalIp(preferdInterfaces []string) (ip string, interfaceName string, er
 		}
 	}
 	return ip, "", fmt.Errorf("fetch local ip failed, interfaces: %s", strings.Join(preferdInterfaces, ","))
+}
+
+// getReadableRedisAddressThroughSentinel gets readable redis address
+// First, the function will pick one from available slaves randomly.
+// If there is no available slave, it will pick master.
+func getReadableRedisAddressThroughSentinel(sentinelAddrs []string, sentinelMasterName string) (string, error) {
+	sentinelGroup := sentinel.Sentinel{
+		Addrs:      sentinelAddrs,
+		MasterName: sentinelMasterName,
+		Dial:       defaultDialFunction,
+	}
+	if slaves, err := sentinelGroup.Slaves(); err == nil {
+		if addr, err := getAvailableSlaveAddress(slaves); err == nil {
+			return addr, nil
+		}
+	}
+	return sentinelGroup.MasterAddr()
+}
+
+// getAvailableSlaveAddress picks a slave address randomly.
+func getAvailableSlaveAddress(slaves []*sentinel.Slave) (string, error) {
+	for {
+		length := len(slaves)
+		if length == 0 {
+			break
+		}
+		randSlaveIndex := rand.Intn(length)
+		if slave := slaves[randSlaveIndex]; slave.Available() {
+			return slave.Addr(), nil
+		}
+		slaves = append(slaves[:randSlaveIndex], slaves[randSlaveIndex+1:]...)
+	}
+	return "", fmt.Errorf("there is no available slave")
+}
+
+// getWritableRedisAddressThroughSentinel gets writable redis address
+// The function will return redis master address.
+func getWritableRedisAddressThroughSentinel(sentinelAddrs []string, sentinelMasterName string) (string, error) {
+	sentinelGroup := sentinel.Sentinel{
+		Addrs:      sentinelAddrs,
+		MasterName: sentinelMasterName,
+		Dial:       defaultDialFunction,
+	}
+	return sentinelGroup.MasterAddr()
+}
+
+var defaultDialFunction = func(addr string) (redigo.Conn, error) {
+	timeout := 500 * time.Millisecond
+	c, err := redigo.DialTimeout("tcp", addr, timeout, timeout, timeout)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+// GetReadableRedisAddress returns a readable redis address
+func GetReadableRedisAddress(redisType, redisAddr string, sentinelAddr []string, sentinelMasterName string) (string, error) {
+	if redisType == conf.RedisTypeStandalone || redisType == "" {
+		return redisAddr, nil
+	} else if redisType == conf.RedisTypeSentinel {
+		return getReadableRedisAddressThroughSentinel(sentinelAddr, sentinelMasterName)
+	}
+	return "", fmt.Errorf("source redis type is not supported: %s", redisType)
+}
+
+// GetWritableRedisAddress returns a writable redis address
+func GetWritableRedisAddress(redisType, redisAddr string, sentinelAddr []string, sentinelMasterName string) (string, error) {
+	if redisType == conf.RedisTypeStandalone || redisType == "" {
+		return redisAddr, nil
+	} else if redisType == conf.RedisTypeSentinel {
+		return getWritableRedisAddressThroughSentinel(sentinelAddr, sentinelMasterName)
+	}
+	return "", fmt.Errorf("source redis type is not supported: %s", redisType)
 }

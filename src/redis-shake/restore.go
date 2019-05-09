@@ -10,15 +10,15 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"time"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
 	"pkg/redis"
-	"redis-shake/configure"
-	"redis-shake/common"
-	"strconv"
 	"redis-shake/base"
+	"redis-shake/common"
+	"redis-shake/configure"
 )
 
 type CmdRestore struct {
@@ -50,7 +50,11 @@ func (cmd *CmdRestore) GetDetailedInfo() []interface{} {
 }
 
 func (cmd *CmdRestore) Main() {
-	input, target := conf.Options.InputRdb, conf.Options.TargetAddress
+	target, err := utils.GetWritableRedisAddress(conf.Options.TargetRedisType, conf.Options.TargetAddress, conf.Options.TargetSentinelAddress, conf.Options.TargetSentinelMasterName)
+	if err != nil {
+		log.Panic("get target redis address fail:", err)
+	}
+	input := conf.Options.InputRdb
 	if len(target) == 0 {
 		log.Panic("invalid argument: target")
 	}
@@ -84,12 +88,12 @@ func (cmd *CmdRestore) Main() {
 		//fake status if set http_port. and wait forever
 		base.Status = "incr"
 		log.Infof("Enabled http stats, set status (incr), and wait forever.")
-		select{}
+		select {}
 	}
 }
 
 func (cmd *CmdRestore) RestoreRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
-	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, conf.Options.Parallel * 32)
+	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, conf.Options.Parallel*32)
 	wait := make(chan struct{})
 	go func() {
 		defer close(wait)
