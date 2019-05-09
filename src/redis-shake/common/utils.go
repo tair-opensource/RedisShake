@@ -129,6 +129,7 @@ func OpenSyncConn(target string, auth_type, passwd string) (net.Conn, <-chan int
 	return c, waitRdbDump(c)
 }
 
+// pipeline mode which means we don't wait all dump finish and run the next step
 func waitRdbDump(r io.Reader) <-chan int64 {
 	size := make(chan int64)
 	// read rdb size

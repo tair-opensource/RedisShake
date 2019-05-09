@@ -3,13 +3,13 @@ package run
 import (
 	"pkg/libs/log"
 	"strconv"
+	"sync"
 
 	"redis-shake/common"
 	"redis-shake/configure"
+	"redis-shake/scanner"
 
 	"github.com/garyburd/redigo/redis"
-	"redis-shake/scanner"
-	"sync"
 )
 
 type CmdRump struct {

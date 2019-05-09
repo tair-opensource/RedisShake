@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"time"
+	"sync"
 	"strconv"
 
 	"pkg/libs/atomic2"
@@ -17,7 +18,6 @@ import (
 	"redis-shake/configure"
 	"redis-shake/common"
 	"redis-shake/base"
-	"sync"
 )
 
 type CmdRestore struct {
@@ -134,13 +134,11 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target, auth_type, pa
 	pipe := utils.NewRDBLoader(reader, &dr.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
-		defer close(wait)
-		group := make(chan int, conf.Options.Parallel)
-		for i := 0; i < cap(group); i++ {
+		var wg sync.WaitGroup
+		wg.Add(conf.Options.Parallel)
+		for i := 0; i < conf.Options.Parallel; i++ {
 			go func() {
-				defer func() {
-					group <- 0
-				}()
+				defer wg.Done()
 				c := utils.OpenRedisConn(target, auth_type, passwd)
 				defer c.Close()
 				var lastdb uint32 = 0
@@ -165,9 +163,8 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target, auth_type, pa
 				}
 			}()
 		}
-		for i := 0; i < cap(group); i++ {
-			<-group
-		}
+		wg.Wait()
+		close(wait)
 	}()
 
 	for done := false; !done; {

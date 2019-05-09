@@ -391,12 +391,11 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target, auth_type, passwd 
 	wait := make(chan struct{})
 	go func() {
 		defer close(wait)
-		group := make(chan int, conf.Options.Parallel)
-		for i := 0; i < cap(group); i++ {
+		var wg sync.WaitGroup
+		wg.Add(conf.Options.Parallel)
+		for i := 0; i < conf.Options.Parallel; i++ {
 			go func() {
-				defer func() {
-					group <- 0
-				}()
+				defer wg.Done()
 				c := utils.OpenRedisConn(target, auth_type, passwd)
 				defer c.Close()
 				var lastdb uint32 = 0
@@ -439,9 +438,8 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target, auth_type, passwd 
 				}
 			}()
 		}
-		for i := 0; i < cap(group); i++ {
-			<-group
-		}
+
+		wg.Wait()
 	}()
 
 	var stat *syncerStat
