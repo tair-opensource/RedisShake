@@ -1,3 +1,6 @@
+2019-05-11 Alibaba Cloud.
+	* VERSION: 1.4.3
+	* BUGFIX: add add metric in restore mode. 
 2019-04-24 Alibaba Cloud.
 	* VERSION: 1.4.2
 	* IMPROVE: improve rump to support fetching data from given keys in
