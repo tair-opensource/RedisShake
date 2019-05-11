@@ -1,3 +1,8 @@
+2019-05-08 Alibaba Cloud.
+	* VERSION: 1.6.0
+	* FEATURE: source address supports cluster.
+	* FEATURE: target address supports several proxies to write data in
+	a round-robin way.
 2019-05-11 Alibaba Cloud.
 	* VERSION: 1.4.3
 	* BUGFIX: add add metric in restore mode. 

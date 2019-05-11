@@ -193,14 +193,48 @@ func sanitizeOptions(tp string) error {
 		return fmt.Errorf("BigKeyThreshold[%v] should <= 524288000", conf.Options.BigKeyThreshold)
 	}
 
-	if (tp == TypeRestore || tp == TypeSync) && conf.Options.TargetAddress == "" {
-		return fmt.Errorf("target address shouldn't be empty when type in {restore, sync}")
+	if tp == TypeRestore || tp == TypeSync || tp == TypeRump {
+		if len(conf.Options.TargetAddress) == 0 {
+			return fmt.Errorf("target address shouldn't be empty when type in {restore, sync}")
+		}
+
+		switch conf.Options.TargetType {
+		case "standalone":
+			if len(conf.Options.TargetAddress) != 1 {
+				return fmt.Errorf("the source address[%v] != 1 when target.type is standalone",
+					len(conf.Options.TargetAddress))
+			}
+		case "proxy":
+		case "cluster":
+			if tp == TypeRump || tp == TypeRestore {
+				// TODO
+				return fmt.Errorf("{rump, restore} mode doesn't support cluster currently")
+			}
+			return fmt.Errorf("coming soon")
+		default:
+			return fmt.Errorf("illegal target.type[%v]", conf.Options.TargetType)
+		}
 	}
-	if (tp == TypeDump || tp == TypeSync) && conf.Options.SourceAddress == "" {
-		return fmt.Errorf("source address shouldn't be empty when type in {dump, sync}")
+	if (tp == TypeDump || tp == TypeSync || tp == TypeRump) && len(conf.Options.SourceAddress) == 0 {
+		return fmt.Errorf("source address shouldn't be empty when type in {dump, sync, rump}")
 	}
-	if tp == TypeRump && (conf.Options.SourceAddress == "" || conf.Options.TargetAddress == "") {
-		return fmt.Errorf("source and target address shouldn't be empty when type in {rump}")
+	if (tp == TypeRestore || tp == TypeDecode) && len(conf.Options.RdbInput) == 0 {
+		return fmt.Errorf("input rdb shouldn't be empty when type in {restore, decode}")
+	}
+	if tp == TypeDump && conf.Options.RdbOutput == "" {
+		conf.Options.RdbOutput = "output-rdb-dump"
+	}
+
+	if conf.Options.RdbParallel == 0 {
+		if tp == TypeDump || tp == TypeSync {
+			conf.Options.RdbParallel = len(conf.Options.SourceAddress)
+		} else if tp == TypeRestore {
+			conf.Options.RdbParallel = len(conf.Options.RdbInput)
+		}
+	}
+
+	if tp == TypeRestore && conf.Options.RdbParallel > len(conf.Options.RdbInput) {
+		conf.Options.RdbParallel = len(conf.Options.RdbInput)
 	}
 
 	if conf.Options.SourcePasswordRaw != "" && conf.Options.SourcePasswordEncoding != "" {
@@ -208,6 +242,10 @@ func sanitizeOptions(tp string) error {
 	} else if conf.Options.SourcePasswordEncoding != "" {
 		sourcePassword := "" // todo, inner version
 		conf.Options.SourcePasswordRaw = string(sourcePassword)
+	}
+
+	if conf.Options.SourceParallel == 0 || conf.Options.SourceParallel > uint(len(conf.Options.SourceAddress)) {
+		conf.Options.SourceParallel = uint(len(conf.Options.SourceAddress))
 	}
 
 	if conf.Options.TargetPasswordRaw != "" && conf.Options.TargetPasswordEncoding != "" {
@@ -308,44 +346,50 @@ func sanitizeOptions(tp string) error {
 
 	if conf.Options.HttpProfile < 0 || conf.Options.HttpProfile > 65535 {
 		return fmt.Errorf("HttpProfile[%v] should in [0, 65535]", conf.Options.HttpProfile)
-	} else if conf.Options.HttpProfile  == 0 {
+	} else if conf.Options.HttpProfile == 0 {
 		// set to default when not set
 		conf.Options.HttpProfile = defaultHttpPort
 	}
 
 	if conf.Options.SystemProfile < 0 || conf.Options.SystemProfile > 65535 {
 		return fmt.Errorf("SystemProfile[%v] should in [0, 65535]", conf.Options.SystemProfile)
-	} else if conf.Options.SystemProfile  == 0 {
+	} else if conf.Options.SystemProfile == 0 {
 		// set to default when not set
 		conf.Options.SystemProfile = defaultSystemPort
 	}
 
 	if conf.Options.SenderSize < 0 || conf.Options.SenderSize >= 1073741824 {
 		return fmt.Errorf("SenderSize[%v] should in [0, 1073741824]", conf.Options.SenderSize)
-	} else if conf.Options.SenderSize  == 0 {
+	} else if conf.Options.SenderSize == 0 {
 		// set to default when not set
 		conf.Options.SenderSize = defaultSenderSize
 	}
 
 	if conf.Options.SenderCount < 0 || conf.Options.SenderCount >= 100000 {
 		return fmt.Errorf("SenderCount[%v] should in [0, 100000]", conf.Options.SenderCount)
-	} else if conf.Options.SenderCount  == 0 {
+	} else if conf.Options.SenderCount == 0 {
 		// set to default when not set
 		conf.Options.SenderCount = defaultSenderCount
 	}
 
 	if tp == TypeRestore || tp == TypeSync {
 		// get target redis version and set TargetReplace.
-		if conf.Options.TargetRedisVersion, err = utils.GetRedisVersion(conf.Options.TargetAddress,
-			conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw); err != nil {
-			return fmt.Errorf("get target redis version failed[%v]", err)
-		} else {
-			if strings.HasPrefix(conf.Options.TargetRedisVersion, "4.") ||
-				strings.HasPrefix(conf.Options.TargetRedisVersion, "3.") {
-				conf.Options.TargetReplace = true
+		for _, address := range conf.Options.TargetAddress {
+			if v, err := utils.GetRedisVersion(address, conf.Options.TargetAuthType,
+					conf.Options.TargetPasswordRaw); err != nil {
+				return fmt.Errorf("get target redis version failed[%v]", err)
+			} else if conf.Options.TargetRedisVersion != "" && conf.Options.TargetRedisVersion != v {
+				return fmt.Errorf("target redis version is different: [%v %v]", conf.Options.TargetRedisVersion, v)
 			} else {
-				conf.Options.TargetReplace = false
+				conf.Options.TargetRedisVersion = v
 			}
+		}
+		if strings.HasPrefix(conf.Options.TargetRedisVersion, "4.") ||
+			strings.HasPrefix(conf.Options.TargetRedisVersion, "3.") ||
+			strings.HasPrefix(conf.Options.TargetRedisVersion, "5.") {
+			conf.Options.TargetReplace = true
+		} else {
+			conf.Options.TargetReplace = false
 		}
 	}
 
@@ -355,12 +399,17 @@ func sanitizeOptions(tp string) error {
 		}
 
 		if conf.Options.ScanSpecialCloud != "" && conf.Options.ScanSpecialCloud != scanner.TencentCluster &&
-				conf.Options.ScanSpecialCloud != scanner.AliyunCluster {
+			conf.Options.ScanSpecialCloud != scanner.AliyunCluster {
 			return fmt.Errorf("special cloud type[%s] is not supported", conf.Options.ScanSpecialCloud)
 		}
 
 		if conf.Options.ScanSpecialCloud != "" && conf.Options.ScanKeyFile != "" {
 			return fmt.Errorf("scan.special_cloud[%v] and scan.key_file[%v] cann't be given at the same time",
+				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
+		}
+
+		if (conf.Options.ScanSpecialCloud != "" || conf.Options.ScanKeyFile != "") && len(conf.Options.SourceAddress) > 1 {
+			return fmt.Errorf("source address should <= 1 when scan.special_cloud[%v] or scan.key_file[%v] given",
 				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
 		}
 	}

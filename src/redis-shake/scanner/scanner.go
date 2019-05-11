@@ -32,27 +32,35 @@ type Scanner interface {
 	Close()
 }
 
-func NewScanner(client redis.Conn) Scanner {
+func NewScanner(client []redis.Conn) []Scanner {
 	if conf.Options.ScanSpecialCloud != "" {
-		return &SpecialCloudScanner{
-			client: client,
-			cursor: 0,
+		return []Scanner {
+			&SpecialCloudScanner{
+				client: client[0],
+				cursor: 0,
+			},
 		}
 	} else if conf.Options.ScanKeyFile != "" {
 		if f, err := os.Open(conf.Options.ScanKeyFile); err != nil {
 			log.Errorf("open scan-key-file[%v] error[%v]", conf.Options.ScanKeyFile, err)
 			return nil
 		} else {
-			return &KeyFileScanner{
-				f:       f,
-				bufScan: bufio.NewScanner(f),
-				cnt:     -1,
+			return []Scanner {
+				&KeyFileScanner{
+					f:       f,
+					bufScan: bufio.NewScanner(f),
+					cnt:     -1,
+				},
 			}
 		}
 	} else {
-		return &NormalScanner{
-			client: client,
-			cursor: 0,
+		ret := make([]Scanner, 0, len(client))
+		for _, c := range client {
+			ret = append(ret, &NormalScanner{
+				client: c,
+				cursor: 0,
+			})
 		}
+		return ret
 	}
 }
