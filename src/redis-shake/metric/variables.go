@@ -34,6 +34,14 @@ type MetricRest struct {
 
 func NewMetricRest() []MetricRest {
 	detailMapList := runner.GetDetailedInfo().([]map[string]interface{})
+	if detailMapList == nil || len(detailMapList) == 0 {
+		return []{
+			MetricRest{
+				StartTime: utils.StartTime,
+				Status:    base.Status,
+			},
+		}
+	}
 
 	total := utils.GetTotalLink()
 	ret := make([]MetricRest, total)
