@@ -40,7 +40,7 @@ m
 
 # Redis Type
 ---
-Both the source and target type can be standalone, opensource cluster and proxy. Although the architecture patterns of different vendors are different for the cluster architecture, we still support different cloud vendors like alibaba-cloud, tencent-cloud and so on.<br>
+Both the source and target type can be standalone, opensource cluster and proxy. Although the architecture patterns of different vendors are different for the proxy architecture, we still support different cloud vendors like alibaba-cloud, tencent-cloud and so on.<br>
 If the target is open source redis cluster, redis-shake uses [redis-go-cluster](https://github.com/chasex/redis-go-cluster) driver to write data. When target type is proxy, redis-shakes write data in round-robin way.<br>
 If the source is redis cluster, redis-shake launches multiple goroutines for parallel pull. User can use `rdb.parallel` to control the RDB syncing concurrency.<br>
 The "move slot" operations must be disabled on the source side.<br>
