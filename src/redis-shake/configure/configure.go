@@ -11,13 +11,14 @@ type Configuration struct {
 	HttpProfile               int      `config:"http_profile"`
 	NCpu                      int      `config:"ncpu"`
 	Parallel                  int      `config:"parallel"`
-	SourceAddress             []string `config:"source.address"`
+	SourceType                string   `config:"source.type"`
+	SourceAddress             string   `config:"source.address"`
 	SourcePasswordRaw         string   `config:"source.password_raw"`
 	SourcePasswordEncoding    string   `config:"source.password_encoding"`
 	SourceVersion             uint     `config:"source.version"`
 	SourceAuthType            string   `config:"source.auth_type"`
 	SourceParallel            uint     `config:"source.parallel"`
-	TargetAddress             []string `config:"target.address"`
+	TargetAddress             string   `config:"target.address"`
 	TargetPasswordRaw         string   `config:"target.password_raw"`
 	TargetPasswordEncoding    string   `config:"target.password_encoding"`
 	TargetVersion             uint     `config:"target.version"`
@@ -55,11 +56,30 @@ type Configuration struct {
 	SockFileName   string `config:"sock.file_name"`
 	SockFileSize   uint   `config:"sock.file_size"`
 
+	/*---------------------------------------------------------*/
 	// generated variables
-	HeartbeatIp        string
-	ShiftTime          time.Duration // shift
-	TargetRedisVersion string        // to_redis_version
-	TargetReplace      bool          // to_replace
+	SourceAddressList        []string      // source address list
+	TargetAddressList        []string      // target address list
+	HeartbeatIp              string        // heartbeat ip
+	ShiftTime                time.Duration // shift
+	TargetRedisVersion       string        // to_redis_version
+	TargetReplace            bool          // to_replace
 }
 
 var Options Configuration
+
+const (
+	RedisTypeStandalone = "standalone"
+	RedisTypeSentinel   = "sentinel"
+	RedisTypeCluster    = "cluster"
+	RedisTypeProxy      = "proxy"
+
+	StandAloneRoleMaster = "master"
+	StandAloneRoleSlave  = "slave"
+
+	TypeDecode  = "decode"
+	TypeRestore = "restore"
+	TypeDump    = "dump"
+	TypeSync    = "sync"
+	TypeRump    = "rump"
+)

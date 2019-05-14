@@ -8,13 +8,14 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"time"
 	"sync"
-	"strconv"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
 	"pkg/redis"
+
 	"redis-shake/configure"
 	"redis-shake/common"
 	"redis-shake/base"
@@ -34,7 +35,7 @@ func (cmd *CmdRestore) GetDetailedInfo() interface{} {
 }
 
 func (cmd *CmdRestore) Main() {
-	log.Infof("restore from '%s' to '%s'\n",  conf.Options.RdbInput, conf.Options.TargetAddress)
+	log.Infof("restore from '%s' to '%s'\n", conf.Options.RdbInput, conf.Options.TargetAddressList)
 
 	type restoreNode struct {
 		id    int
@@ -59,8 +60,8 @@ func (cmd *CmdRestore) Main() {
 				}
 
 				// round-robin pick
-				pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddress))
-				target := conf.Options.TargetAddress[pick]
+				pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddressList))
+				target := conf.Options.TargetAddressList[pick]
 
 				dr := &dbRestorer{
 					id:             node.id,
@@ -84,7 +85,7 @@ func (cmd *CmdRestore) Main() {
 		//fake status if set http_port. and wait forever
 		base.Status = "incr"
 		log.Infof("Enabled http stats, set status (incr), and wait forever.")
-		select{}
+		select {}
 	}
 }
 

@@ -20,10 +20,10 @@ import (
 	"pkg/libs/io/pipe"
 	"pkg/libs/log"
 	"pkg/redis"
+	"redis-shake/base"
+	"redis-shake/command"
 	"redis-shake/common"
 	"redis-shake/configure"
-	"redis-shake/command"
-	"redis-shake/base"
 	"redis-shake/heartbeat"
 	"redis-shake/metric"
 )
@@ -40,8 +40,8 @@ type syncerStat struct {
 }
 
 type cmdDetail struct {
-	Cmd       string
-	Args      [][]byte
+	Cmd  string
+	Args [][]byte
 }
 
 func (c *cmdDetail) String() string {
@@ -79,10 +79,10 @@ func (cmd *CmdSync) Main() {
 	total := utils.GetTotalLink()
 	syncChan := make(chan syncNode, total)
 	cmd.dbSyncers = make([]*dbSyncer, total)
-	for i, source := range conf.Options.SourceAddress {
+	for i, source := range conf.Options.SourceAddressList {
 		// round-robin pick
-		pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddress))
-		target := conf.Options.TargetAddress[pick]
+		pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddressList))
+		target := conf.Options.TargetAddressList[pick]
 
 		nd := syncNode{
 			id:             i,
@@ -564,9 +564,9 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target, auth_type, passwd 
 		var bypass bool = false
 		var isselect bool = false
 
-        var scmd string
-        var argv, new_argv [][]byte
-        var err error
+		var scmd string
+		var argv, new_argv [][]byte
+		var err error
 
 		decoder := redis.NewDecoder(reader)
 
@@ -714,9 +714,9 @@ func (ds *dbSyncer) addDelayChan(id int64) {
 	 */
 	used := cap(ds.delayChannel) - len(ds.delayChannel)
 	if used >= 4096 ||
-			used >= 1024 && id % 10 == 0 ||
-			used >= 128 && id % 100 == 0 ||
-			id % 1000 == 0 {
+		used >= 1024 && id%10 == 0 ||
+		used >= 128 && id%100 == 0 ||
+		id%1000 == 0 {
 		// non-blocking add
 		select {
 		case ds.delayChannel <- &delayNode{t: time.Now(), id: id}:

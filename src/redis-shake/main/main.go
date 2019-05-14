@@ -27,21 +27,15 @@ import (
 	"redis-shake/configure"
 	"redis-shake/metric"
 	"redis-shake/restful"
+	"redis-shake/scanner"
 
 	"github.com/gugemichael/nimo4go"
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
-	"redis-shake/scanner"
 )
 
 type Exit struct{ Code int }
 
 const (
-	TypeDecode  = "decode"
-	TypeRestore = "restore"
-	TypeDump    = "dump"
-	TypeSync    = "sync"
-	TypeRump    = "rump"
-
 	defaultHttpPort    = 20881
 	defaultSystemPort  = 20882
 	defaultSenderSize  = 65535
@@ -97,15 +91,15 @@ func main() {
 	// create runner
 	var runner base.Runner
 	switch *tp {
-	case TypeDecode:
+	case conf.TypeDecode:
 		runner = new(run.CmdDecode)
-	case TypeRestore:
+	case conf.TypeRestore:
 		runner = new(run.CmdRestore)
-	case TypeDump:
+	case conf.TypeDump:
 		runner = new(run.CmdDump)
-	case TypeSync:
+	case conf.TypeSync:
 		runner = new(run.CmdSync)
-	case TypeRump:
+	case conf.TypeRump:
 		runner = new(run.CmdRump)
 	}
 
@@ -165,7 +159,7 @@ func startHttpServer() {
 // sanitize options
 func sanitizeOptions(tp string) error {
 	var err error
-	if tp != TypeDecode && tp != TypeRestore && tp != TypeDump && tp != TypeSync && tp != TypeRump {
+	if tp != conf.TypeDecode && tp != conf.TypeRestore && tp != conf.TypeDump && tp != conf.TypeSync && tp != conf.TypeRump {
 		return fmt.Errorf("unknown type[%v]", tp)
 	}
 
@@ -193,47 +187,30 @@ func sanitizeOptions(tp string) error {
 		return fmt.Errorf("BigKeyThreshold[%v] should <= 524288000", conf.Options.BigKeyThreshold)
 	}
 
-	if tp == TypeRestore || tp == TypeSync || tp == TypeRump {
-		if len(conf.Options.TargetAddress) == 0 {
-			return fmt.Errorf("target address shouldn't be empty when type in {restore, sync}")
-		}
-
-		switch conf.Options.TargetType {
-		case "standalone":
-			if len(conf.Options.TargetAddress) != 1 {
-				return fmt.Errorf("the source address[%v] != 1 when target.type is standalone",
-					len(conf.Options.TargetAddress))
-			}
-		case "proxy":
-		case "cluster":
-			if tp == TypeRump || tp == TypeRestore {
-				// TODO
-				return fmt.Errorf("{rump, restore} mode doesn't support cluster currently")
-			}
-			return fmt.Errorf("coming soon")
-		default:
-			return fmt.Errorf("illegal target.type[%v]", conf.Options.TargetType)
-		}
+	// parse source and target address and type
+	if err := utils.ParseAddress(tp); err != nil {
+		return fmt.Errorf("mode[%v] parse address failed[%v]", tp, err)
 	}
-	if (tp == TypeDump || tp == TypeSync || tp == TypeRump) && len(conf.Options.SourceAddress) == 0 {
+
+	if (tp == conf.TypeDump || tp == conf.TypeSync || tp == conf.TypeRump) && len(conf.Options.SourceAddressList) == 0 {
 		return fmt.Errorf("source address shouldn't be empty when type in {dump, sync, rump}")
 	}
-	if (tp == TypeRestore || tp == TypeDecode) && len(conf.Options.RdbInput) == 0 {
+	if (tp == conf.TypeRestore || tp == conf.TypeDecode) && len(conf.Options.RdbInput) == 0 {
 		return fmt.Errorf("input rdb shouldn't be empty when type in {restore, decode}")
 	}
-	if tp == TypeDump && conf.Options.RdbOutput == "" {
+	if tp == conf.TypeDump && conf.Options.RdbOutput == "" {
 		conf.Options.RdbOutput = "output-rdb-dump"
 	}
 
 	if conf.Options.RdbParallel == 0 {
-		if tp == TypeDump || tp == TypeSync {
-			conf.Options.RdbParallel = len(conf.Options.SourceAddress)
-		} else if tp == TypeRestore {
+		if tp == conf.TypeDump || tp == conf.TypeSync {
+			conf.Options.RdbParallel = len(conf.Options.SourceAddressList)
+		} else if tp == conf.TypeRestore {
 			conf.Options.RdbParallel = len(conf.Options.RdbInput)
 		}
 	}
 
-	if tp == TypeRestore && conf.Options.RdbParallel > len(conf.Options.RdbInput) {
+	if tp == conf.TypeRestore && conf.Options.RdbParallel > len(conf.Options.RdbInput) {
 		conf.Options.RdbParallel = len(conf.Options.RdbInput)
 	}
 
@@ -244,8 +221,8 @@ func sanitizeOptions(tp string) error {
 		conf.Options.SourcePasswordRaw = string(sourcePassword)
 	}
 
-	if conf.Options.SourceParallel == 0 || conf.Options.SourceParallel > uint(len(conf.Options.SourceAddress)) {
-		conf.Options.SourceParallel = uint(len(conf.Options.SourceAddress))
+	if conf.Options.SourceParallel == 0 || conf.Options.SourceParallel > uint(len(conf.Options.SourceAddressList)) {
+		conf.Options.SourceParallel = uint(len(conf.Options.SourceAddressList))
 	}
 
 	if conf.Options.TargetPasswordRaw != "" && conf.Options.TargetPasswordEncoding != "" {
@@ -372,9 +349,9 @@ func sanitizeOptions(tp string) error {
 		conf.Options.SenderCount = defaultSenderCount
 	}
 
-	if tp == TypeRestore || tp == TypeSync {
+	if tp == conf.TypeRestore || tp == conf.TypeSync {
 		// get target redis version and set TargetReplace.
-		for _, address := range conf.Options.TargetAddress {
+		for _, address := range conf.Options.TargetAddressList {
 			if v, err := utils.GetRedisVersion(address, conf.Options.TargetAuthType,
 					conf.Options.TargetPasswordRaw); err != nil {
 				return fmt.Errorf("get target redis version failed[%v]", err)
@@ -393,7 +370,7 @@ func sanitizeOptions(tp string) error {
 		}
 	}
 
-	if tp == TypeRump {
+	if tp == conf.TypeRump {
 		if conf.Options.ScanKeyNumber == 0 {
 			conf.Options.ScanKeyNumber = 100
 		}
@@ -408,7 +385,7 @@ func sanitizeOptions(tp string) error {
 				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
 		}
 
-		if (conf.Options.ScanSpecialCloud != "" || conf.Options.ScanKeyFile != "") && len(conf.Options.SourceAddress) > 1 {
+		if (conf.Options.ScanSpecialCloud != "" || conf.Options.ScanKeyFile != "") && len(conf.Options.SourceAddressList) > 1 {
 			return fmt.Errorf("source address should <= 1 when scan.special_cloud[%v] or scan.key_file[%v] given",
 				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
 		}

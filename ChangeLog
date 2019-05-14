@@ -1,3 +1,6 @@
+2019-05-14 Alibaba Cloud.
+	* VERSION: 1.6.1
+	* IMPROVE: support fetching db address from sentinel.
 2019-05-08 Alibaba Cloud.
 	* VERSION: 1.6.0
 	* FEATURE: source address supports cluster.

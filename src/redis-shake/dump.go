@@ -12,8 +12,8 @@ import (
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
-	"redis-shake/configure"
 	"redis-shake/common"
+	"redis-shake/configure"
 )
 
 type CmdDump struct {
@@ -31,9 +31,9 @@ func (cmd *CmdDump) GetDetailedInfo() interface{} {
 }
 
 func (cmd *CmdDump) Main() {
-	cmd.dumpChan = make(chan node, len(conf.Options.SourceAddress))
+	cmd.dumpChan = make(chan node, len(conf.Options.SourceAddressList))
 
-	for i, source := range conf.Options.SourceAddress {
+	for i, source := range conf.Options.SourceAddressList {
 		nd := node{
 			id:     i,
 			source: source,
@@ -48,7 +48,7 @@ func (cmd *CmdDump) Main() {
 		nsize  int64
 		wg     sync.WaitGroup
 	)
-	wg.Add(len(conf.Options.SourceAddress))
+	wg.Add(len(conf.Options.SourceAddressList))
 	for i := 0; i < int(conf.Options.SourceParallel); i++ {
 		go func(idx int) {
 			log.Infof("start routine[%v]", idx)
@@ -78,7 +78,7 @@ func (cmd *CmdDump) Main() {
 	// all dump finish
 	close(cmd.dumpChan)
 
-	if len(conf.Options.SourceAddress) != 1 || !conf.Options.ExtraInfo {
+	if len(conf.Options.SourceAddressList) != 1 || !conf.Options.ExtraInfo {
 		return
 	}
 

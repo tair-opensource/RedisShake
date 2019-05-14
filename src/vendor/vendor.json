@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "hBqmLpr3P88FPgBk27hzpa5N0mM=",
+			"path": "github.com/FZambia/go-sentinel",
+			"revision": "76bd05e8e22f9f8f5e1dd6d3a85b7951da7cce57",
+			"revisionTime": "2017-12-04T08:54:13Z"
+		},
+		{
 			"checksumSHA1": "1/Kf0ihi6RtfNt0JjAtZLKvfqJY=",
 			"path": "github.com/cupcake/rdb",
 			"revision": "43ba34106c765f2111c0dc7b74cdf8ee437411e0",
