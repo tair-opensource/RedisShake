@@ -15,11 +15,29 @@ const (
 
 // parse source address and target address
 func ParseAddress(tp string) error {
-	if err := parseAddress(tp, conf.Options.SourceAddress, conf.Options.SourceType, true); err != nil {
-		return err
+	// check source
+	if tp == conf.TypeDump || tp == conf.TypeSync || tp == conf.TypeRump {
+		if err := parseAddress(tp, conf.Options.SourceAddress, conf.Options.SourceType, true); err != nil {
+			return err
+		}
+
+		if len(conf.Options.SourceAddressList) == 0 {
+			return fmt.Errorf("source address shouldn't be empty when type in {dump, sync, rump}")
+		}
 	}
 
-	return parseAddress(tp, conf.Options.TargetAddress, conf.Options.TargetType, false)
+	// check target
+	if tp == conf.TypeRestore || tp == conf.TypeSync || tp == conf.TypeRump {
+		if err := parseAddress(tp, conf.Options.TargetAddress, conf.Options.TargetType, false); err != nil {
+			return err
+		}
+
+		if len(conf.Options.TargetAddressList) == 0 {
+			return fmt.Errorf("target address shouldn't be empty when type in {restore, sync, rump}")
+		}
+	}
+
+	return nil
 }
 
 func parseAddress(tp, address, redisType string, isSource bool) error {
@@ -33,13 +51,13 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 		fallthrough
 	case conf.RedisTypeStandalone:
 		if addressLen != 1 {
-			return fmt.Errorf("address[%v] length[%v] must == 1 when type is 'standalone'", addressLen, addressLen)
+			return fmt.Errorf("address[%v] length[%v] must == 1 when type is 'standalone'", address, addressLen)
 		}
 		setAddressList(isSource, address)
 	case conf.RedisTypeSentinel:
 		arr := strings.Split(address, AddressSplitter)
 		if len(arr) != 2 {
-			return fmt.Errorf("address[%v] length[%v] != 2", addressLen, len(arr))
+			return fmt.Errorf("address[%v] length[%v] != 2", address, len(arr))
 		}
 
 		var masterName string

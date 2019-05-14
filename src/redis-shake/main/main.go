@@ -192,9 +192,6 @@ func sanitizeOptions(tp string) error {
 		return fmt.Errorf("mode[%v] parse address failed[%v]", tp, err)
 	}
 
-	if (tp == conf.TypeDump || tp == conf.TypeSync || tp == conf.TypeRump) && len(conf.Options.SourceAddressList) == 0 {
-		return fmt.Errorf("source address shouldn't be empty when type in {dump, sync, rump}")
-	}
 	if (tp == conf.TypeRestore || tp == conf.TypeDecode) && len(conf.Options.RdbInput) == 0 {
 		return fmt.Errorf("input rdb shouldn't be empty when type in {restore, decode}")
 	}
