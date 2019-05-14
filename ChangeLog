@@ -1,13 +1,41 @@
+2019-05-14 Alibaba Cloud.
+	* VERSION: 1.6.1
+	* IMPROVE: support fetching db address from sentinel, the failover
+	mechanism is not yet supported.
+2019-05-08 Alibaba Cloud.
+	* VERSION: 1.6.0
+	* FEATURE: source address supports cluster.
+	* FEATURE: target address supports several proxies to write data in
+	a round-robin way.
+2019-05-11 Alibaba Cloud.
+	* VERSION: 1.4.3
+	* BUGFIX: add add metric in restore mode. 
+2019-04-24 Alibaba Cloud.
+	* VERSION: 1.4.2
+	* IMPROVE: improve rump to support fetching data from given keys in
+	the file.
+2019-04-24 Alibaba Cloud.
+	* VERSION: 1.4.1
+	* IMPROVE: improve rump to better fetch data from aliyun_cluster and
+	tencent_cluster.
+2019-04-21 Alibaba Cloud.
+	* VERSION: 1.4.0
+	* FEATURE: support "rump" type to syncing data when `sync` and `psync`
+	commands are not supported.
+	* IMPROVE: add commands sending and receiving debug log.
+2019-04-13 Alibaba Cloud.
+	* VERSION: 1.2.3
+	* IMPROVE: polish log print to print more error info.
 2019-04-03 Alibaba Cloud.
-	* version: 1.2.2
+	* VERSION: 1.2.2
 	* BUGFIX: support 5.0 rdb RDB_OPCODE_MODULE_AUX, RDB_OPCODE_IDLE and
 	RDB_OPCODE_FREQ type.
 2019-03-27 Alibaba Cloud.
-	* version: 1.2.1
+	* VERSION: 1.2.1
 	* IMPROVE: support syncing lua script in RDB syncing.
 2019-03-11 Alibaba Cloud.
-	* version: 1.2.0
-	* IMPROVE: support 5.0.
+	* VERSION: 1.2.0
+	* FEATURE: support 5.0.
 2019-02-21 Alibaba Cloud.
-	* version: 1.0.0
-	* redis-shake: initial release.
+	* VERSION: 1.0.0
+	* REDIS-SHAKE: initial release.

@@ -1,6 +1,6 @@
 package metric
 
-import(
+import (
 	"fmt"
 	"redis-shake/base"
 	"redis-shake/common"
@@ -28,39 +28,56 @@ type MetricRest struct {
 	ProcessingCmdCount   interface{} // length of delay channel
 	TargetDBOffset       interface{} // target redis offset
 	SourceDBOffset       interface{} // source redis offset
+	SourceAddress        interface{}
+	TargetAddress        interface{}
 }
 
-func NewMetricRest() *MetricRest {
-	detailedInfo := runner.GetDetailedInfo()
-	if len(detailedInfo) < 4 {
-		return &MetricRest{}
+func NewMetricRest() []MetricRest {
+	detailMapList := runner.GetDetailedInfo().([]map[string]interface{})
+	if detailMapList == nil || len(detailMapList) == 0 {
+		return []MetricRest{
+			{
+				StartTime: utils.StartTime,
+				Status:    base.Status,
+			},
+		}
 	}
-	senderBufCount := detailedInfo[0]
-	processingCmdCount := detailedInfo[1]
-	targetDbOffset := detailedInfo[2]
-	sourceDbOffset := detailedInfo[3]
 
-	return &MetricRest{
-		StartTime:            utils.StartTime,
-		PullCmdCount:         MetricVar.GetPullCmdCount(),
-		PullCmdCountTotal:    MetricVar.GetPullCmdCountTotal(),
-		BypassCmdCount:       MetricVar.GetBypassCmdCount(),
-		BypassCmdCountTotal:  MetricVar.GetBypassCmdCountTotal(),
-		PushCmdCount:         MetricVar.GetPushCmdCount(),
-		PushCmdCountTotal:    MetricVar.GetPushCmdCountTotal(),
-		SuccessCmdCount:      MetricVar.GetSuccessCmdCount(),
-		SuccessCmdCountTotal: MetricVar.GetSuccessCmdCountTotal(),
-		FailCmdCount:         MetricVar.GetFailCmdCount(),
-		FailCmdCountTotal:    MetricVar.GetFailCmdCountTotal(),
-		Delay:                fmt.Sprintf("%s ms", MetricVar.GetDelay()),
-		AvgDelay:             fmt.Sprintf("%s ms", MetricVar.GetAvgDelay()),
-		NetworkSpeed:         MetricVar.GetNetworkFlow(),
-		NetworkFlowTotal:     MetricVar.GetNetworkFlowTotal(),
-		FullSyncProgress:     MetricVar.GetFullSyncProgress(),
-		Status:               base.Status,
-		SenderBufCount:       senderBufCount,
-		ProcessingCmdCount:   processingCmdCount,
-		TargetDBOffset:       targetDbOffset,
-		SourceDBOffset:       sourceDbOffset,
+	total := utils.GetTotalLink()
+	ret := make([]MetricRest, total)
+	for i := 0; i < total; i++ {
+		val, ok := MetricMap.Load(i)
+		if !ok {
+			continue
+		}
+		singleMetric := val.(*Metric)
+		detailMap := detailMapList[i]
+		ret[i] = MetricRest{
+			StartTime:            utils.StartTime,
+			PullCmdCount:         singleMetric.GetPullCmdCount(),
+			PullCmdCountTotal:    singleMetric.GetPullCmdCountTotal(),
+			BypassCmdCount:       singleMetric.GetBypassCmdCount(),
+			BypassCmdCountTotal:  singleMetric.GetBypassCmdCountTotal(),
+			PushCmdCount:         singleMetric.GetPushCmdCount(),
+			PushCmdCountTotal:    singleMetric.GetPushCmdCountTotal(),
+			SuccessCmdCount:      singleMetric.GetSuccessCmdCount(),
+			SuccessCmdCountTotal: singleMetric.GetSuccessCmdCountTotal(),
+			FailCmdCount:         singleMetric.GetFailCmdCount(),
+			FailCmdCountTotal:    singleMetric.GetFailCmdCountTotal(),
+			Delay:                fmt.Sprintf("%s ms", singleMetric.GetDelay()),
+			AvgDelay:             fmt.Sprintf("%s ms", singleMetric.GetAvgDelay()),
+			NetworkSpeed:         singleMetric.GetNetworkFlow(),
+			NetworkFlowTotal:     singleMetric.GetNetworkFlowTotal(),
+			FullSyncProgress:     singleMetric.GetFullSyncProgress(),
+			Status:               base.Status,
+			SenderBufCount:       detailMap["SenderBufCount"],
+			ProcessingCmdCount:   detailMap["ProcessingCmdCount"],
+			TargetDBOffset:       detailMap["TargetDBOffset"],
+			SourceDBOffset:       detailMap["SourceDBOffset"],
+			SourceAddress:        detailMap["SourceAddress"],
+			TargetAddress:        detailMap["TargetAddress"],
+		}
 	}
+
+	return ret
 }
