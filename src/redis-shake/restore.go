@@ -8,16 +8,17 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"time"
 	"strconv"
+	"time"
+	"sync"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
 	"pkg/redis"
+
 	"redis-shake/configure"
 	"redis-shake/common"
 	"redis-shake/base"
-	"sync"
 )
 
 type CmdRestore struct {
@@ -34,7 +35,7 @@ func (cmd *CmdRestore) GetDetailedInfo() interface{} {
 }
 
 func (cmd *CmdRestore) Main() {
-	log.Infof("restore from '%s' to '%s'\n",  conf.Options.RdbInput, conf.Options.TargetAddress)
+	log.Infof("restore from '%s' to '%s'\n", conf.Options.RdbInput, conf.Options.TargetAddressList)
 
 	type restoreNode struct {
 		id    int
@@ -59,8 +60,8 @@ func (cmd *CmdRestore) Main() {
 				}
 
 				// round-robin pick
-				pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddress))
-				target := conf.Options.TargetAddress[pick]
+				pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddressList))
+				target := conf.Options.TargetAddressList[pick]
 
 				dr := &dbRestorer{
 					id:             node.id,
@@ -84,7 +85,7 @@ func (cmd *CmdRestore) Main() {
 		//fake status if set http_port. and wait forever
 		base.Status = "incr"
 		log.Infof("Enabled http stats, set status (incr), and wait forever.")
-		select{}
+		select {}
 	}
 }
 
@@ -134,13 +135,11 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target, auth_type, pa
 	pipe := utils.NewRDBLoader(reader, &dr.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
-		defer close(wait)
-		group := make(chan int, conf.Options.Parallel)
-		for i := 0; i < cap(group); i++ {
+		var wg sync.WaitGroup
+		wg.Add(conf.Options.Parallel)
+		for i := 0; i < conf.Options.Parallel; i++ {
 			go func() {
-				defer func() {
-					group <- 0
-				}()
+				defer wg.Done()
 				c := utils.OpenRedisConn(target, auth_type, passwd)
 				defer c.Close()
 				var lastdb uint32 = 0
@@ -165,9 +164,8 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target, auth_type, pa
 				}
 			}()
 		}
-		for i := 0; i < cap(group); i++ {
-			<-group
-		}
+		wg.Wait()
+		close(wait)
 	}()
 
 	for done := false; !done; {

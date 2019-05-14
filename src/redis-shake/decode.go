@@ -43,7 +43,7 @@ func (cmd *CmdDecode) Main() {
 	log.Infof("decode from '%s' to '%s'\n", conf.Options.RdbInput, conf.Options.RdbOutput)
 
 	for i, input := range conf.Options.RdbInput {
-		// decode one by one
+		// decode one by one. By now, we don't support decoding concurrence.
 		output := fmt.Sprintf("%s.%d", conf.Options.RdbOutput, i)
 		cmd.decode(input, output)
 	}

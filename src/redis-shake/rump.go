@@ -3,13 +3,13 @@ package run
 import (
 	"pkg/libs/log"
 	"strconv"
+	"sync"
 
 	"redis-shake/common"
 	"redis-shake/configure"
+	"redis-shake/scanner"
 
 	"github.com/garyburd/redigo/redis"
-	"redis-shake/scanner"
-	"sync"
 )
 
 type CmdRump struct {
@@ -36,16 +36,16 @@ func (cr *CmdRump) GetDetailedInfo() interface{} {
 func (cr *CmdRump) Main() {
 	// build connection
 
-	cr.sourceConn = make([]redis.Conn, len(conf.Options.SourceAddress))
-	for i, address := range conf.Options.SourceAddress {
+	cr.sourceConn = make([]redis.Conn, len(conf.Options.SourceAddressList))
+	for i, address := range conf.Options.SourceAddressList {
 		cr.sourceConn[i] = utils.OpenRedisConn(address, conf.Options.SourceAuthType, conf.Options.SourcePasswordRaw)
 	}
 	// TODO, current only support write data into 1 db or proxy
-	cr.targetConn = utils.OpenRedisConn(conf.Options.TargetAddress[0], conf.Options.TargetAuthType,
+	cr.targetConn = utils.OpenRedisConn(conf.Options.TargetAddressList[0], conf.Options.TargetAuthType,
 		conf.Options.TargetPasswordRaw)
 
 	// init two channels
-	chanSize := int(conf.Options.ScanKeyNumber) * len(conf.Options.SourceAddress)
+	chanSize := int(conf.Options.ScanKeyNumber) * len(conf.Options.SourceAddressList)
 	cr.keyChan = make(chan *KeyNode, chanSize)
 	cr.resultChan = make(chan *KeyNode, chanSize)
 
