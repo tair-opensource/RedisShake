@@ -62,7 +62,8 @@ Version rules: a.b.c.
 | improve-\* | improvement branch. forked from develop branch and then merge back after finish developing, testing, and code review.  |
 
 Tag rules:<br>
-Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.2-20180628"
+Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.2-20180628"<br>
+User can use `-version` to print the version.
 
 # Usage
 ---

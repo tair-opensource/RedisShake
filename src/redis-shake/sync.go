@@ -95,7 +95,7 @@ func (cmd *CmdSync) Main() {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(len(conf.Options.SourceAddress))
+	wg.Add(len(conf.Options.SourceAddressList))
 
 	for i := 0; i < int(conf.Options.SourceParallel); i++ {
 		go func() {
