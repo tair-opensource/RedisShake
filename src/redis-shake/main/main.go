@@ -350,7 +350,7 @@ func sanitizeOptions(tp string) error {
 		// get target redis version and set TargetReplace.
 		for _, address := range conf.Options.TargetAddressList {
 			if v, err := utils.GetRedisVersion(address, conf.Options.TargetAuthType,
-					conf.Options.TargetPasswordRaw); err != nil {
+				conf.Options.TargetPasswordRaw, conf.Options.TargetTLSEnable); err != nil {
 				return fmt.Errorf("get target redis version failed[%v]", err)
 			} else if conf.Options.TargetRedisVersion != "" && conf.Options.TargetRedisVersion != v {
 				return fmt.Errorf("target redis version is different: [%v %v]", conf.Options.TargetRedisVersion, v)
