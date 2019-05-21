@@ -9,6 +9,12 @@
 			"revisionTime": "2017-12-04T08:54:13Z"
 		},
 		{
+			"checksumSHA1": "A7qoimg0p6dsVIQNpjX0uW2UjoM=",
+			"path": "github.com/chasex/redis-go-cluster",
+			"revision": "222d81891f1d3fa7cf8b5655020352c3e5b4ec0f",
+			"revisionTime": "2016-12-07T02:39:22Z"
+		},
+		{
 			"checksumSHA1": "1/Kf0ihi6RtfNt0JjAtZLKvfqJY=",
 			"path": "github.com/cupcake/rdb",
 			"revision": "43ba34106c765f2111c0dc7b74cdf8ee437411e0",

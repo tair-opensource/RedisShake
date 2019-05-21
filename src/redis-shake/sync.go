@@ -698,7 +698,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target, auth_type, passwd 
 		fmt.Fprintf(&b, "dbSyncer[%v] sync: ", ds.id)
 		fmt.Fprintf(&b, " +forward=%-6d", nstat.forward-lstat.forward)
 		fmt.Fprintf(&b, " +nbypass=%-6d", nstat.nbypass-lstat.nbypass)
-		fmt.Fprintf(&b, " +nbytes=%d", nstat.wbytes-lstat.wbytes)
+		fmt.Fprintf(&b, " +nbytes=%d", nstat.wbytes-lstat.wbytes) // todo
 		log.Info(b.String())
 		lstat = nstat
 	}
