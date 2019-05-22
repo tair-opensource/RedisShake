@@ -59,9 +59,14 @@ func (cmd *CmdRestore) Main() {
 					break
 				}
 
-				// round-robin pick
-				pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddressList))
-				target := conf.Options.TargetAddressList[pick]
+				var target []string
+				if conf.Options.TargetType == conf.RedisTypeCluster {
+					target = conf.Options.TargetAddressList
+				} else {
+					// round-robin pick
+					pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddressList))
+					target = []string{conf.Options.TargetAddressList[pick]}
+				}
 
 				dr := &dbRestorer{
 					id:             node.id,
@@ -92,9 +97,9 @@ func (cmd *CmdRestore) Main() {
 /*------------------------------------------------------*/
 // one restore link corresponding to one dbRestorer
 type dbRestorer struct {
-	id             int    // id
-	input          string // input rdb
-	target         string
+	id             int      // id
+	input          string   // input rdb
+	target         []string // len >= 1 when target type is cluster, otherwise len == 1
 	targetPassword string
 
 	// metric
@@ -126,12 +131,13 @@ func (dr *dbRestorer) restore() {
 
 	base.Status = "extra"
 	if conf.Options.ExtraInfo && (nsize == 0 || nsize != dr.rbytes.Get()) {
+		// inner usage
 		dr.restoreCommand(reader, dr.target, conf.Options.TargetAuthType,
 			conf.Options.TargetPasswordRaw)
 	}
 }
 
-func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
+func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth_type, passwd string, nsize int64) {
 	pipe := utils.NewRDBLoader(reader, &dr.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
@@ -140,7 +146,7 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target, auth_type, pa
 		for i := 0; i < conf.Options.Parallel; i++ {
 			go func() {
 				defer wg.Done()
-				c := utils.OpenRedisConn(target, auth_type, passwd)
+				c := utils.OpenRedisConn(target, auth_type, passwd, conf.Options.TargetType == conf.RedisTypeCluster)
 				defer c.Close()
 				var lastdb uint32 = 0
 				for e := range pipe {
@@ -190,8 +196,9 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target, auth_type, pa
 	log.Info("routine[%v] restore: rdb done", dr.id)
 }
 
-func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target, auth_type, passwd string) {
-	c := utils.OpenNetConn(target, auth_type, passwd)
+func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target []string, auth_type, passwd string) {
+	// inner usage. only use on targe
+	c := utils.OpenNetConn(target[0], auth_type, passwd)
 	defer c.Close()
 
 	writer := bufio.NewWriterSize(c, utils.WriterBufferSize)

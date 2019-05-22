@@ -135,7 +135,8 @@ func NewDbSyncer(id int, source, sourcePassword, target, targetPassword string, 
 		id:              id,
 		source:          source,
 		sourcePassword:  sourcePassword,
-		target:          target,
+		//todo
+		//target:          target,
 		targetPassword:  targetPassword,
 		httpProfilePort: httpPort,
 		waitFull:        make(chan struct{}),
@@ -150,10 +151,10 @@ func NewDbSyncer(id int, source, sourcePassword, target, targetPassword string, 
 type dbSyncer struct {
 	id int // current id in all syncer
 
-	source         string // source address
-	sourcePassword string // source password
-	target         string // target address
-	targetPassword string // target password
+	source         string   // source address
+	sourcePassword string   // source password
+	target         []string // target address
+	targetPassword string   // target password
 
 	httpProfilePort int // http profile port
 
@@ -238,16 +239,18 @@ func (ds *dbSyncer) sync() {
 		go heartbeatCtl.Start()
 	}
 
-	reader := bufio.NewReaderSize(input, utils.ReaderBufferSize)
+	// reader := bufio.NewReaderSize(input, utils.ReaderBufferSize)
 
 	// sync rdb
 	base.Status = "full"
-	ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize)
+	// todo
+	// ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize)
 
 	// sync increment
 	base.Status = "incr"
 	close(ds.waitFull)
-	ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword)
+	// todo
+	//ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword)
 }
 
 func (ds *dbSyncer) sendSyncCmd(master, auth_type, passwd string) (net.Conn, int64) {
@@ -396,7 +399,8 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target, auth_type, passwd 
 		for i := 0; i < conf.Options.Parallel; i++ {
 			go func() {
 				defer wg.Done()
-				c := utils.OpenRedisConn(target, auth_type, passwd)
+				// todo
+				c := utils.OpenRedisConn([]string{target}, auth_type, passwd, false)
 				defer c.Close()
 				var lastdb uint32 = 0
 				for e := range pipe {

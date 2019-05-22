@@ -26,10 +26,35 @@ import (
 
 	"github.com/FZambia/go-sentinel"
 	redigo "github.com/garyburd/redigo/redis"
+	redigoCluster "github.com/chasex/redis-go-cluster"
 )
 
-func OpenRedisConn(target, auth_type, passwd string) redigo.Conn {
-	return redigo.NewConn(OpenNetConn(target, auth_type, passwd), 0, 0)
+func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool) redigo.Conn {
+	if isCluster {
+		cluster, err := redigoCluster.NewCluster(
+			&redigoCluster.Options{
+				StartNodes:   target,
+				ConnTimeout:  1 * time.Second,
+				ReadTimeout:  500 * time.Millisecond,
+				WriteTimeout: 500 * time.Millisecond,
+				KeepAlive:    16,
+				AliveTime:    60 * time.Second,
+			})
+		if err != nil {
+			log.Panicf("create cluster connection error[%v]", err)
+			return nil
+		}
+
+		_, err = cluster.Do(auth_type, passwd)
+		if err != nil {
+			log.Panicf("auth cluster failed[%v]", err)
+			return nil
+		}
+
+		return NewClusterConn(cluster, 4096)
+	} else {
+		return redigo.NewConn(OpenNetConn(target[0], auth_type, passwd), 0, 0)
+	}
 }
 
 func OpenRedisConnWithTimeout(target, auth_type, passwd string, readTimeout, writeTimeout time.Duration) redigo.Conn {
@@ -831,7 +856,7 @@ func ParseRedisInfo(content []byte) map[string]string {
 }
 
 func GetRedisVersion(target, authType, auth string) (string, error) {
-	c := OpenRedisConn(target, authType, auth)
+	c := OpenRedisConn([]string{target}, authType, auth, false)
 	infoStr, err := redigo.Bytes(c.Do("info", "server"))
 	if err != nil {
 		return "", err

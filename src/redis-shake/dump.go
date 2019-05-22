@@ -177,5 +177,5 @@ func (dd *dbDumper) dumpRDBFile(reader *bufio.Reader, writer *bufio.Writer, nsiz
 		p := 100 * n / nsize
 		log.Infof("routine[%v] total = %d - %12d [%3d%%]\n", dd.id, nsize, n, p)
 	}
-	log.Info("routine[%v] dump: rdb done", dd.id)
+	log.Infof("routine[%v] dump: rdb done", dd.id)
 }

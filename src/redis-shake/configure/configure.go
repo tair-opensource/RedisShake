@@ -58,12 +58,12 @@ type Configuration struct {
 
 	/*---------------------------------------------------------*/
 	// generated variables
-	SourceAddressList        []string      // source address list
-	TargetAddressList        []string      // target address list
-	HeartbeatIp              string        // heartbeat ip
-	ShiftTime                time.Duration // shift
-	TargetRedisVersion       string        // to_redis_version
-	TargetReplace            bool          // to_replace
+	SourceAddressList  []string      // source address list
+	TargetAddressList  []string      // target address list
+	HeartbeatIp        string        // heartbeat ip
+	ShiftTime          time.Duration // shift
+	TargetRedisVersion string        // to_redis_version
+	TargetReplace      bool          // to_replace
 }
 
 var Options Configuration
@@ -76,6 +76,7 @@ const (
 
 	StandAloneRoleMaster = "master"
 	StandAloneRoleSlave  = "slave"
+	StandAloneRoleAll    = "all"
 
 	TypeDecode  = "decode"
 	TypeRestore = "restore"

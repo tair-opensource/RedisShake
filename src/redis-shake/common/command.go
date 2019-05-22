@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+
 	"redis-shake/configure"
+
+	redigo "github.com/garyburd/redigo/redis"
 )
 
 type ClusterNodeInfo struct {
@@ -59,9 +62,13 @@ func ParseKeyspace(content []byte) (map[int32]int64, error) {
  * 486e081f8d47968df6a7e43ef9d3ba93b77d03b2 10.1.1.1:21334@31334 slave 75fffcd521738606a919607a7ddd52bcd6d65aa8 0 1557996785258 4 connected
  */
 func ParseClusterNode(content []byte) []*ClusterNodeInfo {
-	lines := bytes.Split(content, []byte("\r\n"))
+	lines := bytes.Split(content, []byte("\n"))
 	ret := make([]*ClusterNodeInfo, 0, len(lines))
 	for _, line := range lines {
+		if bytes.Compare(line, []byte{}) == 0 {
+			continue
+		}
+
 		items := bytes.Split(line, []byte(" "))
 
 		address := bytes.Split(items[1], []byte{'@'})
@@ -92,14 +99,31 @@ func ParseClusterNode(content []byte) []*ClusterNodeInfo {
 }
 
 // needMaster: true(master), false(slave)
-func ClusterNodeChoose(input []*ClusterNodeInfo, needMaster bool) []*ClusterNodeInfo {
-	ret := make([]*ClusterNodeInfo, 0, len(input) / 2)
+func ClusterNodeChoose(input []*ClusterNodeInfo, role string) []*ClusterNodeInfo {
+	ret := make([]*ClusterNodeInfo, 0, len(input))
 	for _, ele := range input {
-		if ele.Flags == conf.StandAloneRoleMaster && needMaster {
-			ret = append(ret, ele)
-		} else if ele.Flags == conf.StandAloneRoleSlave && !needMaster {
+		if ele.Flags == conf.StandAloneRoleMaster && role == conf.StandAloneRoleMaster ||
+				ele.Flags == conf.StandAloneRoleSlave && role == conf.StandAloneRoleSlave ||
+				role == conf.StandAloneRoleAll {
 			ret = append(ret, ele)
 		}
 	}
 	return ret
+}
+
+func GetAllClusterNode(client redigo.Conn, role string) ([]string, error) {
+	ret, err := client.Do("cluster", "nodes")
+	if err != nil {
+		return nil, err
+	}
+
+	nodeList := ParseClusterNode(ret.([]byte))
+	nodeListChoose := ClusterNodeChoose(nodeList, role)
+
+	result := make([]string, 0, len(nodeListChoose))
+	for _, ele := range nodeListChoose {
+		result = append(result, ele.Address)
+	}
+
+	return result, nil
 }

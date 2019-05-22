@@ -187,6 +187,21 @@ func sanitizeOptions(tp string) error {
 		return fmt.Errorf("BigKeyThreshold[%v] should <= 524288000", conf.Options.BigKeyThreshold)
 	}
 
+	// source password
+	if conf.Options.SourcePasswordRaw != "" && conf.Options.SourcePasswordEncoding != "" {
+		return fmt.Errorf("only one of source password_raw or password_encoding should be given")
+	} else if conf.Options.SourcePasswordEncoding != "" {
+		sourcePassword := "" // todo, inner version
+		conf.Options.SourcePasswordRaw = string(sourcePassword)
+	}
+	// target password
+	if conf.Options.TargetPasswordRaw != "" && conf.Options.TargetPasswordEncoding != "" {
+		return fmt.Errorf("only one of target password_raw or password_encoding should be given")
+	} else if conf.Options.TargetPasswordEncoding != "" {
+		targetPassword := "" // todo, inner version
+		conf.Options.TargetPasswordRaw = string(targetPassword)
+	}
+
 	// parse source and target address and type
 	if err := utils.ParseAddress(tp); err != nil {
 		return fmt.Errorf("mode[%v] parse address failed[%v]", tp, err)
@@ -211,22 +226,8 @@ func sanitizeOptions(tp string) error {
 		conf.Options.RdbParallel = len(conf.Options.RdbInput)
 	}
 
-	if conf.Options.SourcePasswordRaw != "" && conf.Options.SourcePasswordEncoding != "" {
-		return fmt.Errorf("only one of source password_raw or password_encoding should be given")
-	} else if conf.Options.SourcePasswordEncoding != "" {
-		sourcePassword := "" // todo, inner version
-		conf.Options.SourcePasswordRaw = string(sourcePassword)
-	}
-
 	if conf.Options.SourceParallel == 0 || conf.Options.SourceParallel > uint(len(conf.Options.SourceAddressList)) {
 		conf.Options.SourceParallel = uint(len(conf.Options.SourceAddressList))
-	}
-
-	if conf.Options.TargetPasswordRaw != "" && conf.Options.TargetPasswordEncoding != "" {
-		return fmt.Errorf("only one of target password_raw or password_encoding should be given")
-	} else if conf.Options.TargetPasswordEncoding != "" {
-		targetPassword := "" // todo, inner version
-		conf.Options.TargetPasswordRaw = string(targetPassword)
 	}
 
 	if conf.Options.LogFile != "" {
@@ -349,6 +350,7 @@ func sanitizeOptions(tp string) error {
 	if tp == conf.TypeRestore || tp == conf.TypeSync {
 		// get target redis version and set TargetReplace.
 		for _, address := range conf.Options.TargetAddressList {
+			// single connection even if the target is cluster
 			if v, err := utils.GetRedisVersion(address, conf.Options.TargetAuthType,
 					conf.Options.TargetPasswordRaw); err != nil {
 				return fmt.Errorf("get target redis version failed[%v]", err)
