@@ -671,6 +671,14 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 }
 
 func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
+	/*
+	 * for ucloud, special judge.
+	 * 046110.key -> key
+	 */
+	if conf.Options.RdbSpecialCloud == UCloudCluster {
+		e.Key = e.Key[7:]
+	}
+
 	var ttlms uint64
 	if conf.Options.ReplaceHashTag {
 		e.Key = bytes.Replace(e.Key, []byte("{"), []byte(""), 1)

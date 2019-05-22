@@ -28,6 +28,7 @@ type Configuration struct {
 	RdbInput                  []string `config:"rdb.input"`
 	RdbOutput                 string   `config:"rdb.output"`
 	RdbParallel               int      `config:"rdb.parallel"`
+	RdbSpecialCloud           string   `config:"rdb.special_cloud"`
 	FakeTime                  string   `config:"fake_time"`
 	Rewrite                   bool     `config:"rewrite"`
 	FilterDB                  string   `config:"filter.db"`
