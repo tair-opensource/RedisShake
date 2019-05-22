@@ -27,8 +27,6 @@ import (
 	"redis-shake/configure"
 	"redis-shake/metric"
 	"redis-shake/restful"
-	"redis-shake/scanner"
-
 	"github.com/gugemichael/nimo4go"
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -211,6 +209,10 @@ func sanitizeOptions(tp string) error {
 		conf.Options.RdbParallel = len(conf.Options.RdbInput)
 	}
 
+	if conf.Options.RdbSpecialCloud != "" && conf.Options.RdbSpecialCloud != utils.UCloudCluster {
+		return fmt.Errorf("rdb special cloud type[%s] is not supported", conf.Options.RdbSpecialCloud)
+	}
+
 	if conf.Options.SourcePasswordRaw != "" && conf.Options.SourcePasswordEncoding != "" {
 		return fmt.Errorf("only one of source password_raw or password_encoding should be given")
 	} else if conf.Options.SourcePasswordEncoding != "" {
@@ -372,8 +374,8 @@ func sanitizeOptions(tp string) error {
 			conf.Options.ScanKeyNumber = 100
 		}
 
-		if conf.Options.ScanSpecialCloud != "" && conf.Options.ScanSpecialCloud != scanner.TencentCluster &&
-			conf.Options.ScanSpecialCloud != scanner.AliyunCluster {
+		if conf.Options.ScanSpecialCloud != "" && conf.Options.ScanSpecialCloud != utils.TencentCluster &&
+			conf.Options.ScanSpecialCloud != utils.AliyunCluster {
 			return fmt.Errorf("special cloud type[%s] is not supported", conf.Options.ScanSpecialCloud)
 		}
 

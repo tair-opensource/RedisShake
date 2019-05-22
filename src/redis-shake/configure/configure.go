@@ -28,6 +28,7 @@ type Configuration struct {
 	RdbInput                  []string `config:"rdb.input"`
 	RdbOutput                 string   `config:"rdb.output"`
 	RdbParallel               int      `config:"rdb.parallel"`
+	RdbSpecialCloud           string   `config:"rdb.special_cloud"`
 	FakeTime                  string   `config:"fake_time"`
 	Rewrite                   bool     `config:"rewrite"`
 	FilterDB                  string   `config:"filter.db"`
@@ -58,12 +59,12 @@ type Configuration struct {
 
 	/*---------------------------------------------------------*/
 	// generated variables
-	SourceAddressList        []string      // source address list
-	TargetAddressList        []string      // target address list
-	HeartbeatIp              string        // heartbeat ip
-	ShiftTime                time.Duration // shift
-	TargetRedisVersion       string        // to_redis_version
-	TargetReplace            bool          // to_replace
+	SourceAddressList  []string      // source address list
+	TargetAddressList  []string      // target address list
+	HeartbeatIp        string        // heartbeat ip
+	ShiftTime          time.Duration // shift
+	TargetRedisVersion string        // to_redis_version
+	TargetReplace      bool          // to_replace
 }
 
 var Options Configuration

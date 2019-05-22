@@ -20,7 +20,7 @@ type SpecialCloudScanner struct {
 
 func (scs *SpecialCloudScanner) NodeCount() (int, error) {
 	switch conf.Options.ScanSpecialCloud {
-	case AliyunCluster:
+	case utils.AliyunCluster:
 		info, err := redis.Bytes(scs.client.Do("info", "Cluster"))
 		if err != nil {
 			return -1, err
@@ -34,7 +34,7 @@ func (scs *SpecialCloudScanner) NodeCount() (int, error) {
 		} else {
 			return int(count), nil
 		}
-	case TencentCluster:
+	case utils.TencentCluster:
 		/*
 		 * tencent cluster return:
 		 * 10.1.1.1:2000> cluster nodes
@@ -74,10 +74,10 @@ func (scs *SpecialCloudScanner) ScanKey(node interface{}) ([]string, error) {
 	)
 
 	switch conf.Options.ScanSpecialCloud {
-	case TencentCluster:
+	case utils.TencentCluster:
 		values, err = redis.Values(scs.client.Do("SCAN", scs.cursor, "COUNT",
 			conf.Options.ScanKeyNumber, scs.tencentNodes[node.(int)]))
-	case AliyunCluster:
+	case utils.AliyunCluster:
 		values, err = redis.Values(scs.client.Do("ISCAN", node, scs.cursor, "COUNT",
 			conf.Options.ScanKeyNumber))
 	}
