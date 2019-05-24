@@ -4,6 +4,7 @@ import (
 	"pkg/libs/log"
 	"strconv"
 	"sync"
+	"fmt"
 
 	"redis-shake/common"
 	"redis-shake/configure"
@@ -87,47 +88,22 @@ func (cr *CmdRump) fetcher(idx int) {
 		log.Panicf("fetch db node failed: length[%v], error[%v]", length, err)
 	}
 
-	log.Infof("start fetcher with special-cloud[%v], length[%v]", conf.Options.ScanSpecialCloud, length)
+	log.Infof("start fetcher with special-cloud[%v], nodes[%v]", conf.Options.ScanSpecialCloud, length)
 
 	// iterate all source nodes
 	for i := 0; i < length; i++ {
-		// fetch data from on node
-		for {
-			keys, err := cr.scanners[idx].ScanKey(i)
-			if err != nil {
+		// fetch db number from 'info Keyspace'
+		dbNumber, err := cr.getSourceDbList(i)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		log.Infof("fetch node[%v] with db list: %v", i, dbNumber)
+		// iterate all db
+		for _, db := range dbNumber {
+			log.Infof("fetch node[%v] db[%v]", i, db)
+			if err := cr.doFetch(int(db), i); err != nil {
 				log.Panic(err)
-			}
-
-			log.Info("scaned keys: ", len(keys))
-
-			if len(keys) != 0 {
-				// pipeline dump
-				for _, key := range keys {
-					log.Debug("scan key: ", key)
-					cr.sourceConn[idx].Send("DUMP", key)
-				}
-				dumps, err := redis.Strings(cr.sourceConn[idx].Do(""))
-				if err != nil && err != redis.ErrNil {
-					log.Panicf("do dump with failed[%v]", err)
-				}
-
-				// pipeline ttl
-				for _, key := range keys {
-					cr.sourceConn[idx].Send("PTTL", key)
-				}
-				pttls, err := redis.Int64s(cr.sourceConn[idx].Do(""))
-				if err != nil && err != redis.ErrNil {
-					log.Panicf("do ttl with failed[%v]", err)
-				}
-
-				for i, k := range keys {
-					cr.keyChan <- &KeyNode{k, dumps[i], pttls[i]}
-				}
-			}
-
-			// Last iteration of scan.
-			if cr.scanners[idx].EndNode() {
-				break
 			}
 		}
 	}
@@ -173,4 +149,81 @@ func (cr *CmdRump) receiver() {
 				err)
 		}
 	}
+}
+
+func (cr *CmdRump) getSourceDbList(id int) ([]int32, error) {
+	conn := cr.sourceConn[id]
+	if ret, err := conn.Do("info", "Keyspace"); err != nil {
+		return nil, err
+	} else if mp, err := utils.ParseKeyspace(ret.([]byte)); err != nil {
+		return nil, err
+	} else {
+		list := make([]int32, 0, len(mp))
+		for key, val := range mp {
+			if val > 0 {
+				list = append(list, key)
+			}
+		}
+		return list, nil
+	}
+}
+
+func (cr *CmdRump) doFetch(db, idx int) error {
+	// send 'select' command to both source and target
+	log.Infof("send source select db")
+	if _, err := cr.sourceConn[idx].Do("select", db); err != nil {
+		return err
+	}
+
+	log.Infof("send target select db")
+	cr.targetConn.Flush()
+	if err := cr.targetConn.Send("select", db); err != nil {
+		return err
+	}
+	cr.targetConn.Flush()
+
+	log.Infof("finish select db, start fetching node[%v] db[%v]", idx, db)
+
+	for {
+		keys, err := cr.scanners[idx].ScanKey(idx)
+		if err != nil {
+			return err
+		}
+
+		log.Info("scanned keys: ", len(keys))
+
+		if len(keys) != 0 {
+			// pipeline dump
+			for _, key := range keys {
+				log.Debug("scan key: ", key)
+				cr.sourceConn[idx].Send("DUMP", key)
+			}
+			dumps, err := redis.Strings(cr.sourceConn[idx].Do(""))
+			if err != nil && err != redis.ErrNil {
+				return fmt.Errorf("do dump with failed[%v]", err)
+			}
+
+			// pipeline ttl
+			for _, key := range keys {
+				cr.sourceConn[idx].Send("PTTL", key)
+			}
+			pttls, err := redis.Int64s(cr.sourceConn[idx].Do(""))
+			if err != nil && err != redis.ErrNil {
+				return fmt.Errorf("do ttl with failed[%v]", err)
+			}
+
+			for i, k := range keys {
+				cr.keyChan <- &KeyNode{k, dumps[i], pttls[i]}
+			}
+		}
+
+		// Last iteration of scan.
+		if cr.scanners[idx].EndNode() {
+			break
+		}
+	}
+
+	log.Infof("finish fetching node[%v] db[%v]", idx, db)
+
+	return nil
 }

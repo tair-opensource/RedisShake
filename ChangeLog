@@ -1,3 +1,6 @@
+2019-05-16 Alibaba Cloud.
+	* VERSION: 1.6.2
+	* BUGFIX: fix bug of `rump` mode only syncing db 0 data.
 2019-05-14 Alibaba Cloud.
 	* VERSION: 1.6.1
 	* IMPROVE: support fetching db address from sentinel, the failover
