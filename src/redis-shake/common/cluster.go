@@ -1,7 +1,7 @@
 package utils
 
 import (
-	redigoCluster "github.com/chasex/redis-go-cluster"
+	redigoCluster "github.com/vinllen/redis-go-cluster"
 	redigo "github.com/garyburd/redigo/redis"
 )
 

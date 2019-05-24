@@ -309,6 +309,14 @@ func sanitizeOptions(tp string) error {
 		}
 	}
 
+	// if the target is "cluster", only allow pass db 0
+	if conf.Options.TargetType == conf.RedisTypeCluster {
+		base.AcceptDB = func(db uint32) bool {
+			return db == 0
+		}
+		log.Info("the target redis type is cluster, only pass db0")
+	}
+
 	if len(conf.Options.FilterSlot) > 0 {
 		for i, val := range conf.Options.FilterSlot {
 			if _, err := strconv.Atoi(val); err != nil {

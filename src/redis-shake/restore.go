@@ -74,9 +74,9 @@ func (cmd *CmdRestore) Main() {
 					target:         target,
 					targetPassword: conf.Options.TargetPasswordRaw,
 				}
-				dr.restore()
 				log.Infof("routine[%v] starts restoring data from %v to %v",
 					dr.id, dr.input, dr.target)
+				dr.restore()
 
 				wg.Done()
 			}
@@ -193,7 +193,7 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 		}
 		log.Info(b.String())
 	}
-	log.Info("routine[%v] restore: rdb done", dr.id)
+	log.Infof("routine[%v] restore: rdb done", dr.id)
 }
 
 func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target []string, auth_type, passwd string) {
@@ -204,6 +204,7 @@ func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target []string, auth
 	writer := bufio.NewWriterSize(c, utils.WriterBufferSize)
 	defer utils.FlushWriter(writer)
 
+	// discard target returning
 	go func() {
 		p := make([]byte, utils.ReaderBufferSize)
 		for {

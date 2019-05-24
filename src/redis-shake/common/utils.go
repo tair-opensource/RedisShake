@@ -26,7 +26,7 @@ import (
 
 	"github.com/FZambia/go-sentinel"
 	redigo "github.com/garyburd/redigo/redis"
-	redigoCluster "github.com/chasex/redis-go-cluster"
+	redigoCluster "github.com/vinllen/redis-go-cluster"
 )
 
 func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool) redigo.Conn {
@@ -39,18 +39,12 @@ func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool) re
 				WriteTimeout: 500 * time.Millisecond,
 				KeepAlive:    16,
 				AliveTime:    60 * time.Second,
+				Password:     passwd,
 			})
 		if err != nil {
 			log.Panicf("create cluster connection error[%v]", err)
 			return nil
 		}
-
-		_, err = cluster.Do(auth_type, passwd)
-		if err != nil {
-			log.Panicf("auth cluster failed[%v]", err)
-			return nil
-		}
-
 		return NewClusterConn(cluster, 4096)
 	} else {
 		return redigo.NewConn(OpenNetConn(target[0], auth_type, passwd), 0, 0)
@@ -763,7 +757,8 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		params = append(params, e.Freq)
 	}
 	// fmt.Printf("key: %v, value: %v params: %v\n", string(e.Key), e.Value, params)
-	s, err := redigo.String(c.Do("restore", params...))
+	// s, err := redigo.String(c.Do("restore", params...))
+	s, err := redigoCluster.String(c.Do("restore", params...))
 	if err != nil {
 		/*The reply value of busykey in 2.8 kernel is "target key name is busy",
 		  but in 4.0 kernel is "BUSYKEY Target key name already exists"*/
@@ -791,10 +786,8 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		} else {
 			log.PanicError(err, "restore command error key:", string(e.Key), " err:", err.Error())
 		}
-	} else {
-		if s != "OK" {
-			log.Panicf("restore command response = '%s', should be 'OK'", s)
-		}
+	} else if s != "OK" {
+		log.Panicf("restore command response = '%s', should be 'OK'", s)
 	}
 }
 
@@ -865,6 +858,8 @@ func ParseRedisInfo(content []byte) map[string]string {
 
 func GetRedisVersion(target, authType, auth string) (string, error) {
 	c := OpenRedisConn([]string{target}, authType, auth, false)
+	defer c.Close()
+
 	infoStr, err := redigo.Bytes(c.Do("info", "server"))
 	if err != nil {
 		return "", err
