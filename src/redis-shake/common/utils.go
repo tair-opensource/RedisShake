@@ -30,13 +30,19 @@ import (
 )
 
 func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool) redigo.Conn {
+	return OpenRedisConnWithTimeout(target, auth_type, passwd, 0, 0, isCluster)
+}
+
+func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTimeout, writeTimeout time.Duration,
+		isCluster bool) redigo.Conn {
+	// return redigo.NewConn(OpenNetConn(target, auth_type, passwd), readTimeout, writeTimeout)
 	if isCluster {
 		cluster, err := redigoCluster.NewCluster(
 			&redigoCluster.Options{
 				StartNodes:   target,
 				ConnTimeout:  1 * time.Second,
-				ReadTimeout:  500 * time.Millisecond,
-				WriteTimeout: 500 * time.Millisecond,
+				ReadTimeout:  readTimeout,
+				WriteTimeout: writeTimeout,
 				KeepAlive:    16,
 				AliveTime:    60 * time.Second,
 				Password:     passwd,
@@ -47,12 +53,8 @@ func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool) re
 		}
 		return NewClusterConn(cluster, 4096)
 	} else {
-		return redigo.NewConn(OpenNetConn(target[0], auth_type, passwd), 0, 0)
+		return redigo.NewConn(OpenNetConn(target[0], auth_type, passwd), readTimeout, writeTimeout)
 	}
-}
-
-func OpenRedisConnWithTimeout(target, auth_type, passwd string, readTimeout, writeTimeout time.Duration) redigo.Conn {
-	return redigo.NewConn(OpenNetConn(target, auth_type, passwd), readTimeout, writeTimeout)
 }
 
 func OpenNetConn(target, auth_type, passwd string) net.Conn {
@@ -64,9 +66,9 @@ func OpenNetConn(target, auth_type, passwd string) net.Conn {
 		log.PanicErrorf(err, "cannot connect to '%s'", target)
 	}
 
-	log.Infof("try to auth address[%v] with type[%v]", target, auth_type)
+	// log.Infof("try to auth address[%v] with type[%v]", target, auth_type)
 	AuthPassword(c, auth_type, passwd)
-	log.Info("auth OK!")
+	// log.Info("auth OK!")
 	return c
 }
 
