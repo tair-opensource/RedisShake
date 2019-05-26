@@ -5,10 +5,10 @@ package run
 
 import (
 	"bufio"
-	"net"
-	"time"
 	"fmt"
+	"net"
 	"sync"
+	"time"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
@@ -119,7 +119,7 @@ func (dd *dbDumper) dump() (*bufio.Reader, *bufio.Writer, int64) {
 	defer dumpto.Close()
 
 	// send command and get the returned channel
-	master, nsize := dd.sendCmd(dd.source, conf.Options.SourceAuthType, dd.sourcePassword)
+	master, nsize := dd.sendCmd(dd.source, conf.Options.SourceAuthType, dd.sourcePassword, conf.Options.SourceTLSEnable)
 	defer master.Close()
 
 	log.Infof("routine[%v] source db[%v] dump rdb file-size[%d]\n", dd.id, dd.source, nsize)
@@ -132,8 +132,8 @@ func (dd *dbDumper) dump() (*bufio.Reader, *bufio.Writer, int64) {
 	return reader, writer, nsize
 }
 
-func (dd *dbDumper) sendCmd(master, auth_type, passwd string) (net.Conn, int64) {
-	c, wait := utils.OpenSyncConn(master, auth_type, passwd)
+func (dd *dbDumper) sendCmd(master, auth_type, passwd string, tlsEnable bool) (net.Conn, int64) {
+	c, wait := utils.OpenSyncConn(master, auth_type, passwd, tlsEnable)
 	var nsize int64
 
 	// wait rdb dump finish
@@ -177,5 +177,5 @@ func (dd *dbDumper) dumpRDBFile(reader *bufio.Reader, writer *bufio.Writer, nsiz
 		p := 100 * n / nsize
 		log.Infof("routine[%v] total = %d - %12d [%3d%%]\n", dd.id, nsize, n, p)
 	}
-	log.Info("routine[%v] dump: rdb done", dd.id)
+	log.Infof("routine[%v] dump: rdb done", dd.id)
 }

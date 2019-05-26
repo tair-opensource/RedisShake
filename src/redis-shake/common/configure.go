@@ -41,7 +41,7 @@ func ParseAddress(tp string) error {
 }
 
 func parseAddress(tp, address, redisType string, isSource bool) error {
-	addressLen := len(splitCluster(redisType))
+	addressLen := len(splitCluster(address))
 	if addressLen == 0 {
 		return fmt.Errorf("address length[%v] illegal", addressLen)
 	}
@@ -51,13 +51,14 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 		fallthrough
 	case conf.RedisTypeStandalone:
 		if addressLen != 1 {
-			return fmt.Errorf("address[%v] length[%v] must == 1 when type is 'standalone'", address, addressLen)
+			return fmt.Errorf("redis type[%v] address[%v] length[%v] != 1", redisType, address, addressLen)
 		}
 		setAddressList(isSource, address)
 	case conf.RedisTypeSentinel:
 		arr := strings.Split(address, AddressSplitter)
 		if len(arr) != 2 {
-			return fmt.Errorf("address[%v] length[%v] != 2", address, len(arr))
+			return fmt.Errorf("redis type[%v] address[%v] length[%v] != 2",
+				conf.RedisTypeStandalone, address, len(arr))
 		}
 
 		var masterName string
@@ -94,10 +95,51 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 			}
 		}
 	case conf.RedisTypeCluster:
-		if isSource == false {
-			return fmt.Errorf("target type can't be cluster currently")
+		if isSource == false && tp == conf.TypeRump {
+			return fmt.Errorf("target type[%v] can't be cluster when type is 'rump' currently", redisType)
 		}
-		setAddressList(isSource, address)
+		if strings.Contains(address, AddressSplitter) {
+			arr := strings.Split(address, AddressSplitter)
+			if len(arr) != 2 {
+				return fmt.Errorf("redis type[%v] address[%v] length[%v] != 2", redisType, address, len(arr))
+			}
+
+			if isSource && arr[0] != conf.StandAloneRoleSlave && arr[0] != conf.StandAloneRoleMaster {
+				return fmt.Errorf("redis role must be master or slave")
+			}
+			if !isSource && arr[0] != "" {
+				return fmt.Errorf("redis type[%v] leading character must be '@'", redisType)
+			}
+
+			clusterList := strings.Split(arr[1], AddressClusterSplitter)
+
+			// get auth type and password
+			var auth, password string
+			if isSource {
+				auth, password = conf.Options.SourceAuthType, conf.Options.SourcePasswordRaw
+			} else {
+				auth, password = conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw
+			}
+
+			role := arr[0]
+			if role == "" {
+				role = conf.StandAloneRoleAll
+			}
+			// create client to fetch
+			tls := isSource && conf.Options.SourceTLSEnable || !isSource && conf.Options.TargetTLSEnable
+			client := OpenRedisConn(clusterList, auth, password, false, tls)
+			if addressList, err := GetAllClusterNode(client, role, "address"); err != nil {
+				return err
+			} else {
+				if isSource {
+					conf.Options.SourceAddressList = addressList
+				} else {
+					conf.Options.TargetAddressList = addressList
+				}
+			}
+		} else {
+			setAddressList(isSource, address)
+		}
 	case conf.RedisTypeProxy:
 		if addressLen != 1 {
 			return fmt.Errorf("address[%v] length[%v] must == 1 when type is 'proxy'", addressLen, addressLen)

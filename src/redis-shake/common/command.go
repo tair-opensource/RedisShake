@@ -51,7 +51,6 @@ func ParseKeyspace(content []byte) (map[int32]int64, error) {
 	return reply, nil
 }
 
-
 /*
  * 10.1.1.1:21331> cluster nodes
  * d49a4c7b516b8da222d46a0a589b77f381285977 10.1.1.1:21333@31333 master - 0 1557996786000 3 connected 10923-16383
@@ -103,8 +102,8 @@ func ClusterNodeChoose(input []*ClusterNodeInfo, role string) []*ClusterNodeInfo
 	ret := make([]*ClusterNodeInfo, 0, len(input))
 	for _, ele := range input {
 		if ele.Flags == conf.StandAloneRoleMaster && role == conf.StandAloneRoleMaster ||
-			ele.Flags == conf.StandAloneRoleSlave && role == conf.StandAloneRoleSlave ||
-			role == "all" {
+				ele.Flags == conf.StandAloneRoleSlave && role == conf.StandAloneRoleSlave ||
+				role == conf.StandAloneRoleAll {
 			ret = append(ret, ele)
 		}
 	}
