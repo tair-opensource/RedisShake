@@ -23,6 +23,10 @@ const (
 	LogLevelWarn  = "warn"
 	LogLevelInfo  = "info"
 	LogLevelAll   = "all"
+
+	TencentCluster = "tencent_cluster"
+	AliyunCluster  = "aliyun_cluster"
+	UCloudCluster = "ucloud_cluster"
 )
 
 var (
