@@ -9,16 +9,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
-	"time"
 	"sync"
+	"time"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
 	"pkg/redis"
 
-	"redis-shake/configure"
-	"redis-shake/common"
 	"redis-shake/base"
+	"redis-shake/common"
+	"redis-shake/configure"
 )
 
 type CmdRestore struct {
@@ -127,17 +127,19 @@ func (dr *dbRestorer) restore() {
 	reader := bufio.NewReaderSize(readin, utils.ReaderBufferSize)
 
 	dr.restoreRDBFile(reader, dr.target, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw,
-		nsize)
+		nsize, conf.Options.TargetTLSEnable)
 
 	base.Status = "extra"
 	if conf.Options.ExtraInfo && (nsize == 0 || nsize != dr.rbytes.Get()) {
 		// inner usage
 		dr.restoreCommand(reader, dr.target, conf.Options.TargetAuthType,
-			conf.Options.TargetPasswordRaw)
+			conf.Options.TargetPasswordRaw, conf.Options.TargetTLSEnable)
 	}
 }
 
-func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth_type, passwd string, nsize int64) {
+
+func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth_type, passwd string, nsize int64,
+		tlsEnable bool) {
 	pipe := utils.NewRDBLoader(reader, &dr.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
@@ -146,7 +148,8 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 		for i := 0; i < conf.Options.Parallel; i++ {
 			go func() {
 				defer wg.Done()
-				c := utils.OpenRedisConn(target, auth_type, passwd, conf.Options.TargetType == conf.RedisTypeCluster)
+				c := utils.OpenRedisConn(target, auth_type, passwd, conf.Options.TargetType == conf.RedisTypeCluster,
+					tlsEnable)
 				defer c.Close()
 				var lastdb uint32 = 0
 				for e := range pipe {
@@ -196,9 +199,9 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 	log.Infof("routine[%v] restore: rdb done", dr.id)
 }
 
-func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target []string, auth_type, passwd string) {
+func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target []string, auth_type, passwd string, tlsEnable bool) {
 	// inner usage. only use on targe
-	c := utils.OpenNetConn(target[0], auth_type, passwd)
+	c := utils.OpenNetConn(target[0], auth_type, passwd, tlsEnable)
 	defer c.Close()
 
 	writer := bufio.NewWriterSize(c, utils.WriterBufferSize)

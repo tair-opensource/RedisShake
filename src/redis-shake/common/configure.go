@@ -126,7 +126,8 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 				role = conf.StandAloneRoleAll
 			}
 			// create client to fetch
-			client := OpenRedisConn(clusterList, auth, password, false)
+			tls := isSource && conf.Options.SourceTLSEnable || !isSource && conf.Options.TargetTLSEnable
+			client := OpenRedisConn(clusterList, auth, password, false, tls)
 			if addressList, err := GetAllClusterNode(client, role); err != nil {
 				return err
 			} else {
