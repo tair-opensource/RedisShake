@@ -27,14 +27,36 @@ import (
 
 	"github.com/FZambia/go-sentinel"
 	redigo "github.com/garyburd/redigo/redis"
+	redigoCluster "github.com/vinllen/redis-go-cluster"
 )
 
-func OpenRedisConn(target, auth_type, passwd string, tlsEnable bool) redigo.Conn {
-	return redigo.NewConn(OpenNetConn(target, auth_type, passwd, tlsEnable), 0, 0)
+func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool, tlsEnable bool) redigo.Conn {
+	return OpenRedisConnWithTimeout(target, auth_type, passwd, 0, 0, isCluster, tlsEnable)
 }
 
-func OpenRedisConnWithTimeout(target, auth_type, passwd string, readTimeout, writeTimeout time.Duration, tlsEnable bool) redigo.Conn {
-	return redigo.NewConn(OpenNetConn(target, auth_type, passwd, tlsEnable), readTimeout, writeTimeout)
+func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTimeout, writeTimeout time.Duration,
+		isCluster bool, tlsEnable bool) redigo.Conn {
+	// return redigo.NewConn(OpenNetConn(target, auth_type, passwd), readTimeout, writeTimeout)
+	if isCluster {
+		cluster, err := redigoCluster.NewCluster(
+			&redigoCluster.Options{
+				StartNodes:   target,
+				ConnTimeout:  1 * time.Second,
+				ReadTimeout:  readTimeout,
+				WriteTimeout: writeTimeout,
+				KeepAlive:    16,
+				AliveTime:    60 * time.Second,
+				Password:     passwd,
+			})
+		if err != nil {
+			log.Panicf("create cluster connection error[%v]", err)
+			return nil
+		}
+		return NewClusterConn(cluster, 4096)
+	} else {
+		// tls only support single connection currently
+		return redigo.NewConn(OpenNetConn(target[0], auth_type, passwd, tlsEnable), readTimeout, writeTimeout)
+	}
 }
 
 func OpenNetConn(target, auth_type, passwd string, tlsEnable bool) net.Conn {
@@ -52,9 +74,9 @@ func OpenNetConn(target, auth_type, passwd string, tlsEnable bool) net.Conn {
 		log.PanicErrorf(err, "cannot connect to '%s'", target)
 	}
 
-	log.Infof("try to auth address[%v] with type[%v]", target, auth_type)
+	// log.Infof("try to auth address[%v] with type[%v]", target, auth_type)
 	AuthPassword(c, auth_type, passwd)
-	log.Info("auth OK!")
+	// log.Info("auth OK!")
 	return c
 }
 
@@ -659,6 +681,14 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 }
 
 func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
+	/*
+	 * for ucloud, special judge.
+	 * 046110.key -> key
+	 */
+	if conf.Options.RdbSpecialCloud == UCloudCluster {
+		e.Key = e.Key[7:]
+	}
+
 	var ttlms uint64
 	if conf.Options.ReplaceHashTag {
 		e.Key = bytes.Replace(e.Key, []byte("{"), []byte(""), 1)
@@ -743,7 +773,8 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		params = append(params, e.Freq)
 	}
 	// fmt.Printf("key: %v, value: %v params: %v\n", string(e.Key), e.Value, params)
-	s, err := redigo.String(c.Do("restore", params...))
+	// s, err := redigo.String(c.Do("restore", params...))
+	s, err := redigoCluster.String(c.Do("restore", params...))
 	if err != nil {
 		/*The reply value of busykey in 2.8 kernel is "target key name is busy",
 		  but in 4.0 kernel is "BUSYKEY Target key name already exists"*/
@@ -771,10 +802,8 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		} else {
 			log.PanicError(err, "restore command error key:", string(e.Key), " err:", err.Error())
 		}
-	} else {
-		if s != "OK" {
-			log.Panicf("restore command response = '%s', should be 'OK'", s)
-		}
+	} else if s != "OK" {
+		log.Panicf("restore command response = '%s', should be 'OK'", s)
 	}
 }
 
@@ -844,7 +873,9 @@ func ParseRedisInfo(content []byte) map[string]string {
 }
 
 func GetRedisVersion(target, authType, auth string, tlsEnable bool) (string, error) {
-	c := OpenRedisConn(target, authType, auth, tlsEnable)
+	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable)
+	defer c.Close()
+
 	infoStr, err := redigo.Bytes(c.Do("info", "server"))
 	if err != nil {
 		return "", err

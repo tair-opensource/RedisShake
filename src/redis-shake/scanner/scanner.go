@@ -9,11 +9,6 @@ import (
 	"bufio"
 )
 
-const (
-	TencentCluster = "tencent_cluster"
-	AliyunCluster  = "aliyun_cluster"
-)
-
 // scanner used to scan keys
 type Scanner interface {
 	/*
@@ -34,7 +29,7 @@ type Scanner interface {
 
 func NewScanner(client []redis.Conn) []Scanner {
 	if conf.Options.ScanSpecialCloud != "" {
-		return []Scanner {
+		return []Scanner{
 			&SpecialCloudScanner{
 				client: client[0],
 				cursor: 0,
@@ -45,7 +40,7 @@ func NewScanner(client []redis.Conn) []Scanner {
 			log.Errorf("open scan-key-file[%v] error[%v]", conf.Options.ScanKeyFile, err)
 			return nil
 		} else {
-			return []Scanner {
+			return []Scanner{
 				&KeyFileScanner{
 					f:       f,
 					bufScan: bufio.NewScanner(f),
