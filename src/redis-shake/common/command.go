@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
-
 	"redis-shake/configure"
 
 	redigo "github.com/garyburd/redigo/redis"
@@ -111,7 +110,8 @@ func ClusterNodeChoose(input []*ClusterNodeInfo, role string) []*ClusterNodeInfo
 	return ret
 }
 
-func GetAllClusterNode(client redigo.Conn, role string) ([]string, error) {
+// return id list if  choose == "id", otherwise address
+func GetAllClusterNode(client redigo.Conn, role string, choose string) ([]string, error) {
 	ret, err := client.Do("cluster", "nodes")
 	if err != nil {
 		return nil, err
@@ -122,7 +122,11 @@ func GetAllClusterNode(client redigo.Conn, role string) ([]string, error) {
 
 	result := make([]string, 0, len(nodeListChoose))
 	for _, ele := range nodeListChoose {
-		result = append(result, ele.Address)
+		if choose == "id" {
+			result = append(result, ele.Id)
+		} else {
+			result = append(result, ele.Address)
+		}
 	}
 
 	return result, nil
