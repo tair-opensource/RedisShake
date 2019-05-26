@@ -6,6 +6,7 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -28,19 +29,25 @@ import (
 	redigo "github.com/garyburd/redigo/redis"
 )
 
-func OpenRedisConn(target, auth_type, passwd string) redigo.Conn {
-	return redigo.NewConn(OpenNetConn(target, auth_type, passwd), 0, 0)
+func OpenRedisConn(target, auth_type, passwd string, tlsEnable bool) redigo.Conn {
+	return redigo.NewConn(OpenNetConn(target, auth_type, passwd, tlsEnable), 0, 0)
 }
 
-func OpenRedisConnWithTimeout(target, auth_type, passwd string, readTimeout, writeTimeout time.Duration) redigo.Conn {
-	return redigo.NewConn(OpenNetConn(target, auth_type, passwd), readTimeout, writeTimeout)
+func OpenRedisConnWithTimeout(target, auth_type, passwd string, readTimeout, writeTimeout time.Duration, tlsEnable bool) redigo.Conn {
+	return redigo.NewConn(OpenNetConn(target, auth_type, passwd, tlsEnable), readTimeout, writeTimeout)
 }
 
-func OpenNetConn(target, auth_type, passwd string) net.Conn {
-	d := net.Dialer{
+func OpenNetConn(target, auth_type, passwd string, tlsEnable bool) net.Conn {
+	d := &net.Dialer{
 		KeepAlive: time.Duration(conf.Options.KeepAlive) * time.Second,
 	}
-	c, err := d.Dial("tcp", target)
+	var c net.Conn
+	var err error
+	if tlsEnable {
+		c, err = tls.DialWithDialer(d, "tcp", target, &tls.Config{InsecureSkipVerify: false})
+	} else {
+		c, err = d.Dial("tcp", target)
+	}
 	if err != nil {
 		log.PanicErrorf(err, "cannot connect to '%s'", target)
 	}
@@ -51,8 +58,14 @@ func OpenNetConn(target, auth_type, passwd string) net.Conn {
 	return c
 }
 
-func OpenNetConnSoft(target, auth_type, passwd string) net.Conn {
-	c, err := net.Dial("tcp", target)
+func OpenNetConnSoft(target, auth_type, passwd string, tlsEnable bool) net.Conn {
+	var c net.Conn
+	var err error
+	if tlsEnable {
+		c, err = tls.Dial("tcp", target, &tls.Config{InsecureSkipVerify: false})
+	} else {
+		c, err = net.Dial("tcp", target)
+	}
 	if err != nil {
 		return nil
 	}
@@ -123,8 +136,8 @@ func AuthPassword(c net.Conn, auth_type, passwd string) {
 	}
 }
 
-func OpenSyncConn(target string, auth_type, passwd string) (net.Conn, <-chan int64) {
-	c := OpenNetConn(target, auth_type, passwd)
+func OpenSyncConn(target string, auth_type, passwd string, tlsEnable bool) (net.Conn, <-chan int64) {
+	c := OpenNetConn(target, auth_type, passwd, tlsEnable)
 	if _, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand("sync"))); err != nil {
 		log.PanicError(errors.Trace(err), "write sync command failed")
 	}
@@ -830,8 +843,8 @@ func ParseRedisInfo(content []byte) map[string]string {
 	return result
 }
 
-func GetRedisVersion(target, authType, auth string) (string, error) {
-	c := OpenRedisConn(target, authType, auth)
+func GetRedisVersion(target, authType, auth string, tlsEnable bool) (string, error) {
+	c := OpenRedisConn(target, authType, auth, tlsEnable)
 	infoStr, err := redigo.Bytes(c.Do("info", "server"))
 	if err != nil {
 		return "", err
