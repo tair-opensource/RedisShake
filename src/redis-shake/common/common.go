@@ -1,10 +1,10 @@
 package utils
 
 import (
-	"net"
-	"fmt"
-	"strings"
 	"bytes"
+	"fmt"
+	"net"
+	"strings"
 
 	"pkg/libs/bytesize"
 	"redis-shake/configure"
@@ -26,7 +26,7 @@ const (
 
 	TencentCluster = "tencent_cluster"
 	AliyunCluster  = "aliyun_cluster"
-	UCloudCluster = "ucloud_cluster"
+	UCloudCluster  = "ucloud_cluster"
 )
 
 var (
@@ -56,7 +56,7 @@ func ReadRESPEnd(c net.Conn) (string, error) {
 func RemoveRESPEnd(input string) string {
 	length := len(input)
 	if length >= 2 {
-		return input[: length - 2]
+		return input[:length-2]
 	}
 	return input
 }
@@ -75,8 +75,8 @@ func ParseInfo(content []byte) map[string]string {
 }
 
 func GetTotalLink() int {
-	if len(conf.Options.SourceAddress) != 0 {
-		return len(conf.Options.SourceAddress)
+	if len(conf.Options.SourceAddressList) != 0 {
+		return len(conf.Options.SourceAddressList)
 	} else {
 		return len(conf.Options.RdbInput)
 	}
