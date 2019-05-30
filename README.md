@@ -67,7 +67,7 @@ User can use `-version` to print the version.
 
 # Usage
 ---
-You can use the binary in the release package.<br>
+You can directly download the binary in the [release package](https://github.com/alibaba/RedisShake/releases).<br>
 You can also build redis-shake yourself according to the following steps, the `go` and `govendor` must be installed before compile:
 *  git clone https://github.com/alibaba/RedisShake.git
 *  cd RedisShake
