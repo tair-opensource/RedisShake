@@ -61,6 +61,9 @@ type CmdSync struct {
 func (cmd *CmdSync) GetDetailedInfo() interface{} {
 	ret := make([]map[string]interface{}, len(cmd.dbSyncers))
 	for i, syncer := range cmd.dbSyncers {
+		if syncer == nil {
+			continue
+		}
 		ret[i] = syncer.GetExtraInfo()
 	}
 	return ret
