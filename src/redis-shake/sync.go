@@ -12,9 +12,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
-	"sync"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/io/pipe"
@@ -71,7 +71,7 @@ func (cmd *CmdSync) Main() {
 		id             int
 		source         string
 		sourcePassword string
-		target         string
+		target         []string
 		targetPassword string
 	}
 
@@ -80,9 +80,14 @@ func (cmd *CmdSync) Main() {
 	syncChan := make(chan syncNode, total)
 	cmd.dbSyncers = make([]*dbSyncer, total)
 	for i, source := range conf.Options.SourceAddressList {
-		// round-robin pick
-		pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddressList))
-		target := conf.Options.TargetAddressList[pick]
+		var target []string
+		if conf.Options.TargetType == conf.RedisTypeCluster {
+			target = conf.Options.TargetAddressList
+		} else {
+			// round-robin pick
+			pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddressList))
+			target = []string{conf.Options.TargetAddressList[pick]}
+		}
 
 		nd := syncNode{
 			id:             i,
@@ -106,7 +111,7 @@ func (cmd *CmdSync) Main() {
 				}
 
 				ds := NewDbSyncer(nd.id, nd.source, nd.sourcePassword, nd.target, nd.targetPassword,
-					conf.Options.HttpProfile + i)
+					conf.Options.HttpProfile+i)
 				cmd.dbSyncers[nd.id] = ds
 				log.Infof("routine[%v] starts syncing data from %v to %v with http[%v]",
 					ds.id, ds.source, ds.target, ds.httpProfilePort)
@@ -125,12 +130,12 @@ func (cmd *CmdSync) Main() {
 	close(syncChan)
 
 	// never quit because increment syncing is still running
-	select{}
+	select {}
 }
 
 /*------------------------------------------------------*/
 // one sync link corresponding to one dbSyncer
-func NewDbSyncer(id int, source, sourcePassword, target, targetPassword string, httpPort int) *dbSyncer {
+func NewDbSyncer(id int, source, sourcePassword string, target []string, targetPassword string, httpPort int) *dbSyncer {
 	ds := &dbSyncer{
 		id:              id,
 		source:          source,
@@ -143,17 +148,17 @@ func NewDbSyncer(id int, source, sourcePassword, target, targetPassword string, 
 
 	// add metric
 	metric.AddMetric(id)
-	
+
 	return ds
 }
 
 type dbSyncer struct {
 	id int // current id in all syncer
 
-	source         string // source address
-	sourcePassword string // source password
-	target         string // target address
-	targetPassword string // target password
+	source         string   // source address
+	sourcePassword string   // source password
+	target         []string // target address
+	targetPassword string   // target password
 
 	httpProfilePort int // http profile port
 
@@ -208,9 +213,9 @@ func (ds *dbSyncer) sync() {
 	var input io.ReadCloser
 	var nsize int64
 	if conf.Options.Psync {
-		input, nsize = ds.sendPSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword)
+		input, nsize = ds.sendPSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword, conf.Options.SourceTLSEnable)
 	} else {
-		input, nsize = ds.sendSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword)
+		input, nsize = ds.sendSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword, conf.Options.SourceTLSEnable)
 	}
 	defer input.Close()
 
@@ -242,16 +247,16 @@ func (ds *dbSyncer) sync() {
 
 	// sync rdb
 	base.Status = "full"
-	ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize)
+	ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize, conf.Options.TargetTLSEnable)
 
 	// sync increment
 	base.Status = "incr"
 	close(ds.waitFull)
-	ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword)
+	ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, conf.Options.TargetTLSEnable)
 }
 
-func (ds *dbSyncer) sendSyncCmd(master, auth_type, passwd string) (net.Conn, int64) {
-	c, wait := utils.OpenSyncConn(master, auth_type, passwd)
+func (ds *dbSyncer) sendSyncCmd(master, auth_type, passwd string, tlsEnable bool) (net.Conn, int64) {
+	c, wait := utils.OpenSyncConn(master, auth_type, passwd, tlsEnable)
 	for {
 		select {
 		case nsize := <-wait:
@@ -266,8 +271,8 @@ func (ds *dbSyncer) sendSyncCmd(master, auth_type, passwd string) (net.Conn, int
 	}
 }
 
-func (ds *dbSyncer) sendPSyncCmd(master, auth_type, passwd string) (pipe.Reader, int64) {
-	c := utils.OpenNetConn(master, auth_type, passwd)
+func (ds *dbSyncer) sendPSyncCmd(master, auth_type, passwd string, tlsEnable bool) (pipe.Reader, int64) {
+	c := utils.OpenNetConn(master, auth_type, passwd, tlsEnable)
 	log.Infof("dbSyncer[%v] psync connect '%v' with auth type[%v] OK!", ds.id, master, auth_type)
 
 	utils.SendPSyncListeningPort(c, conf.Options.HttpProfile)
@@ -329,7 +334,7 @@ func (ds *dbSyncer) sendPSyncCmd(master, auth_type, passwd string) (pipe.Reader,
 				// ds.SyncStat.SetStatus("reopen")
 				base.Status = "reopen"
 				time.Sleep(time.Second)
-				c = utils.OpenNetConnSoft(master, auth_type, passwd)
+				c = utils.OpenNetConnSoft(master, auth_type, passwd, tlsEnable)
 				if c != nil {
 					// log.PurePrintf("%s\n", NewLogItem("SourceConnReopenSuccess", "INFO", LogDetail{Info: strconv.FormatInt(offset, 10)}))
 					log.Infof("dbSyncer[%v] Event:SourceConnReopenSuccess\tId: %s\toffset = %d",
@@ -386,7 +391,7 @@ func (ds *dbSyncer) pSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer
 	}
 }
 
-func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
+func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type, passwd string, nsize int64, tlsEnable bool) {
 	pipe := utils.NewRDBLoader(reader, &ds.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
@@ -396,7 +401,8 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target, auth_type, passwd 
 		for i := 0; i < conf.Options.Parallel; i++ {
 			go func() {
 				defer wg.Done()
-				c := utils.OpenRedisConn(target, auth_type, passwd)
+				c := utils.OpenRedisConn(target, auth_type, passwd, conf.Options.TargetType == conf.RedisTypeCluster,
+					tlsEnable)
 				defer c.Close()
 				var lastdb uint32 = 0
 				for e := range pipe {
@@ -463,8 +469,11 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target, auth_type, passwd 
 	log.Infof("dbSyncer[%v] sync rdb done", ds.id)
 }
 
-func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target, auth_type, passwd string) {
-	c := utils.OpenRedisConnWithTimeout(target, auth_type, passwd, time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
+func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type, passwd string, tlsEnable bool) {
+	readeTimeout := time.Duration(10)*time.Minute
+	writeTimeout := time.Duration(10)*time.Minute
+	isCluster := conf.Options.TargetType == conf.RedisTypeCluster
+	c := utils.OpenRedisConnWithTimeout(target, auth_type, passwd, readeTimeout, writeTimeout, isCluster, tlsEnable)
 	defer c.Close()
 
 	ds.sendBuf = make(chan cmdDetail, conf.Options.SenderCount)
@@ -477,8 +486,8 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			return
 		}
 
-		srcConn := utils.OpenRedisConnWithTimeout(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
-			time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
+		srcConn := utils.OpenRedisConnWithTimeout([]string{ds.source}, conf.Options.SourceAuthType, ds.sourcePassword,
+			readeTimeout, writeTimeout, false, conf.Options.SourceTLSEnable)
 		ticker := time.NewTicker(10 * time.Second)
 		for range ticker.C {
 			offset, err := utils.GetFakeSlaveOffset(srcConn)
@@ -489,11 +498,11 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target, auth_type, passwd 
 
 				// Reconnect while network error happen
 				if err == io.EOF {
-					srcConn = utils.OpenRedisConnWithTimeout(ds.source, conf.Options.SourceAuthType,
-						ds.sourcePassword, time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
+					srcConn = utils.OpenRedisConnWithTimeout([]string{ds.source}, conf.Options.SourceAuthType,
+						ds.sourcePassword, readeTimeout, writeTimeout, false, conf.Options.SourceTLSEnable)
 				} else if _, ok := err.(net.Error); ok {
-					srcConn = utils.OpenRedisConnWithTimeout(ds.source, conf.Options.SourceAuthType,
-						ds.sourcePassword, time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
+					srcConn = utils.OpenRedisConnWithTimeout([]string{ds.source}, conf.Options.SourceAuthType,
+						ds.sourcePassword, readeTimeout, writeTimeout, false, conf.Options.SourceTLSEnable)
 				}
 			} else {
 				// ds.SyncStat.SetOffset(offset)
@@ -669,6 +678,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			noFlushCount += 1
 
 			ds.forward.Incr()
+			ds.wbytes.Add(int64(length))
 			metric.GetMetric(ds.id).AddPushCmdCount(1)
 			metric.GetMetric(ds.id).AddNetworkFlow(uint64(length))
 			sendId.Incr()
@@ -679,7 +689,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			}
 
 			if noFlushCount > conf.Options.SenderCount || cachedSize > conf.Options.SenderSize ||
-					len(ds.sendBuf) == 0 { // 5000 ds in a batch
+				len(ds.sendBuf) == 0 { // 5000 ds in a batch
 				err := c.Flush()
 				noFlushCount = 0
 				cachedSize = 0
@@ -696,9 +706,9 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target, auth_type, passwd 
 		nstat := ds.Stat()
 		var b bytes.Buffer
 		fmt.Fprintf(&b, "dbSyncer[%v] sync: ", ds.id)
-		fmt.Fprintf(&b, " +forward=%-6d", nstat.forward-lstat.forward)
-		fmt.Fprintf(&b, " +nbypass=%-6d", nstat.nbypass-lstat.nbypass)
-		fmt.Fprintf(&b, " +nbytes=%d", nstat.wbytes-lstat.wbytes)
+		fmt.Fprintf(&b, " +forwardCommands=%-6d", nstat.forward-lstat.forward)
+		fmt.Fprintf(&b, " +filterCommands=%-6d", nstat.nbypass-lstat.nbypass)
+		fmt.Fprintf(&b, " +writeBytes=%d", nstat.wbytes-lstat.wbytes)
 		log.Info(b.String())
 		lstat = nstat
 	}

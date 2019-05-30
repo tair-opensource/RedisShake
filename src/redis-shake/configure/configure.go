@@ -18,6 +18,7 @@ type Configuration struct {
 	SourceVersion             uint     `config:"source.version"`
 	SourceAuthType            string   `config:"source.auth_type"`
 	SourceParallel            uint     `config:"source.parallel"`
+	SourceTLSEnable           bool     `config:"source.tls_enable"`
 	TargetAddress             string   `config:"target.address"`
 	TargetPasswordRaw         string   `config:"target.password_raw"`
 	TargetPasswordEncoding    string   `config:"target.password_encoding"`
@@ -25,9 +26,11 @@ type Configuration struct {
 	TargetDB                  int      `config:"target.db"`
 	TargetAuthType            string   `config:"target.auth_type"`
 	TargetType                string   `config:"target.type"`
+	TargetTLSEnable           bool     `config:"target.tls_enable"`
 	RdbInput                  []string `config:"rdb.input"`
 	RdbOutput                 string   `config:"rdb.output"`
 	RdbParallel               int      `config:"rdb.parallel"`
+	RdbSpecialCloud           string   `config:"rdb.special_cloud"`
 	FakeTime                  string   `config:"fake_time"`
 	Rewrite                   bool     `config:"rewrite"`
 	FilterDB                  string   `config:"filter.db"`
@@ -58,12 +61,12 @@ type Configuration struct {
 
 	/*---------------------------------------------------------*/
 	// generated variables
-	SourceAddressList        []string      // source address list
-	TargetAddressList        []string      // target address list
-	HeartbeatIp              string        // heartbeat ip
-	ShiftTime                time.Duration // shift
-	TargetRedisVersion       string        // to_redis_version
-	TargetReplace            bool          // to_replace
+	SourceAddressList  []string      // source address list
+	TargetAddressList  []string      // target address list
+	HeartbeatIp        string        // heartbeat ip
+	ShiftTime          time.Duration // shift
+	TargetRedisVersion string        // to_redis_version
+	TargetReplace      bool          // to_replace
 }
 
 var Options Configuration
@@ -76,6 +79,7 @@ const (
 
 	StandAloneRoleMaster = "master"
 	StandAloneRoleSlave  = "slave"
+	StandAloneRoleAll    = "all"
 
 	TypeDecode  = "decode"
 	TypeRestore = "restore"

@@ -1,3 +1,7 @@
+2019-05-26 Alibaba Cloud.
+	* VERSION: 1.6.3
+	* IMPROVE: target address supports cluster.
+	* IMPROVE: supports TLS for standalone.
 2019-05-16 Alibaba Cloud.
 	* VERSION: 1.6.2
 	* BUGFIX: fix bug of `rump` mode only syncing db 0 data.
