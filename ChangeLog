@@ -1,3 +1,6 @@
+2019-05-30 Alibaba Cloud.
+	* VERSION: 1.6.4
+	* BUGFIX: fix bug of `GetDetailedInfo` panic.
 2019-05-26 Alibaba Cloud.
 	* VERSION: 1.6.3
 	* IMPROVE: target address supports cluster.
