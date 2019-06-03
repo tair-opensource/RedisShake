@@ -83,6 +83,12 @@ func (cr *CmdRump) Main() {
 	cr.receiver()
 }
 
+/*------------------------------------------------------*/
+// one rump link corresponding to one dbRumper
+type dbRumper struct {
+
+}
+
 func (cr *CmdRump) fetcher(idx int) {
 	length, err := cr.scanners[idx].NodeCount()
 	if err != nil || length <= 0 {
@@ -94,7 +100,7 @@ func (cr *CmdRump) fetcher(idx int) {
 	// iterate all source nodes
 	for i := 0; i < length; i++ {
 		// fetch db number from 'info Keyspace'
-		dbNumber, err := cr.getSourceDbList(i)
+		dbNumber, err := cr.getSourceDbList(idx)
 		if err != nil {
 			log.Panic(err)
 		}
