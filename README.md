@@ -72,7 +72,7 @@ You can also build redis-shake yourself according to the following steps, the `g
 *  git clone https://github.com/alibaba/RedisShake.git
 *  cd RedisShake
 *  export GOPATH=\`pwd\`
-*  cd src/sync
+*  cd src/vendor
 *  govendor sync     #please note: must install govendor first and then pull all dependencies: `go get -u github.com/kardianos/govendor`
 *  cd ../../ && ./build.sh
 *  ./bin/redis-shake -type=$(type_must_be_sync_dump_restore_or_decode) -conf=conf/redis-shake.conf #please note: user must modify collector.conf first to match needs.
