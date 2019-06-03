@@ -178,7 +178,8 @@ func (cr *CmdRump) getSourceDbList(id int) ([]int32, error) {
 func (cr *CmdRump) doFetch(db, idx int) error {
 	// send 'select' command to both source and target
 	log.Infof("send source select db")
-	if _, err := cr.sourceConn[idx].Do("select", db); err != nil {
+	// todo sourceConn[0]
+	if _, err := cr.sourceConn[0].Do("select", db); err != nil {
 		return err
 	}
 
@@ -192,7 +193,8 @@ func (cr *CmdRump) doFetch(db, idx int) error {
 	log.Infof("finish select db, start fetching node[%v] db[%v]", idx, db)
 
 	for {
-		keys, err := cr.scanners[idx].ScanKey(idx)
+		// todo sourceConn[0]
+		keys, err := cr.scanners[0].ScanKey(idx)
 		if err != nil {
 			return err
 		}
@@ -203,18 +205,22 @@ func (cr *CmdRump) doFetch(db, idx int) error {
 			// pipeline dump
 			for _, key := range keys {
 				log.Debug("scan key: ", key)
-				cr.sourceConn[idx].Send("DUMP", key)
+				// todo sourceConn[0]
+				cr.sourceConn[0].Send("DUMP", key)
 			}
-			dumps, err := redis.Strings(cr.sourceConn[idx].Do(""))
+			// todo sourceConn[0]
+			dumps, err := redis.Strings(cr.sourceConn[0].Do(""))
 			if err != nil && err != redis.ErrNil {
 				return fmt.Errorf("do dump with failed[%v]", err)
 			}
 
 			// pipeline ttl
 			for _, key := range keys {
-				cr.sourceConn[idx].Send("PTTL", key)
+				// todo sourceConn[0]
+				cr.sourceConn[0].Send("PTTL", key)
 			}
-			pttls, err := redis.Int64s(cr.sourceConn[idx].Do(""))
+			// todo sourceConn[0]
+			pttls, err := redis.Int64s(cr.sourceConn[0].Do(""))
 			if err != nil && err != redis.ErrNil {
 				return fmt.Errorf("do ttl with failed[%v]", err)
 			}
@@ -225,7 +231,8 @@ func (cr *CmdRump) doFetch(db, idx int) error {
 		}
 
 		// Last iteration of scan.
-		if cr.scanners[idx].EndNode() {
+		// todo sourceConn[0]
+		if cr.scanners[0].EndNode() {
 			break
 		}
 	}
