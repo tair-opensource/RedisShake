@@ -30,6 +30,14 @@ var (
 	StartTime string
 )
 
+const (
+	KB = 1024
+	MB = 1024 * KB
+	GB = 1024 * MB
+	TB = 1024 * GB
+	PB = 1024 * TB
+)
+
 // read until hit the end of RESP: "\r\n"
 func ReadRESPEnd(c net.Conn) (string, error) {
 	var ret string

@@ -1,3 +1,8 @@
+2019-06-05 Alibaba Cloud.
+	* VERSION: 1.4.4
+	* BUGFIX: mondify the ttl from millisecond to second when overpass big key
+	threshold.
+	* IMPROVE: set some default values in configuration.
 2019-05-11 Alibaba Cloud.
 	* VERSION: 1.4.3
 	* BUGFIX: add add metric in restore mode. 
