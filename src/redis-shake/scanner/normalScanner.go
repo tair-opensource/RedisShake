@@ -13,11 +13,7 @@ type NormalScanner struct {
 	cursor int64
 }
 
-func (ns *NormalScanner) NodeCount() (int, error) {
-	return 1, nil
-}
-
-func (ns *NormalScanner) ScanKey(node interface{}) ([]string, error) {
+func (ns *NormalScanner) ScanKey() ([]string, error) {
 	var keys []string
 	values, err := redis.Values(ns.client.Do("SCAN", ns.cursor, "COUNT",
 		conf.Options.ScanKeyNumber))

@@ -13,11 +13,7 @@ type KeyFileScanner struct {
 	cnt     int // mark the number of this scan. init: -1
 }
 
-func (kfs *KeyFileScanner) NodeCount() (int, error) {
-	return 1, nil
-}
-
-func (kfs *KeyFileScanner) ScanKey(node interface{}) ([]string, error) {
+func (kfs *KeyFileScanner) ScanKey() ([]string, error) {
 	keys := make([]string, 0, conf.Options.ScanKeyNumber)
 	for i := 0; i < int(conf.Options.ScanKeyNumber) && kfs.bufScan.Scan(); i++ {
 		keys = append(keys, kfs.bufScan.Text())
