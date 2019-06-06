@@ -390,14 +390,13 @@ func sanitizeOptions(tp string) error {
 		}
 
 		if conf.Options.ScanSpecialCloud != "" && conf.Options.ScanKeyFile != "" {
-			return fmt.Errorf("scan.special_cloud[%v] and scan.key_file[%v] cann't be given at the same time",
+			return fmt.Errorf("scan.special_cloud[%v] and scan.key_file[%v] can't all be given at the same time",
 				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
 		}
 
-		if (conf.Options.ScanSpecialCloud != "" || conf.Options.ScanKeyFile != "") && len(conf.Options.SourceAddressList) > 1 {
-			return fmt.Errorf("source address should <= 1 when scan.special_cloud[%v] or scan.key_file[%v] given",
-				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
-		}
+		//if len(conf.Options.SourceAddressList) == 1 {
+		//	return fmt.Errorf("source address length should == 1 when type is 'rump'")
+		//}
 	}
 
 	return nil

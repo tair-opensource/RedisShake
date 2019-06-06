@@ -141,8 +141,8 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 			setAddressList(isSource, address)
 		}
 	case conf.RedisTypeProxy:
-		if addressLen != 1 {
-			return fmt.Errorf("address[%v] length[%v] must == 1 when type is 'proxy'", addressLen, addressLen)
+		if isSource && addressLen != 1 {
+			return fmt.Errorf("address[%v] length[%v] must == 1 when type is 'proxy'", address, addressLen)
 		}
 		if isSource && tp != conf.TypeRump {
 			return fmt.Errorf("source.type == proxy should only happens when mode is 'rump'")

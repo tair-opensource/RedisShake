@@ -1,3 +1,6 @@
+2019-06-06 Alibaba Cloud.
+	* VERSION: 1.6.5
+	* IMPROVE: run rump in parallel to support several db nodes behind proxy.
 2019-05-30 Alibaba Cloud.
 	* VERSION: 1.6.4
 	* BUGFIX: fix bug of `GetDetailedInfo` panic.
