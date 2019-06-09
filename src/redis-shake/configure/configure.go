@@ -23,7 +23,7 @@ type Configuration struct {
 	TargetPasswordRaw         string   `config:"target.password_raw"`
 	TargetPasswordEncoding    string   `config:"target.password_encoding"`
 	TargetVersion             uint     `config:"target.version"`
-	TargetDB                  int      `config:"target.db"`
+	TargetDBString            string   `config:"target.db"`
 	TargetAuthType            string   `config:"target.auth_type"`
 	TargetType                string   `config:"target.type"`
 	TargetTLSEnable           bool     `config:"target.tls_enable"`
@@ -67,6 +67,7 @@ type Configuration struct {
 	ShiftTime          time.Duration // shift
 	TargetRedisVersion string        // to_redis_version
 	TargetReplace      bool          // to_replace
+	TargetDB           int           // int type
 }
 
 var Options Configuration

@@ -723,7 +723,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		}
 		restoreQuicklistEntry(c, e)
 		if e.ExpireAt != 0 {
-			r, err := redigo.Int64(c.Do("expire", e.Key, ttlms))
+			r, err := redigo.Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
 				log.Panicf("expire ", string(e.Key), err)
 			}
@@ -755,7 +755,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		}
 		restoreBigRdbEntry(c, e)
 		if e.ExpireAt != 0 {
-			r, err := redigo.Int64(c.Do("expire", e.Key, ttlms))
+			r, err := redigo.Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
 				log.Panicf("expire ", string(e.Key), err)
 			}
