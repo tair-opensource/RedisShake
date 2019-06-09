@@ -1,7 +1,7 @@
 2019-06-07 Alibaba Cloud.
 	* VERSION: 1.6.6
 	* cherry-pick merge v1.4.4
-	*
+	* BUGFIX: delete single command failed when filter key given.
 2019-06-06 Alibaba Cloud.
 	* VERSION: 1.6.5
 	* IMPROVE: run rump in parallel to support several db nodes behind proxy.

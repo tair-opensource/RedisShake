@@ -374,7 +374,7 @@ func sanitizeOptions(tp string) error {
 		conf.Options.SenderDelayChannelSize = 32
 	}
 
-	if tp == TypeRestore || tp == TypeSync {
+	if tp == conf.TypeRestore || tp == conf.TypeSync || tp == conf.TypeRump {
 		// get target redis version and set TargetReplace.
 		for _, address := range conf.Options.TargetAddressList {
 			// single connection even if the target is cluster

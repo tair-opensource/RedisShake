@@ -17,7 +17,7 @@ var RedisCommands = map[string]redisCommand{
 	"setex":            {nil, 1, 1, 1},
 	"psetex":           {nil, 1, 1, 1},
 	"append":           {nil, 1, 1, 1},
-	"del":              {nil, 1, -1, 1},
+	"del":              {nil, 1, 0, 1},
 	"unlink":           {nil, 1, -1, 1},
 	"setbit":           {nil, 1, 1, 1},
 	"bitfield":         {nil, 1, 1, 1},
@@ -86,7 +86,7 @@ var RedisCommands = map[string]redisCommand{
 	"pfmerge": {nil, 1, -1, 1},
 }
 
-func GetMatchKeys(redis_cmd redisCommand, args [][]byte, filterkeys []string) (new_args [][]byte, ret bool) {
+func GetMatchKeys(redis_cmd redisCommand, args [][]byte, filterkeys []string) (new_args [][]byte, pass bool) {
 	lastkey := redis_cmd.lastkey - 1
 	keystep := redis_cmd.keystep
 
@@ -107,10 +107,10 @@ func GetMatchKeys(redis_cmd redisCommand, args [][]byte, filterkeys []string) (n
 		}
 	}
 
-	ret = false
+	pass = false
 	new_args = make([][]byte, number*redis_cmd.keystep+len(args)-lastkey-redis_cmd.keystep)
 	if number > 0 {
-		ret = true
+		pass = true
 		for i := 0; i < number; i++ {
 			for j := 0; j < redis_cmd.keystep; j++ {
 				new_args[i*redis_cmd.keystep+j] = args[array[i]+j]
@@ -124,5 +124,6 @@ func GetMatchKeys(redis_cmd redisCommand, args [][]byte, filterkeys []string) (n
 		new_args[number*redis_cmd.keystep+j] = args[i]
 		j = j + 1
 	}
+
 	return
 }

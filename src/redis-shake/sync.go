@@ -531,7 +531,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 			id := recvId.Get() // receive id
 
 			// print debug log of receive reply
-			log.Debugf("receive reply[%v]: [%v], error: [%v]", id, reply, err)
+			log.Debugf("receive reply-id[%v]: [%v], error:[%v]", id, reply, err)
 
 			if conf.Options.Metric == false {
 				continue
@@ -623,25 +623,28 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 						ds.nbypass.Incr()
 						// ds.SyncStat.BypassCmdCount.Incr()
 						metric.GetMetric(ds.id).AddBypassCmdCount(1)
+						log.Debugf("dbSyncer[%v] ignore command[%v]", ds.id, scmd)
 						continue
 					}
 				}
 
-				is_filter := false
+				pass := false
 				if len(conf.Options.FilterKey) != 0 {
-					ds, ok := command.RedisCommands[scmd]
+					cmdNode, ok := command.RedisCommands[scmd]
 					if ok && len(argv) > 0 {
-						new_argv, is_filter = command.GetMatchKeys(ds, argv, conf.Options.FilterKey)
+						log.Debugf("dbSyncer[%v] filter command[%v]", ds.id, scmd)
+						new_argv, pass = command.GetMatchKeys(cmdNode, argv, conf.Options.FilterKey)
 					} else {
-						is_filter = true
+						pass = true
 						new_argv = argv
 					}
 				} else {
-					is_filter = true
+					pass = true
 					new_argv = argv
 				}
-				if bypass || ignorecmd || !is_filter {
+				if bypass || ignorecmd || !pass {
 					ds.nbypass.Incr()
+					log.Debugf("dbSyncer[%v] filter command[%v]", ds.id, scmd)
 					continue
 				}
 			}
