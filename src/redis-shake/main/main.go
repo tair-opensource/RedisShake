@@ -181,8 +181,11 @@ func sanitizeOptions(tp string) error {
 		conf.Options.Parallel = int(math.Max(float64(conf.Options.Parallel), float64(conf.Options.NCpu)))
 	}
 
-	if conf.Options.BigKeyThreshold > 524288000 {
-		return fmt.Errorf("BigKeyThreshold[%v] should <= 524288000", conf.Options.BigKeyThreshold)
+	// 500 M
+	if conf.Options.BigKeyThreshold > 500 * utils.MB {
+		return fmt.Errorf("BigKeyThreshold[%v] should <= 500 MB", conf.Options.BigKeyThreshold)
+	} else if conf.Options.BigKeyThreshold == 0 {
+		conf.Options.BigKeyThreshold = 50 * utils.MB
 	}
 
 	// source password
@@ -266,7 +269,10 @@ func sanitizeOptions(tp string) error {
 	// heartbeat, 86400 = 1 day
 	if conf.Options.HeartbeatInterval > 86400 {
 		return fmt.Errorf("HeartbeatInterval[%v] should in [0, 86400]", conf.Options.HeartbeatInterval)
+	} else if conf.Options.HeartbeatInterval == 0 {
+		conf.Options.HeartbeatInterval = 10
 	}
+
 	if conf.Options.HeartbeatNetworkInterface == "" {
 		conf.Options.HeartbeatIp = "127.0.0.1"
 	} else {
@@ -325,8 +331,14 @@ func sanitizeOptions(tp string) error {
 		}
 	}
 
-	if conf.Options.TargetDB >= 0 {
-		// pass, >= 0 means enable
+	if conf.Options.TargetDBString == "" {
+		conf.Options.TargetDB = -1
+	} else if v, err := strconv.Atoi(conf.Options.TargetDBString); err != nil {
+		return fmt.Errorf("parse target.db[%v] failed[%v]", conf.Options.TargetDBString, err)
+	} else if v < 0 {
+		conf.Options.TargetDB = -1
+	} else {
+		conf.Options.TargetDB = v
 	}
 
 	if conf.Options.HttpProfile < 0 || conf.Options.HttpProfile > 65535 {
@@ -357,7 +369,12 @@ func sanitizeOptions(tp string) error {
 		conf.Options.SenderCount = defaultSenderCount
 	}
 
-	if tp == conf.TypeRestore || tp == conf.TypeSync {
+
+	if conf.Options.SenderDelayChannelSize == 0 {
+		conf.Options.SenderDelayChannelSize = 32
+	}
+
+	if tp == conf.TypeRestore || tp == conf.TypeSync || tp == conf.TypeRump {
 		// get target redis version and set TargetReplace.
 		for _, address := range conf.Options.TargetAddressList {
 			// single connection even if the target is cluster
