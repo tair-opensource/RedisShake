@@ -60,6 +60,8 @@ func main() {
 		return
 	}
 
+	conf.Options.Version = utils.Version
+
 	var file *os.File
 	if file, err = os.Open(*configuration); err != nil {
 		crash(fmt.Sprintf("Configure file open failed. %v", err), -1)

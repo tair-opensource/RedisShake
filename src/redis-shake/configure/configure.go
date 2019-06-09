@@ -68,6 +68,7 @@ type Configuration struct {
 	TargetRedisVersion string        // to_redis_version
 	TargetReplace      bool          // to_replace
 	TargetDB           int           // int type
+	Version            string        // version
 }
 
 var Options Configuration
