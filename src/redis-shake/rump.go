@@ -300,7 +300,8 @@ func (dre *dbRumperExecutor) writer() {
 		}
 
 		// TODO, big key split
-		log.Debugf("dbRumper[%v] executor[%v] restore %s", dre.rumperId, dre.executorId, ele.key)
+		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
+			len(ele.value))
 		if conf.Options.Rewrite {
 			dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value, "REPLACE")
 		} else {
