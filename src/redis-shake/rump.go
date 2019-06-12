@@ -207,7 +207,7 @@ func (dre *dbRumperExecutor) getStats() map[string]interface{} {
 		case reflect.Struct:
 			// todo
 			// kv[name] = f.Interface().(atomic2.Int64).Get()
-			kv[name] = f.Interface()
+			// kv[name] = f.Interface()
 		}
 	}
 
