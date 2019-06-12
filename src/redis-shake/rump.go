@@ -346,6 +346,10 @@ func (dre *dbRumperExecutor) writeSend(batch []*KeyNode, count *uint32, wBytes *
 func (dre *dbRumperExecutor) receiver() {
 	for ele := range dre.resultChan {
 		if _, err := dre.targetClient.Receive(); err != nil && err != redis.ErrNil {
+			if err.Error() == "EOF" {
+				log.Infof("for debug: EOF find, key[%v]", ele.key)
+				continue
+			}
 			log.Panicf("dbRumper[%v] executor[%v] restore key[%v] with pttl[%v] error[%v]", dre.rumperId,
 				dre.executorId, ele.key, strconv.FormatInt(ele.pttl, 10), err)
 		}
