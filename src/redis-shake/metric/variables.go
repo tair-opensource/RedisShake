@@ -30,6 +30,7 @@ type MetricRest struct {
 	SourceDBOffset       interface{} // source redis offset
 	SourceAddress        interface{}
 	TargetAddress        interface{}
+	Details              interface{} // other details info
 }
 
 func NewMetricRest() []MetricRest {
@@ -76,6 +77,7 @@ func NewMetricRest() []MetricRest {
 			SourceDBOffset:       detailMap["SourceDBOffset"],
 			SourceAddress:        detailMap["SourceAddress"],
 			TargetAddress:        detailMap["TargetAddress"],
+			Details:              detailMap["Details"],
 		}
 	}
 

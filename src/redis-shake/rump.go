@@ -11,16 +11,27 @@ import (
 	"redis-shake/scanner"
 
 	"github.com/garyburd/redigo/redis"
+	"pkg/libs/atomic2"
+	"reflect"
 )
 
 type CmdRump struct {
+	dumpers []*dbRumper
 }
 
 func (cr *CmdRump) GetDetailedInfo() interface{} {
-	return nil
+	ret := make(map[string]interface{}, len(cr.dumpers))
+	for _, dumper := range cr.dumpers {
+		ret[dumper.address] = dumper.getStats()
+	}
+	return map[string]interface{} {
+		"Details": ret,
+	}
 }
 
 func (cr *CmdRump) Main() {
+	cr.dumpers = make([]*dbRumper, len(conf.Options.SourceAddressList))
+
 	var wg sync.WaitGroup
 	wg.Add(len(conf.Options.SourceAddressList))
 	// build dbRumper
@@ -29,6 +40,9 @@ func (cr *CmdRump) Main() {
 			id:      i,
 			address: address,
 		}
+
+		cr.dumpers[i] = dr
+
 		log.Infof("start dbRumper[%v]", i)
 		go func() {
 			defer wg.Done()
@@ -37,17 +51,33 @@ func (cr *CmdRump) Main() {
 	}
 	wg.Wait()
 
-	log.Info("all rumpers finish!")
+	log.Infof("all rumpers finish!, total data: %v", cr.GetDetailedInfo())
 }
 
 /*------------------------------------------------------*/
 // one rump(1 db or 1 proxy) link corresponding to one dbRumper
 type dbRumper struct {
-	id      int // id
-	address string
+	id      int    // id
+	address string // source address
 
 	client       redis.Conn // source client
 	tencentNodes []string   // for tencent cluster only
+
+	executors []*dbRumperExecutor
+}
+
+func (dr *dbRumper) getStats() map[string]interface{} {
+	ret := make(map[string]interface{}, len(dr.executors))
+	for _, exe := range dr.executors {
+		if exe == nil {
+			continue
+		}
+
+		id := fmt.Sprintf("%v", exe.executorId)
+		ret[id] = exe.getStats()
+	}
+
+	return ret
 }
 
 func (dr *dbRumper) run() {
@@ -62,6 +92,8 @@ func (dr *dbRumper) run() {
 	}
 
 	log.Infof("dbRumper[%v] get node count: %v", dr.id, count)
+
+	dr.executors = make([]*dbRumperExecutor, count)
 
 	var wg sync.WaitGroup
 	wg.Add(count)
@@ -90,6 +122,7 @@ func (dr *dbRumper) run() {
 				conf.Options.TargetTLSEnable),
 			tencentNodeId: tencentNodeId,
 		}
+		dr.executors[i] = executor
 
 		go func() {
 			defer wg.Done()
@@ -145,12 +178,43 @@ type dbRumperExecutor struct {
 
 	scanner   scanner.Scanner // one scanner match one db/proxy
 	fetcherWg sync.WaitGroup
+
+	stat dbRumperExexutorStats
 }
 
 type KeyNode struct {
 	key   string
 	value string
 	pttl  int64
+}
+
+type dbRumperExexutorStats struct {
+	rBytes    atomic2.Int64 // read bytes
+	rCommands atomic2.Int64 // read commands
+	wBytes    atomic2.Int64 // write bytes
+	wCommands atomic2.Int64 // write commands
+	cCommands atomic2.Int64 // confirmed commands
+}
+
+func (dre *dbRumperExecutor) getStats() map[string]interface{} {
+	kv := make(map[string]interface{})
+	// stats -> map
+	v := reflect.ValueOf(dre.stat)
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		name := v.Type().Field(i).Name
+		switch f.Kind() {
+		case reflect.Struct:
+			// todo
+			// kv[name] = f.Interface().(atomic2.Int64).Get()
+			kv[name] = f.Interface()
+		}
+	}
+
+	kv["keyChan"] = len(dre.keyChan)
+	kv["resultChan"] = len(dre.resultChan)
+
+	return kv
 }
 
 func (dre *dbRumperExecutor) exec() {
@@ -195,7 +259,7 @@ func (dre *dbRumperExecutor) fetcher() {
 	}
 
 	log.Infof("dbRumper[%v] executor[%v] fetch db list: %v", dre.rumperId, dre.executorId, dbNumber)
-	// iterate all db
+	// iterate all db nodes
 	for _, db := range dbNumber {
 		log.Infof("dbRumper[%v] executor[%v] fetch logical db: %v", dre.rumperId, dre.executorId, db)
 		if err := dre.doFetch(int(db)); err != nil {
@@ -208,6 +272,7 @@ func (dre *dbRumperExecutor) fetcher() {
 
 func (dre *dbRumperExecutor) writer() {
 	var count uint32
+	var wBytes int64
 	for ele := range dre.keyChan {
 		if ele.pttl == -1 { // not set ttl
 			ele.pttl = 0
@@ -225,6 +290,7 @@ func (dre *dbRumperExecutor) writer() {
 			dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value)
 		}
 
+		wBytes += int64(len(ele.value))
 		dre.resultChan <- ele
 		count++
 		if count == conf.Options.ScanKeyNumber {
@@ -232,6 +298,11 @@ func (dre *dbRumperExecutor) writer() {
 			log.Debugf("dbRumper[%v] executor[%v] send keys %d", dre.rumperId, dre.executorId, count)
 			dre.targetClient.Flush()
 			count = 0
+
+			dre.stat.wCommands.Add(int64(count))
+			dre.stat.wBytes.Add(wBytes)
+
+			wBytes = 0
 		}
 	}
 	dre.targetClient.Flush()
@@ -244,6 +315,7 @@ func (dre *dbRumperExecutor) receiver() {
 			log.Panicf("dbRumper[%v] executor[%v] restore key[%v] with pttl[%v] error[%v]", dre.rumperId,
 				dre.executorId, ele.key, strconv.FormatInt(ele.pttl, 10), err)
 		}
+		dre.stat.cCommands.Incr()
 	}
 }
 
@@ -292,7 +364,7 @@ func (dre *dbRumperExecutor) doFetch(db int) error {
 		if len(keys) != 0 {
 			// pipeline dump
 			for _, key := range keys {
-				log.Debug("dbRumper[%v] executor[%v] scan key: %v", dre.rumperId, dre.executorId, key)
+				log.Debugf("dbRumper[%v] executor[%v] scan key: %v", dre.rumperId, dre.executorId, key)
 				dre.sourceClient.Send("DUMP", key)
 			}
 			dumps, err := redis.Strings(dre.sourceClient.Do(""))
@@ -309,7 +381,9 @@ func (dre *dbRumperExecutor) doFetch(db int) error {
 				return fmt.Errorf("do ttl with failed[%v]", err)
 			}
 
+			dre.stat.rCommands.Add(int64(len(keys)))
 			for i, k := range keys {
+				dre.stat.rBytes.Add(int64(len(dumps[i]))) // length of value
 				dre.keyChan <- &KeyNode{k, dumps[i], pttls[i]}
 			}
 		}
