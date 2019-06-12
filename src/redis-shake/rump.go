@@ -341,7 +341,7 @@ func (dre *dbRumperExecutor) getSourceDbList() ([]int32, error) {
 }
 
 func (dre *dbRumperExecutor) doFetch(db int) error {
-	if conf.Options.ScanSpecialCloud == utils.TencentCluster {
+	if conf.Options.ScanSpecialCloud != utils.TencentCluster {
 		// send 'select' command to both source and target
 		log.Infof("dbRumper[%v] executor[%v] send source select db", dre.rumperId, dre.executorId)
 		if _, err := dre.sourceClient.Do("select", db); err != nil {
