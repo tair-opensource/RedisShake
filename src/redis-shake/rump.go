@@ -307,11 +307,11 @@ func (dre *dbRumperExecutor) writer() {
 			// batch
 			log.Debugf("dbRumper[%v] executor[%v] send keys %d", dre.rumperId, dre.executorId, count)
 			dre.targetClient.Flush()
-			count = 0
 
 			dre.stat.wCommands.Add(int64(count))
 			dre.stat.wBytes.Add(wBytes)
 
+			count = 0
 			wBytes = 0
 		}
 	}
