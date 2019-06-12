@@ -319,6 +319,11 @@ func (dre *dbRumperExecutor) receiver() {
 }
 
 func (dre *dbRumperExecutor) getSourceDbList() ([]int32, error) {
+	// tencent cluster only has 1 logical db
+	if conf.Options.ScanSpecialCloud == utils.TencentCluster {
+		return []int32{1}, nil
+	}
+
 	conn := dre.sourceClient
 	if ret, err := conn.Do("info", "keyspace"); err != nil {
 		return nil, err
