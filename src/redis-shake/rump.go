@@ -12,7 +12,6 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	"pkg/libs/atomic2"
-	"reflect"
 )
 
 type CmdRump struct {
@@ -198,18 +197,18 @@ type dbRumperExexutorStats struct {
 
 func (dre *dbRumperExecutor) getStats() map[string]interface{} {
 	kv := make(map[string]interface{})
-	// stats -> map
-	v := reflect.ValueOf(dre.stat)
-	for i := 0; i < v.NumField(); i++ {
-		f := v.Field(i)
-		name := v.Type().Field(i).Name
-		switch f.Kind() {
-		case reflect.Struct:
-			// todo
-			// kv[name] = f.Interface().(atomic2.Int64).Get()
-			// kv[name] = f.Interface()
-		}
-	}
+	//// stats -> map
+	//v := reflect.ValueOf(dre.stat)
+	//for i := 0; i < v.NumField(); i++ {
+	//	f := v.Field(i)
+	//	name := v.Type().Field(i).Name
+	//	switch f.Kind() {
+	//	case reflect.Struct:
+	//		// todo
+	//		// kv[name] = f.Interface().(atomic2.Int64).Get()
+	//		// kv[name] = f.Interface()
+	//	}
+	//}
 
 	kv["keyChan"] = len(dre.keyChan)
 	kv["resultChan"] = len(dre.resultChan)
