@@ -1,19 +1,20 @@
 package run
 
 import (
-	"pkg/libs/log"
 	"strconv"
 	"sync"
 	"fmt"
+	"time"
+	"reflect"
 
+	"pkg/libs/log"
+	"pkg/libs/atomic2"
 	"redis-shake/common"
 	"redis-shake/configure"
 	"redis-shake/scanner"
+	"redis-shake/metric"
 
 	"github.com/garyburd/redigo/redis"
-	"pkg/libs/atomic2"
-	"reflect"
-	"redis-shake/metric"
 )
 
 type CmdRump struct {
@@ -283,6 +284,7 @@ func (dre *dbRumperExecutor) fetcher() {
 func (dre *dbRumperExecutor) writer() {
 	var count uint32
 	var wBytes int64
+	batch := make([]*KeyNode, 0, conf.Options.ScanKeyNumber)
 	for ele := range dre.keyChan {
 		if ele.pttl == -1 { // not set ttl
 			ele.pttl = 0
@@ -301,22 +303,41 @@ func (dre *dbRumperExecutor) writer() {
 		}
 
 		wBytes += int64(len(ele.value))
-		dre.resultChan <- ele
+		batch = append(batch , ele)
+		// move to real send
+		// dre.resultChan <- ele
 		count++
 		if count == conf.Options.ScanKeyNumber {
 			// batch
 			log.Debugf("dbRumper[%v] executor[%v] send keys %d", dre.rumperId, dre.executorId, count)
-			dre.targetClient.Flush()
 
-			dre.stat.wCommands.Add(int64(count))
-			dre.stat.wBytes.Add(wBytes)
+			dre.writeSend(batch, &count, &wBytes)
 
-			count = 0
-			wBytes = 0
+			// clear batch
+			batch = make([]*KeyNode, 0, conf.Options.ScanKeyNumber)
 		}
+
+		// todo, for debug
+		time.Sleep(10 * time.Millisecond)
 	}
-	dre.targetClient.Flush()
+	dre.writeSend(batch, &count, &wBytes)
+
 	close(dre.resultChan)
+}
+
+func (dre *dbRumperExecutor) writeSend(batch []*KeyNode, count *uint32, wBytes *int64) {
+	dre.targetClient.Flush()
+
+	// real send
+	for _, ele := range batch {
+		dre.resultChan <- ele
+	}
+
+	dre.stat.wCommands.Add(int64(*count))
+	dre.stat.wBytes.Add(*wBytes)
+
+	*count = 0
+	*wBytes = 0
 }
 
 func (dre *dbRumperExecutor) receiver() {
