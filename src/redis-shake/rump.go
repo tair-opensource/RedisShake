@@ -24,8 +24,10 @@ func (cr *CmdRump) GetDetailedInfo() interface{} {
 	for _, dumper := range cr.dumpers {
 		ret[dumper.address] = dumper.getStats()
 	}
-	return map[string]interface{} {
-		"Details": ret,
+	return []map[string]interface{} {
+		{
+			"Details": ret,
+		},
 	}
 }
 
