@@ -341,10 +341,12 @@ func (dre *dbRumperExecutor) getSourceDbList() ([]int32, error) {
 }
 
 func (dre *dbRumperExecutor) doFetch(db int) error {
-	// send 'select' command to both source and target
-	log.Infof("dbRumper[%v] executor[%v] send source select db", dre.rumperId, dre.executorId)
-	if _, err := dre.sourceClient.Do("select", db); err != nil {
-		return err
+	if conf.Options.ScanSpecialCloud == utils.TencentCluster {
+		// send 'select' command to both source and target
+		log.Infof("dbRumper[%v] executor[%v] send source select db", dre.rumperId, dre.executorId)
+		if _, err := dre.sourceClient.Do("select", db); err != nil {
+			return err
+		}
 	}
 
 	// it's ok to send select directly because the message order can be guaranteed.
