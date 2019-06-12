@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"sync"
 	"fmt"
-	"time"
 	"reflect"
 
 	"pkg/libs/log"
@@ -285,7 +284,13 @@ func (dre *dbRumperExecutor) writer() {
 	var count uint32
 	var wBytes int64
 	batch := make([]*KeyNode, 0, conf.Options.ScanKeyNumber)
+
+	// used in QoS
+	bucket := utils.StartQoS(conf.Options.Qps)
 	for ele := range dre.keyChan {
+		// QoS, limit the qps
+		<-bucket
+
 		if ele.pttl == -1 { // not set ttl
 			ele.pttl = 0
 		}
@@ -307,6 +312,7 @@ func (dre *dbRumperExecutor) writer() {
 		// move to real send
 		// dre.resultChan <- ele
 		count++
+
 		if count == conf.Options.ScanKeyNumber {
 			// batch
 			log.Debugf("dbRumper[%v] executor[%v] send keys %d", dre.rumperId, dre.executorId, count)
@@ -316,9 +322,6 @@ func (dre *dbRumperExecutor) writer() {
 			// clear batch
 			batch = make([]*KeyNode, 0, conf.Options.ScanKeyNumber)
 		}
-
-		// todo, for debug
-		time.Sleep(1 * time.Millisecond)
 	}
 	dre.writeSend(batch, &count, &wBytes)
 

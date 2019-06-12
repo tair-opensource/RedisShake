@@ -52,6 +52,7 @@ type Configuration struct {
 	ScanKeyNumber             uint32   `config:"scan.key_number"`
 	ScanSpecialCloud          string   `config:"scan.special_cloud"`
 	ScanKeyFile               string   `config:"scan.key_file"`
+	Qps                       int      `config:"qps"`
 
 	// inner variables
 	ReplaceHashTag bool   `config:"replace_hash_tag"`
