@@ -13,6 +13,7 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"pkg/libs/atomic2"
 	"reflect"
+	"redis-shake/metric"
 )
 
 type CmdRump struct {
@@ -22,8 +23,15 @@ type CmdRump struct {
 func (cr *CmdRump) GetDetailedInfo() interface{} {
 	ret := make(map[string]interface{}, len(cr.dumpers))
 	for _, dumper := range cr.dumpers {
+		if dumper == nil {
+			continue
+		}
 		ret[dumper.address] = dumper.getStats()
 	}
+
+	// TODO, better to move to the next level
+	metric.AddMetric(0)
+
 	return []map[string]interface{} {
 		{
 			"Details": ret,
