@@ -318,7 +318,7 @@ func (dre *dbRumperExecutor) writer() {
 		}
 
 		// todo, for debug
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
 	}
 	dre.writeSend(batch, &count, &wBytes)
 
