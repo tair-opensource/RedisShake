@@ -371,9 +371,15 @@ func sanitizeOptions(tp string) error {
 		conf.Options.SenderCount = defaultSenderCount
 	}
 
-
 	if conf.Options.SenderDelayChannelSize == 0 {
 		conf.Options.SenderDelayChannelSize = 32
+	}
+
+	// [0, 100 million]
+	if conf.Options.Qps < 0 || conf.Options.Qps >= 100000000 {
+		return fmt.Errorf("qps[%v] should in (0, 100000000]", conf.Options.Qps)
+	} else if conf.Options.Qps == 0 {
+		conf.Options.Qps = 500000
 	}
 
 	if tp == conf.TypeRestore || tp == conf.TypeSync || tp == conf.TypeRump {
