@@ -222,7 +222,7 @@ func (dre *dbRumperExecutor) getStats() map[string]interface{} {
 			// todo
 			kv[name] = f.Field(0).Int()
 			// kv[name] = f.Interface()
-		case reflect.Int:
+		case reflect.Int64:
 			if name == "sumSize" {
 				continue
 			}
