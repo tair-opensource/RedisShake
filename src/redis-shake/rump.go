@@ -14,6 +14,7 @@ import (
 	"redis-shake/metric"
 
 	"github.com/garyburd/redigo/redis"
+	"math"
 )
 
 type CmdRump struct {
@@ -204,6 +205,9 @@ type dbRumperExexutorStats struct {
 	wBytes    atomic2.Int64 // write bytes
 	wCommands atomic2.Int64 // write commands
 	cCommands atomic2.Int64 // confirmed commands
+	minSize   int64         // min package size
+	maxSize   int64         // max package size
+	sumSize   int64         // total package size
 }
 
 func (dre *dbRumperExecutor) getStats() map[string]interface{} {
@@ -218,11 +222,17 @@ func (dre *dbRumperExecutor) getStats() map[string]interface{} {
 			// todo
 			kv[name] = f.Field(0).Int()
 			// kv[name] = f.Interface()
+		case reflect.Int:
+			if name == "sumSize" {
+				continue
+			}
+			kv[name] = f.Int()
 		}
 	}
 
 	kv["keyChan"] = len(dre.keyChan)
 	kv["resultChan"] = len(dre.resultChan)
+	kv["avgSize"] = float64(dre.stat.sumSize) / float64(dre.stat.rCommands.Get())
 
 	return kv
 }
@@ -283,6 +293,7 @@ func (dre *dbRumperExecutor) fetcher() {
 func (dre *dbRumperExecutor) writer() {
 	var count uint32
 	var wBytes int64
+	var err error
 	batch := make([]*KeyNode, 0, conf.Options.ScanKeyNumber)
 
 	// used in QoS
@@ -303,9 +314,13 @@ func (dre *dbRumperExecutor) writer() {
 		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
 			len(ele.value))
 		if conf.Options.Rewrite {
-			dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value, "REPLACE")
+			err = dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value, "REPLACE")
 		} else {
-			dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value)
+			err = dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value)
+		}
+		if err != nil {
+			log.Panicf("dbRumper[%v] executor[%v] send key[%v] failed[%v]", dre.rumperId, dre.executorId,
+				ele.key, err)
 		}
 
 		wBytes += int64(len(ele.value))
@@ -330,7 +345,9 @@ func (dre *dbRumperExecutor) writer() {
 }
 
 func (dre *dbRumperExecutor) writeSend(batch []*KeyNode, count *uint32, wBytes *int64) {
-	dre.targetClient.Flush()
+	if err := dre.targetClient.Flush(); err != nil {
+		log.Panicf("dbRumper[%v] executor[%v] flush failed[%v]", dre.rumperId, dre.executorId, err)
+	}
 
 	// real send
 	for _, ele := range batch {
@@ -347,10 +364,6 @@ func (dre *dbRumperExecutor) writeSend(batch []*KeyNode, count *uint32, wBytes *
 func (dre *dbRumperExecutor) receiver() {
 	for ele := range dre.resultChan {
 		if _, err := dre.targetClient.Receive(); err != nil && err != redis.ErrNil {
-			if err.Error() == "EOF" {
-				log.Infof("for debug: EOF find, key[%v]", ele.key)
-				continue
-			}
 			log.Panicf("dbRumper[%v] executor[%v] restore key[%v] with pttl[%v] error[%v]", dre.rumperId,
 				dre.executorId, ele.key, strconv.FormatInt(ele.pttl, 10), err)
 		}
@@ -391,11 +404,12 @@ func (dre *dbRumperExecutor) doFetch(db int) error {
 
 	// it's ok to send select directly because the message order can be guaranteed.
 	log.Infof("dbRumper[%v] executor[%v] send target select db", dre.rumperId, dre.executorId)
+	/*
 	dre.targetClient.Flush()
 	if err := dre.targetClient.Send("select", db); err != nil {
 		return err
 	}
-	dre.targetClient.Flush()
+	dre.targetClient.Flush()*/
 
 	log.Infof("dbRumper[%v] executor[%v] start fetching node db[%v]", dre.rumperId, dre.executorId, db)
 
@@ -430,6 +444,9 @@ func (dre *dbRumperExecutor) doFetch(db int) error {
 			dre.stat.rCommands.Add(int64(len(keys)))
 			for i, k := range keys {
 				dre.stat.rBytes.Add(int64(len(dumps[i]))) // length of value
+				dre.stat.minSize = int64(math.Min(float64(dre.stat.minSize), float64(len(dumps[i]))))
+				dre.stat.maxSize = int64(math.Min(float64(dre.stat.maxSize), float64(len(dumps[i]))))
+				dre.stat.sumSize += int64(len(dumps[i]))
 				dre.keyChan <- &KeyNode{k, dumps[i], pttls[i]}
 			}
 		}
