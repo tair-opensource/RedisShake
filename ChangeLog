@@ -1,3 +1,8 @@
+2019-06-13 Alibaba Cloud.
+	* VERSION: 1.6.7
+	* IMPROVE: split big key in `rump` mode.
+	* IMPROVE: add rate transmission mechanism in `rump` mode.
+	* IMPROVE: add metric in `rump` mode.
 2019-06-09 Alibaba Cloud.
 	* VERSION: 1.6.6
 	* cherry-pick merge v1.4.4

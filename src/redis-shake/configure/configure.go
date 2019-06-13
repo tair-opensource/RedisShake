@@ -52,6 +52,7 @@ type Configuration struct {
 	ScanKeyNumber             uint32   `config:"scan.key_number"`
 	ScanSpecialCloud          string   `config:"scan.special_cloud"`
 	ScanKeyFile               string   `config:"scan.key_file"`
+	Qps                       int      `config:"qps"`
 
 	// inner variables
 	ReplaceHashTag bool   `config:"replace_hash_tag"`
@@ -68,6 +69,7 @@ type Configuration struct {
 	TargetRedisVersion string        // to_redis_version
 	TargetReplace      bool          // to_replace
 	TargetDB           int           // int type
+	Version            string        // version
 }
 
 var Options Configuration
