@@ -443,16 +443,7 @@ func (dre *dbRumperExecutor) doFetch(db int) error {
 		}
 	}
 
-	// it's ok to send select directly because the message order can be guaranteed.
-	log.Infof("dbRumper[%v] executor[%v] send target select db", dre.rumperId, dre.executorId)
-
-	//todo
-	/*
-	dre.targetClient.Flush()
-	if err := dre.targetClient.Send("select", db); err != nil {
-		return err
-	}
-	dre.targetClient.Flush()*/
+	// selecting target db is moving into writer
 
 	log.Infof("dbRumper[%v] executor[%v] start fetching node db[%v]", dre.rumperId, dre.executorId, db)
 
