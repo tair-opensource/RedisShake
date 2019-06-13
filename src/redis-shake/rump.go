@@ -123,16 +123,12 @@ func (dr *dbRumper) run() {
 			tencentNodeId = dr.tencentNodes[i]
 		}
 
-		executor := &dbRumperExecutor{
-			rumperId:   dr.id,
-			executorId: i,
-			sourceClient: utils.OpenRedisConn([]string{dr.address}, conf.Options.SourceAuthType,
-				conf.Options.SourcePasswordRaw, false, conf.Options.SourceTLSEnable),
-			targetClient: utils.OpenRedisConn(target, conf.Options.TargetAuthType,
-				conf.Options.TargetPasswordRaw, conf.Options.TargetType == conf.RedisTypeCluster,
-				conf.Options.TargetTLSEnable),
-			tencentNodeId: tencentNodeId,
-		}
+		sourceClient := utils.OpenRedisConn([]string{dr.address}, conf.Options.SourceAuthType,
+			conf.Options.SourcePasswordRaw, false, conf.Options.SourceTLSEnable)
+		targetClient := utils.OpenRedisConn(target, conf.Options.TargetAuthType,
+			conf.Options.TargetPasswordRaw, conf.Options.TargetType == conf.RedisTypeCluster,
+			conf.Options.TargetTLSEnable)
+		executor := NewDbRumperExecutor(dr.id, i, sourceClient, targetClient, tencentNodeId)
 		dr.executors[i] = executor
 
 		go func() {
@@ -191,6 +187,23 @@ type dbRumperExecutor struct {
 	fetcherWg sync.WaitGroup
 
 	stat dbRumperExexutorStats
+}
+
+func NewDbRumperExecutor(rumperId, executorId int, sourceClient, targetClient redis.Conn, tencentNodeId string) *dbRumperExecutor {
+	executor := &dbRumperExecutor{
+		rumperId:      rumperId,
+		executorId:    executorId,
+		sourceClient:  sourceClient,
+		targetClient:  targetClient,
+		tencentNodeId: tencentNodeId,
+		stat: dbRumperExexutorStats{
+			minSize: 1 << 30,
+			maxSize: 0,
+			sumSize: 0,
+		},
+	}
+
+	return executor
 }
 
 type KeyNode struct {
@@ -445,7 +458,7 @@ func (dre *dbRumperExecutor) doFetch(db int) error {
 			for i, k := range keys {
 				dre.stat.rBytes.Add(int64(len(dumps[i]))) // length of value
 				dre.stat.minSize = int64(math.Min(float64(dre.stat.minSize), float64(len(dumps[i]))))
-				dre.stat.maxSize = int64(math.Min(float64(dre.stat.maxSize), float64(len(dumps[i]))))
+				dre.stat.maxSize = int64(math.Max(float64(dre.stat.maxSize), float64(len(dumps[i]))))
 				dre.stat.sumSize += int64(len(dumps[i]))
 				dre.keyChan <- &KeyNode{k, dumps[i], pttls[i]}
 			}
