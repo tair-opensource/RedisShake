@@ -5,6 +5,7 @@ import (
 	"sync"
 	"fmt"
 	"reflect"
+	"math"
 
 	"pkg/libs/log"
 	"pkg/libs/atomic2"
@@ -14,7 +15,6 @@ import (
 	"redis-shake/metric"
 
 	"github.com/garyburd/redigo/redis"
-	"math"
 )
 
 type CmdRump struct {
@@ -128,7 +128,10 @@ func (dr *dbRumper) run() {
 		targetClient := utils.OpenRedisConn(target, conf.Options.TargetAuthType,
 			conf.Options.TargetPasswordRaw, conf.Options.TargetType == conf.RedisTypeCluster,
 			conf.Options.TargetTLSEnable)
-		executor := NewDbRumperExecutor(dr.id, i, sourceClient, targetClient, tencentNodeId)
+		targetBigKeyClient := utils.OpenRedisConn(target, conf.Options.TargetAuthType,
+			conf.Options.TargetPasswordRaw, conf.Options.TargetType == conf.RedisTypeCluster,
+			conf.Options.TargetTLSEnable)
+		executor := NewDbRumperExecutor(dr.id, i, sourceClient, targetClient, targetBigKeyClient, tencentNodeId)
 		dr.executors[i] = executor
 
 		go func() {
@@ -174,11 +177,12 @@ func (dr *dbRumper) getNode() (int, error) {
 /*------------------------------------------------------*/
 // one executor(1 db only) link corresponding to one dbRumperExecutor
 type dbRumperExecutor struct {
-	rumperId      int // father id
-	executorId    int // current id, also == aliyun cluster node id
-	sourceClient  redis.Conn
-	targetClient  redis.Conn
-	tencentNodeId string // tencent cluster node id
+	rumperId           int        // father id
+	executorId         int        // current id, also == aliyun cluster node id
+	sourceClient       redis.Conn // source client
+	targetClient       redis.Conn // target client
+	tencentNodeId      string     // tencent cluster node id
+	targetBigKeyClient redis.Conn // target client only used in big key, this is a bit ugly
 
 	keyChan    chan *KeyNode // keyChan is used to communicated between routine1 and routine2
 	resultChan chan *KeyNode // resultChan is used to communicated between routine2 and routine3
@@ -189,13 +193,15 @@ type dbRumperExecutor struct {
 	stat dbRumperExexutorStats
 }
 
-func NewDbRumperExecutor(rumperId, executorId int, sourceClient, targetClient redis.Conn, tencentNodeId string) *dbRumperExecutor {
+func NewDbRumperExecutor(rumperId, executorId int, sourceClient, targetClient, targetBigKeyClient redis.Conn,
+	tencentNodeId string) *dbRumperExecutor {
 	executor := &dbRumperExecutor{
-		rumperId:      rumperId,
-		executorId:    executorId,
-		sourceClient:  sourceClient,
-		targetClient:  targetClient,
-		tencentNodeId: tencentNodeId,
+		rumperId:           rumperId,
+		executorId:         executorId,
+		sourceClient:       sourceClient,
+		targetClient:       targetClient,
+		tencentNodeId:      tencentNodeId,
+		targetBigKeyClient: targetBigKeyClient,
 		stat: dbRumperExexutorStats{
 			minSize: 1 << 30,
 			maxSize: 0,
@@ -210,6 +216,7 @@ type KeyNode struct {
 	key   string
 	value string
 	pttl  int64
+	db    int
 }
 
 type dbRumperExexutorStats struct {
@@ -311,6 +318,7 @@ func (dre *dbRumperExecutor) writer() {
 
 	// used in QoS
 	bucket := utils.StartQoS(conf.Options.Qps)
+	preDb := 0
 	for ele := range dre.keyChan {
 		// QoS, limit the qps
 		<-bucket
@@ -323,9 +331,25 @@ func (dre *dbRumperExecutor) writer() {
 			continue
 		}
 
-		// TODO, big key split
 		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
 			len(ele.value))
+		if uint64(len(ele.value)) >= conf.Options.BigKeyThreshold {
+			log.Infof("dbRumper[%v] executor[%v] restore big key[%v] with length[%v]", dre.rumperId,
+				dre.executorId, ele.key, len(ele.value))
+			// flush previous cache
+			batch = dre.writeSend(batch, &count, &wBytes)
+
+			// handle big key
+			utils.RestoreBigkey(dre.targetBigKeyClient, ele.key, ele.value, ele.pttl, ele.db)
+			continue
+		}
+
+		// send "select" command if db is different
+		if ele.db != preDb {
+			dre.targetClient.Send("select", ele.db)
+			preDb = ele.db
+		}
+
 		if conf.Options.Rewrite {
 			err = dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value, "REPLACE")
 		} else {
@@ -337,7 +361,7 @@ func (dre *dbRumperExecutor) writer() {
 		}
 
 		wBytes += int64(len(ele.value))
-		batch = append(batch , ele)
+		batch = append(batch, ele)
 		// move to real send
 		// dre.resultChan <- ele
 		count++
@@ -346,10 +370,7 @@ func (dre *dbRumperExecutor) writer() {
 			// batch
 			log.Debugf("dbRumper[%v] executor[%v] send keys %d", dre.rumperId, dre.executorId, count)
 
-			dre.writeSend(batch, &count, &wBytes)
-
-			// clear batch
-			batch = make([]*KeyNode, 0, conf.Options.ScanKeyNumber)
+			batch = dre.writeSend(batch, &count, &wBytes)
 		}
 	}
 	dre.writeSend(batch, &count, &wBytes)
@@ -357,7 +378,12 @@ func (dre *dbRumperExecutor) writer() {
 	close(dre.resultChan)
 }
 
-func (dre *dbRumperExecutor) writeSend(batch []*KeyNode, count *uint32, wBytes *int64) {
+func (dre *dbRumperExecutor) writeSend(batch []*KeyNode, count *uint32, wBytes *int64) []*KeyNode {
+	newBatch := make([]*KeyNode, 0, conf.Options.ScanKeyNumber)
+	if len(batch) == 0 {
+		return newBatch
+	}
+
 	if err := dre.targetClient.Flush(); err != nil {
 		log.Panicf("dbRumper[%v] executor[%v] flush failed[%v]", dre.rumperId, dre.executorId, err)
 	}
@@ -372,6 +398,8 @@ func (dre *dbRumperExecutor) writeSend(batch []*KeyNode, count *uint32, wBytes *
 
 	*count = 0
 	*wBytes = 0
+
+	return newBatch
 }
 
 func (dre *dbRumperExecutor) receiver() {
@@ -417,6 +445,8 @@ func (dre *dbRumperExecutor) doFetch(db int) error {
 
 	// it's ok to send select directly because the message order can be guaranteed.
 	log.Infof("dbRumper[%v] executor[%v] send target select db", dre.rumperId, dre.executorId)
+
+	//todo
 	/*
 	dre.targetClient.Flush()
 	if err := dre.targetClient.Send("select", db); err != nil {
@@ -456,11 +486,12 @@ func (dre *dbRumperExecutor) doFetch(db int) error {
 
 			dre.stat.rCommands.Add(int64(len(keys)))
 			for i, k := range keys {
-				dre.stat.rBytes.Add(int64(len(dumps[i]))) // length of value
-				dre.stat.minSize = int64(math.Min(float64(dre.stat.minSize), float64(len(dumps[i]))))
-				dre.stat.maxSize = int64(math.Max(float64(dre.stat.maxSize), float64(len(dumps[i]))))
-				dre.stat.sumSize += int64(len(dumps[i]))
-				dre.keyChan <- &KeyNode{k, dumps[i], pttls[i]}
+				length := len(dumps[i])
+				dre.stat.rBytes.Add(int64(length)) // length of value
+				dre.stat.minSize = int64(math.Min(float64(dre.stat.minSize), float64(length)))
+				dre.stat.maxSize = int64(math.Max(float64(dre.stat.maxSize), float64(length)))
+				dre.stat.sumSize += int64(length)
+				dre.keyChan <- &KeyNode{k, dumps[i], pttls[i], db}
 			}
 		}
 
