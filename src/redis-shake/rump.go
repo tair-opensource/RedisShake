@@ -1,18 +1,18 @@
 package run
 
 import (
+	"fmt"
+	"math"
+	"reflect"
 	"strconv"
 	"sync"
-	"fmt"
-	"reflect"
-	"math"
 
-	"pkg/libs/log"
 	"pkg/libs/atomic2"
+	"pkg/libs/log"
 	"redis-shake/common"
 	"redis-shake/configure"
-	"redis-shake/scanner"
 	"redis-shake/metric"
+	"redis-shake/scanner"
 
 	"github.com/garyburd/redigo/redis"
 )
@@ -33,7 +33,7 @@ func (cr *CmdRump) GetDetailedInfo() interface{} {
 	// TODO, better to move to the next level
 	metric.AddMetric(0)
 
-	return []map[string]interface{} {
+	return []map[string]interface{}{
 		{
 			"Details": ret,
 		},
@@ -94,7 +94,7 @@ func (dr *dbRumper) getStats() map[string]interface{} {
 func (dr *dbRumper) run() {
 	// single connection
 	dr.client = utils.OpenRedisConn([]string{dr.address}, conf.Options.SourceAuthType,
-			conf.Options.SourcePasswordRaw, false, conf.Options.SourceTLSEnable)
+		conf.Options.SourcePasswordRaw, false, conf.Options.SourceTLSEnable)
 
 	// some clouds may have several db under proxy
 	count, err := dr.getNode()
@@ -320,6 +320,9 @@ func (dre *dbRumperExecutor) writer() {
 	bucket := utils.StartQoS(conf.Options.Qps)
 	preDb := 0
 	for ele := range dre.keyChan {
+		if len(conf.Options.FilterKey) != 0 && !hasAtLeastOnePrefix(ele.key, conf.Options.FilterKey) {
+			continue
+		}
 		// QoS, limit the qps
 		<-bucket
 

@@ -137,9 +137,8 @@ func (dr *dbRestorer) restore() {
 	}
 }
 
-
 func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth_type, passwd string, nsize int64,
-		tlsEnable bool) {
+	tlsEnable bool) {
 	pipe := utils.NewRDBLoader(reader, &dr.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
@@ -167,6 +166,9 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 								lastdb = e.DB
 								utils.SelectDB(c, lastdb)
 							}
+						}
+						if len(conf.Options.FilterKey) != 0 && !hasAtLeastOnePrefix(string(e.Key), conf.Options.FilterKey) {
+							continue
 						}
 						utils.RestoreRdbEntry(c, e)
 					}
