@@ -1,15 +1,17 @@
 package metric
 
 import (
-	"time"
-	"sync/atomic"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"math"
+	"strconv"
+	"sync"
+	"sync/atomic"
+	"time"
 
+	"pkg/libs/log"
 	"redis-shake/base"
 	"redis-shake/configure"
-	"pkg/libs/log"
-	"sync"
 )
 
 const (
@@ -18,7 +20,7 @@ const (
 
 var (
 	MetricMap = new(sync.Map)
-	runner base.Runner
+	runner    base.Runner
 )
 
 type Op interface {
@@ -51,6 +53,15 @@ func (p *Percent) Get(returnString bool) interface{} {
 			return dividend / divisor
 		}
 	}
+}
+
+func (p *Percent) GetFloat64() float64 {
+	divisor := atomic.LoadUint64(&p.Divisor)
+	if divisor == 0 {
+		return math.MaxFloat64
+	}
+	dividend := atomic.LoadUint64(&p.Dividend)
+	return float64(dividend) / float64(divisor)
 }
 
 func (p *Percent) Update() {
@@ -131,7 +142,7 @@ func (m *Metric) run() {
 		tick := 0
 		for range time.NewTicker(1 * time.Second).C {
 			tick++
-			if tick % updateInterval == 0 && conf.Options.MetricPrintLog {
+			if tick%updateInterval == 0 && conf.Options.MetricPrintLog {
 				stat := NewMetricRest()
 				if opts, err := json.Marshal(stat); err != nil {
 					log.Infof("marshal metric stat error[%v]", err)
@@ -145,8 +156,9 @@ func (m *Metric) run() {
 	}()
 }
 
-func (m *Metric) AddPullCmdCount(val uint64) {
+func (m *Metric) AddPullCmdCount(dbSyncerID int, val uint64) {
 	m.PullCmdCount.Set(val)
+	pullCmdCountTotal.WithLabelValues(strconv.Itoa(dbSyncerID)).Add(float64(val))
 }
 
 func (m *Metric) GetPullCmdCount() interface{} {
@@ -157,8 +169,9 @@ func (m *Metric) GetPullCmdCountTotal() interface{} {
 	return atomic.LoadUint64(&m.PullCmdCount.Total)
 }
 
-func (m *Metric) AddBypassCmdCount(val uint64) {
+func (m *Metric) AddBypassCmdCount(dbSyncerID int, val uint64) {
 	m.BypassCmdCount.Set(val)
+	bypassCmdCountTotal.WithLabelValues(strconv.Itoa(dbSyncerID)).Add(float64(val))
 }
 
 func (m *Metric) GetBypassCmdCount() interface{} {
@@ -169,8 +182,9 @@ func (m *Metric) GetBypassCmdCountTotal() interface{} {
 	return atomic.LoadUint64(&m.BypassCmdCount.Total)
 }
 
-func (m *Metric) AddPushCmdCount(val uint64) {
+func (m *Metric) AddPushCmdCount(dbSyncerID int, val uint64) {
 	m.PushCmdCount.Set(val)
+	pushCmdCountTotal.WithLabelValues(strconv.Itoa(dbSyncerID)).Add(float64(val))
 }
 
 func (m *Metric) GetPushCmdCount() interface{} {
@@ -181,8 +195,9 @@ func (m *Metric) GetPushCmdCountTotal() interface{} {
 	return atomic.LoadUint64(&m.PushCmdCount.Total)
 }
 
-func (m *Metric) AddSuccessCmdCount(val uint64) {
+func (m *Metric) AddSuccessCmdCount(dbSyncerID int, val uint64) {
 	m.SuccessCmdCount.Set(val)
+	successCmdCountTotal.WithLabelValues(strconv.Itoa(dbSyncerID)).Add(float64(val))
 }
 
 func (m *Metric) GetSuccessCmdCount() interface{} {
@@ -193,8 +208,9 @@ func (m *Metric) GetSuccessCmdCountTotal() interface{} {
 	return atomic.LoadUint64(&m.SuccessCmdCount.Total)
 }
 
-func (m *Metric) AddFailCmdCount(val uint64) {
+func (m *Metric) AddFailCmdCount(dbSyncerID int, val uint64) {
 	m.FailCmdCount.Set(val)
+	failCmdCountTotal.WithLabelValues(strconv.Itoa(dbSyncerID)).Add(float64(val))
 }
 
 func (m *Metric) GetFailCmdCount() interface{} {
@@ -218,9 +234,14 @@ func (m *Metric) GetAvgDelay() interface{} {
 	return m.AvgDelay.Get(true)
 }
 
-func (m *Metric) AddNetworkFlow(val uint64) {
+func (m *Metric) GetAvgDelayFloat64() float64 {
+	return m.AvgDelay.GetFloat64()
+}
+
+func (m *Metric) AddNetworkFlow(dbSyncerID int, val uint64) {
 	// atomic.AddUint64(&m.NetworkFlow.Value, val)
 	m.NetworkFlow.Set(val)
+	networkFlowTotalInBytes.WithLabelValues(strconv.Itoa(dbSyncerID)).Add(float64(val))
 }
 
 func (m *Metric) GetNetworkFlow() interface{} {
@@ -231,8 +252,9 @@ func (m *Metric) GetNetworkFlowTotal() interface{} {
 	return atomic.LoadUint64(&m.NetworkFlow.Total)
 }
 
-func (m *Metric) SetFullSyncProgress(val uint64) {
+func (m *Metric) SetFullSyncProgress(dbSyncerID int, val uint64) {
 	m.FullSyncProgress = val
+	fullSyncProcessPercent.WithLabelValues(strconv.Itoa(dbSyncerID)).Set(float64(val))
 }
 
 func (m *Metric) GetFullSyncProgress() interface{} {

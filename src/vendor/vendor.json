@@ -69,6 +69,24 @@
 			"revisionTime": "2018-12-26T10:54:42Z"
 		},
 		{
+			"checksumSHA1": "x5CuZuHwidIOrzy/g2NQMDJMIxQ=",
+			"path": "github.com/prometheus/client_golang/prometheus",
+			"revision": "3d8379da8fc2309dd563f593f15a739054c098bc",
+			"revisionTime": "2019-06-17T18:27:57Z"
+		},
+		{
+			"checksumSHA1": "BFMAsj5z3cYaNKx9fwHrazQRFvI=",
+			"path": "github.com/prometheus/client_golang/prometheus/promauto",
+			"revision": "3d8379da8fc2309dd563f593f15a739054c098bc",
+			"revisionTime": "2019-06-17T18:27:57Z"
+		},
+		{
+			"checksumSHA1": "V51yx4gq61QCD9clxnps792Eq2Y=",
+			"path": "github.com/prometheus/client_golang/prometheus/promhttp",
+			"revision": "3d8379da8fc2309dd563f593f15a739054c098bc",
+			"revisionTime": "2019-06-17T18:27:57Z"
+		},
+		{
 			"checksumSHA1": "Tutue3nEgM/87jitUcYv6ODwyNE=",
 			"path": "github.com/satori/go.uuid",
 			"revision": "b2ce2384e17bbe0c6d34077efa39dbab3e09123b",
@@ -92,6 +110,5 @@
 			"revision": "a96e63847dc3c67d17befa69c303767e2f84e54f",
 			"revisionTime": "2017-05-31T16:03:50Z"
 		}
-	],
-	"rootPath": "/Users/vinllen-ali/code/redis-shake-inner/redis-shake/src"
+	]
 }
