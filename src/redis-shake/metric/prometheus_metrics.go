@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	metricNamespace = "redisshake"
+	metricNamespace   = "redisshake"
+	dbSyncerLabelName = "db_syncer"
 )
 
 var (
@@ -20,7 +21,7 @@ var (
 			Name:      "pull_cmd_count_total",
 			Help:      "RedisShake pull redis cmd count in total",
 		},
-		[]string{"dbSyncer"},
+		[]string{dbSyncerLabelName},
 	)
 	bypassCmdCountTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -28,7 +29,7 @@ var (
 			Name:      "bypass_cmd_count_total",
 			Help:      "RedisShake bypass redis cmd count in total",
 		},
-		[]string{"dbSyncer"},
+		[]string{dbSyncerLabelName},
 	)
 	pushCmdCountTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -36,7 +37,7 @@ var (
 			Name:      "push_cmd_count_total",
 			Help:      "RedisShake push redis cmd count in total",
 		},
-		[]string{"dbSyncer"},
+		[]string{dbSyncerLabelName},
 	)
 	successCmdCountTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -44,7 +45,7 @@ var (
 			Name:      "success_cmd_count_total",
 			Help:      "RedisShake push redis cmd count in total",
 		},
-		[]string{"dbSyncer"},
+		[]string{dbSyncerLabelName},
 	)
 	failCmdCountTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -52,7 +53,7 @@ var (
 			Name:      "fail_cmd_count_total",
 			Help:      "RedisShake push redis cmd count in total",
 		},
-		[]string{"dbSyncer"},
+		[]string{dbSyncerLabelName},
 	)
 	networkFlowTotalInBytes = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -60,7 +61,7 @@ var (
 			Name:      "network_flow_total_in_bytes",
 			Help:      "RedisShake total network flow in total (byte)",
 		},
-		[]string{"dbSyncer"},
+		[]string{dbSyncerLabelName},
 	)
 	fullSyncProcessPercent = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -68,7 +69,7 @@ var (
 			Name:      "full_sync_process_percent",
 			Help:      "RedisShake full sync process (%)",
 		},
-		[]string{"dbSyncer"},
+		[]string{dbSyncerLabelName},
 	)
 	averageDelayInMs = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -76,7 +77,7 @@ var (
 			Name:      "average_delay_in_ms",
 			Help:      "RedisShake average delay (ms)",
 		},
-		[]string{"dbSyncer"},
+		[]string{dbSyncerLabelName},
 	)
 )
 
