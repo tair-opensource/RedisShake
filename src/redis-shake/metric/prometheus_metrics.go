@@ -9,60 +9,72 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+const (
+	metricNamespace = "redisshake"
+)
+
 var (
 	pullCmdCountTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "pull_cmd_count_total",
-			Help: "RedisShake pull redis cmd count in total",
+			Namespace: metricNamespace,
+			Name:      "pull_cmd_count_total",
+			Help:      "RedisShake pull redis cmd count in total",
 		},
 		[]string{"dbSyncer"},
 	)
 	bypassCmdCountTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "bypass_cmd_count_total",
-			Help: "RedisShake bypass redis cmd count in total",
+			Namespace: metricNamespace,
+			Name:      "bypass_cmd_count_total",
+			Help:      "RedisShake bypass redis cmd count in total",
 		},
 		[]string{"dbSyncer"},
 	)
 	pushCmdCountTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "push_cmd_count_total",
-			Help: "RedisShake push redis cmd count in total",
+			Namespace: metricNamespace,
+			Name:      "push_cmd_count_total",
+			Help:      "RedisShake push redis cmd count in total",
 		},
 		[]string{"dbSyncer"},
 	)
 	successCmdCountTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "success_cmd_count_total",
-			Help: "RedisShake push redis cmd count in total",
+			Namespace: metricNamespace,
+			Name:      "success_cmd_count_total",
+			Help:      "RedisShake push redis cmd count in total",
 		},
 		[]string{"dbSyncer"},
 	)
 	failCmdCountTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "fail_cmd_count_total",
-			Help: "RedisShake push redis cmd count in total",
+			Namespace: metricNamespace,
+			Name:      "fail_cmd_count_total",
+			Help:      "RedisShake push redis cmd count in total",
 		},
 		[]string{"dbSyncer"},
 	)
 	networkFlowTotalInBytes = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "network_flow_total_in_bytes",
-			Help: "RedisShake total network flow in total (byte)",
+			Namespace: metricNamespace,
+			Name:      "network_flow_total_in_bytes",
+			Help:      "RedisShake total network flow in total (byte)",
 		},
 		[]string{"dbSyncer"},
 	)
 	fullSyncProcessPercent = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "full_sync_process_percent",
-			Help: "RedisShake full sync process (%)",
+			Namespace: metricNamespace,
+			Name:      "full_sync_process_percent",
+			Help:      "RedisShake full sync process (%)",
 		},
 		[]string{"dbSyncer"},
 	)
 	averageDelayInMs = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "average_delay_in_ms",
-			Help: "RedisShake average delay (ms)",
+			Namespace: metricNamespace,
+			Name:      "average_delay_in_ms",
+			Help:      "RedisShake average delay (ms)",
 		},
 		[]string{"dbSyncer"},
 	)
