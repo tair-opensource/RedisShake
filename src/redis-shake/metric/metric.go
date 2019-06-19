@@ -3,7 +3,6 @@ package metric
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -50,18 +49,9 @@ func (p *Percent) Get(returnString bool) interface{} {
 		if returnString {
 			return fmt.Sprintf("%.02f", float64(dividend)/float64(divisor))
 		} else {
-			return dividend / divisor
+			return float64(dividend) / float64(divisor)
 		}
 	}
-}
-
-func (p *Percent) GetFloat64() float64 {
-	divisor := atomic.LoadUint64(&p.Divisor)
-	if divisor == 0 {
-		return math.MaxFloat64
-	}
-	dividend := atomic.LoadUint64(&p.Dividend)
-	return float64(dividend) / float64(divisor)
 }
 
 func (p *Percent) Update() {
@@ -235,7 +225,7 @@ func (m *Metric) GetAvgDelay() interface{} {
 }
 
 func (m *Metric) GetAvgDelayFloat64() float64 {
-	return m.AvgDelay.GetFloat64()
+	return m.AvgDelay.Get(false).(float64)
 }
 
 func (m *Metric) AddNetworkFlow(dbSyncerID int, val uint64) {
