@@ -426,11 +426,8 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 						}
 
 						if len(conf.Options.FilterKey) != 0 {
-							for i := 0; i < len(conf.Options.FilterKey); i++ {
-								if strings.HasPrefix(string(e.Key), conf.Options.FilterKey[i]) {
-									utils.RestoreRdbEntry(c, e)
-									break
-								}
+							if utils.HasAtLeastOnePrefix(string(e.Key), conf.Options.FilterKey) {
+								utils.RestoreRdbEntry(c, e)
 							}
 						} else if len(conf.Options.FilterSlot) > 0 {
 							for _, slot := range conf.Options.FilterSlot {
@@ -473,8 +470,8 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 }
 
 func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type, passwd string, tlsEnable bool) {
-	readeTimeout := time.Duration(10)*time.Minute
-	writeTimeout := time.Duration(10)*time.Minute
+	readeTimeout := time.Duration(10) * time.Minute
+	writeTimeout := time.Duration(10) * time.Minute
 	isCluster := conf.Options.TargetType == conf.RedisTypeCluster
 	c := utils.OpenRedisConnWithTimeout(target, auth_type, passwd, readeTimeout, writeTimeout, isCluster, tlsEnable)
 	defer c.Close()
