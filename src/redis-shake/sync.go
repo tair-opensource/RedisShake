@@ -426,7 +426,7 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 						}
 
 						if len(conf.Options.FilterKey) != 0 {
-							if hasAtLeastOnePrefix(string(e.Key), conf.Options.FilterKey) {
+							if utils.HasAtLeastOnePrefix(string(e.Key), conf.Options.FilterKey) {
 								utils.RestoreRdbEntry(c, e)
 							}
 						} else if len(conf.Options.FilterSlot) > 0 {

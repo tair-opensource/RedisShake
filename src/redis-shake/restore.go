@@ -167,7 +167,7 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 								utils.SelectDB(c, lastdb)
 							}
 						}
-						if len(conf.Options.FilterKey) != 0 && !hasAtLeastOnePrefix(string(e.Key), conf.Options.FilterKey) {
+						if len(conf.Options.FilterKey) != 0 && !utils.HasAtLeastOnePrefix(string(e.Key), conf.Options.FilterKey) {
 							continue
 						}
 						utils.RestoreRdbEntry(c, e)

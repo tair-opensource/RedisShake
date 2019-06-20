@@ -35,7 +35,7 @@ func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool, tl
 }
 
 func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTimeout, writeTimeout time.Duration,
-		isCluster bool, tlsEnable bool) redigo.Conn {
+	isCluster bool, tlsEnable bool) redigo.Conn {
 	// return redigo.NewConn(OpenNetConn(target, auth_type, passwd), readTimeout, writeTimeout)
 	if isCluster {
 		cluster, err := redigoCluster.NewCluster(
@@ -1002,4 +1002,14 @@ var defaultDialFunction = func(addr string) (redigo.Conn, error) {
 		return nil, err
 	}
 	return c, nil
+}
+
+// HasAtLeastOnePrefix checks whether the key begins with at least one of prefixes.
+func HasAtLeastOnePrefix(key string, prefixes []string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
 }

@@ -320,7 +320,7 @@ func (dre *dbRumperExecutor) writer() {
 	bucket := utils.StartQoS(conf.Options.Qps)
 	preDb := 0
 	for ele := range dre.keyChan {
-		if len(conf.Options.FilterKey) != 0 && !hasAtLeastOnePrefix(ele.key, conf.Options.FilterKey) {
+		if len(conf.Options.FilterKey) != 0 && !utils.HasAtLeastOnePrefix(ele.key, conf.Options.FilterKey) {
 			continue
 		}
 		// QoS, limit the qps
