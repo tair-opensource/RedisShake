@@ -464,7 +464,7 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 			fmt.Fprintf(&b, "  ignore=%-12d", stat.ignore)
 		}
 		log.Info(b.String())
-		metric.GetMetric(ds.id).SetFullSyncProgress(uint64(100 * stat.rbytes / nsize))
+		metric.GetMetric(ds.id).SetFullSyncProgress(ds.id, uint64(100*stat.rbytes/nsize))
 	}
 	log.Infof("dbSyncer[%v] sync rdb done", ds.id)
 }
@@ -535,9 +535,9 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 			}
 
 			if err == nil {
-				metric.GetMetric(ds.id).AddSuccessCmdCount(1)
+				metric.GetMetric(ds.id).AddSuccessCmdCount(ds.id, 1)
 			} else {
-				metric.GetMetric(ds.id).AddFailCmdCount(1)
+				metric.GetMetric(ds.id).AddFailCmdCount(ds.id, 1)
 				if utils.CheckHandleNetError(err) {
 					log.Panicf("dbSyncer[%v] Event:NetErrorWhileReceive\tId:%s\tError:%s",
 						ds.id, conf.Options.Id, err.Error())
@@ -589,7 +589,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 			if scmd, argv, err = redis.ParseArgs(resp); err != nil {
 				log.PanicErrorf(err, "dbSyncer[%v] parse command arguments failed", ds.id)
 			} else {
-				metric.GetMetric(ds.id).AddPullCmdCount(1)
+				metric.GetMetric(ds.id).AddPullCmdCount(ds.id, 1)
 
 				// print debug log of send command
 				if conf.Options.LogLevel == utils.LogLevelAll {
@@ -619,7 +619,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 					if bypass || ignorecmd {
 						ds.nbypass.Incr()
 						// ds.SyncStat.BypassCmdCount.Incr()
-						metric.GetMetric(ds.id).AddBypassCmdCount(1)
+						metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
 						log.Debugf("dbSyncer[%v] ignore command[%v]", ds.id, scmd)
 						continue
 					}
@@ -654,7 +654,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 					ds.sendBuf <- cmdDetail{Cmd: "SELECT", Args: [][]byte{[]byte(strconv.FormatInt(int64(lastdb), 10))}}
 				} else {
 					ds.nbypass.Incr()
-					metric.GetMetric(ds.id).AddBypassCmdCount(1)
+					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
 				}
 				continue
 			}
@@ -682,8 +682,8 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 
 			ds.forward.Incr()
 			ds.wbytes.Add(int64(length))
-			metric.GetMetric(ds.id).AddPushCmdCount(1)
-			metric.GetMetric(ds.id).AddNetworkFlow(uint64(length))
+			metric.GetMetric(ds.id).AddPushCmdCount(ds.id, 1)
+			metric.GetMetric(ds.id).AddNetworkFlow(ds.id, uint64(length))
 			sendId.Incr()
 
 			if conf.Options.Metric {
