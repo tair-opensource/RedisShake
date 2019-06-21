@@ -87,3 +87,9 @@ We also provide some tools for synchronization in Shake series.<br>
 
 Plus, we have a WeChat group so that users can join and discuss, but the group user number is limited. So please add my WeChat number: `vinllen_xingge` first, and I will add you to this group.<br>
 
+# Thanks
+---
+| Username | Mail |
+| :------: | :------: |
+| ceshihao | davidzheng23@gmail.com |
+| wangyiyang | wangyiyang.kk@gmail.com |
