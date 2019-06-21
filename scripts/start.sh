@@ -2,7 +2,7 @@
 
 catalog=$(dirname "$0")
 
-cd "${catalog}"/../ || exit 1
+cd "${catalog}" || exit 1
 
 if [ $# != 2 ] ; then
 	echo "USAGE: $0 [conf] [mode]"
@@ -16,4 +16,4 @@ if [ "Darwin" == "$(uname -s)" ];then
     exit 1
 fi
 
-./bin/hypervisor --daemon --exec="./bin/$name -conf=$1 -type=$2 2>&1 1>> $name.output" 1>>hypervisor.output 2>&1
+./hypervisor --daemon --exec="./$name -conf=$1 -type=$2 1>>$name.output 2>&1" 1>>hypervisor.output 2>&1
