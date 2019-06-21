@@ -34,7 +34,10 @@ type MetricRest struct {
 }
 
 func NewMetricRest() []MetricRest {
-	detailMapList := runner.GetDetailedInfo().([]map[string]interface{})
+	var detailMapList []map[string]interface{}
+	if rawInfo := runner.GetDetailedInfo(); rawInfo != nil {
+		detailMapList = runner.GetDetailedInfo().([]map[string]interface{})
+	}
 	if detailMapList == nil || len(detailMapList) == 0 {
 		return []MetricRest{
 			{
