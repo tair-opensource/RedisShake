@@ -38,3 +38,10 @@ echo "[ BUILD RELEASE ]"
 run_builder='go build -v'
 $run_builder -ldflags "-X $info" -o "bin/redis-shake" "./src/redis-shake/main/main.go"
 echo "build successfully!"
+
+if [ "Linux" == "$(uname -s)" ];then
+	# hypervisor
+	gcc -Wall -O3 scripts/hypervisor.c -o ${output}/hypervisor -lpthread
+elif [ "Darwin" == "$(uname -s)" ];then
+	printf "\\nWARNING !!! MacOS doesn't supply hypervisor\\n"
+fi
