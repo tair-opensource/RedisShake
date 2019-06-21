@@ -13,6 +13,9 @@ else
 fi
 branch=$branch","$cid
 
+output=./bin/
+rm -rf ${output}
+
 # make sure we're in the directory where the script lives
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -36,5 +39,16 @@ info=$info","$t
 
 echo "[ BUILD RELEASE ]"
 run_builder='go build -v'
-$run_builder -ldflags "-X $info" -o "bin/redis-shake" "./src/redis-shake/main/main.go"
+$run_builder -ldflags "-X $info" -o "${output}/redis-shake" "./src/redis-shake/main/main.go"
 echo "build successfully!"
+
+# copy scripts
+cp scripts/start.sh ${output}/
+cp scripts/stop.sh ${output}/
+
+if [ "Linux" == "$(uname -s)" ];then
+	# hypervisor
+	gcc -Wall -O3 scripts/hypervisor.c -o ${output}/hypervisor -lpthread
+elif [ "Darwin" == "$(uname -s)" ];then
+	printf "\\nWARNING !!! MacOS doesn't supply hypervisor\\n"
+fi

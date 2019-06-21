@@ -225,7 +225,7 @@ func (m *Metric) GetAvgDelay() interface{} {
 }
 
 func (m *Metric) GetAvgDelayFloat64() float64 {
-	return m.AvgDelay.Get(false).(float64)
+	return float64(m.AvgDelay.Get(false).(int64))
 }
 
 func (m *Metric) AddNetworkFlow(dbSyncerID int, val uint64) {
