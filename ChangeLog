@@ -1,3 +1,8 @@
+2019-06-21 Alibaba Cloud.
+	* VERSION: 1.6.8
+	* IMPROVE: add hypervisor.
+	* IMPROVE: add key filter in `rump` mode.
+	* IMPROVE: add prometheus metrics with url: "localhost:$http_profile/metrics"
 2019-06-13 Alibaba Cloud.
 	* VERSION: 1.6.7
 	* IMPROVE: split big key in `rump` mode.
