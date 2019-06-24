@@ -159,10 +159,10 @@
 			"revisionTime": "2019-03-04T09:57:49Z"
 		},
 		{
-			"checksumSHA1": "uma2AeftGc7LC/UB0QY2JSnxl3w=",
+			"checksumSHA1": "ZT2d9cNq14zxFxnzA2kaqj8tfJY=",
 			"path": "github.com/vinllen/redis-go-cluster",
-			"revision": "b6031aad42dc289f4696f835b2fe6dc0da49c8ee",
-			"revisionTime": "2019-05-25T06:57:32Z"
+			"revision": "bdcf6ff491eca6a29ba905300253a65d88eb1ad6",
+			"revisionTime": "2019-06-24T08:07:27Z"
 		},
 		{
 			"checksumSHA1": "TM3Neoy1xRAKyZYMGzKc41sDFW4=",
@@ -170,5 +170,6 @@
 			"revision": "a96e63847dc3c67d17befa69c303767e2f84e54f",
 			"revisionTime": "2017-05-31T16:03:50Z"
 		}
-	]
+	],
+	"rootPath": "/Users/vinllen-ali/code/redis-shake-inner/redis-shake/src"
 }
