@@ -613,7 +613,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 						}
 						bypass = !base.AcceptDB(uint32(n))
 						isselect = true
-					} else if strings.EqualFold(scmd, "opinfo") {
+					} else if utils.FilterCommands(scmd, conf.Options.FilterLua) {
 						ignorecmd = true
 					}
 					if bypass || ignorecmd {

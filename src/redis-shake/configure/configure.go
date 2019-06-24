@@ -36,6 +36,7 @@ type Configuration struct {
 	FilterDB                  string   `config:"filter.db"`
 	FilterKey                 []string `config:"filter.key"`
 	FilterSlot                []string `config:"filter.slot"`
+	FilterLua                 bool     `config:"filter.lua"`
 	BigKeyThreshold           uint64   `config:"big_key_threshold"`
 	Psync                     bool     `config:"psync"`
 	Metric                    bool     `config:"metric"`
