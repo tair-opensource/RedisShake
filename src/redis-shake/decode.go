@@ -137,13 +137,13 @@ func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- strin
 	}
 	for e := range ipipe {
 		var b bytes.Buffer
-		if e.Type == rdb.RdbFlagAUX && string(e.Key) == "lua" {
+		if e.Type == rdb.RdbFlagAUX {
 			o := &struct {
 				Type     string `json:"type"`
 				Key      string `json:"key"`
 				Value64  string `json:"value64"`
 			}{
-				"aux", "lua", string(e.Value),
+				"aux", string(e.Key), string(e.Value),
 			}
 			fmt.Fprintf(&b, "%s\n", toJson(o))
 			cmd.nentry.Incr()
