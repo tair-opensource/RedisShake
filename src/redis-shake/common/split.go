@@ -18,7 +18,7 @@ func RestoreBigkey(client redigo.Conn, key string, value string, pttl int64, db 
 		Key:             String2Bytes(key),
 		Type:            0, // uselss
 		Value:           String2Bytes(value),
-		ExpireAt: 0, // useless here
+		ExpireAt:        0, // useless here
 		RealMemberCount: 0,
 		NeedReadLen:     1,
 		IdleTime:        0,
