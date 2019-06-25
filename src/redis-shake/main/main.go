@@ -55,7 +55,7 @@ func main() {
 		fmt.Println(utils.Version)
 		return
 	}
-	
+
 	if *configuration == "" || *tp == "" {
 		if !*version {
 			fmt.Println("Please show me the '-conf' and '-type'")
