@@ -629,7 +629,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 				if len(conf.Options.FilterKey) != 0 {
 					cmdNode, ok := command.RedisCommands[scmd]
 					if ok && len(argv) > 0 {
-						log.Debugf("dbSyncer[%v] filter command[%v]", ds.id, scmd)
+						// log.Debugf("dbSyncer[%v] filter command[%v]", ds.id, scmd)
 						new_argv, pass = command.GetMatchKeys(cmdNode, argv, conf.Options.FilterKey)
 					} else {
 						pass = true
