@@ -1,3 +1,6 @@
+2019-06-25 Alibaba Cloud.
+	* VERSION: 1.6.10
+	* IMPROVE: support print Lua in `decode` mode.
 2019-06-21 Alibaba Cloud.
 	* VERSION: 1.6.9
 	* IMPROVE: support Lua and transaction when target is open source cluster
