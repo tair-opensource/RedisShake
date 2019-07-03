@@ -8,7 +8,8 @@ func FilterCommands(cmd string, luaFilter bool) bool {
 		return true
 	}
 
-	if luaFilter && (strings.EqualFold(cmd, "eval") || strings.EqualFold(cmd, "script")) {
+	if luaFilter && (strings.EqualFold(cmd, "eval") || strings.EqualFold(cmd, "script") ||
+			strings.EqualFold(cmd, "evalsha")) {
 		return true
 	}
 

@@ -136,11 +136,25 @@ func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- strin
 		return string(b)
 	}
 	for e := range ipipe {
+		var b bytes.Buffer
+		if e.Type == rdb.RdbFlagAUX {
+			o := &struct {
+				Type     string `json:"type"`
+				Key      string `json:"key"`
+				Value64  string `json:"value64"`
+			}{
+				"aux", string(e.Key), string(e.Value),
+			}
+			fmt.Fprintf(&b, "%s\n", toJson(o))
+			cmd.nentry.Incr()
+			opipe <- b.String()
+			continue
+		}
+
 		o, err := rdb.DecodeDump(e.Value)
 		if err != nil {
 			log.PanicError(err, "decode failed")
 		}
-		var b bytes.Buffer
 		switch obj := o.(type) {
 		default:
 			log.Panicf("unknown object %v", o)

@@ -344,6 +344,9 @@ func (dre *dbRumperExecutor) writer() {
 
 			// handle big key
 			utils.RestoreBigkey(dre.targetBigKeyClient, ele.key, ele.value, ele.pttl, ele.db)
+
+			// all the reply has been handled in RestoreBigkey
+			// dre.resultChan <- ele
 			continue
 		}
 
@@ -369,7 +372,7 @@ func (dre *dbRumperExecutor) writer() {
 		// dre.resultChan <- ele
 		count++
 
-		if count == conf.Options.ScanKeyNumber {
+		if count >= conf.Options.ScanKeyNumber {
 			// batch
 			log.Debugf("dbRumper[%v] executor[%v] send keys %d", dre.rumperId, dre.executorId, count)
 
@@ -408,8 +411,11 @@ func (dre *dbRumperExecutor) writeSend(batch []*KeyNode, count *uint32, wBytes *
 func (dre *dbRumperExecutor) receiver() {
 	for ele := range dre.resultChan {
 		if _, err := dre.targetClient.Receive(); err != nil && err != redis.ErrNil {
-			log.Panicf("dbRumper[%v] executor[%v] restore key[%v] with pttl[%v] error[%v]", dre.rumperId,
-				dre.executorId, ele.key, strconv.FormatInt(ele.pttl, 10), err)
+			rdbVersion, checksum, checkErr := utils.CheckVersionChecksum(utils.String2Bytes(ele.value))
+			log.Panicf("dbRumper[%v] executor[%v] restore key[%v] error[%v]: pttl[%v], value length[%v], " +
+					"rdb version[%v], checksum[%v], check error[%v]",
+				dre.rumperId, dre.executorId, ele.key, err, strconv.FormatInt(ele.pttl, 10), len(ele.value),
+				rdbVersion, checksum, checkErr)
 		}
 		dre.stat.cCommands.Incr()
 	}
