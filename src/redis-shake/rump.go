@@ -369,7 +369,7 @@ func (dre *dbRumperExecutor) writer() {
 		// dre.resultChan <- ele
 		count++
 
-		if count == conf.Options.ScanKeyNumber {
+		if count >= conf.Options.ScanKeyNumber {
 			// batch
 			log.Debugf("dbRumper[%v] executor[%v] send keys %d", dre.rumperId, dre.executorId, count)
 
