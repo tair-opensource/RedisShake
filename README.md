@@ -1,4 +1,4 @@
-RedisShake is mainly used to synchronize data from one redis database to another.<br>
+RedisShake is mainly used to synchronize data from one redis to another.<br>
 Thanks to the Douyu's WSD team for the support. <br>
 
 * [中文文档](https://yq.aliyun.com/articles/691794)
@@ -26,7 +26,7 @@ Please check out the `conf/redis-shake.conf` to see the detailed parameters desc
 # Support
 ---
 Redis version from 2.x to 5.0.
-Standalone, Cluster, Codis, Aliyun Cluster Proxy, Tencent Cloud Proxy and so on.
+Supports `Standalone`, `Cluster`, `Codis`, `Aliyun Cluster Proxy`, `Tencent Cloud Proxy` and so on.
 
 # Configuration
 Redis-shake has several parameters in the configuration(`conf/redis-shake.conf`) that maybe confusing, if this is your first time using, just configure the `source.address` and `target.address` parameters.

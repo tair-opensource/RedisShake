@@ -1,6 +1,9 @@
 2019-06-25 Alibaba Cloud.
 	* VERSION: 1.6.10
 	* IMPROVE: support print Lua in `decode` mode.
+	* BUGFIX: merge metric panic PR#111
+	* IMPROVE: check checksum and version once receiving error from the target in
+	`rump` mode.
 2019-06-21 Alibaba Cloud.
 	* VERSION: 1.6.9
 	* IMPROVE: support Lua and transaction when target is open source cluster
