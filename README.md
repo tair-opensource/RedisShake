@@ -23,6 +23,11 @@ The type can be one of the followings:<br>
 
 Please check out the `conf/redis-shake.conf` to see the detailed parameters description.<br>
 
+# Support
+---
+Redis version from 2.x to 5.0.
+Standalone, Cluster, Codis, Aliyun Cluster Proxy, Tencent Cloud Proxy and so on.
+
 # Configuration
 Redis-shake has several parameters in the configuration(`conf/redis-shake.conf`) that maybe confusing, if this is your first time using, just configure the `source.address` and `target.address` parameters.
 
