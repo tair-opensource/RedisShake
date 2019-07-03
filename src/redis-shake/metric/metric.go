@@ -3,6 +3,7 @@ package metric
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -42,7 +43,7 @@ func (p *Percent) Get(returnString bool) interface{} {
 		if returnString {
 			return "null"
 		} else {
-			return int64(^uint64(0) >> 1) // int64_max
+			return math.MaxFloat64
 		}
 	} else {
 		dividend := atomic.LoadUint64(&p.Dividend)
@@ -225,7 +226,10 @@ func (m *Metric) GetAvgDelay() interface{} {
 }
 
 func (m *Metric) GetAvgDelayFloat64() float64 {
-	return float64(m.AvgDelay.Get(false).(int64))
+	if avgDelay, ok := m.AvgDelay.Get(false).(float64); ok {
+		return avgDelay
+	}
+	return math.MaxFloat64
 }
 
 func (m *Metric) AddNetworkFlow(dbSyncerID int, val uint64) {
