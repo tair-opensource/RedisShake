@@ -7,11 +7,13 @@ import (
 	"strings"
 	"reflect"
 	"unsafe"
+	"encoding/binary"
 
 	"pkg/libs/bytesize"
 	"redis-shake/configure"
 
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
+	"github.com/cupcake/rdb/crc64"
 )
 
 const (
@@ -36,6 +38,7 @@ var (
 	LogRotater       *logRotate.Logger
 	StartTime        string
 	TargetRoundRobin int
+	RDBVersion       uint = 9 // 9 for 5.0
 )
 
 const (
@@ -111,4 +114,31 @@ func String2Bytes(s string) []byte {
 
 func Bytes2String(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
+}
+
+func CheckVersionChecksum(d []byte) (uint, uint64, error) {
+	/* Write the footer, this is how it looks like:
+	 * ----------------+---------------------+---------------+
+	 * ... RDB payload | 2 bytes RDB version | 8 bytes CRC64 |
+	 * ----------------+---------------------+---------------+
+	 * RDB version and CRC are both in little endian.
+	 */
+	length := len(d)
+	if length < 10 {
+		return 0, 0, fmt.Errorf("rdb: invalid dump length")
+	}
+
+	footer := length - 10
+	rdbVersion := uint((d[footer + 1] << 8) | d[footer])
+	if rdbVersion > RDBVersion {
+		return 0, 0, fmt.Errorf("current version[%v] > RDBVersion[%v]", rdbVersion, RDBVersion)
+	}
+
+	checksum := binary.LittleEndian.Uint64(d[length - 8:])
+	digest := crc64.Digest(d[: length - 8])
+	if checksum != digest {
+		return 0, 0, fmt.Errorf("rdb: invalid CRC checksum[%v] != digest[%v]", checksum, digest)
+	}
+
+	return rdbVersion, checksum, nil
 }
