@@ -54,9 +54,16 @@ func (cc *ClusterConn) Send(commandName string, args ...interface{}) error {
 // send batcher and put the return into recvChan
 func (cc *ClusterConn) Flush() error {
 	ret, err := cc.client.RunBatch(cc.batcher)
-	cc.batcher = nil // reset batcher
+	defer func() {
+		cc.batcher = nil // reset batcher
+	}()
 
 	if err != nil {
+		cc.recvChan <- reply{
+			answer: nil,
+			err:    err,
+		}
+
 		return err
 	}
 
