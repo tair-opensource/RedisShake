@@ -26,6 +26,7 @@ const (
 	LogLevelError = "error"
 	LogLevelWarn  = "warn"
 	LogLevelInfo  = "info"
+	LogLevelDebug = "debug"
 	LogLevelAll   = "all"
 
 	TencentCluster = "tencent_cluster"

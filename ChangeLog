@@ -1,4 +1,4 @@
-2019-06-25 Alibaba Cloud.
+2019-07-03 Alibaba Cloud.
 	* VERSION: 1.6.10
 	* IMPROVE: support print Lua in `decode` mode.
 	* BUGFIX: merge metric panic PR#111

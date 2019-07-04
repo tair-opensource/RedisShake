@@ -266,6 +266,8 @@ func sanitizeOptions(tp string) error {
 		fallthrough
 	case utils.LogLevelInfo:
 		logDeepLevel = log.LEVEL_INFO
+	case utils.LogLevelDebug:
+		fallthrough
 	case utils.LogLevelAll:
 		logDeepLevel = log.LEVEL_DEBUG
 	default:
