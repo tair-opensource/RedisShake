@@ -332,6 +332,9 @@ func set(c redigo.Conn, key []byte, value []byte) {
 }
 
 func flushAndCheckReply(c redigo.Conn, count int) {
+	// for redis-go-cluster driver, "Receive" function returns all the replies once flushed.
+	// However, this action is different with redigo driver that "Receive" only returns 1
+	// reply each time.
 	c.Flush()
 	for j := 0; j < count; j++ {
 		_, err := c.Receive()

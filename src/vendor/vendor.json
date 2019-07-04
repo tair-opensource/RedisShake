@@ -159,10 +159,10 @@
 			"revisionTime": "2019-03-04T09:57:49Z"
 		},
 		{
-			"checksumSHA1": "UXns0bW61NZgqtFBLj6jPgAwF+U=",
+			"checksumSHA1": "IjUkzECf826IH8K1bexM/uockIk=",
 			"path": "github.com/vinllen/redis-go-cluster",
-			"revision": "6ae0947e93ad83020f121a9b179d95e117fc0a5c",
-			"revisionTime": "2019-07-03T02:46:24Z"
+			"revision": "ffc34c0f905b65e6b71e07fd68a1d50b435c60f5",
+			"revisionTime": "2019-07-04T07:53:38Z"
 		},
 		{
 			"checksumSHA1": "TM3Neoy1xRAKyZYMGzKc41sDFW4=",
