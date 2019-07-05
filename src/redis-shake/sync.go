@@ -641,6 +641,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 				}
 				if bypass || ignorecmd || !pass {
 					ds.nbypass.Incr()
+					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
 					log.Debugf("dbSyncer[%v] filter command[%v]", ds.id, scmd)
 					continue
 				}
