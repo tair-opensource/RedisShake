@@ -264,12 +264,12 @@ func (ds *dbSyncer) sendSyncCmd(master, auth_type, passwd string, tlsEnable bool
 		select {
 		case nsize := <-wait:
 			if nsize == 0 {
-				log.Infof("dbSyncer[%v] +", ds.id)
+				log.Infof("dbSyncer[%v] + waiting rdb done", ds.id)
 			} else {
 				return c, nsize
 			}
 		case <-time.After(time.Second):
-			log.Infof("dbSyncer[%v] -", ds.id)
+			log.Infof("dbSyncer[%v] - waiting rdb done", ds.id)
 		}
 	}
 }
