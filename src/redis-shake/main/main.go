@@ -315,20 +315,23 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if conf.Options.FilterDB != "" {
-		if n, err := strconv.ParseInt(conf.Options.FilterDB, 10, 32); err != nil {
-			return fmt.Errorf("parse FilterDB failed[%v]", err)
-		} else {
-			base.AcceptDB = func(db uint32) bool {
-				return db == uint32(n)
-			}
-		}
+		conf.Options.FilterDBWhitelist = []string{conf.Options.FilterDB}
+	}
+	if len(conf.Options.FilterDBWhitelist) != 0 && len(conf.Options.FilterDBBlacklist) != 0 {
+		return fmt.Errorf("only one of 'filter.db.whitelist' and 'filter.db.blacklist' can be given")
+	}
+
+	if len(conf.Options.FilterKey) != 0 {
+		conf.Options.FilterKeyWhitelist = conf.Options.FilterKey
+	}
+	if len(conf.Options.FilterKeyWhitelist) != 0 && len(conf.Options.FilterKeyBlacklist) != 0 {
+		return fmt.Errorf("only one of 'filter.key.whitelist' and 'filter.key.blacklist' can be given")
 	}
 
 	// if the target is "cluster", only allow pass db 0
 	if conf.Options.TargetType == conf.RedisTypeCluster {
-		base.AcceptDB = func(db uint32) bool {
-			return db == 0
-		}
+		conf.Options.FilterDBWhitelist = []string{"0"} // set whitelist = 0
+		conf.Options.FilterDBBlacklist = []string{}  // reset blacklist
 		log.Info("the target redis type is cluster, only pass db0")
 	}
 

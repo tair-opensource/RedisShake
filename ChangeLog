@@ -1,3 +1,8 @@
+2019-07-11 Alibaba Cloud.
+	* VERSION: 1.6.12
+	* IMPROVE: support filter key with whitelist and blacklist.
+	* IMPROVE: support filter db with whitelist and blacklist.
+	* BUGFIX: fix "bypass" count in metric.
 2019-07-04 Alibaba Cloud.
 	* VERSION: 1.6.11
 	* BUGFIX: adapt "redis-go-cluster" driver to fix bug of big key syncing

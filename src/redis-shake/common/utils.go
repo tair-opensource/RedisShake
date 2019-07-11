@@ -1008,13 +1008,3 @@ var defaultDialFunction = func(addr string) (redigo.Conn, error) {
 	}
 	return c, nil
 }
-
-// HasAtLeastOnePrefix checks whether the key begins with at least one of prefixes.
-func HasAtLeastOnePrefix(key string, prefixes []string) bool {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(key, prefix) {
-			return true
-		}
-	}
-	return false
-}

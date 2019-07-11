@@ -33,8 +33,10 @@ type Configuration struct {
 	RdbSpecialCloud           string   `config:"rdb.special_cloud"`
 	FakeTime                  string   `config:"fake_time"`
 	Rewrite                   bool     `config:"rewrite"`
-	FilterDB                  string   `config:"filter.db"`
-	FilterKey                 []string `config:"filter.key"`
+	FilterDBWhitelist         []string `config:"filter.db.whitelist"`
+	FilterDBBlacklist         []string `config:"filter.db.blacklist"`
+	FilterKeyWhitelist        []string `config:"filter.key.whitelist"`
+	FilterKeyBlacklist        []string `config:"filter.key.blacklist"`
 	FilterSlot                []string `config:"filter.slot"`
 	FilterLua                 bool     `config:"filter.lua"`
 	BigKeyThreshold           uint64   `config:"big_key_threshold"`
@@ -56,10 +58,12 @@ type Configuration struct {
 	Qps                       int      `config:"qps"`
 
 	// inner variables
-	ReplaceHashTag bool   `config:"replace_hash_tag"`
-	ExtraInfo      bool   `config:"extra"`
-	SockFileName   string `config:"sock.file_name"`
-	SockFileSize   uint   `config:"sock.file_size"`
+	ReplaceHashTag bool     `config:"replace_hash_tag"`
+	ExtraInfo      bool     `config:"extra"`
+	SockFileName   string   `config:"sock.file_name"`
+	SockFileSize   uint     `config:"sock.file_size"`
+	FilterKey      []string `config:"filter.key"` // compatible with older versions
+	FilterDB       string   `config:"filter.db"`  // compatible with older versions
 
 	/*---------------------------------------------------------*/
 	// generated variables
