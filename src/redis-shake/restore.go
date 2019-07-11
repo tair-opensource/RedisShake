@@ -19,6 +19,7 @@ import (
 	"redis-shake/base"
 	"redis-shake/common"
 	"redis-shake/configure"
+	"redis-shake/filter"
 )
 
 type CmdRestore struct {
@@ -152,7 +153,8 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 				defer c.Close()
 				var lastdb uint32 = 0
 				for e := range pipe {
-					if !base.AcceptDB(e.DB) {
+					if filter.FilterDB(int(e.DB)) {
+						// filter db
 						dr.ignore.Incr()
 					} else {
 						dr.nentry.Incr()
@@ -167,7 +169,8 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 								utils.SelectDB(c, lastdb)
 							}
 						}
-						if len(conf.Options.FilterKey) != 0 && !utils.HasAtLeastOnePrefix(string(e.Key), conf.Options.FilterKey) {
+
+						if filter.FilterKey(string(e.Key)) {
 							continue
 						}
 						utils.RestoreRdbEntry(c, e)
@@ -233,7 +236,7 @@ func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target []string, auth
 					if err != nil {
 						log.PanicErrorf(err, "routine[%v] parse db = %s failed", dr.id, s)
 					}
-					bypass = !base.AcceptDB(uint32(n))
+					bypass = filter.FilterDB(n)
 				}
 				if bypass {
 					dr.nbypass.Incr()

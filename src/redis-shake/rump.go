@@ -15,6 +15,7 @@ import (
 	"redis-shake/scanner"
 
 	"github.com/garyburd/redigo/redis"
+	"redis-shake/filter"
 )
 
 type CmdRump struct {
@@ -301,6 +302,11 @@ func (dre *dbRumperExecutor) fetcher() {
 	log.Infof("dbRumper[%v] executor[%v] fetch db list: %v", dre.rumperId, dre.executorId, dbNumber)
 	// iterate all db nodes
 	for _, db := range dbNumber {
+		if filter.FilterDB(int(db)) {
+			log.Infof("dbRumper[%v] executor[%v] db[%v] filtered", dre.rumperId, dre.executorId, db)
+			continue
+		}
+
 		log.Infof("dbRumper[%v] executor[%v] fetch logical db: %v", dre.rumperId, dre.executorId, db)
 		if err := dre.doFetch(int(db)); err != nil {
 			log.Panic(err)
@@ -320,7 +326,7 @@ func (dre *dbRumperExecutor) writer() {
 	bucket := utils.StartQoS(conf.Options.Qps)
 	preDb := 0
 	for ele := range dre.keyChan {
-		if len(conf.Options.FilterKey) != 0 && !utils.HasAtLeastOnePrefix(ele.key, conf.Options.FilterKey) {
+		if filter.FilterKey(ele.key) {
 			continue
 		}
 		// QoS, limit the qps

@@ -141,10 +141,10 @@ func (dd *dbDumper) sendCmd(master, auth_type, passwd string, tlsEnable bool) (n
 		select {
 		case nsize = <-wait:
 			if nsize == 0 {
-				log.Infof("routine[%v] +", dd.id)
+				log.Infof("routine[%v] + waiting source rdb", dd.id)
 			}
 		case <-time.After(time.Second):
-			log.Infof("routine[%v] -", dd.id)
+			log.Infof("routine[%v] - waiting source rdb", dd.id)
 		}
 	}
 	return c, nsize
