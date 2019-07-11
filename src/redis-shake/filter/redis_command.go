@@ -1,9 +1,5 @@
 // redis command struct.
-package command
-
-import (
-	"strings"
-)
+package filter
 
 type getkeys_proc func(args []string) []int
 type redisCommand struct {
@@ -86,7 +82,7 @@ var RedisCommands = map[string]redisCommand{
 	"pfmerge": {nil, 1, -1, 1},
 }
 
-func GetMatchKeys(redis_cmd redisCommand, args [][]byte, filterkeys []string) (new_args [][]byte, pass bool) {
+func getMatchKeys(redis_cmd redisCommand, args [][]byte) (new_args [][]byte, pass bool) {
 	lastkey := redis_cmd.lastkey - 1
 	keystep := redis_cmd.keystep
 
@@ -94,34 +90,32 @@ func GetMatchKeys(redis_cmd redisCommand, args [][]byte, filterkeys []string) (n
 		lastkey = lastkey + len(args)
 	}
 
-	array := make([]int, len(args))
-	number := 0
+	array := make([]int, len(args)) // store all positions of the pass key
+	number := 0                     // matching key number
 	for firstkey := redis_cmd.firstkey - 1; firstkey <= lastkey; firstkey += keystep {
 		key := string(args[firstkey])
-		for i := 0; i < len(filterkeys); i++ {
-			if strings.HasPrefix(key, filterkeys[i]) {
-				array[number] = firstkey
-				number++
-				break
-			}
+		if FilterKey(key) == false {
+			// pass
+			array[number] = firstkey
+			number++
 		}
 	}
 
 	pass = false
-	new_args = make([][]byte, number*redis_cmd.keystep+len(args)-lastkey-redis_cmd.keystep)
+	new_args = make([][]byte, number * redis_cmd.keystep + len(args) - lastkey - redis_cmd.keystep)
 	if number > 0 {
 		pass = true
 		for i := 0; i < number; i++ {
 			for j := 0; j < redis_cmd.keystep; j++ {
-				new_args[i*redis_cmd.keystep+j] = args[array[i]+j]
+				new_args[i * redis_cmd.keystep + j] = args[array[i] + j]
 			}
 		}
 	}
 
-	// add alis paramters
+	// add alias parameters
 	j := 0
 	for i := lastkey + redis_cmd.keystep; i < len(args); i++ {
-		new_args[number*redis_cmd.keystep+j] = args[i]
+		new_args[number * redis_cmd.keystep + j] = args[i]
 		j = j + 1
 	}
 
