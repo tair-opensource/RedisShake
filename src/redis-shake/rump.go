@@ -339,6 +339,9 @@ func (dre *dbRumperExecutor) writer() {
 			log.Debugf("dbRumper[%v] executor[%v] skip key %s for expired", dre.rumperId, dre.executorId, ele.key)
 			continue
 		}
+		if conf.Options.TargetDB != -1 {
+			ele.db = conf.Options.TargetDB
+		}
 
 		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
 			len(ele.value))
