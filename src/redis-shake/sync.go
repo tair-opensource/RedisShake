@@ -24,6 +24,7 @@ import (
 	"redis-shake/base"
 	"redis-shake/heartbeat"
 	"redis-shake/metric"
+	"unsafe"
 )
 
 type delayNode struct {
@@ -93,17 +94,9 @@ func (cmd *CmdSync) GetDetailedInfo() []interface{} {
 
 func (cmd *CmdSync) Main() {
 	from, target := conf.Options.SourceAddress, conf.Options.TargetAddress
-	if len(from) == 0 {
-		log.Panic("invalid argument: from")
-	}
-	if len(target) == 0 {
-		log.Panic("invalid argument: target")
-	}
 
-	log.Infof("sync from '%s' to '%s' http '%d'\n", from, target, conf.Options.HttpProfile)
-
+	log.Infof("sync from '%s' to '%s' with http-port[%d]\n", from, target, conf.Options.HttpProfile)
 	cmd.wait_full = make(chan struct{})
-	log.Infof("sync from '%s' to '%s'\n", from, target)
 
 	var sockfile *os.File
 	if len(conf.Options.SockFileName) != 0 {
@@ -121,7 +114,7 @@ func (cmd *CmdSync) Main() {
 	}
 	defer input.Close()
 
-	log.Infof("rdb file = %d\n", nsize)
+	log.Infof("rdb file size = %d\n", nsize)
 
 	if sockfile != nil {
 		r, w := pipe.NewFilePipe(int(conf.Options.SockFileSize), sockfile)
@@ -136,6 +129,7 @@ func (cmd *CmdSync) Main() {
 		input = r
 	}
 
+	// start heartbeat
 	if len(conf.Options.HeartbeatUrl) > 0 {
 		heartbeatCtl := heartbeat.HeartbeatController{
 			ServerUrl: conf.Options.HeartbeatUrl,
@@ -146,9 +140,11 @@ func (cmd *CmdSync) Main() {
 
 	reader := bufio.NewReaderSize(input, utils.ReaderBufferSize)
 
+	// sync rdb
 	base.Status = "full"
 	cmd.SyncRDBFile(reader, target, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw, nsize)
 
+	// sync increment
 	base.Status = "incr"
 	close(cmd.wait_full)
 	cmd.SyncCommand(reader, target, conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw)
@@ -172,14 +168,23 @@ func (cmd *CmdSync) SendSyncCmd(master, auth_type, passwd string) (net.Conn, int
 
 func (cmd *CmdSync) SendPSyncCmd(master, auth_type, passwd string) (pipe.Reader, int64) {
 	c := utils.OpenNetConn(master, auth_type, passwd)
+	log.Infof("psync connect '%v' with auth type[%v] OK!", master, auth_type)
+
 	utils.SendPSyncListeningPort(c, conf.Options.HttpProfile)
+	log.Infof("psync send listening port[%v] OK!", conf.Options.HttpProfile)
+
+	// reader buffer bind to client
 	br := bufio.NewReaderSize(c, utils.ReaderBufferSize)
+	// writer buffer bind to client
 	bw := bufio.NewWriterSize(c, utils.WriterBufferSize)
 
+	log.Infof("try to send 'psync' command")
+	// send psync command and decode the result
 	runid, offset, wait := utils.SendPSyncFullsync(br, bw)
 	cmd.targetOffset.Set(offset)
 	log.Infof("psync runid = %s offset = %d, fullsync", runid, offset)
 
+	// get rdb file size
 	var nsize int64
 	for nsize == 0 {
 		select {
@@ -192,21 +197,33 @@ func (cmd *CmdSync) SendPSyncCmd(master, auth_type, passwd string) (pipe.Reader,
 		}
 	}
 
+	// write -> pipew -> piper -> read
 	piper, pipew := pipe.NewSize(utils.ReaderBufferSize)
 
 	go func() {
 		defer pipew.Close()
 		p := make([]byte, 8192)
+		// read rdb in for loop
 		for rdbsize := int(nsize); rdbsize != 0; {
+			// br -> pipew
 			rdbsize -= utils.Iocopy(br, pipew, p, rdbsize)
 		}
+
 		for {
+			/*
+			 * read from br(source redis) and write into pipew.
+			 * Generally speaking, this function is forever run.
+			 */
 			n, err := cmd.PSyncPipeCopy(c, br, bw, offset, pipew)
 			if err != nil {
 				log.PanicErrorf(err, "psync runid = %s, offset = %d, pipe is broken", runid, offset)
 			}
+			// the 'c' is closed every loop
+
 			offset += n
 			cmd.targetOffset.Set(offset)
+
+			// reopen 'c' every time
 			for {
 				// cmd.SyncStat.SetStatus("reopen")
 				base.Status = "reopen"
@@ -234,6 +251,7 @@ func (cmd *CmdSync) SendPSyncCmd(master, auth_type, passwd string) (pipe.Reader,
 }
 
 func (cmd *CmdSync) PSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer, offset int64, copyto io.Writer) (int64, error) {
+	// TODO, two times call c.Close() ? maybe a bug
 	defer c.Close()
 	var nread atomic2.Int64
 	go func() {
@@ -267,7 +285,7 @@ func (cmd *CmdSync) PSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer
 }
 
 func (cmd *CmdSync) SyncRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
-	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, conf.Options.Parallel * 32)
+	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
 		defer close(wait)
@@ -351,9 +369,14 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 
 	cmd.sendBuf = make(chan cmdDetail, conf.Options.SenderCount)
 	cmd.delayChannel = make(chan *delayNode, conf.Options.SenderDelayChannelSize)
-	var sendId, recvId atomic2.Int64
+	var sendId, recvId, sendMarkId atomic2.Int64 // sendMarkId is also used as mark the sendId in sender routine
 
 	go func() {
+		if conf.Options.Psync == false {
+			log.Warn("GetFakeSlaveOffset not enable when psync == false")
+			return
+		}
+
 		srcConn := utils.OpenRedisConnWithTimeout(conf.Options.SourceAddress, conf.Options.SourceAuthType,
 			conf.Options.SourcePasswordRaw, time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
 		ticker := time.NewTicker(10 * time.Second)
@@ -361,7 +384,7 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			offset, err := utils.GetFakeSlaveOffset(srcConn)
 			if err != nil {
 				// log.PurePrintf("%s\n", NewLogItem("GetFakeSlaveOffsetFail", "WARN", NewErrorLogDetail("", err.Error())))
-				log.Warnf("Event:GetFakeSlaveOffsetFail\tId:%s\tError:%s", conf.Options.Id, err.Error())
+				log.Warnf("Event:GetFakeSlaveOffsetFail\tId:%s\tWarn:%s", conf.Options.Id, err.Error())
 
 				// Reconnect while network error happen
 				if err == io.EOF {
@@ -388,11 +411,17 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 	go func() {
 		var node *delayNode
 		for {
-			_, err := c.Receive()
+			reply, err := c.Receive()
+
+			recvId.Incr()
+			id := recvId.Get() // receive id
+
+			// print debug log of receive reply
+			log.Debugf("receive reply[%v]: [%v], error: [%v]", id, reply, err)
+
 			if conf.Options.Metric == false {
 				continue
 			}
-			recvId.Incr()
 
 			if err == nil {
 				// cmd.SyncStat.SuccessCmdCount.Incr()
@@ -420,7 +449,6 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			}
 
 			if node != nil {
-				id := recvId.Get() // receive id
 				if node.id == id {
 					// cmd.SyncStat.Delay.Add(time.Now().Sub(node.t).Nanoseconds())
 					metric.MetricVar.AddDelay(uint64(time.Now().Sub(node.t).Nanoseconds()) / 1000000) // ms
@@ -456,6 +484,17 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			} else {
 				// cmd.SyncStat.PullCmdCount.Incr()
 				metric.MetricVar.AddPullCmdCount(1)
+
+				// print debug log of send command
+				if conf.Options.LogLevel == utils.LogLevelAll {
+					strArgv := make([]string, len(argv))
+					for i, ele := range argv {
+						strArgv[i] = *(*string)(unsafe.Pointer(&ele))
+					}
+					sendMarkId.Incr()
+					log.Debugf("send command[%v]: [%s %v]", sendMarkId.Get(), scmd, strArgv)
+				}
+
 				if scmd != "ping" {
 					if strings.EqualFold(scmd, "select") {
 						if len(argv) != 1 {

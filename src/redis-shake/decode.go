@@ -18,6 +18,7 @@ import (
 	"pkg/rdb"
 	"redis-shake/common"
 	"redis-shake/configure"
+	"redis-shake/base"
 )
 
 type CmdDecode struct {
@@ -71,7 +72,7 @@ func (cmd *CmdDecode) Main() {
 	reader := bufio.NewReaderSize(readin, utils.ReaderBufferSize)
 	writer := bufio.NewWriterSize(saveto, utils.WriterBufferSize)
 
-	ipipe := utils.NewRDBLoader(reader, &cmd.rbytes, int(conf.Options.Parallel) * 32)
+	ipipe := utils.NewRDBLoader(reader, &cmd.rbytes, base.RDBPipeSize)
 	opipe := make(chan string, cap(ipipe))
 
 	go func() {

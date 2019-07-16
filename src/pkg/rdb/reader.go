@@ -16,7 +16,7 @@ import (
 	// "libs/log"
 )
 
-var FromVersion int64 = 8
+var FromVersion int64 = 9
 var ToVersion int64 = 6
 
 const (
@@ -27,26 +27,38 @@ const (
 	RdbTypeHash   = 4
 	RdbTypeZSet2  = 5
 
-	RdbTypeHashZipmap  = 9
-	RdbTypeListZiplist = 10
-	RdbTypeSetIntset   = 11
-	RdbTypeZSetZiplist = 12
-	RdbTypeHashZiplist = 13
-	RdbTypeQuicklist   = 14
+	RdbTypeHashZipmap      = 9
+	RdbTypeListZiplist     = 10
+	RdbTypeSetIntset       = 11
+	RdbTypeZSetZiplist     = 12
+	RdbTypeHashZiplist     = 13
+	RdbTypeQuicklist       = 14
+	RDBTypeStreamListPacks = 15 // stream
 
-	rdbFlagOnlyValue = 0xf9
-	rdbFlagAUX       = 0xfa
+	rdbFlagModuleAux = 0xf7
+	rdbFlagIdle      = 0xf8
+	rdbFlagFreq      = 0xf9
+	RdbFlagAUX       = 0xfa
 	rdbFlagResizeDB  = 0xfb
 	rdbFlagExpiryMS  = 0xfc
 	rdbFlagExpiry    = 0xfd
 	rdbFlagSelectDB  = 0xfe
 	rdbFlagEOF       = 0xff
+
+	// Module serialized values sub opcodes
+	rdbModuleOpcodeEof    = 0
+	rdbModuleOpcodeSint   = 1
+	rdbModuleOpcodeUint   = 2
+	rdbModuleOpcodeFloat  = 3
+	rdbModuleOpcodeDouble = 4
+	rdbModuleOpcodeString = 5
 )
 
 const (
 	rdb6bitLen  = 0
 	rdb14bitLen = 1
-	rdb32bitLen = 2
+	rdb32bitLen = 0x80
+	rdb64bitLen = 0x81
 	rdbEncVal   = 3
 
 	rdbEncInt8  = 0
@@ -91,12 +103,12 @@ func (r *rdbReader) offset() int64 {
 
 func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 	var b bytes.Buffer
-	r = NewRdbReader(io.TeeReader(r, &b))
+	r = NewRdbReader(io.TeeReader(r, &b)) // the result will be written into b when calls r.Read()
 	lr := l.rdbReader
 	switch t {
 	default:
 		return nil, errors.Errorf("unknown object-type %02x", t)
-	case rdbFlagAUX:
+	case RdbFlagAUX:
 		fallthrough
 	case rdbFlagResizeDB:
 		fallthrough
@@ -181,6 +193,112 @@ func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 		if lr.lastReadCount == n {
 			lr.remainMember = 0
 		}
+	case RDBTypeStreamListPacks:
+		// TODO, need to judge big key
+		lr.lastReadCount, lr.remainMember, lr.totMemberCount = 0, 0, 0
+		// list pack length
+		nListPacks, err := r.ReadLength()
+		if err != nil {
+			return nil, err
+		}
+		for i := 0; i < int(nListPacks); i++ {
+			// read twice
+			if _, err := r.ReadString(); err != nil {
+				return nil, err
+			}
+			if _, err := r.ReadString(); err != nil {
+				return nil, err
+			}
+		}
+
+		// items
+		if _, err := r.ReadLength(); err != nil {
+			return nil, err
+		}
+		// last_entry_id timestamp second
+		if _, err := r.ReadLength(); err != nil {
+			return nil, err
+		}
+		// last_entry_id timestamp millisecond
+		if _, err := r.ReadLength(); err != nil {
+			return nil, err
+		}
+
+		// cgroups length
+		nCgroups, err := r.ReadLength()
+		if err != nil {
+			return nil, err
+		}
+		for i := 0; i < int(nCgroups); i++ {
+			// cname
+			if _, err := r.ReadString(); err != nil {
+				return nil, err
+			}
+
+			// last_cg_entry_id timestamp second
+			if _, err := r.ReadLength(); err != nil {
+				return nil, err
+			}
+			// last_cg_entry_id timestamp millisecond
+			if _, err := r.ReadLength(); err != nil {
+				return nil, err
+			}
+
+			// pending number
+			nPending, err := r.ReadLength()
+			if err != nil {
+				return nil, err
+			}
+			for i := 0; i < int(nPending); i++ {
+				// eid, read 16 bytes
+				b := make([]byte, 16)
+				if err := r.readFull(b); err != nil {
+					return nil, err
+				}
+
+				// seen_time
+				b = make([]byte, 8)
+				if err := r.readFull(b); err != nil {
+					return nil, err
+				}
+
+				// delivery_count
+				if _, err := r.ReadLength(); err != nil {
+					return nil, err
+				}
+			}
+
+			// consumers
+			nConsumers, err := r.ReadLength()
+			if err != nil {
+				return nil, err
+			}
+			for i := 0; i < int(nConsumers); i++ {
+				// cname
+				if _, err := r.ReadString(); err != nil {
+					return nil, err
+				}
+
+				// seen_time
+				b := make([]byte, 8)
+				if err := r.readFull(b); err != nil {
+					return nil, err
+				}
+
+				// pending
+				nPending2, err := r.ReadLength()
+				if err != nil {
+					return nil, err
+				}
+				for i := 0; i < int(nPending2); i++ {
+					// eid, read 16 bytes
+					b := make([]byte, 16)
+					if err := r.readFull(b); err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
 	}
 	return b.Bytes(), nil
 }
@@ -226,16 +344,25 @@ func (r *rdbReader) readEncodedLength() (length uint32, encoded bool, err error)
 	if err != nil {
 		return
 	}
-	length = uint32(u & 0x3f)
 	switch u >> 6 {
 	case rdb6bitLen:
+		length = uint32(u & 0x3f)
 	case rdb14bitLen:
-		u, err = r.readUint8()
-		length = (length << 8) + uint32(u)
+		var u2 uint8
+		u2, err = r.readUint8()
+		length = (uint32(u & 0x3f) << 8) + uint32(u2)
 	case rdbEncVal:
 		encoded = true
+		length = uint32(u & 0x3f)
 	default:
-		length, err = r.readUint32BigEndian()
+		switch u {
+		case rdb32bitLen:
+			length, err = r.readUint32BigEndian()
+		case rdb64bitLen:
+			length, err = r.readUint64BigEndian()
+		default:
+			length, err = 0, fmt.Errorf("unknown encoding length[%v]", u)
+		}
 	}
 	return
 }
@@ -321,6 +448,12 @@ func (r *rdbReader) readUint64() (uint64, error) {
 
 func (r *rdbReader) readUint32BigEndian() (uint32, error) {
 	b := r.buf[:4]
+	err := r.readFull(b)
+	return binary.BigEndian.Uint32(b), err
+}
+
+func (r *rdbReader) readUint64BigEndian() (uint32, error) {
+	b := r.buf[:8]
 	err := r.readFull(b)
 	return binary.BigEndian.Uint32(b), err
 }

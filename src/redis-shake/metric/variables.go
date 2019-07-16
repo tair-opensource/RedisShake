@@ -1,11 +1,13 @@
 package metric
 
-import(
+import (
 	"fmt"
 	"redis-shake/base"
+	"redis-shake/common"
 )
 
 type MetricRest struct {
+	StartTime            interface{}
 	PullCmdCount         interface{}
 	PullCmdCountTotal    interface{}
 	BypassCmdCount       interface{}
@@ -31,7 +33,10 @@ type MetricRest struct {
 func NewMetricRest() *MetricRest {
 	detailedInfo := runner.GetDetailedInfo()
 	if len(detailedInfo) < 4 {
-		return &MetricRest{}
+		return &MetricRest{
+			StartTime: utils.StartTime,
+			Status:    base.Status,
+		}
 	}
 	senderBufCount := detailedInfo[0]
 	processingCmdCount := detailedInfo[1]
@@ -39,6 +44,7 @@ func NewMetricRest() *MetricRest {
 	sourceDbOffset := detailedInfo[3]
 
 	return &MetricRest{
+		StartTime:            utils.StartTime,
 		PullCmdCount:         MetricVar.GetPullCmdCount(),
 		PullCmdCountTotal:    MetricVar.GetPullCmdCountTotal(),
 		BypassCmdCount:       MetricVar.GetBypassCmdCount(),

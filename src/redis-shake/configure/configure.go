@@ -5,7 +5,8 @@ import "time"
 type Configuration struct {
 	// config file variables
 	Id                        string   `config:"id"`
-	LogFile                   string   `config:"log_file"`
+	LogFile                   string   `config:"log.file"`
+	LogLevel                  string   `config:"log.level"`
 	SystemProfile             int      `config:"system_profile"`
 	HttpProfile               int      `config:"http_profile"`
 	NCpu                      int      `config:"ncpu"`
@@ -21,7 +22,7 @@ type Configuration struct {
 	TargetPasswordRaw         string   `config:"target.password_raw"`
 	TargetPasswordEncoding    string   `config:"target.password_encoding"`
 	TargetVersion             uint     `config:"target.version"`
-	TargetDB                  int      `config:"target.db"`
+	TargetDBString            string   `config:"target.db"`
 	TargetAuthType            string   `config:"target.auth_type"`
 	FakeTime                  string   `config:"fake_time"`
 	Rewrite                   bool     `config:"rewrite"`
@@ -39,6 +40,11 @@ type Configuration struct {
 	SenderSize                uint64   `config:"sender.size"`
 	SenderCount               uint     `config:"sender.count"`
 	SenderDelayChannelSize    uint     `config:"sender.delay_channel_size"`
+	KeepAlive                 uint     `config:"keep_alive"`
+	PidPath                   string   `config:"pid_path"`
+	ScanKeyNumber             uint32   `config:"scan.key_number"`
+	ScanSpecialCloud          string   `config:"scan.special_cloud"`
+	ScanKeyFile               string   `config:"scan.key_file"`
 
 	// inner variables
 	ReplaceHashTag bool   `config:"replace_hash_tag"`
@@ -51,6 +57,7 @@ type Configuration struct {
 	ShiftTime          time.Duration // shift
 	TargetRedisVersion string        // to_redis_version
 	TargetReplace      bool          // to_replace
+	TargetDB           int           // int type
 }
 
 var Options Configuration

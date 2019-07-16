@@ -22,8 +22,24 @@ func WritePid(id string) (err error) {
 	return nil
 }
 
-func WritePidById(id string) error {
-	dir, _ := os.Getwd()
+func WritePidById(id string, path string) error {
+	var dir string
+	var err error
+	if path == "" {
+		if dir, err = os.Getwd(); err != nil {
+			return err
+		}
+	} else {
+		dir = path
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			os.Mkdir(dir, os.ModePerm)
+		}
+	}
+
+	if dir, err = filepath.Abs(dir); err != nil {
+		return err
+	}
+
 	pidfile := filepath.Join(dir, id) + ".pid"
 	if err := WritePid(pidfile); err != nil {
 		return err
@@ -42,8 +58,8 @@ func Welcome() {
 /                             /                        (o)
 ------------------------------
 `
-
-	log.Warn("\n", welcome)
+	startMsg := "if you have any problem, please visit https://github.com/alibaba/RedisShake/wiki/FAQ"
+	log.Warnf("\n%s%s\n\n", welcome, startMsg)
 }
 
 func Goodbye() {

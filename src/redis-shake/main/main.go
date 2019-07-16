@@ -5,40 +5,47 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-	"runtime/debug"
-	"time"
-	"runtime"
 	"math"
 	_ "net/http/pprof"
-	"strings"
-	"strconv"
-	"encoding/json"
+	"os"
+	"os/signal"
 	"reflect"
+	"runtime"
+	"runtime/debug"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
 
+	"pkg/libs/log"
+	"redis-shake"
+	"redis-shake/base"
 	"redis-shake/common"
 	"redis-shake/configure"
 	"redis-shake/metric"
-	"redis-shake"
-	"redis-shake/base"
 	"redis-shake/restful"
-	"pkg/libs/log"
 
 	"github.com/gugemichael/nimo4go"
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
+	"redis-shake/scanner"
 )
 
-type Exit struct {Code int}
+type Exit struct{ Code int }
 
-const(
+const (
 	TypeDecode  = "decode"
 	TypeRestore = "restore"
 	TypeDump    = "dump"
 	TypeSync    = "sync"
+	TypeRump    = "rump"
+
+	defaultHttpPort    = 20881
+	defaultSystemPort  = 20882
+	defaultSenderSize  = 65535
+	defaultSenderCount = 1024
 )
 
 func main() {
@@ -48,7 +55,7 @@ func main() {
 
 	// argument options
 	configuration := flag.String("conf", "", "configuration path")
-	tp := flag.String("type", "", "run type: decode, restore, dump, sync")
+	tp := flag.String("type", "", "run type: decode, restore, dump, sync, rump")
 	version := flag.Bool("version", false, "show version")
 	flag.Parse()
 
@@ -81,8 +88,9 @@ func main() {
 	initFreeOS()
 	nimo.Profiling(int(conf.Options.SystemProfile))
 	utils.Welcome()
+	utils.StartTime = fmt.Sprintf("%v", time.Now().Format(utils.GolangSecurityTime))
 
-	if err = utils.WritePidById(conf.Options.Id); err != nil {
+	if err = utils.WritePidById(conf.Options.Id, conf.Options.PidPath); err != nil {
 		crash(fmt.Sprintf("write pid failed. %v", err), -5)
 	}
 
@@ -97,6 +105,8 @@ func main() {
 		runner = new(run.CmdDump)
 	case TypeSync:
 		runner = new(run.CmdSync)
+	case TypeRump:
+		runner = new(run.CmdRump)
 	}
 
 	// create metric
@@ -155,7 +165,7 @@ func startHttpServer() {
 // sanitize options
 func sanitizeOptions(tp string) error {
 	var err error
-	if tp != TypeDecode && tp != TypeRestore && tp != TypeDump && tp != TypeSync {
+	if tp != TypeDecode && tp != TypeRestore && tp != TypeDump && tp != TypeSync && tp != TypeRump {
 		return fmt.Errorf("unknown type[%v]", tp)
 	}
 
@@ -171,14 +181,19 @@ func sanitizeOptions(tp string) error {
 		runtime.GOMAXPROCS(conf.Options.NCpu)
 	}
 
-	if conf.Options.Parallel == 0 || conf.Options.Parallel > 1024 {
+	if conf.Options.Parallel == 0 { // not set
+		conf.Options.Parallel = 64 // default is 64
+	} else if conf.Options.Parallel > 1024 {
 		return fmt.Errorf("parallel[%v] should in (0, 1024]", conf.Options.Parallel)
 	} else {
 		conf.Options.Parallel = int(math.Max(float64(conf.Options.Parallel), float64(conf.Options.NCpu)))
 	}
 
-	if conf.Options.BigKeyThreshold > 524288000 {
-		return fmt.Errorf("BigKeyThreshold[%v] should <= 524288000", conf.Options.BigKeyThreshold)
+	// 500 M
+	if conf.Options.BigKeyThreshold > 500 * utils.MB {
+		return fmt.Errorf("BigKeyThreshold[%v] should <= 500 MB", conf.Options.BigKeyThreshold)
+	} else if conf.Options.BigKeyThreshold == 0 {
+		conf.Options.BigKeyThreshold = 50 * utils.MB
 	}
 
 	if (tp == TypeRestore || tp == TypeSync) && conf.Options.TargetAddress == "" {
@@ -186,6 +201,9 @@ func sanitizeOptions(tp string) error {
 	}
 	if (tp == TypeDump || tp == TypeSync) && conf.Options.SourceAddress == "" {
 		return fmt.Errorf("source address shouldn't be empty when type in {dump, sync}")
+	}
+	if tp == TypeRump && (conf.Options.SourceAddress == "" || conf.Options.TargetAddress == "") {
+		return fmt.Errorf("source and target address shouldn't be empty when type in {rump}")
 	}
 
 	if conf.Options.SourcePasswordRaw != "" && conf.Options.SourcePasswordEncoding != "" {
@@ -203,7 +221,7 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if conf.Options.LogFile != "" {
-		conf.Options.LogFile = fmt.Sprintf("%s.log", conf.Options.Id)
+		//conf.Options.LogFile = fmt.Sprintf("%s.log", conf.Options.Id)
 
 		utils.LogRotater = &logRotate.Logger{
 			Filename:   conf.Options.LogFile,
@@ -213,11 +231,33 @@ func sanitizeOptions(tp string) error {
 		}
 		log.StdLog = log.New(utils.LogRotater, "")
 	}
-
-	// heartbeat
-	if conf.Options.HeartbeatInterval <= 0 || conf.Options.HeartbeatInterval > 86400 {
-		return fmt.Errorf("HeartbeatInterval[%v] should in (0, 86400]", conf.Options.HeartbeatInterval)
+	// set log level
+	var logDeepLevel log.LogLevel
+	switch conf.Options.LogLevel {
+	case utils.LogLevelNone:
+		logDeepLevel = log.LEVEL_NONE
+	case utils.LogLevelError:
+		logDeepLevel = log.LEVEL_ERROR
+	case utils.LogLevelWarn:
+		logDeepLevel = log.LEVEL_WARN
+	case "":
+		fallthrough
+	case utils.LogLevelInfo:
+		logDeepLevel = log.LEVEL_INFO
+	case utils.LogLevelAll:
+		logDeepLevel = log.LEVEL_DEBUG
+	default:
+		return fmt.Errorf("invalid log level[%v]", conf.Options.LogLevel)
 	}
+	log.SetLevel(logDeepLevel)
+
+	// heartbeat, 86400 = 1 day
+	if conf.Options.HeartbeatInterval > 86400 {
+		return fmt.Errorf("HeartbeatInterval[%v] should in [0, 86400]", conf.Options.HeartbeatInterval)
+	} else if conf.Options.HeartbeatInterval == 0 {
+		conf.Options.HeartbeatInterval = 10
+	}
+
 	if conf.Options.HeartbeatNetworkInterface == "" {
 		conf.Options.HeartbeatIp = "127.0.0.1"
 	} else {
@@ -239,7 +279,7 @@ func sanitizeOptions(tp string) error {
 			if n, err := strconv.ParseInt(conf.Options.FakeTime[1:], 10, 64); err != nil {
 				return fmt.Errorf("parse fake_time failed[%v]", err)
 			} else {
-				conf.Options.ShiftTime = time.Duration(n * int64(time.Millisecond) - time.Now().UnixNano())
+				conf.Options.ShiftTime = time.Duration(n*int64(time.Millisecond) - time.Now().UnixNano())
 			}
 		default:
 			if t, err := time.Parse("2006-01-02 15:04:05", conf.Options.FakeTime); err != nil {
@@ -268,29 +308,52 @@ func sanitizeOptions(tp string) error {
 		}
 	}
 
-	if conf.Options.TargetDB >= 0 {
-		// pass, >= 0 means enable
+	if conf.Options.TargetDBString == "" {
+		conf.Options.TargetDB = -1
+	} else if v, err := strconv.Atoi(conf.Options.TargetDBString); err != nil {
+		return fmt.Errorf("parse target.db[%v] failed[%v]", conf.Options.TargetDBString, err)
+	} else if v < 0 {
+		conf.Options.TargetDB = -1
+	} else {
+		conf.Options.TargetDB = v
 	}
 
-	if conf.Options.HttpProfile <= 0 || conf.Options.HttpProfile > 65535 {
-		return fmt.Errorf("HttpProfile[%v] should in (0, 65535]", conf.Options.HttpProfile)
-	}
-	if conf.Options.SystemProfile <= 0 || conf.Options.SystemProfile > 65535 {
-		return fmt.Errorf("SystemProfile[%v] should in (0, 65535]", conf.Options.SystemProfile)
-	}
-
-	if conf.Options.SenderSize <= 0 || conf.Options.SenderSize >= 1073741824 {
-		return fmt.Errorf("SenderSize[%v] should in (0, 1073741824]", conf.Options.SenderSize)
+	if conf.Options.HttpProfile < 0 || conf.Options.HttpProfile > 65535 {
+		return fmt.Errorf("HttpProfile[%v] should in [0, 65535]", conf.Options.HttpProfile)
+	} else if conf.Options.HttpProfile  == 0 {
+		// set to default when not set
+		conf.Options.HttpProfile = defaultHttpPort
 	}
 
-	if conf.Options.SenderCount <= 0 || conf.Options.SenderCount >= 100000 {
-		return fmt.Errorf("SenderCount[%v] should in (0, 100000]", conf.Options.SenderCount)
+	if conf.Options.SystemProfile < 0 || conf.Options.SystemProfile > 65535 {
+		return fmt.Errorf("SystemProfile[%v] should in [0, 65535]", conf.Options.SystemProfile)
+	} else if conf.Options.SystemProfile  == 0 {
+		// set to default when not set
+		conf.Options.SystemProfile = defaultSystemPort
+	}
+
+	if conf.Options.SenderSize < 0 || conf.Options.SenderSize >= 1073741824 {
+		return fmt.Errorf("SenderSize[%v] should in [0, 1073741824]", conf.Options.SenderSize)
+	} else if conf.Options.SenderSize  == 0 {
+		// set to default when not set
+		conf.Options.SenderSize = defaultSenderSize
+	}
+
+	if conf.Options.SenderCount < 0 || conf.Options.SenderCount >= 100000 {
+		return fmt.Errorf("SenderCount[%v] should in [0, 100000]", conf.Options.SenderCount)
+	} else if conf.Options.SenderCount  == 0 {
+		// set to default when not set
+		conf.Options.SenderCount = defaultSenderCount
+	}
+
+	if conf.Options.SenderDelayChannelSize == 0 {
+		conf.Options.SenderDelayChannelSize = 32
 	}
 
 	if tp == TypeRestore || tp == TypeSync {
 		// get target redis version and set TargetReplace.
 		if conf.Options.TargetRedisVersion, err = utils.GetRedisVersion(conf.Options.TargetAddress,
-				conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw); err != nil {
+			conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw); err != nil {
 			return fmt.Errorf("get target redis version failed[%v]", err)
 		} else {
 			if strings.HasPrefix(conf.Options.TargetRedisVersion, "4.") ||
@@ -299,6 +362,22 @@ func sanitizeOptions(tp string) error {
 			} else {
 				conf.Options.TargetReplace = false
 			}
+		}
+	}
+
+	if tp == TypeRump {
+		if conf.Options.ScanKeyNumber == 0 {
+			conf.Options.ScanKeyNumber = 100
+		}
+
+		if conf.Options.ScanSpecialCloud != "" && conf.Options.ScanSpecialCloud != scanner.TencentCluster &&
+				conf.Options.ScanSpecialCloud != scanner.AliyunCluster {
+			return fmt.Errorf("special cloud type[%s] is not supported", conf.Options.ScanSpecialCloud)
+		}
+
+		if conf.Options.ScanSpecialCloud != "" && conf.Options.ScanKeyFile != "" {
+			return fmt.Errorf("scan.special_cloud[%v] and scan.key_file[%v] cann't be given at the same time",
+				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
 		}
 	}
 

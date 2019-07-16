@@ -1,7 +1,7 @@
-Redis-shake is mainly used to synchronize data from one redis database to another.<br>
+RedisShake is mainly used to synchronize data from one redis database to another.<br>
 Thanks to the Douyu's WSD team for the support. <br>
 
-* [中文文档](https://yq.aliyun.com/articles/691794): please wait, coming soon.
+* [中文文档](https://yq.aliyun.com/articles/691794)
 
 # Redis-Shake
 ---
@@ -10,18 +10,19 @@ Redis-shake has made some improvements based on [redis-port](https://github.com/
 
 # Main Functions
 ---
-The type can be one of the following:<br>
+The type can be one of the followings:<br>
 
 * **decode**: Decode dumped payload to human readable format (hex-encoding).
 * **restore**: Restore RDB file to target redis.
 * **dump**: Dump RDB file from souce redis.
-* **sync**: Sync data from source redis to target redis.
+* **sync**: Sync data from source redis to target redis by `sync` or `psync` command. Including full synchronization and incremental synchronization.
+* **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization. Plus, RedisShake also supports fetching data from given keys in the input file when `scan` command is not supported on the source side.
 
 Please check out the `conf/redis-shake.conf` to see the detailed parameters description.<br>
 
 # Verification
 ---
-User can use [redis-full-check](https://github.com/aliyun/redis-full-check) to verify correctness.<br>
+User can use [RedisFullCheck](https://github.com/alibaba/RedisFullCheck) to verify correctness.<br>
 
 # Metric
 ---
@@ -51,18 +52,23 @@ Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.
 
 # Usage
 ---
-*  git clone https://github.com/aliyun/redis-shake.git
-*  cd redis-shake/src/vendor
-*  GOPATH=\`pwd\`/../..; govendor sync     #please note: must install govendor first and then pull all dependencies
+Run `./bin/redis-shake.darwin64` or `redis-shake.linux64` which is built in OSX and Linux respectively.<br>
+Or you can build redis-shake yourself according to the following steps:
+*  git clone https://github.com/alibaba/RedisShake.git
+*  cd RedisShake
+*  export GOPATH=\`pwd\`/../..
+*  cd src/sync
+*  govendor sync     #please note: must install govendor first and then pull all dependencies: `go get -u github.com/kardianos/govendor`
 *  cd ../../ && ./build.sh
-*  ./bin/collector -type=$(type_must_be_sync_dump_restore_or_decode) -conf=conf/redis-shake.conf #please note: user must modify collector.conf first to match needs.
+*  ./bin/redis-shake -type=$(type_must_be_sync_dump_restore_or_decode) -conf=conf/redis-shake.conf #please note: user must modify collector.conf first to match needs.
 
 # Shake series tool
 ---
 We also provide some tools for synchronization in Shake series.<br>
 
-* [mongo-shake](https://github.com/aliyun/mongo-shake): mongodb data synchronization tool.
-* [redis-shake](https://github.com/aliyun/redis-shake): redis data synchronization tool.
-* [redis-full-check](https://github.com/aliyun/redis-full-check): redis data synchronization verification tool.
+* [MongoShake](https://github.com/aliyun/MongoShake): mongodb data synchronization tool.
+* [RedisShake](https://github.com/aliyun/RedisShake): redis data synchronization tool.
+* [RedisFullCheck](https://github.com/aliyun/RedisFullCheck): redis data synchronization verification tool.
 
 Plus, we have a WeChat group so that users can join and discuss, but the group user number is limited. So please add my WeChat number: `vinllen_xingge` first, and I will add you to this group.<br>
+

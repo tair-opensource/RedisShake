@@ -11,13 +11,13 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+	"strconv"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
 	"pkg/redis"
 	"redis-shake/configure"
 	"redis-shake/common"
-	"strconv"
 	"redis-shake/base"
 )
 
@@ -89,7 +89,7 @@ func (cmd *CmdRestore) Main() {
 }
 
 func (cmd *CmdRestore) RestoreRDBFile(reader *bufio.Reader, target, auth_type, passwd string, nsize int64) {
-	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, conf.Options.Parallel * 32)
+	pipe := utils.NewRDBLoader(reader, &cmd.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
 		defer close(wait)
