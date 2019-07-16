@@ -106,10 +106,10 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 			}
 
 			if isSource && arr[0] != conf.StandAloneRoleSlave && arr[0] != conf.StandAloneRoleMaster {
-				return fmt.Errorf("redis role must be master or slave")
+				return fmt.Errorf("source redis role must be master or slave, when enable automatic discovery with '@'")
 			}
-			if !isSource && arr[0] != "" {
-				return fmt.Errorf("redis type[%v] leading character must be '@'", redisType)
+			if !isSource && arr[0] != "master" && arr[0] != "" {
+				return fmt.Errorf("target redis role must be master, when enable automatic discovery with '@'")
 			}
 
 			clusterList := strings.Split(arr[1], AddressClusterSplitter)
