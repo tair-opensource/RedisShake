@@ -158,6 +158,9 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 						dr.ignore.Incr()
 					} else {
 						dr.nentry.Incr()
+
+						log.Debugf("routine[%v] try restore key[%s] with value length[%v]", dr.id, e.Key, len(e.Value))
+
 						if conf.Options.TargetDB != -1 {
 							if conf.Options.TargetDB != int(lastdb) {
 								lastdb = uint32(conf.Options.TargetDB)
@@ -173,7 +176,11 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 						if filter.FilterKey(string(e.Key)) {
 							continue
 						}
+
+						log.Debugf("routine[%v] start restoring key[%s] with value length[%v]", dr.id, e.Key, len(e.Value))
+
 						utils.RestoreRdbEntry(c, e)
+						log.Debugf("routine[%v] restore key[%s] ok", dr.id, e.Key)
 					}
 				}
 			}()

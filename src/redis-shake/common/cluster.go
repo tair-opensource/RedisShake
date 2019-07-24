@@ -7,6 +7,10 @@ import (
 	"pkg/libs/log"
 )
 
+const(
+	RecvChanSize = 4096
+)
+
 /* implement redigo.Conn(https://github.com/garyburd/redigo)
  * Embed redis-go-cluster(https://github.com/chasex/redis-go-cluster)
  * The reason I create this struct is that redis-go-cluster isn't fulfill redigo.Conn
@@ -24,6 +28,10 @@ type reply struct {
 }
 
 func NewClusterConn(clusterClient *redigoCluster.Cluster, recvChanSize int) redigo.Conn {
+	if recvChanSize == 0 {
+		recvChanSize = RecvChanSize
+	}
+
 	return &ClusterConn{
 		client:   clusterClient,
 		recvChan: make(chan reply, recvChanSize),

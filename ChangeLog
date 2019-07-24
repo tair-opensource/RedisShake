@@ -1,3 +1,11 @@
+2019-07-24 Alibaba Cloud.
+	* VERSION: 1.6.13
+	* IMPROVE: support `filter.db.whitelist` and `filter.db.blacklist` to let
+	different db syncing to db0 even when target type is cluster. see #127.
+	* BUGFIX: fix bug of connection url in automatic discovery in cluster. see
+	#124.
+	* IMPROVE: support `target.db` in rump mode.
+	* IMPROVE: add debug log in RDB syncing.
 2019-07-11 Alibaba Cloud.
 	* VERSION: 1.6.12
 	* IMPROVE: support filter key with whitelist and blacklist.
