@@ -438,8 +438,9 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 								continue
 							}
 						}
-						utils.RestoreRdbEntry(c, e)
 						log.Debugf("dbSyncer[%v] restore key[%s] with value length[%v]", ds.id, e.Key, len(e.Value))
+						utils.RestoreRdbEntry(c, e)
+						log.Debugf("routine[%v] restore key[%s] ok", ds.id, e.Key)
 					}
 				}
 			}()

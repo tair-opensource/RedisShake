@@ -173,9 +173,10 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 						if filter.FilterKey(string(e.Key)) {
 							continue
 						}
-						utils.RestoreRdbEntry(c, e)
 
 						log.Debugf("routine[%v] restore key[%s] with value length[%v]", dr.id, e.Key, len(e.Value))
+						utils.RestoreRdbEntry(c, e)
+						log.Debugf("routine[%v] restore key[%s] ok", dr.id, e.Key)
 					}
 				}
 			}()
