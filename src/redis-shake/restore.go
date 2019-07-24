@@ -174,6 +174,8 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 							continue
 						}
 						utils.RestoreRdbEntry(c, e)
+
+						log.Debugf("routine[%v] restore key[%s] with value length[%v]", dr.id, e.Key, len(e.Value))
 					}
 				}
 			}()
