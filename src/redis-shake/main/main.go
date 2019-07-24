@@ -346,18 +346,17 @@ func sanitizeOptions(tp string) error {
 		conf.Options.TargetDB = v
 	}
 
-	if conf.Options.TargetDB > 0 && conf.Options.TargetType == conf.RedisTypeCluster {
-		return fmt.Errorf("target.db[%v] should in {-1, 0} when target type is cluster", conf.Options.TargetDB)
-	}
-
 	// if the target is "cluster", only allow pass db 0
 	if conf.Options.TargetType == conf.RedisTypeCluster {
 		if conf.Options.TargetDB == -1 {
 			conf.Options.FilterDBWhitelist = []string{"0"} // set whitelist = 0
 			conf.Options.FilterDBBlacklist = []string{}    // reset blacklist
 			log.Info("the target redis type is cluster, only pass db0")
-		} else { // targetDB == 0
+		} else if conf.Options.TargetDB == 0 {
 			log.Info("the target redis type is cluster, all db syncing to db0")
+		} else {
+			// > 0
+			return fmt.Errorf("target.db[%v] should in {-1, 0} when target type is cluster", conf.Options.TargetDB)
 		}
 	}
 
