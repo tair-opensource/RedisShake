@@ -328,13 +328,6 @@ func sanitizeOptions(tp string) error {
 		return fmt.Errorf("only one of 'filter.key.whitelist' and 'filter.key.blacklist' can be given")
 	}
 
-	// if the target is "cluster", only allow pass db 0
-	if conf.Options.TargetType == conf.RedisTypeCluster {
-		conf.Options.FilterDBWhitelist = []string{"0"} // set whitelist = 0
-		conf.Options.FilterDBBlacklist = []string{}  // reset blacklist
-		log.Info("the target redis type is cluster, only pass db0")
-	}
-
 	if len(conf.Options.FilterSlot) > 0 {
 		for i, val := range conf.Options.FilterSlot {
 			if _, err := strconv.Atoi(val); err != nil {
@@ -351,6 +344,20 @@ func sanitizeOptions(tp string) error {
 		conf.Options.TargetDB = -1
 	} else {
 		conf.Options.TargetDB = v
+	}
+
+	// if the target is "cluster", only allow pass db 0
+	if conf.Options.TargetType == conf.RedisTypeCluster {
+		if conf.Options.TargetDB == -1 {
+			conf.Options.FilterDBWhitelist = []string{"0"} // set whitelist = 0
+			conf.Options.FilterDBBlacklist = []string{}    // reset blacklist
+			log.Info("the target redis type is cluster, only pass db0")
+		} else if conf.Options.TargetDB == 0 {
+			log.Info("the target redis type is cluster, all db syncing to db0")
+		} else {
+			// > 0
+			return fmt.Errorf("target.db[%v] should in {-1, 0} when target type is cluster", conf.Options.TargetDB)
+		}
 	}
 
 	if conf.Options.HttpProfile < 0 || conf.Options.HttpProfile > 65535 {

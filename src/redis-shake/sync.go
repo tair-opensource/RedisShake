@@ -414,6 +414,9 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 						ds.ignore.Incr()
 					} else {
 						ds.nentry.Incr()
+
+						log.Debugf("dbSyncer[%v] try restore key[%s] with value length[%v]", ds.id, e.Key, len(e.Value))
+
 						if conf.Options.TargetDB != -1 {
 							if conf.Options.TargetDB != int(lastdb) {
 								lastdb = uint32(conf.Options.TargetDB)
@@ -438,7 +441,11 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 								continue
 							}
 						}
+
+						log.Debugf("dbSyncer[%v] start restoring key[%s] with value length[%v]", ds.id, e.Key, len(e.Value))
+
 						utils.RestoreRdbEntry(c, e)
+						log.Debugf("dbSyncer[%v] restore key[%s] ok", ds.id, e.Key)
 					}
 				}
 			}()
