@@ -353,6 +353,10 @@ func sanitizeOptions(tp string) error {
 		conf.Options.TargetDB = v
 	}
 
+	if conf.Options.TargetDB > 0 && conf.Options.TargetType == conf.RedisTypeCluster {
+		return fmt.Errorf("target.db[%v] should in {-1, 0} when target type is cluster", conf.Options.TargetDB)
+	}
+
 	if conf.Options.HttpProfile < 0 || conf.Options.HttpProfile > 65535 {
 		return fmt.Errorf("HttpProfile[%v] should in [0, 65535]", conf.Options.HttpProfile)
 	} else if conf.Options.HttpProfile == 0 {
