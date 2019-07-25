@@ -864,27 +864,21 @@ func NewRDBLoader(reader *bufio.Reader, rbytes *atomic2.Int64, size int) chan *r
 	return pipe
 }
 
-func ParseRedisInfo(content []byte) map[string]string {
-	result := make(map[string]string, 10)
-	lines := bytes.Split(content, []byte("\r\n"))
-	for i := 0; i < len(lines); i++ {
-		items := bytes.SplitN(lines[i], []byte(":"), 2)
-		if len(items) != 2 {
-			continue
-		}
-		result[string(items[0])] = string(items[1])
-	}
-	return result
-}
-
 func GetRedisVersion(target, authType, auth string, tlsEnable bool) (string, error) {
 	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable)
 	defer c.Close()
 
 	infoStr, err := redigo.Bytes(c.Do("info", "server"))
 	if err != nil {
-		return "", err
+		if err.Error() == CoidsErrMsg {
+			// "info xxx" command is disable in codis, try to use "info" and parse "xxx"
+			infoStr, err = redigo.Bytes(c.Do("info"))
+			infoStr = CutRedisInfoSegment(infoStr, "server")
+		} else {
+			return "", err
+		}
 	}
+
 	infoKV := ParseRedisInfo(infoStr)
 	if value, ok := infoKV["redis_version"]; ok {
 		return value, nil
