@@ -32,6 +32,7 @@ const (
 	TencentCluster = "tencent_cluster"
 	AliyunCluster  = "aliyun_cluster"
 	UCloudCluster  = "ucloud_cluster"
+	CodisCluster   = "codis_cluster"
 
 	CoidsErrMsg = "ERR backend server 'server' not found"
 )
