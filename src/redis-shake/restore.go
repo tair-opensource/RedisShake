@@ -87,7 +87,8 @@ func (cmd *CmdRestore) Main() {
 	wg.Wait()
 	close(restoreChan)
 
-	if conf.Options.HttpProfile > 0 {
+	log.Infof("restore from '%s' to '%s' done", conf.Options.RdbInput, conf.Options.TargetAddressList)
+	if conf.Options.HttpProfile != -1 {
 		//fake status if set http_port. and wait forever
 		base.Status = "incr"
 		log.Infof("Enabled http stats, set status (incr), and wait forever.")
