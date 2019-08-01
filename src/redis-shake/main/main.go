@@ -236,15 +236,11 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if tp == conf.TypeDump || tp == conf.TypeSync {
-		if conf.Options.SourceRdbParallel <= 0 {
-			conf.Options.SourceRdbParallel = len(conf.Options.SourceAddressList)
-		} else if conf.Options.SourceRdbParallel > len(conf.Options.SourceAddressList) {
+		if conf.Options.SourceRdbParallel <= 0 || conf.Options.SourceRdbParallel > len(conf.Options.SourceAddressList) {
 			conf.Options.SourceRdbParallel = len(conf.Options.SourceAddressList)
 		}
 	} else if tp == conf.TypeRestore || tp == conf.TypeDecode {
-		if conf.Options.SourceRdbParallel <= 0 {
-			conf.Options.SourceRdbParallel = len(conf.Options.SourceRdbInput)
-		} else if conf.Options.SourceRdbParallel > len(conf.Options.SourceRdbInput) {
+		if conf.Options.SourceRdbParallel <= 0 || conf.Options.SourceRdbParallel > len(conf.Options.SourceRdbInput) {
 			conf.Options.SourceRdbParallel = len(conf.Options.SourceRdbInput)
 		}
 	}

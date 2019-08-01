@@ -45,7 +45,7 @@ func (cmd *CmdRestore) Main() {
 	base.Status = "waitRestore"
 	total := utils.GetTotalLink()
 	restoreChan := make(chan restoreNode, total)
-	
+
 	for i, rdb := range conf.Options.SourceRdbInput {
 		restoreChan <- restoreNode{id: i, input: rdb}
 	}
