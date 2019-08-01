@@ -7,6 +7,7 @@
 	`restore` mode.
 	* IMPROVE: 'info xxx' command isn't supported in codis, used 'info' and 
 	parse 'xxx'.
+	* IMPROVE: rename `rdb.xx` to `source.rdb.xx` or `target.rdb.xx`.
 2019-07-24 Alibaba Cloud.
 	* VERSION: 1.6.13
 	* IMPROVE: support `filter.db.whitelist` and `filter.db.blacklist` to let
