@@ -688,7 +688,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 	 * for ucloud, special judge.
 	 * 046110.key -> key
 	 */
-	if conf.Options.RdbSpecialCloud == UCloudCluster {
+	if conf.Options.SourceRdbSpecialCloud == UCloudCluster {
 		e.Key = e.Key[7:]
 	}
 

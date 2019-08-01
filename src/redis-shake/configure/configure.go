@@ -17,8 +17,10 @@ type Configuration struct {
 	SourcePasswordEncoding    string   `config:"source.password_encoding"`
 	SourceVersion             uint     `config:"source.version"`
 	SourceAuthType            string   `config:"source.auth_type"`
-	SourceParallel            uint     `config:"source.parallel"`
 	SourceTLSEnable           bool     `config:"source.tls_enable"`
+	SourceRdbInput            []string `config:"source.rdb.input"`
+	SourceRdbParallel         int      `config:"source.rdb.parallel"`
+	SourceRdbSpecialCloud     string   `config:"source.rdb.special_cloud"`
 	TargetAddress             string   `config:"target.address"`
 	TargetPasswordRaw         string   `config:"target.password_raw"`
 	TargetPasswordEncoding    string   `config:"target.password_encoding"`
@@ -27,10 +29,7 @@ type Configuration struct {
 	TargetAuthType            string   `config:"target.auth_type"`
 	TargetType                string   `config:"target.type"`
 	TargetTLSEnable           bool     `config:"target.tls_enable"`
-	RdbInput                  []string `config:"rdb.input"`
-	RdbOutput                 string   `config:"rdb.output"`
-	RdbParallel               int      `config:"rdb.parallel"`
-	RdbSpecialCloud           string   `config:"rdb.special_cloud"`
+	TargetRdbOutput           string   `config:"target.rdb.output"`
 	FakeTime                  string   `config:"fake_time"`
 	Rewrite                   bool     `config:"rewrite"`
 	FilterDBWhitelist         []string `config:"filter.db.whitelist"`
@@ -57,6 +56,7 @@ type Configuration struct {
 	ScanKeyFile               string   `config:"scan.key_file"`
 	Qps                       int      `config:"qps"`
 
+	/*---------------------------------------------------------*/
 	// inner variables
 	ReplaceHashTag bool     `config:"replace_hash_tag"`
 	ExtraInfo      bool     `config:"extra"`
@@ -75,6 +75,7 @@ type Configuration struct {
 	TargetReplace      bool          // to_replace
 	TargetDB           int           // int type
 	Version            string        // version
+	Type               string        // input mode -type=xxx
 }
 
 var Options Configuration
