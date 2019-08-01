@@ -19,7 +19,7 @@ The type can be one of the followings:<br>
 * **restore**: Restore RDB file to target redis.
 * **dump**: Dump RDB file from souce redis.
 * **sync**: Sync data from source redis to target redis by `sync` or `psync` command. Including full synchronization and incremental synchronization.
-* **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization. Plus, RedisShake also supports fetching data from given keys in the input file when `scan` command is not supported on the source side.
+* **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization. Plus, RedisShake also supports fetching data from given keys in the input file when `scan` command is not supported on the source side. This mode is usually used when `sync` and `psync` redis commands aren't supported.
 
 Please check out the `conf/redis-shake.conf` to see the detailed parameters description.<br>
 
@@ -41,7 +41,7 @@ Redis-shake offers metrics through restful api and log file.<br>
 
 * restful api: `curl 127.0.0.1:9320/metric`.
 * log: the metric info will be printed in the log periodically if enable.
-m
+* inner routine heap: `curl http://127.0.0.1:9310/debug/pprof/goroutine?debug=2`
 
 # Redis Type
 ---
@@ -80,7 +80,7 @@ You can also build redis-shake yourself according to the following steps, the `g
 *  cd src/vendor
 *  govendor sync     #please note: must install govendor first and then pull all dependencies: `go get -u github.com/kardianos/govendor`
 *  cd ../../ && ./build.sh
-*  ./bin/redis-shake -type=$(type_must_be_sync_dump_restore_or_decode) -conf=conf/redis-shake.conf #please note: user must modify collector.conf first to match needs.
+*  ./bin/redis-shake -type=$(type_must_be_sync_dump_restore_decode_or_rump) -conf=conf/redis-shake.conf #please note: user must modify collector.conf first to match needs.
 
 # Shake series tool
 ---
@@ -90,7 +90,7 @@ We also provide some tools for synchronization in Shake series.<br>
 * [RedisShake](https://github.com/aliyun/RedisShake): redis data synchronization tool.
 * [RedisFullCheck](https://github.com/aliyun/RedisFullCheck): redis data synchronization verification tool.
 
-Plus, we have a WeChat group so that users can join and discuss, but the group user number is limited. So please add my WeChat number: `vinllen_xingge` first, and I will add you to this group.<br>
+Plus, we have a WeChat group so that users can join and discuss, but the group user number is limited. So please add my WeChat number: `vinllen_xingge` first, and I will add you to this group. (<-微信加群请戳这)<br>
 
 # Thanks
 ---

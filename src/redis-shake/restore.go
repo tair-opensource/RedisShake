@@ -36,7 +36,7 @@ func (cmd *CmdRestore) GetDetailedInfo() interface{} {
 }
 
 func (cmd *CmdRestore) Main() {
-	log.Infof("restore from '%s' to '%s'\n", conf.Options.RdbInput, conf.Options.TargetAddressList)
+	log.Infof("restore from '%s' to '%s'\n", conf.Options.SourceRdbInput, conf.Options.TargetAddressList)
 
 	type restoreNode struct {
 		id    int
@@ -46,13 +46,13 @@ func (cmd *CmdRestore) Main() {
 	total := utils.GetTotalLink()
 	restoreChan := make(chan restoreNode, total)
 
-	for i, rdb := range conf.Options.RdbInput {
+	for i, rdb := range conf.Options.SourceRdbInput {
 		restoreChan <- restoreNode{id: i, input: rdb}
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(len(conf.Options.RdbInput))
-	for i := 0; i < conf.Options.RdbParallel; i++ {
+	wg.Add(len(conf.Options.SourceRdbInput))
+	for i := 0; i < conf.Options.SourceRdbParallel; i++ {
 		go func() {
 			for {
 				node, ok := <-restoreChan
@@ -87,7 +87,8 @@ func (cmd *CmdRestore) Main() {
 	wg.Wait()
 	close(restoreChan)
 
-	if conf.Options.HttpProfile > 0 {
+	log.Infof("restore from '%s' to '%s' done", conf.Options.SourceRdbInput, conf.Options.TargetAddressList)
+	if conf.Options.HttpProfile != -1 {
 		//fake status if set http_port. and wait forever
 		base.Status = "incr"
 		log.Infof("Enabled http stats, set status (incr), and wait forever.")

@@ -32,6 +32,9 @@ const (
 	TencentCluster = "tencent_cluster"
 	AliyunCluster  = "aliyun_cluster"
 	UCloudCluster  = "ucloud_cluster"
+	CodisCluster   = "codis_cluster"
+
+	CoidsErrMsg = "ERR backend server 'server' not found"
 )
 
 var (
@@ -89,11 +92,12 @@ func ParseInfo(content []byte) map[string]string {
 }
 
 func GetTotalLink() int {
-	if len(conf.Options.SourceAddressList) != 0 {
+	if conf.Options.Type == conf.TypeSync || conf.Options.Type == conf.TypeRump || conf.Options.Type == conf.TypeDump {
 		return len(conf.Options.SourceAddressList)
-	} else {
-		return len(conf.Options.RdbInput)
+	} else if conf.Options.Type == conf.TypeDecode || conf.Options.Type == conf.TypeRestore {
+		return len(conf.Options.SourceRdbInput)
 	}
+	return 0
 }
 
 func PickTargetRoundRobin(n int) int {
