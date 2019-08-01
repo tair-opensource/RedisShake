@@ -1,3 +1,12 @@
+2019-08-01 Alibaba Cloud.
+	* VERSION: 1.6.14
+	* BUGFIX: the `rdb.parallel` parameter limits concurrency without effect.
+	see #133
+	* BUGFIX: call `select` when target redis type is cluster in `rump` mode.
+	* IMPROVE: add `http_profile = -1` to exit once finish rdb syncing in
+	`restore` mode.
+	* IMPROVE: 'info xxx' command isn't supported in codis, used 'info' and 
+	parse 'xxx'.
 2019-07-24 Alibaba Cloud.
 	* VERSION: 1.6.13
 	* IMPROVE: support `filter.db.whitelist` and `filter.db.blacklist` to let
