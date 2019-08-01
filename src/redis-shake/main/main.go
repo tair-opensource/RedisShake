@@ -66,6 +66,7 @@ func main() {
 	}
 
 	conf.Options.Version = utils.Version
+	conf.Options.Type = *tp
 
 	var file *os.File
 	if file, err = os.Open(*configuration); err != nil {
@@ -219,31 +220,37 @@ func sanitizeOptions(tp string) error {
 		return fmt.Errorf("mode[%v] parse address failed[%v]", tp, err)
 	}
 
-	if (tp == conf.TypeRestore || tp == conf.TypeDecode) && len(conf.Options.RdbInput) == 0 {
-		return fmt.Errorf("input rdb shouldn't be empty when type in {restore, decode}")
+	if tp == conf.TypeRestore || tp == conf.TypeDecode {
+		if len(conf.Options.SourceRdbInput) == 0 {
+			return fmt.Errorf("input rdb shouldn't be empty when type in {restore, decode}")
+		}
+		// check file exist
+		for _, rdb := range conf.Options.SourceRdbInput {
+			if _, err := os.Stat(rdb); os.IsNotExist(err) {
+				return fmt.Errorf("input rdb file[%v] not exists", rdb)
+			}
+		}
 	}
-	if tp == conf.TypeDump && conf.Options.RdbOutput == "" {
-		conf.Options.RdbOutput = "output-rdb-dump"
+	if tp == conf.TypeDump && conf.Options.TargetRdbOutput == "" {
+		conf.Options.TargetRdbOutput = "output-rdb-dump"
 	}
 
-	if conf.Options.RdbParallel == 0 {
-		if tp == conf.TypeDump || tp == conf.TypeSync {
-			conf.Options.RdbParallel = len(conf.Options.SourceAddressList)
-		} else if tp == conf.TypeRestore {
-			conf.Options.RdbParallel = len(conf.Options.RdbInput)
+	if tp == conf.TypeDump || tp == conf.TypeSync {
+		if conf.Options.SourceRdbParallel <= 0 {
+			conf.Options.SourceRdbParallel = len(conf.Options.SourceAddressList)
+		} else if conf.Options.SourceRdbParallel > len(conf.Options.SourceAddressList) {
+			conf.Options.SourceRdbParallel = len(conf.Options.SourceAddressList)
+		}
+	} else if tp == conf.TypeRestore || tp == conf.TypeDecode {
+		if conf.Options.SourceRdbParallel <= 0 {
+			conf.Options.SourceRdbParallel = len(conf.Options.SourceRdbInput)
+		} else if conf.Options.SourceRdbParallel > len(conf.Options.SourceRdbInput) {
+			conf.Options.SourceRdbParallel = len(conf.Options.SourceRdbInput)
 		}
 	}
 
-	if tp == conf.TypeRestore && conf.Options.RdbParallel > len(conf.Options.RdbInput) {
-		conf.Options.RdbParallel = len(conf.Options.RdbInput)
-	}
-
-	if conf.Options.RdbSpecialCloud != "" && conf.Options.RdbSpecialCloud != utils.UCloudCluster {
-		return fmt.Errorf("rdb special cloud type[%s] is not supported", conf.Options.RdbSpecialCloud)
-	}
-
-	if conf.Options.SourceParallel == 0 || conf.Options.SourceParallel > uint(len(conf.Options.SourceAddressList)) {
-		conf.Options.SourceParallel = uint(len(conf.Options.SourceAddressList))
+	if conf.Options.SourceRdbSpecialCloud != "" && conf.Options.SourceRdbSpecialCloud != utils.UCloudCluster {
+		return fmt.Errorf("rdb special cloud type[%s] is not supported", conf.Options.SourceRdbSpecialCloud)
 	}
 
 	if conf.Options.LogFile != "" {
