@@ -96,9 +96,9 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 			}
 		}
 	case conf.RedisTypeCluster:
-		if isSource == false && tp == conf.TypeRump {
-			return fmt.Errorf("target type[%v] can't be cluster when type is 'rump' currently", redisType)
-		}
+		//if isSource == false && tp == conf.TypeRump {
+		//	return fmt.Errorf("target type[%v] can't be cluster when type is 'rump' currently", redisType)
+		//}
 		if strings.Contains(address, AddressSplitter) {
 			arr := strings.Split(address, AddressSplitter)
 			if len(arr) != 2 {
