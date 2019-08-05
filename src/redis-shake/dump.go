@@ -37,7 +37,7 @@ func (cmd *CmdDump) Main() {
 		nd := node{
 			id:     i,
 			source: source,
-			output: fmt.Sprintf("%s.%d", conf.Options.RdbOutput, i),
+			output: fmt.Sprintf("%s.%d", conf.Options.TargetRdbOutput, i),
 		}
 		cmd.dumpChan <- nd
 	}
@@ -49,7 +49,7 @@ func (cmd *CmdDump) Main() {
 		wg     sync.WaitGroup
 	)
 	wg.Add(len(conf.Options.SourceAddressList))
-	for i := 0; i < int(conf.Options.SourceParallel); i++ {
+	for i := 0; i < int(conf.Options.SourceRdbParallel); i++ {
 		go func(idx int) {
 			log.Infof("start routine[%v]", idx)
 			for {
