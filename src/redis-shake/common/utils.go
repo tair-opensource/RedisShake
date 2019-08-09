@@ -678,8 +678,42 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 			}
 		}
 		log.Info("complete restore big hash key: ", string(e.Key), " field:", n)
+	case rdb.RdbTypeQuicklist:
+		if n, err := r.ReadLength(); err != nil {
+			log.PanicError(err, "read rdb ")
+		} else {
+			log.Info("quicklist item size: ", int(n))
+			for i := 0; i < int(n); i++ {
+				ziplist, err := r.ReadString()
+				log.Info("zipList: ", ziplist)
+				if err != nil {
+					log.PanicError(err, "read rdb ")
+				}
+				buf := rdb.NewSliceBuffer(ziplist)
+				if zln, err := r.ReadZiplistLength(buf); err != nil {
+					log.PanicError(err, "read rdb")
+				} else {
+					log.Info("ziplist one of quicklist, size: ", int(zln))
+					for i := int64(0); i < zln; i++ {
+						entry, err := r.ReadZiplistEntry(buf)
+						if err != nil {
+							log.PanicError(err, "read rdb ")
+						}
+						log.Info("rpush key: ", e.Key, " value: ", entry)
+						count++
+						c.Send("RPUSH", e.Key, entry)
+						if count == 100 {
+							flushAndCheckReply(c, count)
+							count = 0
+						}
+					}
+					flushAndCheckReply(c, count)
+					count = 0
+				}
+			}
+		}
 	default:
-		log.PanicError(fmt.Errorf("cann't deal rdb type:%d", t), "restore big key fail")
+		log.PanicError(fmt.Errorf("can't deal rdb type:%d", t), "restore big key fail")
 	}
 }
 

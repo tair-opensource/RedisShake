@@ -10,6 +10,7 @@ import (
 
 func RestoreBigkey(client redigo.Conn, key string, value string, pttl int64, db int, preDb *int) {
 	if db != *preDb {
+		log.Infof("RestoreBigkey select db[%v]", db)
 		if _, err := client.Do("select", db); err != nil {
 			log.Panicf("send select db[%v] failed[%v]", db, err)
 		}
@@ -30,8 +31,10 @@ func RestoreBigkey(client redigo.Conn, key string, value string, pttl int64, db 
 
 	restoreBigRdbEntry(client, &entry)
 
-	// pttl
-	if _, err := client.Do("pexpire", key, pttl); err != nil {
-		log.Panicf("send key[%v] pexpire failed[%v]", key, err)
+	if pttl > 0 {
+		// pttl
+		if _, err := client.Do("pexpire", key, pttl); err != nil {
+			log.Panicf("send key[%v] pexpire failed[%v]", key, err)
+		}
 	}
 }

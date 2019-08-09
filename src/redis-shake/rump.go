@@ -349,8 +349,8 @@ func (dre *dbRumperExecutor) writer() {
 		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
 			len(ele.value))
 		if uint64(len(ele.value)) >= conf.Options.BigKeyThreshold {
-			log.Infof("dbRumper[%v] executor[%v] restore big key[%v] with length[%v]", dre.rumperId,
-				dre.executorId, ele.key, len(ele.value))
+			log.Infof("dbRumper[%v] executor[%v] restore big key[%v] with length[%v], pttl[%v], db[%v]",
+				dre.rumperId, dre.executorId, ele.key, len(ele.value), ele.pttl, ele.db)
 			// flush previous cache
 			batch = dre.writeSend(batch, &count, &wBytes)
 
