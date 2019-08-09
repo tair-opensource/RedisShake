@@ -448,6 +448,10 @@ func sanitizeOptions(tp string) error {
 				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
 		}
 
+		if conf.Options.ScanKeyNumber > utils.RecvChanSize && conf.Options.TargetType == conf.RedisTypeCluster {
+			return fmt.Errorf("scan.key_number should less than [%v] when target type is cluster", utils.RecvChanSize)
+		}
+
 		//if len(conf.Options.SourceAddressList) == 1 {
 		//	return fmt.Errorf("source address length should == 1 when type is 'rump'")
 		//}
