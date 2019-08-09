@@ -15,7 +15,6 @@ type Configuration struct {
 	SourceAddress             string   `config:"source.address"`
 	SourcePasswordRaw         string   `config:"source.password_raw"`
 	SourcePasswordEncoding    string   `config:"source.password_encoding"`
-	SourceVersion             uint     `config:"source.version"`
 	SourceAuthType            string   `config:"source.auth_type"`
 	SourceTLSEnable           bool     `config:"source.tls_enable"`
 	SourceRdbInput            []string `config:"source.rdb.input"`
@@ -24,12 +23,12 @@ type Configuration struct {
 	TargetAddress             string   `config:"target.address"`
 	TargetPasswordRaw         string   `config:"target.password_raw"`
 	TargetPasswordEncoding    string   `config:"target.password_encoding"`
-	TargetVersion             uint     `config:"target.version"`
 	TargetDBString            string   `config:"target.db"`
 	TargetAuthType            string   `config:"target.auth_type"`
 	TargetType                string   `config:"target.type"`
 	TargetTLSEnable           bool     `config:"target.tls_enable"`
 	TargetRdbOutput           string   `config:"target.rdb.output"`
+	TargetVersion             string   `config:"target.version"`
 	FakeTime                  string   `config:"fake_time"`
 	Rewrite                   bool     `config:"rewrite"`
 	FilterDBWhitelist         []string `config:"filter.db.whitelist"`
@@ -67,15 +66,14 @@ type Configuration struct {
 
 	/*---------------------------------------------------------*/
 	// generated variables
-	SourceAddressList  []string      // source address list
-	TargetAddressList  []string      // target address list
-	HeartbeatIp        string        // heartbeat ip
-	ShiftTime          time.Duration // shift
-	TargetRedisVersion string        // to_redis_version
-	TargetReplace      bool          // to_replace
-	TargetDB           int           // int type
-	Version            string        // version
-	Type               string        // input mode -type=xxx
+	SourceAddressList []string      // source address list
+	TargetAddressList []string      // target address list
+	HeartbeatIp       string        // heartbeat ip
+	ShiftTime         time.Duration // shift
+	TargetReplace     bool          // to_replace
+	TargetDB          int           // int type
+	Version           string        // version
+	Type              string        // input mode -type=xxx
 }
 
 var Options Configuration

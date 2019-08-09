@@ -26,7 +26,8 @@ Please check out the `conf/redis-shake.conf` to see the detailed parameters desc
 # Support
 ---
 Redis version from 2.x to 5.0.
-Supports `Standalone`, `Cluster`, `Codis`, `Aliyun Cluster Proxy`, `Tencent Cloud Proxy` and so on.
+Supports `Standalone`, `Cluster`, and some proxies type like `Codis`, `twemproxy`,  `Aliyun Cluster Proxy`, `Tencent Cloud Proxy` and so on.<br>
+For `codis` and `twemproxy`, there maybe some constraints, please checkout this [question](https://github.com/alibaba/RedisShake/wiki/FAQ#q-does-redisshake-supports-codis-and-twemproxy).
 
 # Configuration
 Redis-shake has several parameters in the configuration(`conf/redis-shake.conf`) that maybe confusing, if this is your first time using, just configure the `source.address` and `target.address` parameters.
