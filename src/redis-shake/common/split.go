@@ -8,9 +8,12 @@ import (
 	redigo "github.com/garyburd/redigo/redis"
 )
 
-func RestoreBigkey(client redigo.Conn, key string, value string, pttl int64, db int) {
-	if _, err := client.Do("select", db); err != nil {
-		log.Panicf("send select db[%v] failed[%v]", db, err)
+func RestoreBigkey(client redigo.Conn, key string, value string, pttl int64, db int, preDb *int) {
+	if db != *preDb {
+		if _, err := client.Do("select", db); err != nil {
+			log.Panicf("send select db[%v] failed[%v]", db, err)
+		}
+		*preDb = db
 	}
 
 	entry := rdb.BinEntry{

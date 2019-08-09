@@ -327,6 +327,7 @@ func (dre *dbRumperExecutor) writer() {
 	// used in QoS
 	bucket := utils.StartQoS(conf.Options.Qps)
 	preDb := 0
+	preBigKeyDb := 0
 	for ele := range dre.keyChan {
 		if filter.FilterKey(ele.key) {
 			continue
@@ -354,8 +355,7 @@ func (dre *dbRumperExecutor) writer() {
 			batch = dre.writeSend(batch, &count, &wBytes)
 
 			// handle big key
-			utils.RestoreBigkey(dre.targetBigKeyClient, ele.key, ele.value, ele.pttl, ele.db)
-
+			utils.RestoreBigkey(dre.targetBigKeyClient, ele.key, ele.value, ele.pttl, ele.db, &preBigKeyDb)
 			// all the reply has been handled in RestoreBigkey
 			// dre.resultChan <- ele
 			continue
