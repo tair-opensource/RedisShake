@@ -409,21 +409,24 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if tp == conf.TypeRestore || tp == conf.TypeSync || tp == conf.TypeRump {
-		// get target redis version and set TargetReplace.
-		for _, address := range conf.Options.TargetAddressList {
-			// single connection even if the target is cluster
-			if v, err := utils.GetRedisVersion(address, conf.Options.TargetAuthType,
-				conf.Options.TargetPasswordRaw, conf.Options.TargetTLSEnable); err != nil {
-				return fmt.Errorf("get target redis version failed[%v]", err)
-			} else if conf.Options.TargetRedisVersion != "" && conf.Options.TargetRedisVersion != v {
-				return fmt.Errorf("target redis version is different: [%v %v]", conf.Options.TargetRedisVersion, v)
-			} else {
-				conf.Options.TargetRedisVersion = v
+		if conf.Options.TargetVersion == "" {
+			// get target redis version and set TargetReplace.
+			for _, address := range conf.Options.TargetAddressList {
+				// single connection even if the target is cluster
+				if v, err := utils.GetRedisVersion(address, conf.Options.TargetAuthType,
+					conf.Options.TargetPasswordRaw, conf.Options.TargetTLSEnable); err != nil {
+					return fmt.Errorf("get target redis version failed[%v]", err)
+				} else if conf.Options.TargetVersion != "" && conf.Options.TargetVersion != v {
+					return fmt.Errorf("target redis version is different: [%v %v]", conf.Options.TargetVersion, v)
+				} else {
+					conf.Options.TargetVersion = v
+				}
 			}
 		}
-		if strings.HasPrefix(conf.Options.TargetRedisVersion, "4.") ||
-			strings.HasPrefix(conf.Options.TargetRedisVersion, "3.") ||
-			strings.HasPrefix(conf.Options.TargetRedisVersion, "5.") {
+
+		if strings.HasPrefix(conf.Options.TargetVersion, "4.") ||
+			strings.HasPrefix(conf.Options.TargetVersion, "3.") ||
+			strings.HasPrefix(conf.Options.TargetVersion, "5.") {
 			conf.Options.TargetReplace = true
 		} else {
 			conf.Options.TargetReplace = false
