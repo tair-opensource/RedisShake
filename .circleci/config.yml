@@ -24,6 +24,6 @@ jobs:
       # specify any bash command here prefixed with `run: `
       - run: export GOPATH=`pwd`
       - run: go get -u github.com/kardianos/govendor
-      - run: cd src/vendor && ls
+      - run: cd src && ls
       - run: govendor sync
       - run: cd ../../ && sh build.sh
