@@ -25,8 +25,8 @@ jobs:
       - run: 
         name: prepare environment
         command: |
-            export GOPATH=`pwd`
-            go get -u github.com/kardianos/govendor
-            cd src && tree
-            govendor sync -v
-            cd .. && sh build.sh
+          export GOPATH=`pwd`
+          go get -u github.com/kardianos/govendor
+          cd src && tree
+          govendor sync -v
+          cd .. && sh build.sh
