@@ -17,13 +17,16 @@ jobs:
     #### expecting it in the form of
     ####   /go/src/github.com/circleci/go-tool
     ####   /go/src/bitbucket.org/circleci/go-tool
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+    working_directory: /go/src/github.com/alibaba/RedisShake
     steps:
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: export GOPATH=`pwd`
-      - run: go get -u github.com/kardianos/govendor
-      - run: cd src && ls
-      - run: govendor sync
-      - run: cd ../../ && sh build.sh
+      - run: 
+        name: prepare environment
+        command: |
+            export GOPATH=`pwd`
+            go get -u github.com/kardianos/govendor
+            cd src && tree
+            govendor sync -v
+            cd .. && sh build.sh
