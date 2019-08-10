@@ -22,11 +22,8 @@ jobs:
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: 
-        name: prepare environment
-        command: |
-          export GOPATH=`pwd`
-          go get -u github.com/kardianos/govendor
-          cd src && tree
-          govendor sync -v
-          cd .. && sh build.sh
+      - run: export GOPATH=`pwd`
+      - run: go get -u github.com/kardianos/govendor
+      - run: cd src && tree
+      - run: govendor sync -v
+      - run: cd .. && sh build.sh
