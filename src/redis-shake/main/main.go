@@ -396,6 +396,9 @@ func sanitizeOptions(tp string) error {
 		// set to default when not set
 		conf.Options.SenderCount = defaultSenderCount
 	}
+	if conf.Options.TargetType == conf.RedisTypeCluster && conf.Options.SenderCount > utils.RecvChanSize {
+		conf.Options.SenderCount = utils.RecvChanSize
+	}
 
 	if conf.Options.SenderDelayChannelSize == 0 {
 		conf.Options.SenderDelayChannelSize = 32
