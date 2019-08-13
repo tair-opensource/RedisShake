@@ -7,7 +7,7 @@ import (
 	"pkg/libs/log"
 )
 
-const(
+var (
 	RecvChanSize = 4096
 )
 
