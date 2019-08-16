@@ -10,6 +10,11 @@ import (
 	"strings"
 )
 
+const (
+	ReplayString = "string"
+	ReplayInt64s = "int64s"
+)
+
 type ClusterNodeInfo struct {
 	Id          string
 	Address     string
@@ -172,4 +177,18 @@ func GetAllClusterNode(client redigo.Conn, role string, choose string) ([]string
 	}
 
 	return result, nil
+}
+
+func WrapCommand(tp string, reply interface{}, err error) (interface{}, error) {
+	if err != nil {
+		return nil, fmt.Errorf("inner error: %v", err)
+	}
+	switch tp {
+	case ReplayString:
+		return redigo.Strings(reply, err)
+	case ReplayInt64s:
+		return redigo.Int64s(reply, err)
+	default:
+		return nil, fmt.Errorf("command type[%v] not support", tp)
+	}
 }
