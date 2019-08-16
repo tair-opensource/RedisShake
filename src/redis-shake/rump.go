@@ -485,22 +485,20 @@ func (dre *dbRumperExecutor) doFetch(db int) error {
 			}
 
 			reply, err := dre.sourceClient.Do("")
-			dumpsRet, err := utils.WrapCommand(utils.ReplayString, reply, err)
+			dumps, err := redis.Strings(reply, err)
 			if err != nil && err != redis.ErrNil {
-				return fmt.Errorf("do dump with failed[%v]", err)
+				return fmt.Errorf("do dump with failed[%v], reply[%v]", err, reply)
 			}
-			dumps := dumpsRet.([]string)
 
 			// pipeline ttl
 			for _, key := range keys {
 				dre.sourceClient.Send("PTTL", key)
 			}
 			reply, err = dre.sourceClient.Do("")
-			pttlsRet, err := utils.WrapCommand(utils.ReplayInt64s, reply, err)
+			pttls, err := redis.Int64s(reply, err)
 			if err != nil && err != redis.ErrNil {
-				return fmt.Errorf("do ttl with failed[%v]", err)
+				return fmt.Errorf("do ttl with failed[%v], reply[%v]", err, reply)
 			}
-			pttls := pttlsRet.([]int64)
 
 			dre.stat.rCommands.Add(int64(len(keys)))
 			for i, k := range keys {
