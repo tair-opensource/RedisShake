@@ -13,9 +13,9 @@ import (
 	"redis-shake/configure"
 	"redis-shake/metric"
 	"redis-shake/scanner"
+	"redis-shake/filter"
 
 	"github.com/garyburd/redigo/redis"
-	"redis-shake/filter"
 )
 
 type CmdRump struct {
