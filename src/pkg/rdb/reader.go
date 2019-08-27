@@ -13,8 +13,7 @@ import (
 	"strconv"
 
 	"pkg/libs/errors"
-	// "libs/log"
-	"pkg/libs/log"
+
 )
 
 var FromVersion int64 = 9
@@ -145,12 +144,12 @@ func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 		if n, err := r.ReadLength(); err != nil {
 			return nil, err
 		} else {
-			log.Debug("zset length: ", n)
+			// log.Debug("zset length: ", n)
 			for i := 0; i < int(n); i++ {
 				if _, err := r.ReadString(); err != nil {
 					return nil, err
 				}
-				log.Debug("zset read: ", i)
+				// log.Debug("zset read: ", i)
 				if t == RdbTypeZSet2 {
 					if _, err := r.ReadDouble(); err != nil {
 						return nil, err
