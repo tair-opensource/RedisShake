@@ -10,6 +10,11 @@ import (
 	"strings"
 )
 
+const (
+	ReplayString = "string"
+	ReplayInt64s = "int64s"
+)
+
 type ClusterNodeInfo struct {
 	Id          string
 	Address     string

@@ -396,6 +396,10 @@ func sanitizeOptions(tp string) error {
 		// set to default when not set
 		conf.Options.SenderCount = defaultSenderCount
 	}
+	if conf.Options.TargetType == conf.RedisTypeCluster && int(conf.Options.SenderCount) > utils.RecvChanSize {
+		log.Infof("RecvChanSize is modified from [%v] to [%v]", utils.RecvChanSize, int(conf.Options.SenderCount))
+		utils.RecvChanSize = int(conf.Options.SenderCount)
+	}
 
 	if conf.Options.SenderDelayChannelSize == 0 {
 		conf.Options.SenderDelayChannelSize = 32
@@ -448,8 +452,9 @@ func sanitizeOptions(tp string) error {
 				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
 		}
 
-		if conf.Options.ScanKeyNumber > utils.RecvChanSize && conf.Options.TargetType == conf.RedisTypeCluster {
-			return fmt.Errorf("scan.key_number should less than [%v] when target type is cluster", utils.RecvChanSize)
+		if int(conf.Options.ScanKeyNumber) > utils.RecvChanSize && conf.Options.TargetType == conf.RedisTypeCluster {
+			log.Infof("RecvChanSize is modified from [%v] to [%v]", utils.RecvChanSize, int(conf.Options.ScanKeyNumber))
+			utils.RecvChanSize = int(conf.Options.ScanKeyNumber)
 		}
 
 		//if len(conf.Options.SourceAddressList) == 1 {

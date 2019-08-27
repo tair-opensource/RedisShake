@@ -1,3 +1,11 @@
+2019-08-27 Alibaba Cloud.
+	* VERSION: 1.6.17
+	* BUGFIX: transaction syncing panic when target redis is cluster. see
+	#145.
+	* IMPROVE: adjust RecvChanSize based on `sender.count` or `scan.key_number`
+	if target redis type is cluster.
+	* IMPROVE: remove some variables in conf like `heartbeat`, `ncpu`.
+	* IMPROVE: print inner error message from redigo driver return message.
 2019-08-09 Alibaba Cloud.
 	* VERSION: 1.6.16
 	* BUGFIX: big key in `rump` mode all expired.

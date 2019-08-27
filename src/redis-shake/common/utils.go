@@ -811,6 +811,8 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		params = append(params, "FREQ")
 		params = append(params, e.Freq)
 	}
+
+	log.Debugf("restore key[%s] with params[%v]", e.Key, params)
 	// fmt.Printf("key: %v, value: %v params: %v\n", string(e.Key), e.Value, params)
 	// s, err := redigo.String(c.Do("restore", params...))
 	s, err := redigoCluster.String(c.Do("restore", params...))
