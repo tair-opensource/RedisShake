@@ -180,12 +180,8 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 
 						log.Debugf("routine[%v] start restoring key[%s] with value length[%v]", dr.id, e.Key, len(e.Value))
 
-						//e.Value = []byte(string("\x0c\x1f\x1f\x00\x00\x00\x14\x00\x00\x00\x04\x00\x00\xf1\x02\xf1\x02\xd0A*\xf4`\x06\xe0\x8c.\x1e\xa0l\x01\x00\x00\xff\x06\x00\xbbl\x83\x0b\x91?<f"))
-						//e.Type = rdb.RdbTypeZSet
-						//e.Key = []byte("test-ab-c-d")
 						utils.RestoreRdbEntry(c, e)
 						log.Debugf("routine[%v] restore key[%s] ok", dr.id, e.Key)
-						// break
 					}
 				}
 			}()
