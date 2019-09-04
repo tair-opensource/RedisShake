@@ -27,6 +27,7 @@ import (
 	"redis-shake/configure"
 	"redis-shake/metric"
 	"redis-shake/restful"
+
 	"github.com/gugemichael/nimo4go"
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )

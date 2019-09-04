@@ -63,10 +63,10 @@
 			"revisionTime": "2019-05-17T06:12:10Z"
 		},
 		{
-			"checksumSHA1": "63olncsMU/K9MMKxt4zuKSyoNg0=",
+			"checksumSHA1": "52vjznwP2OHubLvZkLCUCC9Gp5o=",
 			"path": "github.com/gugemichael/nimo4go",
-			"revision": "cbcfac21339d78efaed9ed09dcba7296d9976118",
-			"revisionTime": "2018-09-04T03:08:18Z"
+			"revision": "32795d80f83ab8c37b47589c5068dfbb14545c34",
+			"revisionTime": "2019-09-04T07:30:57Z"
 		},
 		{
 			"checksumSHA1": "bKMZjd2wPw13VwoE7mBeSv5djFA=",
@@ -163,6 +163,12 @@
 			"path": "github.com/vinllen/redis-go-cluster",
 			"revision": "0799101ddfdb7d2bc9d47948f8a0cc17d23a216e",
 			"revisionTime": "2019-08-12T11:22:58Z"
+		},
+		{
+			"checksumSHA1": "U4rR1I0MXcvJz3zSxTp3hb3Y0I0=",
+			"path": "golang.org/x/sys/windows",
+			"revision": "43c01164e93111c754a278ab423ba01063c44917",
+			"revisionTime": "2019-07-29T18:45:48Z"
 		},
 		{
 			"checksumSHA1": "TM3Neoy1xRAKyZYMGzKc41sDFW4=",
