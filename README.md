@@ -17,7 +17,7 @@ The type can be one of the followings:<br>
 
 * **decode**: Decode dumped payload to human readable format (hex-encoding).
 * **restore**: Restore RDB file to target redis.
-* **dump**: Dump RDB file from souce redis.
+* **dump**: Dump RDB file from source redis.
 * **sync**: Sync data from source redis to target redis by `sync` or `psync` command. Including full synchronization and incremental synchronization.
 * **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization. Plus, RedisShake also supports fetching data from given keys in the input file when `scan` command is not supported on the source side. This mode is usually used when `sync` and `psync` redis commands aren't supported.
 
@@ -99,3 +99,5 @@ Plus, we have a WeChat group so that users can join and discuss, but the group u
 | :------: | :------: |
 | ceshihao | davidzheng23@gmail.com |
 | wangyiyang | wangyiyang.kk@gmail.com |
+| muicoder | muicoder@gmail.com |
+| zhklcf | huikangzhu@126.com |
