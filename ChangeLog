@@ -1,3 +1,6 @@
+2019-09-04 Alibaba Cloud.
+	* VERSION: 1.6.18
+	* BUGFIX: restore quicklist panic when target is cluster. see #156
 2019-08-27 Alibaba Cloud.
 	* VERSION: 1.6.17
 	* BUGFIX: transaction syncing panic when target redis is cluster. see
