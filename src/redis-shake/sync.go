@@ -600,7 +600,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 				metric.GetMetric(ds.id).AddPullCmdCount(ds.id, 1)
 
 				// print debug log of send command
-				if conf.Options.LogLevel == utils.LogLevelAll {
+				if conf.Options.LogLevel == utils.LogLevelDebug {
 					strArgv := make([]string, len(argv))
 					for i, ele := range argv {
 						strArgv[i] = *(*string)(unsafe.Pointer(&ele))
