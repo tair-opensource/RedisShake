@@ -1,3 +1,8 @@
+2019-09-19 Alibaba Cloud.
+	* VERSION: 1.6.19
+	* BUGFIX: update "redis-go-cluster" driver to fix bug to throw CROSSSLOT
+	error when migrating lua script.
+	* IMPROVE: only run hypervisor when type is `sync`.
 2019-09-04 Alibaba Cloud.
 	* VERSION: 1.6.18
 	* BUGFIX: restore quicklist panic when target is cluster. see #156
