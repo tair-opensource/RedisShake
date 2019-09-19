@@ -199,9 +199,10 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 		stat := dr.Stat()
 		var b bytes.Buffer
 		if nsize != 0 {
-			fmt.Fprintf(&b, "routine[%v] total = %d - %12d [%3d%%]", dr.id, nsize, stat.rbytes, 100*stat.rbytes/nsize)
+			fmt.Fprintf(&b, "routine[%v] total = %s - %12s [%3d%%]", dr.id, utils.GetMetric(nsize),
+				utils.GetMetric(stat.rbytes), 100*stat.rbytes/nsize)
 		} else {
-			fmt.Fprintf(&b, "routine[%v] total = %12d", dr.id, stat.rbytes)
+			fmt.Fprintf(&b, "routine[%v] total = %12s", dr.id, utils.GetMetric(stat.rbytes))
 		}
 		fmt.Fprintf(&b, "  entry=%-12d", stat.nentry)
 		if stat.ignore != 0 {

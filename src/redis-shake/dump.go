@@ -99,7 +99,7 @@ func (cmd *CmdDump) dumpCommand(reader *bufio.Reader, writer *bufio.Writer, nsiz
 
 	for {
 		time.Sleep(time.Second)
-		log.Infof("dump: total = %d\n", nsize+nread.Get())
+		log.Infof("dump: total = %s\n", utils.GetMetric(nsize+nread.Get()))
 	}
 }
 
@@ -175,7 +175,7 @@ func (dd *dbDumper) dumpRDBFile(reader *bufio.Reader, writer *bufio.Writer, nsiz
 		}
 		n := nread.Get()
 		p := 100 * n / nsize
-		log.Infof("routine[%v] total = %d - %12d [%3d%%]\n", dd.id, nsize, n, p)
+		log.Infof("routine[%v] total = %s - %12s [%3d%%]\n", dd.id, utils.GetMetric(nsize), utils.GetMetric(n), p)
 	}
 	log.Infof("routine[%v] dump: rdb done", dd.id)
 }

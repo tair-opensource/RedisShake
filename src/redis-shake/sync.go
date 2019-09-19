@@ -464,8 +464,9 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 		}
 		stat = ds.Stat()
 		var b bytes.Buffer
-		fmt.Fprintf(&b, "dbSyncer[%v] total=%d - %12d [%3d%%]  entry=%-12d",
-			ds.id, nsize, stat.rbytes, 100*stat.rbytes/nsize, stat.nentry)
+		// fmt.Fprintf(&b, "dbSyncer[%v] total=%s - %12d [%3d%%]  entry=%-12d",
+		fmt.Fprintf(&b, "dbSyncer[%v] total = %s - %12s [%3d%%]  entry=%-12d",
+			ds.id, utils.GetMetric(nsize), utils.GetMetric(stat.rbytes), 100*stat.rbytes/nsize, stat.nentry)
 		if stat.ignore != 0 {
 			fmt.Fprintf(&b, "  ignore=%-12d", stat.ignore)
 		}

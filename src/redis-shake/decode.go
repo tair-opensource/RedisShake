@@ -102,9 +102,9 @@ func (cmd *CmdDecode) decode(input, output string) {
 		var b bytes.Buffer
 		fmt.Fprintf(&b, "decode: ")
 		if nsize != 0 {
-			fmt.Fprintf(&b, "total = %d - %12d [%3d%%]", nsize, stat.rbytes, 100*stat.rbytes/nsize)
+			fmt.Fprintf(&b, "total = %s - %12s [%3d%%]", utils.GetMetric(nsize), utils.GetMetric(stat.rbytes), 100*stat.rbytes/nsize)
 		} else {
-			fmt.Fprintf(&b, "total = %12d", stat.rbytes)
+			fmt.Fprintf(&b, "total = %12s", utils.GetMetric(stat.rbytes))
 		}
 		fmt.Fprintf(&b, "  write=%-12d", stat.wbytes)
 		fmt.Fprintf(&b, "  entry=%-12d", stat.nentry)
