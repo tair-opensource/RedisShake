@@ -16,4 +16,8 @@ if [ "Linux" != "$(uname -s)" ];then
     exit 1
 fi
 
-./hypervisor --daemon --exec="./$name.linux -conf=$1 -type=$2 1>>$name.output 2>&1" 1>>hypervisor.output 2>&1
+if [ "sync" == $2 ]; then
+    ./hypervisor --daemon --exec="./$name.linux -conf=$1 -type=$2 1>>$name.output 2>&1" 1>>hypervisor.output 2>&1
+else
+    ./$name.linux -conf=$1 -type=$2 1>>$name.output 2>&1 &
+fi
