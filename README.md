@@ -91,7 +91,8 @@ We also provide some tools for synchronization in Shake series.<br>
 * [RedisShake](https://github.com/aliyun/RedisShake): redis data synchronization tool.
 * [RedisFullCheck](https://github.com/aliyun/RedisFullCheck): redis data synchronization verification tool.
 
-Plus, we have a WeChat group so that users can join and discuss, but the group user number is limited. So please add my WeChat number: `vinllen_xingge` first, and I will add you to this group. (<-微信加群请戳这)<br>
+Plus, we have a DingDing(钉钉) group so that users can join and discuss, please scan the code.
+![DingDing](resources/dingding_group.png)<br>
 
 # Thanks
 ---
