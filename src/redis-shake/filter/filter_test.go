@@ -1,3 +1,6 @@
+// +build linux darwin windows
+// +build integration
+
 package filter
 
 import (
