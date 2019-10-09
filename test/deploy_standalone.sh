@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -o errexit
+
 # start an standalone redis with given port
 if [ $# != 2 ] ; then
     echo "USAGE: $0 [port] [start/stop]"

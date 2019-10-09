@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+set rb [lindex $argv 0]
+set list [lrange $argv 1 end]
+spawn $rb create --replicas 1 {*}$list
+#expect "(type 'yes' to accept):"
+expect "to accept\):"
+send "yes\r"
+#expect "[OK] All 16384 slots covered."
+#send "\r"
+expect eof
