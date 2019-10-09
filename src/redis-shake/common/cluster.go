@@ -1,8 +1,14 @@
 package utils
 
 import (
+
 	redigoCluster "github.com/vinllen/redis-go-cluster"
 	redigo "github.com/garyburd/redigo/redis"
+	"pkg/libs/log"
+)
+
+var (
+	RecvChanSize = 4096
 )
 
 /* implement redigo.Conn(https://github.com/garyburd/redigo)
@@ -22,6 +28,10 @@ type reply struct {
 }
 
 func NewClusterConn(clusterClient *redigoCluster.Cluster, recvChanSize int) redigo.Conn {
+	if recvChanSize == 0 {
+		recvChanSize = RecvChanSize
+	}
+
 	return &ClusterConn{
 		client:   clusterClient,
 		recvChan: make(chan reply, recvChanSize),
@@ -51,11 +61,41 @@ func (cc *ClusterConn) Send(commandName string, args ...interface{}) error {
 
 // send batcher and put the return into recvChan
 func (cc *ClusterConn) Flush() error {
+	if cc.batcher == nil {
+		log.Info("batcher is empty, no need to flush")
+		return nil
+	}
+
 	ret, err := cc.client.RunBatch(cc.batcher)
-	cc.batcher = nil // reset batcher
-	cc.recvChan <- reply{
-		answer: ret,
-		err: err,
+	defer func() {
+		cc.batcher = nil // reset batcher
+	}()
+
+	if err != nil {
+		cc.recvChan <- reply{
+			answer: nil,
+			err:    err,
+		}
+
+		return err
+	}
+
+	// for redis-go-cluster driver, "Receive" function returns all the replies once flushed.
+	// However, this action is different with redigo driver that "Receive" only returns 1
+	// reply each time.
+
+	retLength := len(ret)
+	availableSize := cap(cc.recvChan) - len(cc.recvChan)
+	if availableSize < retLength {
+		log.Warnf("available channel size[%v] less than current returned batch size[%v]", availableSize, retLength)
+	}
+	log.Debugf("cluster flush batch with size[%v], return replies size[%v]", cc.batcher.GetBatchSize(), retLength)
+
+	for _, ele := range ret {
+		cc.recvChan <- reply{
+			answer: ele,
+			err:    err,
+		}
 	}
 
 	return err

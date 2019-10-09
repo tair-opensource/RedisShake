@@ -1,160 +1,445 @@
 package run
 
 import (
-	"pkg/libs/log"
+	"fmt"
+	"math"
+	"reflect"
 	"strconv"
 	"sync"
-	"fmt"
 
+	"pkg/libs/atomic2"
+	"pkg/libs/log"
 	"redis-shake/common"
 	"redis-shake/configure"
+	"redis-shake/metric"
 	"redis-shake/scanner"
+	"redis-shake/filter"
 
 	"github.com/garyburd/redigo/redis"
 )
 
 type CmdRump struct {
-	sourceConn []redis.Conn
-	targetConn redis.Conn
+	dumpers []*dbRumper
+}
 
-	keyChan    chan *KeyNode // keyChan is used to communicated between routine1 and routine2
-	resultChan chan *KeyNode // resultChan is used to communicated between routine2 and routine3
+func (cr *CmdRump) GetDetailedInfo() interface{} {
+	ret := make(map[string]interface{}, len(cr.dumpers))
+	for _, dumper := range cr.dumpers {
+		if dumper == nil {
+			continue
+		}
+		ret[dumper.address] = dumper.getStats()
+	}
 
-	scanners  []scanner.Scanner // one scanner match one db/proxy
-	fetcherWg sync.WaitGroup
+	// TODO, better to move to the next level
+	metric.AddMetric(0)
+
+	return []map[string]interface{}{
+		{
+			"Details": ret,
+		},
+	}
+}
+
+func (cr *CmdRump) Main() {
+	cr.dumpers = make([]*dbRumper, len(conf.Options.SourceAddressList))
+
+	var wg sync.WaitGroup
+	wg.Add(len(conf.Options.SourceAddressList))
+	// build dbRumper
+	for i, address := range conf.Options.SourceAddressList {
+		dr := &dbRumper{
+			id:      i,
+			address: address,
+		}
+
+		cr.dumpers[i] = dr
+
+		log.Infof("start dbRumper[%v]", i)
+		go func() {
+			defer wg.Done()
+			dr.run()
+		}()
+	}
+	wg.Wait()
+
+	log.Infof("all rumpers finish!, total data: %v", cr.GetDetailedInfo())
+}
+
+/*------------------------------------------------------*/
+// one rump(1 db or 1 proxy) link corresponding to one dbRumper
+type dbRumper struct {
+	id      int    // id
+	address string // source address
+
+	client       redis.Conn // source client
+	tencentNodes []string   // for tencent cluster only
+
+	executors []*dbRumperExecutor
+}
+
+func (dr *dbRumper) getStats() map[string]interface{} {
+	ret := make(map[string]interface{}, len(dr.executors))
+	for _, exe := range dr.executors {
+		if exe == nil {
+			continue
+		}
+
+		id := fmt.Sprintf("%v", exe.executorId)
+		ret[id] = exe.getStats()
+	}
+
+	return ret
+}
+
+func (dr *dbRumper) run() {
+	// single connection
+	dr.client = utils.OpenRedisConn([]string{dr.address}, conf.Options.SourceAuthType,
+		conf.Options.SourcePasswordRaw, false, conf.Options.SourceTLSEnable)
+
+	// some clouds may have several db under proxy
+	count, err := dr.getNode()
+	if err != nil {
+		log.Panicf("dbRumper[%v] get node failed[%v]", dr.id, err)
+	}
+
+	log.Infof("dbRumper[%v] get node count: %v", dr.id, count)
+
+	dr.executors = make([]*dbRumperExecutor, count)
+
+	var wg sync.WaitGroup
+	wg.Add(count)
+	for i := 0; i < count; i++ {
+		var target []string
+		if conf.Options.TargetType == conf.RedisTypeCluster {
+			target = conf.Options.TargetAddressList
+		} else {
+			// round-robin pick
+			pick := utils.PickTargetRoundRobin(len(conf.Options.TargetAddressList))
+			target = []string{conf.Options.TargetAddressList[pick]}
+		}
+
+		var tencentNodeId string
+		if len(dr.tencentNodes) > 0 {
+			tencentNodeId = dr.tencentNodes[i]
+		}
+
+		sourceClient := utils.OpenRedisConn([]string{dr.address}, conf.Options.SourceAuthType,
+			conf.Options.SourcePasswordRaw, false, conf.Options.SourceTLSEnable)
+		targetClient := utils.OpenRedisConn(target, conf.Options.TargetAuthType,
+			conf.Options.TargetPasswordRaw, conf.Options.TargetType == conf.RedisTypeCluster,
+			conf.Options.TargetTLSEnable)
+		targetBigKeyClient := utils.OpenRedisConn(target, conf.Options.TargetAuthType,
+			conf.Options.TargetPasswordRaw, conf.Options.TargetType == conf.RedisTypeCluster,
+			conf.Options.TargetTLSEnable)
+		executor := NewDbRumperExecutor(dr.id, i, sourceClient, targetClient, targetBigKeyClient, tencentNodeId)
+		dr.executors[i] = executor
+
+		go func() {
+			defer wg.Done()
+			executor.exec()
+		}()
+	}
+
+	wg.Wait()
+
+	log.Infof("dbRumper[%v] finished!", dr.id)
+}
+
+func (dr *dbRumper) getNode() (int, error) {
+	switch conf.Options.ScanSpecialCloud {
+	case utils.AliyunCluster:
+		info, err := redis.Bytes(dr.client.Do("info", "Cluster"))
+		if err != nil {
+			return -1, err
+		}
+
+		result := utils.ParseInfo(info)
+		if count, err := strconv.ParseInt(result["nodecount"], 10, 0); err != nil {
+			return -1, err
+		} else if count <= 0 {
+			return -1, fmt.Errorf("source node count[%v] illegal", count)
+		} else {
+			return int(count), nil
+		}
+	case utils.TencentCluster:
+		var err error
+		dr.tencentNodes, err = utils.GetAllClusterNode(dr.client, conf.StandAloneRoleMaster, "id")
+		if err != nil {
+			return -1, err
+		}
+
+		return len(dr.tencentNodes), nil
+	default:
+		return 1, nil
+	}
+}
+
+/*------------------------------------------------------*/
+// one executor(1 db only) link corresponding to one dbRumperExecutor
+type dbRumperExecutor struct {
+	rumperId           int             // father id
+	executorId         int             // current id, also == aliyun cluster node id
+	sourceClient       redis.Conn      // source client
+	targetClient       redis.Conn      // target client
+	tencentNodeId      string          // tencent cluster node id
+	targetBigKeyClient redis.Conn      // target client only used in big key, this is a bit ugly
+	previousDb         int             // store previous db
+
+	keyChan            chan *KeyNode   // keyChan is used to communicated between routine1 and routine2
+	resultChan         chan *KeyNode   // resultChan is used to communicated between routine2 and routine3
+
+	scanner            scanner.Scanner // one scanner match one db/proxy
+
+	fetcherWg          sync.WaitGroup
+	stat               dbRumperExexutorStats
+}
+
+func NewDbRumperExecutor(rumperId, executorId int, sourceClient, targetClient, targetBigKeyClient redis.Conn,
+	tencentNodeId string) *dbRumperExecutor {
+	executor := &dbRumperExecutor{
+		rumperId:           rumperId,
+		executorId:         executorId,
+		sourceClient:       sourceClient,
+		targetClient:       targetClient,
+		tencentNodeId:      tencentNodeId,
+		targetBigKeyClient: targetBigKeyClient,
+		previousDb:         0,
+		stat: dbRumperExexutorStats{
+			minSize: 1 << 30,
+			maxSize: 0,
+			sumSize: 0,
+		},
+	}
+
+	return executor
 }
 
 type KeyNode struct {
 	key   string
 	value string
 	pttl  int64
+	db    int
 }
 
-func (cr *CmdRump) GetDetailedInfo() interface{} {
-	return nil
+type dbRumperExexutorStats struct {
+	rBytes    atomic2.Int64 // read bytes
+	rCommands atomic2.Int64 // read commands
+	wBytes    atomic2.Int64 // write bytes
+	wCommands atomic2.Int64 // write commands
+	cCommands atomic2.Int64 // confirmed commands
+	minSize   int64         // min package size
+	maxSize   int64         // max package size
+	sumSize   int64         // total package size
 }
 
-func (cr *CmdRump) Main() {
-	// build connection
-
-	cr.sourceConn = make([]redis.Conn, len(conf.Options.SourceAddressList))
-	for i, address := range conf.Options.SourceAddressList {
-		cr.sourceConn[i] = utils.OpenRedisConn([]string{address}, conf.Options.SourceAuthType,
-		conf.Options.SourcePasswordRaw, false, conf.Options.SourceTLSEnable)
+func (dre *dbRumperExecutor) getStats() map[string]interface{} {
+	kv := make(map[string]interface{})
+	// stats -> map
+	v := reflect.ValueOf(dre.stat)
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		name := v.Type().Field(i).Name
+		switch f.Kind() {
+		case reflect.Struct:
+			// todo
+			kv[name] = f.Field(0).Int()
+			// kv[name] = f.Interface()
+		case reflect.Int64:
+			if name == "sumSize" {
+				continue
+			}
+			kv[name] = f.Int()
+		}
 	}
-	// TODO, current only support write data into 1 db or proxy
-	cr.targetConn = utils.OpenRedisConn(conf.Options.TargetAddressList, conf.Options.TargetAuthType,
-		conf.Options.TargetPasswordRaw, false, conf.Options.SourceTLSEnable)
 
-	// init two channels
-	chanSize := int(conf.Options.ScanKeyNumber) * len(conf.Options.SourceAddressList)
-	cr.keyChan = make(chan *KeyNode, chanSize)
-	cr.resultChan = make(chan *KeyNode, chanSize)
+	kv["keyChan"] = len(dre.keyChan)
+	kv["resultChan"] = len(dre.resultChan)
+	kv["avgSize"] = float64(dre.stat.sumSize) / float64(dre.stat.rCommands.Get())
 
-	cr.scanners = scanner.NewScanner(cr.sourceConn)
-	if cr.scanners == nil || len(cr.scanners) == 0 {
-		log.Panic("create scanner failed")
+	return kv
+}
+
+func (dre *dbRumperExecutor) exec() {
+	// create scanner
+	dre.scanner = scanner.NewScanner(dre.sourceClient, dre.tencentNodeId, dre.executorId)
+	if dre.scanner == nil {
+		log.Panicf("dbRumper[%v] executor[%v] create scanner failed", dre.rumperId, dre.executorId)
 		return
 	}
+
+	// init two channels
+	chanSize := int(conf.Options.ScanKeyNumber * 2)
+	dre.keyChan = make(chan *KeyNode, chanSize)
+	dre.resultChan = make(chan *KeyNode, chanSize)
 
 	/*
 	 * we start 4 routines to run:
 	 * 1. fetch keys from the source redis
-	 * 2. wait fetcher all exit
-	 * 3. write keys into the target redis
-	 * 4. read result from the target redis
+	 * 2. write keys into the target redis
+	 * 3. read result from the target redis
 	 */
 	// routine1
-	cr.fetcherWg.Add(len(cr.scanners))
-	for i := range cr.scanners {
-		go cr.fetcher(i)
-	}
-
-	// routine2
-	go func() {
-		cr.fetcherWg.Wait()
-		close(cr.keyChan)
-	}()
+	go dre.fetcher()
 
 	// routine3
-	go cr.writer()
+	go dre.writer()
 
 	// routine4
-	cr.receiver()
+	dre.receiver()
+
+	log.Infof("dbRumper[%v] executor[%v] finish!", dre.rumperId, dre.executorId)
 }
 
-func (cr *CmdRump) fetcher(idx int) {
-	length, err := cr.scanners[idx].NodeCount()
-	if err != nil || length <= 0 {
-		log.Panicf("fetch db node failed: length[%v], error[%v]", length, err)
+func (dre *dbRumperExecutor) fetcher() {
+	log.Infof("dbRumper[%v] executor[%v] start fetcher with special-cloud[%v]", dre.rumperId, dre.executorId,
+		conf.Options.ScanSpecialCloud)
+
+	// fetch db number from 'info keyspace'
+	dbNumber, err := dre.getSourceDbList()
+	if err != nil {
+		log.Panic(err)
 	}
 
-	log.Infof("start fetcher with special-cloud[%v], nodes[%v]", conf.Options.ScanSpecialCloud, length)
+	log.Infof("dbRumper[%v] executor[%v] fetch db list: %v", dre.rumperId, dre.executorId, dbNumber)
+	// iterate all db nodes
+	for _, db := range dbNumber {
+		if filter.FilterDB(int(db)) {
+			log.Infof("dbRumper[%v] executor[%v] db[%v] filtered", dre.rumperId, dre.executorId, db)
+			continue
+		}
 
-	// iterate all source nodes
-	for i := 0; i < length; i++ {
-		// fetch db number from 'info Keyspace'
-		dbNumber, err := cr.getSourceDbList(i)
-		if err != nil {
+		log.Infof("dbRumper[%v] executor[%v] fetch logical db: %v", dre.rumperId, dre.executorId, db)
+		if err := dre.doFetch(int(db)); err != nil {
 			log.Panic(err)
 		}
-
-		log.Infof("fetch node[%v] with db list: %v", i, dbNumber)
-		// iterate all db
-		for _, db := range dbNumber {
-			log.Infof("fetch node[%v] db[%v]", i, db)
-			if err := cr.doFetch(int(db), i); err != nil {
-				log.Panic(err)
-			}
-		}
 	}
 
-	cr.fetcherWg.Done()
+	close(dre.keyChan)
 }
 
-func (cr *CmdRump) writer() {
+func (dre *dbRumperExecutor) writer() {
 	var count uint32
-	for ele := range cr.keyChan {
+	var wBytes int64
+	var err error
+	batch := make([]*KeyNode, 0, conf.Options.ScanKeyNumber)
+
+	// used in QoS
+	bucket := utils.StartQoS(conf.Options.Qps)
+	preDb := 0
+	preBigKeyDb := 0
+	for ele := range dre.keyChan {
+		if filter.FilterKey(ele.key) {
+			continue
+		}
+		// QoS, limit the qps
+		<-bucket
+
 		if ele.pttl == -1 { // not set ttl
 			ele.pttl = 0
 		}
 		if ele.pttl == -2 {
-			log.Debugf("skip key %s for expired", ele.key)
+			log.Debugf("dbRumper[%v] executor[%v] skip key %s for expired", dre.rumperId, dre.executorId, ele.key)
+			continue
+		}
+		if conf.Options.TargetDB != -1 {
+			ele.db = conf.Options.TargetDB
+		}
+
+		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
+			len(ele.value))
+		if uint64(len(ele.value)) >= conf.Options.BigKeyThreshold {
+			log.Infof("dbRumper[%v] executor[%v] restore big key[%v] with length[%v], pttl[%v], db[%v]",
+				dre.rumperId, dre.executorId, ele.key, len(ele.value), ele.pttl, ele.db)
+			// flush previous cache
+			batch = dre.writeSend(batch, &count, &wBytes)
+
+			// handle big key
+			utils.RestoreBigkey(dre.targetBigKeyClient, ele.key, ele.value, ele.pttl, ele.db, &preBigKeyDb)
+			// all the reply has been handled in RestoreBigkey
+			// dre.resultChan <- ele
 			continue
 		}
 
-		log.Debugf("restore %s", ele.key)
+		// send "select" command if db is different
+		if ele.db != preDb {
+			dre.targetClient.Send("select", ele.db)
+			preDb = ele.db
+		}
+
 		if conf.Options.Rewrite {
-			cr.targetConn.Send("RESTORE", ele.key, ele.pttl, ele.value, "REPLACE")
+			err = dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value, "REPLACE")
 		} else {
-			cr.targetConn.Send("RESTORE", ele.key, ele.pttl, ele.value)
+			err = dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value)
+		}
+		if err != nil {
+			log.Panicf("dbRumper[%v] executor[%v] send key[%v] failed[%v]", dre.rumperId, dre.executorId,
+				ele.key, err)
 		}
 
-		cr.resultChan <- ele
+		wBytes += int64(len(ele.value))
+		batch = append(batch, ele)
+		// move to real send
+		// dre.resultChan <- ele
 		count++
-		if count == conf.Options.ScanKeyNumber {
+
+		if count >= conf.Options.ScanKeyNumber {
 			// batch
-			log.Debugf("send keys %d\n", count)
-			cr.targetConn.Flush()
-			count = 0
+			log.Debugf("dbRumper[%v] executor[%v] send keys %d", dre.rumperId, dre.executorId, count)
+
+			batch = dre.writeSend(batch, &count, &wBytes)
 		}
 	}
-	cr.targetConn.Flush()
-	close(cr.resultChan)
+	dre.writeSend(batch, &count, &wBytes)
+
+	close(dre.resultChan)
 }
 
-func (cr *CmdRump) receiver() {
-	for ele := range cr.resultChan {
-		if _, err := cr.targetConn.Receive(); err != nil && err != redis.ErrNil {
-			log.Panicf("restore key[%v] with pttl[%v] error[%v]", ele.key, strconv.FormatInt(ele.pttl, 10),
-				err)
+func (dre *dbRumperExecutor) writeSend(batch []*KeyNode, count *uint32, wBytes *int64) []*KeyNode {
+	newBatch := make([]*KeyNode, 0, conf.Options.ScanKeyNumber)
+	if len(batch) == 0 {
+		return newBatch
+	}
+
+	if err := dre.targetClient.Flush(); err != nil {
+		log.Panicf("dbRumper[%v] executor[%v] flush failed[%v]", dre.rumperId, dre.executorId, err)
+	}
+
+	// real send
+	for _, ele := range batch {
+		dre.resultChan <- ele
+	}
+
+	dre.stat.wCommands.Add(int64(*count))
+	dre.stat.wBytes.Add(*wBytes)
+
+	*count = 0
+	*wBytes = 0
+
+	return newBatch
+}
+
+func (dre *dbRumperExecutor) receiver() {
+	for ele := range dre.resultChan {
+		if _, err := dre.targetClient.Receive(); err != nil && err != redis.ErrNil {
+			rdbVersion, checksum, checkErr := utils.CheckVersionChecksum(utils.String2Bytes(ele.value))
+			log.Panicf("dbRumper[%v] executor[%v] restore key[%v] error[%v]: pttl[%v], value length[%v], " +
+					"rdb version[%v], checksum[%v], check error[%v]",
+				dre.rumperId, dre.executorId, ele.key, err, strconv.FormatInt(ele.pttl, 10), len(ele.value),
+				rdbVersion, checksum, checkErr)
 		}
+		dre.stat.cCommands.Incr()
 	}
 }
 
-func (cr *CmdRump) getSourceDbList(id int) ([]int32, error) {
-	conn := cr.sourceConn[id]
-	if ret, err := conn.Do("info", "Keyspace"); err != nil {
+func (dre *dbRumperExecutor) getSourceDbList() ([]int32, error) {
+	// tencent cluster only has 1 logical db
+	if conf.Options.ScanSpecialCloud == utils.TencentCluster {
+		return []int32{0}, nil
+	}
+
+	conn := dre.sourceClient
+	if ret, err := conn.Do("info", "keyspace"); err != nil {
 		return nil, err
 	} else if mp, err := utils.ParseKeyspace(ret.([]byte)); err != nil {
 		return nil, err
@@ -169,62 +454,70 @@ func (cr *CmdRump) getSourceDbList(id int) ([]int32, error) {
 	}
 }
 
-func (cr *CmdRump) doFetch(db, idx int) error {
-	// send 'select' command to both source and target
-	log.Infof("send source select db")
-	if _, err := cr.sourceConn[idx].Do("select", db); err != nil {
-		return err
+func (dre *dbRumperExecutor) doFetch(db int) error {
+	// some redis type only has db0, so we add this judge
+	if db != dre.previousDb {
+		dre.previousDb = db
+		// send 'select' command to both source and target
+		log.Infof("dbRumper[%v] executor[%v] send source select db", dre.rumperId, dre.executorId)
+		if _, err := dre.sourceClient.Do("select", db); err != nil {
+			return err
+		}
 	}
 
-	log.Infof("send target select db")
-	cr.targetConn.Flush()
-	if err := cr.targetConn.Send("select", db); err != nil {
-		return err
-	}
-	cr.targetConn.Flush()
+	// selecting target db is moving into writer
 
-	log.Infof("finish select db, start fetching node[%v] db[%v]", idx, db)
+	log.Infof("dbRumper[%v] executor[%v] start fetching node db[%v]", dre.rumperId, dre.executorId, db)
 
 	for {
-		keys, err := cr.scanners[idx].ScanKey(idx)
+		keys, err := dre.scanner.ScanKey()
 		if err != nil {
 			return err
 		}
 
-		log.Info("scanned keys: ", len(keys))
+		log.Infof("dbRumper[%v] executor[%v] scanned keys number: %v", dre.rumperId, dre.executorId, len(keys))
 
 		if len(keys) != 0 {
 			// pipeline dump
 			for _, key := range keys {
-				log.Debug("scan key: ", key)
-				cr.sourceConn[idx].Send("DUMP", key)
+				log.Debugf("dbRumper[%v] executor[%v] scan key: %v", dre.rumperId, dre.executorId, key)
+				dre.sourceClient.Send("DUMP", key)
 			}
-			dumps, err := redis.Strings(cr.sourceConn[idx].Do(""))
+
+			reply, err := dre.sourceClient.Do("")
+			dumps, err := redis.Strings(reply, err)
 			if err != nil && err != redis.ErrNil {
-				return fmt.Errorf("do dump with failed[%v]", err)
+				return fmt.Errorf("do dump with failed[%v], reply[%v]", err, reply)
 			}
 
 			// pipeline ttl
 			for _, key := range keys {
-				cr.sourceConn[idx].Send("PTTL", key)
+				dre.sourceClient.Send("PTTL", key)
 			}
-			pttls, err := redis.Int64s(cr.sourceConn[idx].Do(""))
+			reply, err = dre.sourceClient.Do("")
+			pttls, err := redis.Int64s(reply, err)
 			if err != nil && err != redis.ErrNil {
-				return fmt.Errorf("do ttl with failed[%v]", err)
+				return fmt.Errorf("do ttl with failed[%v], reply[%v]", err, reply)
 			}
 
+			dre.stat.rCommands.Add(int64(len(keys)))
 			for i, k := range keys {
-				cr.keyChan <- &KeyNode{k, dumps[i], pttls[i]}
+				length := len(dumps[i])
+				dre.stat.rBytes.Add(int64(length)) // length of value
+				dre.stat.minSize = int64(math.Min(float64(dre.stat.minSize), float64(length)))
+				dre.stat.maxSize = int64(math.Max(float64(dre.stat.maxSize), float64(length)))
+				dre.stat.sumSize += int64(length)
+				dre.keyChan <- &KeyNode{k, dumps[i], pttls[i], db}
 			}
 		}
 
 		// Last iteration of scan.
-		if cr.scanners[idx].EndNode() {
+		if dre.scanner.EndNode() {
 			break
 		}
 	}
 
-	log.Infof("finish fetching node[%v] db[%v]", idx, db)
+	log.Infof("dbRumper[%v] executor[%v] finish fetching db[%v]", dre.rumperId, dre.executorId, db)
 
 	return nil
 }

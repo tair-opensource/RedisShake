@@ -7,6 +7,12 @@ import (
 	"redis-shake/configure"
 
 	redigo "github.com/garyburd/redigo/redis"
+	"strings"
+)
+
+const (
+	ReplayString = "string"
+	ReplayInt64s = "int64s"
 )
 
 type ClusterNodeInfo struct {
@@ -19,6 +25,47 @@ type ClusterNodeInfo struct {
 	ConfigEpoch string
 	LinkStat    string
 	Slot        string
+}
+
+// parse single info field: "info server", "info keyspace"
+func ParseRedisInfo(content []byte) map[string]string {
+	result := make(map[string]string, 10)
+	lines := bytes.Split(content, []byte("\r\n"))
+	for i := 0; i < len(lines); i++ {
+		items := bytes.SplitN(lines[i], []byte(":"), 2)
+		if len(items) != 2 {
+			continue
+		}
+		result[string(items[0])] = string(items[1])
+	}
+	return result
+}
+
+// cut segment
+func CutRedisInfoSegment(content []byte, field string) []byte {
+	field1 := strings.ToLower(field)
+	field2 := "# " + field1
+	segmentSplitter := []byte{13, 10, 35, 32} // \r\n#
+	lineSplitter := []byte{13, 10}
+	segments := bytes.Split(content, segmentSplitter)
+	for i, segment := range segments {
+		lines := bytes.Split(segment, lineSplitter)
+		if len(lines) == 0 {
+			continue
+		}
+
+		cmd := strings.ToLower(string(lines[0]))
+		if cmd == field1 || cmd == field2 {
+			// match
+			var newSeg []byte
+			if i != 0 {
+				newSeg = []byte{35, 32}
+			}
+			newSeg = append(newSeg, segment...)
+			return newSeg
+		}
+	}
+	return nil
 }
 
 func ParseKeyspace(content []byte) (map[int32]int64, error) {

@@ -19,6 +19,7 @@ import (
 	"redis-shake/base"
 	"redis-shake/common"
 	"redis-shake/configure"
+	"redis-shake/filter"
 )
 
 type CmdRestore struct {
@@ -35,7 +36,7 @@ func (cmd *CmdRestore) GetDetailedInfo() interface{} {
 }
 
 func (cmd *CmdRestore) Main() {
-	log.Infof("restore from '%s' to '%s'\n", conf.Options.RdbInput, conf.Options.TargetAddressList)
+	log.Infof("restore from '%s' to '%s'\n", conf.Options.SourceRdbInput, conf.Options.TargetAddressList)
 
 	type restoreNode struct {
 		id    int
@@ -45,13 +46,13 @@ func (cmd *CmdRestore) Main() {
 	total := utils.GetTotalLink()
 	restoreChan := make(chan restoreNode, total)
 
-	for i, rdb := range conf.Options.RdbInput {
+	for i, rdb := range conf.Options.SourceRdbInput {
 		restoreChan <- restoreNode{id: i, input: rdb}
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(len(conf.Options.RdbInput))
-	for i := 0; i < conf.Options.RdbParallel; i++ {
+	wg.Add(len(conf.Options.SourceRdbInput))
+	for i := 0; i < conf.Options.SourceRdbParallel; i++ {
 		go func() {
 			for {
 				node, ok := <-restoreChan
@@ -86,7 +87,8 @@ func (cmd *CmdRestore) Main() {
 	wg.Wait()
 	close(restoreChan)
 
-	if conf.Options.HttpProfile > 0 {
+	log.Infof("restore from '%s' to '%s' done", conf.Options.SourceRdbInput, conf.Options.TargetAddressList)
+	if conf.Options.HttpProfile != -1 {
 		//fake status if set http_port. and wait forever
 		base.Status = "incr"
 		log.Infof("Enabled http stats, set status (incr), and wait forever.")
@@ -137,9 +139,8 @@ func (dr *dbRestorer) restore() {
 	}
 }
 
-
 func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth_type, passwd string, nsize int64,
-		tlsEnable bool) {
+	tlsEnable bool) {
 	pipe := utils.NewRDBLoader(reader, &dr.rbytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
@@ -153,10 +154,14 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 				defer c.Close()
 				var lastdb uint32 = 0
 				for e := range pipe {
-					if !base.AcceptDB(e.DB) {
+					if filter.FilterDB(int(e.DB)) {
+						// filter db
 						dr.ignore.Incr()
 					} else {
 						dr.nentry.Incr()
+
+						log.Debugf("routine[%v] try restore key[%s] with value length[%v]", dr.id, e.Key, len(e.Value))
+
 						if conf.Options.TargetDB != -1 {
 							if conf.Options.TargetDB != int(lastdb) {
 								lastdb = uint32(conf.Options.TargetDB)
@@ -168,7 +173,15 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 								utils.SelectDB(c, lastdb)
 							}
 						}
+
+						if filter.FilterKey(string(e.Key)) {
+							continue
+						}
+
+						log.Debugf("routine[%v] start restoring key[%s] with value length[%v]", dr.id, e.Key, len(e.Value))
+
 						utils.RestoreRdbEntry(c, e)
+						log.Debugf("routine[%v] restore key[%s] ok", dr.id, e.Key)
 					}
 				}
 			}()
@@ -186,9 +199,10 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 		stat := dr.Stat()
 		var b bytes.Buffer
 		if nsize != 0 {
-			fmt.Fprintf(&b, "routine[%v] total = %d - %12d [%3d%%]", dr.id, nsize, stat.rbytes, 100*stat.rbytes/nsize)
+			fmt.Fprintf(&b, "routine[%v] total = %s - %12s [%3d%%]", dr.id, utils.GetMetric(nsize),
+				utils.GetMetric(stat.rbytes), 100*stat.rbytes/nsize)
 		} else {
-			fmt.Fprintf(&b, "routine[%v] total = %12d", dr.id, stat.rbytes)
+			fmt.Fprintf(&b, "routine[%v] total = %12s", dr.id, utils.GetMetric(stat.rbytes))
 		}
 		fmt.Fprintf(&b, "  entry=%-12d", stat.nentry)
 		if stat.ignore != 0 {
@@ -231,7 +245,7 @@ func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target []string, auth
 					if err != nil {
 						log.PanicErrorf(err, "routine[%v] parse db = %s failed", dr.id, s)
 					}
-					bypass = !base.AcceptDB(uint32(n))
+					bypass = filter.FilterDB(n)
 				}
 				if bypass {
 					dr.nbypass.Incr()

@@ -30,10 +30,14 @@ type MetricRest struct {
 	SourceDBOffset       interface{} // source redis offset
 	SourceAddress        interface{}
 	TargetAddress        interface{}
+	Details              interface{} // other details info
 }
 
 func NewMetricRest() []MetricRest {
-	detailMapList := runner.GetDetailedInfo().([]map[string]interface{})
+	var detailMapList []map[string]interface{}
+	if rawInfo := runner.GetDetailedInfo(); rawInfo != nil {
+		detailMapList = runner.GetDetailedInfo().([]map[string]interface{})
+	}
 	if detailMapList == nil || len(detailMapList) == 0 {
 		return []MetricRest{
 			{
@@ -76,6 +80,7 @@ func NewMetricRest() []MetricRest {
 			SourceDBOffset:       detailMap["SourceDBOffset"],
 			SourceAddress:        detailMap["SourceAddress"],
 			TargetAddress:        detailMap["TargetAddress"],
+			Details:              detailMap["Details"],
 		}
 	}
 

@@ -196,9 +196,9 @@ func (l *Loader) NextBinEntry() (*BinEntry, error) {
 			} else {
 				key = l.lastEntry.Key
 			}
-			// log.Infof("l %p r %p", l, l.rdbReader)
-			// log.Info("remainMember:", l.remainMember, " key:", string(key[:]), " type:", t)
-			// log.Info("r.remainMember:", l.rdbReader.remainMember)
+			//log.Debugf("l %p r %p", l, l.rdbReader)
+			//log.Debug("remainMember:", l.remainMember, " key:", string(key[:]), " type:", t)
+			//log.Debug("r.remainMember:", l.rdbReader.remainMember)
 			val, err := l.readObjectValue(t, l)
 			if err != nil {
 				return nil, err

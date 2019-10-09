@@ -37,7 +37,7 @@ func (cmd *CmdDump) Main() {
 		nd := node{
 			id:     i,
 			source: source,
-			output: fmt.Sprintf("%s.%d", conf.Options.RdbOutput, i),
+			output: fmt.Sprintf("%s.%d", conf.Options.TargetRdbOutput, i),
 		}
 		cmd.dumpChan <- nd
 	}
@@ -49,7 +49,7 @@ func (cmd *CmdDump) Main() {
 		wg     sync.WaitGroup
 	)
 	wg.Add(len(conf.Options.SourceAddressList))
-	for i := 0; i < int(conf.Options.SourceParallel); i++ {
+	for i := 0; i < int(conf.Options.SourceRdbParallel); i++ {
 		go func(idx int) {
 			log.Infof("start routine[%v]", idx)
 			for {
@@ -99,7 +99,7 @@ func (cmd *CmdDump) dumpCommand(reader *bufio.Reader, writer *bufio.Writer, nsiz
 
 	for {
 		time.Sleep(time.Second)
-		log.Infof("dump: total = %d\n", nsize+nread.Get())
+		log.Infof("dump: total = %s\n", utils.GetMetric(nsize+nread.Get()))
 	}
 }
 
@@ -141,10 +141,10 @@ func (dd *dbDumper) sendCmd(master, auth_type, passwd string, tlsEnable bool) (n
 		select {
 		case nsize = <-wait:
 			if nsize == 0 {
-				log.Infof("routine[%v] +", dd.id)
+				log.Infof("routine[%v] + waiting source rdb", dd.id)
 			}
 		case <-time.After(time.Second):
-			log.Infof("routine[%v] -", dd.id)
+			log.Infof("routine[%v] - waiting source rdb", dd.id)
 		}
 	}
 	return c, nsize
@@ -175,7 +175,7 @@ func (dd *dbDumper) dumpRDBFile(reader *bufio.Reader, writer *bufio.Writer, nsiz
 		}
 		n := nread.Get()
 		p := 100 * n / nsize
-		log.Infof("routine[%v] total = %d - %12d [%3d%%]\n", dd.id, nsize, n, p)
+		log.Infof("routine[%v] total = %s - %12s [%3d%%]\n", dd.id, utils.GetMetric(nsize), utils.GetMetric(n), p)
 	}
 	log.Infof("routine[%v] dump: rdb done", dd.id)
 }

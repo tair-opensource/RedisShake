@@ -1,7 +1,6 @@
 package scanner
 
 import (
-	"strconv"
 	"fmt"
 	"redis-shake/common"
 	"redis-shake/configure"
@@ -13,39 +12,11 @@ type SpecialCloudScanner struct {
 	client redis.Conn
 	cursor int64
 
-	tencentNodes []string
+	tencentNodeId string
+	aliyunNodeId int
 }
 
-func (scs *SpecialCloudScanner) NodeCount() (int, error) {
-	switch conf.Options.ScanSpecialCloud {
-	case utils.AliyunCluster:
-		info, err := redis.Bytes(scs.client.Do("info", "Cluster"))
-		if err != nil {
-			return -1, err
-		}
-
-		result := utils.ParseInfo(info)
-		if count, err := strconv.ParseInt(result["nodecount"], 10, 0); err != nil {
-			return -1, err
-		} else if count <= 0 {
-			return -1, fmt.Errorf("source node count[%v] illegal", count)
-		} else {
-			return int(count), nil
-		}
-	case utils.TencentCluster:
-		var err error
-		scs.tencentNodes, err = utils.GetAllClusterNode(scs.client, conf.StandAloneRoleMaster, "id")
-		if err != nil {
-			return -1, err
-		}
-
-		return len(scs.tencentNodes), nil
-	default:
-		return -1, nil
-	}
-}
-
-func (scs *SpecialCloudScanner) ScanKey(node interface{}) ([]string, error) {
+func (scs *SpecialCloudScanner) ScanKey() ([]string, error) {
 	var (
 		values []interface{}
 		err    error
@@ -55,9 +26,9 @@ func (scs *SpecialCloudScanner) ScanKey(node interface{}) ([]string, error) {
 	switch conf.Options.ScanSpecialCloud {
 	case utils.TencentCluster:
 		values, err = redis.Values(scs.client.Do("SCAN", scs.cursor, "COUNT",
-			conf.Options.ScanKeyNumber, scs.tencentNodes[node.(int)]))
+			conf.Options.ScanKeyNumber, scs.tencentNodeId))
 	case utils.AliyunCluster:
-		values, err = redis.Values(scs.client.Do("ISCAN", node, scs.cursor, "COUNT",
+		values, err = redis.Values(scs.client.Do("ISCAN", scs.aliyunNodeId, scs.cursor, "COUNT",
 			conf.Options.ScanKeyNumber))
 	}
 	if err != nil && err != redis.ErrNil {

@@ -4,69 +4,76 @@ import "time"
 
 type Configuration struct {
 	// config file variables
-	Id                        string   `config:"id"`
-	LogFile                   string   `config:"log.file"`
-	LogLevel                  string   `config:"log.level"`
-	SystemProfile             int      `config:"system_profile"`
-	HttpProfile               int      `config:"http_profile"`
+	Id                     string   `config:"id"`
+	LogFile                string   `config:"log.file"`
+	LogLevel               string   `config:"log.level"`
+	SystemProfile          int      `config:"system_profile"`
+	HttpProfile            int      `config:"http_profile"`
+	Parallel               int      `config:"parallel"`
+	SourceType             string   `config:"source.type"`
+	SourceAddress          string   `config:"source.address"`
+	SourcePasswordRaw      string   `config:"source.password_raw"`
+	SourcePasswordEncoding string   `config:"source.password_encoding"`
+	SourceAuthType         string   `config:"source.auth_type"`
+	SourceTLSEnable        bool     `config:"source.tls_enable"`
+	SourceRdbInput         []string `config:"source.rdb.input"`
+	SourceRdbParallel      int      `config:"source.rdb.parallel"`
+	SourceRdbSpecialCloud  string   `config:"source.rdb.special_cloud"`
+	TargetAddress          string   `config:"target.address"`
+	TargetPasswordRaw      string   `config:"target.password_raw"`
+	TargetPasswordEncoding string   `config:"target.password_encoding"`
+	TargetDBString         string   `config:"target.db"`
+	TargetAuthType         string   `config:"target.auth_type"`
+	TargetType             string   `config:"target.type"`
+	TargetTLSEnable        bool     `config:"target.tls_enable"`
+	TargetRdbOutput        string   `config:"target.rdb.output"`
+	TargetVersion          string   `config:"target.version"`
+	FakeTime               string   `config:"fake_time"`
+	Rewrite                bool     `config:"rewrite"`
+	FilterDBWhitelist      []string `config:"filter.db.whitelist"`
+	FilterDBBlacklist      []string `config:"filter.db.blacklist"`
+	FilterKeyWhitelist     []string `config:"filter.key.whitelist"`
+	FilterKeyBlacklist     []string `config:"filter.key.blacklist"`
+	FilterSlot             []string `config:"filter.slot"`
+	FilterLua              bool     `config:"filter.lua"`
+	BigKeyThreshold        uint64   `config:"big_key_threshold"`
+	Psync                  bool     `config:"psync"`
+	Metric                 bool     `config:"metric"`
+	MetricPrintLog         bool     `config:"metric.print_log"`
+	SenderSize             uint64   `config:"sender.size"`
+	SenderCount            uint     `config:"sender.count"`
+	SenderDelayChannelSize uint     `config:"sender.delay_channel_size"`
+	KeepAlive              uint     `config:"keep_alive"`
+	PidPath                string   `config:"pid_path"`
+	ScanKeyNumber          uint32   `config:"scan.key_number"`
+	ScanSpecialCloud       string   `config:"scan.special_cloud"`
+	ScanKeyFile            string   `config:"scan.key_file"`
+	Qps                    int      `config:"qps"`
+
+	/*---------------------------------------------------------*/
+	// inner variables
 	NCpu                      int      `config:"ncpu"`
-	Parallel                  int      `config:"parallel"`
-	SourceType                string   `config:"source.type"`
-	SourceAddress             string   `config:"source.address"`
-	SourcePasswordRaw         string   `config:"source.password_raw"`
-	SourcePasswordEncoding    string   `config:"source.password_encoding"`
-	SourceVersion             uint     `config:"source.version"`
-	SourceAuthType            string   `config:"source.auth_type"`
-	SourceParallel            uint     `config:"source.parallel"`
-	SourceTLSEnable           bool     `config:"source.tls_enable"`
-	TargetAddress             string   `config:"target.address"`
-	TargetPasswordRaw         string   `config:"target.password_raw"`
-	TargetPasswordEncoding    string   `config:"target.password_encoding"`
-	TargetVersion             uint     `config:"target.version"`
-	TargetDB                  int      `config:"target.db"`
-	TargetAuthType            string   `config:"target.auth_type"`
-	TargetType                string   `config:"target.type"`
-	TargetTLSEnable           bool     `config:"target.tls_enable"`
-	RdbInput                  []string `config:"rdb.input"`
-	RdbOutput                 string   `config:"rdb.output"`
-	RdbParallel               int      `config:"rdb.parallel"`
-	RdbSpecialCloud           string   `config:"rdb.special_cloud"`
-	FakeTime                  string   `config:"fake_time"`
-	Rewrite                   bool     `config:"rewrite"`
-	FilterDB                  string   `config:"filter.db"`
-	FilterKey                 []string `config:"filter.key"`
-	FilterSlot                []string `config:"filter.slot"`
-	BigKeyThreshold           uint64   `config:"big_key_threshold"`
-	Psync                     bool     `config:"psync"`
-	Metric                    bool     `config:"metric"`
-	MetricPrintLog            bool     `config:"metric.print_log"`
 	HeartbeatUrl              string   `config:"heartbeat.url"`
 	HeartbeatInterval         uint     `config:"heartbeat.interval"`
 	HeartbeatExternal         string   `config:"heartbeat.external"`
 	HeartbeatNetworkInterface string   `config:"heartbeat.network_interface"`
-	SenderSize                uint64   `config:"sender.size"`
-	SenderCount               uint     `config:"sender.count"`
-	SenderDelayChannelSize    uint     `config:"sender.delay_channel_size"`
-	KeepAlive                 uint     `config:"keep_alive"`
-	PidPath                   string   `config:"pid_path"`
-	ScanKeyNumber             uint32   `config:"scan.key_number"`
-	ScanSpecialCloud          string   `config:"scan.special_cloud"`
-	ScanKeyFile               string   `config:"scan.key_file"`
-
-	// inner variables
-	ReplaceHashTag bool   `config:"replace_hash_tag"`
-	ExtraInfo      bool   `config:"extra"`
-	SockFileName   string `config:"sock.file_name"`
-	SockFileSize   uint   `config:"sock.file_size"`
+	ReplaceHashTag            bool     `config:"replace_hash_tag"`
+	ExtraInfo                 bool     `config:"extra"`
+	SockFileName              string   `config:"sock.file_name"`
+	SockFileSize              uint     `config:"sock.file_size"`
+	FilterKey                 []string `config:"filter.key"` // compatible with older versions
+	FilterDB                  string   `config:"filter.db"`  // compatible with older versions
 
 	/*---------------------------------------------------------*/
 	// generated variables
-	SourceAddressList  []string      // source address list
-	TargetAddressList  []string      // target address list
-	HeartbeatIp        string        // heartbeat ip
-	ShiftTime          time.Duration // shift
-	TargetRedisVersion string        // to_redis_version
-	TargetReplace      bool          // to_replace
+	SourceAddressList []string      // source address list
+	TargetAddressList []string      // target address list
+	HeartbeatIp       string        // heartbeat ip
+	ShiftTime         time.Duration // shift
+	TargetReplace     bool          // to_replace
+	TargetDB          int           // int type
+	Version           string        // version
+	Type              string        // input mode -type=xxx
 }
 
 var Options Configuration

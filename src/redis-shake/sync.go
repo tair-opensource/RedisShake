@@ -21,11 +21,11 @@ import (
 	"pkg/libs/log"
 	"pkg/redis"
 	"redis-shake/base"
-	"redis-shake/command"
 	"redis-shake/common"
 	"redis-shake/configure"
 	"redis-shake/heartbeat"
 	"redis-shake/metric"
+	"redis-shake/filter"
 )
 
 type delayNode struct {
@@ -105,7 +105,7 @@ func (cmd *CmdSync) Main() {
 	var wg sync.WaitGroup
 	wg.Add(len(conf.Options.SourceAddressList))
 
-	for i := 0; i < int(conf.Options.SourceParallel); i++ {
+	for i := 0; i < int(conf.Options.SourceRdbParallel); i++ {
 		go func() {
 			for {
 				nd, ok := <-syncChan
@@ -264,12 +264,12 @@ func (ds *dbSyncer) sendSyncCmd(master, auth_type, passwd string, tlsEnable bool
 		select {
 		case nsize := <-wait:
 			if nsize == 0 {
-				log.Infof("dbSyncer[%v] +", ds.id)
+				log.Infof("dbSyncer[%v] + waiting source rdb", ds.id)
 			} else {
 				return c, nsize
 			}
 		case <-time.After(time.Second):
-			log.Infof("dbSyncer[%v] -", ds.id)
+			log.Infof("dbSyncer[%v] - waiting source rdb", ds.id)
 		}
 	}
 }
@@ -409,10 +409,14 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 				defer c.Close()
 				var lastdb uint32 = 0
 				for e := range pipe {
-					if !base.AcceptDB(e.DB) {
+					if filter.FilterDB(int(e.DB)) {
+						// db filter
 						ds.ignore.Incr()
 					} else {
 						ds.nentry.Incr()
+
+						log.Debugf("dbSyncer[%v] try restore key[%s] with value length[%v]", ds.id, e.Key, len(e.Value))
+
 						if conf.Options.TargetDB != -1 {
 							if conf.Options.TargetDB != int(lastdb) {
 								lastdb = uint32(conf.Options.TargetDB)
@@ -425,24 +429,23 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 							}
 						}
 
-						if len(conf.Options.FilterKey) != 0 {
-							for i := 0; i < len(conf.Options.FilterKey); i++ {
-								if strings.HasPrefix(string(e.Key), conf.Options.FilterKey[i]) {
-									utils.RestoreRdbEntry(c, e)
-									break
-								}
-							}
-						} else if len(conf.Options.FilterSlot) > 0 {
-							for _, slot := range conf.Options.FilterSlot {
-								slotInt, _ := strconv.Atoi(slot)
-								if int(utils.KeyToSlot(string(e.Key))) == slotInt {
-									utils.RestoreRdbEntry(c, e)
-									break
-								}
-							}
+						if filter.FilterKey(string(e.Key)) == true {
+							// 1. judge if not pass filter key
+							ds.ignore.Incr()
+							continue
 						} else {
-							utils.RestoreRdbEntry(c, e)
+							slot := int(utils.KeyToSlot(string(e.Key)))
+							if filter.FilterSlot(slot) == true {
+								// 2. judge if not pass filter slot
+								ds.ignore.Incr()
+								continue
+							}
 						}
+
+						log.Debugf("dbSyncer[%v] start restoring key[%s] with value length[%v]", ds.id, e.Key, len(e.Value))
+
+						utils.RestoreRdbEntry(c, e)
+						log.Debugf("dbSyncer[%v] restore key[%s] ok", ds.id, e.Key)
 					}
 				}
 			}()
@@ -461,20 +464,21 @@ func (ds *dbSyncer) syncRDBFile(reader *bufio.Reader, target []string, auth_type
 		}
 		stat = ds.Stat()
 		var b bytes.Buffer
-		fmt.Fprintf(&b, "dbSyncer[%v] total=%d - %12d [%3d%%]  entry=%-12d",
-			ds.id, nsize, stat.rbytes, 100*stat.rbytes/nsize, stat.nentry)
+		// fmt.Fprintf(&b, "dbSyncer[%v] total=%s - %12d [%3d%%]  entry=%-12d",
+		fmt.Fprintf(&b, "dbSyncer[%v] total = %s - %12s [%3d%%]  entry=%-12d",
+			ds.id, utils.GetMetric(nsize), utils.GetMetric(stat.rbytes), 100*stat.rbytes/nsize, stat.nentry)
 		if stat.ignore != 0 {
 			fmt.Fprintf(&b, "  ignore=%-12d", stat.ignore)
 		}
 		log.Info(b.String())
-		metric.GetMetric(ds.id).SetFullSyncProgress(uint64(100 * stat.rbytes / nsize))
+		metric.GetMetric(ds.id).SetFullSyncProgress(ds.id, uint64(100*stat.rbytes/nsize))
 	}
 	log.Infof("dbSyncer[%v] sync rdb done", ds.id)
 }
 
 func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type, passwd string, tlsEnable bool) {
-	readeTimeout := time.Duration(10)*time.Minute
-	writeTimeout := time.Duration(10)*time.Minute
+	readeTimeout := time.Duration(10) * time.Minute
+	writeTimeout := time.Duration(10) * time.Minute
 	isCluster := conf.Options.TargetType == conf.RedisTypeCluster
 	c := utils.OpenRedisConnWithTimeout(target, auth_type, passwd, readeTimeout, writeTimeout, isCluster, tlsEnable)
 	defer c.Close()
@@ -531,16 +535,16 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 			id := recvId.Get() // receive id
 
 			// print debug log of receive reply
-			log.Debugf("receive reply[%v]: [%v], error: [%v]", id, reply, err)
+			log.Debugf("receive reply-id[%v]: [%v], error:[%v]", id, reply, err)
 
 			if conf.Options.Metric == false {
 				continue
 			}
 
 			if err == nil {
-				metric.GetMetric(ds.id).AddSuccessCmdCount(1)
+				metric.GetMetric(ds.id).AddSuccessCmdCount(ds.id, 1)
 			} else {
-				metric.GetMetric(ds.id).AddFailCmdCount(1)
+				metric.GetMetric(ds.id).AddFailCmdCount(ds.id, 1)
 				if utils.CheckHandleNetError(err) {
 					log.Panicf("dbSyncer[%v] Event:NetErrorWhileReceive\tId:%s\tError:%s",
 						ds.id, conf.Options.Id, err.Error())
@@ -572,13 +576,15 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 	}()
 
 	go func() {
-		var lastdb int32 = 0
-		var bypass bool = false
-		var isselect bool = false
-
-		var scmd string
-		var argv, new_argv [][]byte
-		var err error
+		var (
+			lastdb        int32 = 0
+			bypass              = false
+			isselect            = false
+			scmd          string
+			argv, newArgv [][]byte
+			err           error
+			reject        bool
+		)
 
 		decoder := redis.NewDecoder(reader)
 
@@ -592,10 +598,10 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 			if scmd, argv, err = redis.ParseArgs(resp); err != nil {
 				log.PanicErrorf(err, "dbSyncer[%v] parse command arguments failed", ds.id)
 			} else {
-				metric.GetMetric(ds.id).AddPullCmdCount(1)
+				metric.GetMetric(ds.id).AddPullCmdCount(ds.id, 1)
 
 				// print debug log of send command
-				if conf.Options.LogLevel == utils.LogLevelAll {
+				if conf.Options.LogLevel == utils.LogLevelDebug {
 					strArgv := make([]string, len(argv))
 					for i, ele := range argv {
 						strArgv[i] = *(*string)(unsafe.Pointer(&ele))
@@ -614,34 +620,25 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 						if err != nil {
 							log.PanicErrorf(err, "dbSyncer[%v] parse db = %s failed", ds.id, s)
 						}
-						bypass = !base.AcceptDB(uint32(n))
+						bypass = filter.FilterDB(n)
 						isselect = true
-					} else if strings.EqualFold(scmd, "opinfo") {
+					} else if filter.FilterCommands(scmd) {
 						ignorecmd = true
 					}
 					if bypass || ignorecmd {
 						ds.nbypass.Incr()
 						// ds.SyncStat.BypassCmdCount.Incr()
-						metric.GetMetric(ds.id).AddBypassCmdCount(1)
+						metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
+						log.Debugf("dbSyncer[%v] ignore command[%v]", ds.id, scmd)
 						continue
 					}
 				}
 
-				is_filter := false
-				if len(conf.Options.FilterKey) != 0 {
-					ds, ok := command.RedisCommands[scmd]
-					if ok && len(argv) > 0 {
-						new_argv, is_filter = command.GetMatchKeys(ds, argv, conf.Options.FilterKey)
-					} else {
-						is_filter = true
-						new_argv = argv
-					}
-				} else {
-					is_filter = true
-					new_argv = argv
-				}
-				if bypass || ignorecmd || !is_filter {
+				newArgv, reject = filter.HandleFilterKeyWithCommand(scmd, argv)
+				if bypass || ignorecmd || reject {
 					ds.nbypass.Incr()
+					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
+					log.Debugf("dbSyncer[%v] filter command[%v]", ds.id, scmd)
 					continue
 				}
 			}
@@ -654,11 +651,11 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 					ds.sendBuf <- cmdDetail{Cmd: "SELECT", Args: [][]byte{[]byte(strconv.FormatInt(int64(lastdb), 10))}}
 				} else {
 					ds.nbypass.Incr()
-					metric.GetMetric(ds.id).AddBypassCmdCount(1)
+					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
 				}
 				continue
 			}
-			ds.sendBuf <- cmdDetail{Cmd: scmd, Args: new_argv}
+			ds.sendBuf <- cmdDetail{Cmd: scmd, Args: newArgv}
 		}
 	}()
 
@@ -682,8 +679,8 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 
 			ds.forward.Incr()
 			ds.wbytes.Add(int64(length))
-			metric.GetMetric(ds.id).AddPushCmdCount(1)
-			metric.GetMetric(ds.id).AddNetworkFlow(uint64(length))
+			metric.GetMetric(ds.id).AddPushCmdCount(ds.id, 1)
+			metric.GetMetric(ds.id).AddNetworkFlow(ds.id, uint64(length))
 			sendId.Incr()
 
 			if conf.Options.Metric {

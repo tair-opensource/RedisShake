@@ -40,11 +40,11 @@ func (cmd *CmdDecode) GetDetailedInfo() interface{} {
 }
 
 func (cmd *CmdDecode) Main() {
-	log.Infof("decode from '%s' to '%s'\n", conf.Options.RdbInput, conf.Options.RdbOutput)
+	log.Infof("decode from '%s' to '%s'\n", conf.Options.SourceRdbInput, conf.Options.TargetRdbOutput)
 
-	for i, input := range conf.Options.RdbInput {
+	for i, input := range conf.Options.SourceRdbInput {
 		// decode one by one. By now, we don't support decoding concurrence.
-		output := fmt.Sprintf("%s.%d", conf.Options.RdbOutput, i)
+		output := fmt.Sprintf("%s.%d", conf.Options.TargetRdbOutput, i)
 		cmd.decode(input, output)
 	}
 
@@ -102,9 +102,9 @@ func (cmd *CmdDecode) decode(input, output string) {
 		var b bytes.Buffer
 		fmt.Fprintf(&b, "decode: ")
 		if nsize != 0 {
-			fmt.Fprintf(&b, "total = %d - %12d [%3d%%]", nsize, stat.rbytes, 100*stat.rbytes/nsize)
+			fmt.Fprintf(&b, "total = %s - %12s [%3d%%]", utils.GetMetric(nsize), utils.GetMetric(stat.rbytes), 100*stat.rbytes/nsize)
 		} else {
-			fmt.Fprintf(&b, "total = %12d", stat.rbytes)
+			fmt.Fprintf(&b, "total = %12s", utils.GetMetric(stat.rbytes))
 		}
 		fmt.Fprintf(&b, "  write=%-12d", stat.wbytes)
 		fmt.Fprintf(&b, "  entry=%-12d", stat.nentry)
@@ -136,11 +136,25 @@ func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- strin
 		return string(b)
 	}
 	for e := range ipipe {
+		var b bytes.Buffer
+		if e.Type == rdb.RdbFlagAUX {
+			o := &struct {
+				Type     string `json:"type"`
+				Key      string `json:"key"`
+				Value64  string `json:"value64"`
+			}{
+				"aux", string(e.Key), string(e.Value),
+			}
+			fmt.Fprintf(&b, "%s\n", toJson(o))
+			cmd.nentry.Incr()
+			opipe <- b.String()
+			continue
+		}
+
 		o, err := rdb.DecodeDump(e.Value)
 		if err != nil {
 			log.PanicError(err, "decode failed")
 		}
-		var b bytes.Buffer
 		switch obj := o.(type) {
 		default:
 			log.Panicf("unknown object %v", o)

@@ -57,8 +57,9 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 	case conf.RedisTypeSentinel:
 		arr := strings.Split(address, AddressSplitter)
 		if len(arr) != 2 {
-			return fmt.Errorf("redis type[%v] address[%v] length[%v] != 2",
-				conf.RedisTypeStandalone, address, len(arr))
+			return fmt.Errorf("redis type[%v] address[%v] must begin with or has '%v': e.g., \"master@ip1:port1;ip2:port2\", " +
+				"\"@ip1:port1,ip2:port2\"",
+				conf.RedisTypeSentinel, address, AddressSplitter)
 		}
 
 		var masterName string
@@ -95,9 +96,9 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 			}
 		}
 	case conf.RedisTypeCluster:
-		if isSource == false && tp == conf.TypeRump {
-			return fmt.Errorf("target type[%v] can't be cluster when type is 'rump' currently", redisType)
-		}
+		//if isSource == false && tp == conf.TypeRump {
+		//	return fmt.Errorf("target type[%v] can't be cluster when type is 'rump' currently", redisType)
+		//}
 		if strings.Contains(address, AddressSplitter) {
 			arr := strings.Split(address, AddressSplitter)
 			if len(arr) != 2 {
@@ -105,10 +106,10 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 			}
 
 			if isSource && arr[0] != conf.StandAloneRoleSlave && arr[0] != conf.StandAloneRoleMaster {
-				return fmt.Errorf("redis role must be master or slave")
+				return fmt.Errorf("source redis role must be master or slave, when enable automatic discovery with '@'")
 			}
-			if !isSource && arr[0] != "" {
-				return fmt.Errorf("redis type[%v] leading character must be '@'", redisType)
+			if !isSource && arr[0] != "master" && arr[0] != "" {
+				return fmt.Errorf("target redis role must be master, when enable automatic discovery with '@'")
 			}
 
 			clusterList := strings.Split(arr[1], AddressClusterSplitter)
@@ -141,8 +142,8 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 			setAddressList(isSource, address)
 		}
 	case conf.RedisTypeProxy:
-		if addressLen != 1 {
-			return fmt.Errorf("address[%v] length[%v] must == 1 when type is 'proxy'", addressLen, addressLen)
+		if isSource && addressLen != 1 {
+			return fmt.Errorf("address[%v] length[%v] must == 1 when type is 'proxy'", address, addressLen)
 		}
 		if isSource && tp != conf.TypeRump {
 			return fmt.Errorf("source.type == proxy should only happens when mode is 'rump'")

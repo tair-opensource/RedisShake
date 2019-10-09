@@ -27,6 +27,7 @@ import (
 	"redis-shake/configure"
 	"redis-shake/metric"
 	"redis-shake/restful"
+
 	"github.com/gugemichael/nimo4go"
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -34,8 +35,8 @@ import (
 type Exit struct{ Code int }
 
 const (
-	defaultHttpPort    = 20881
-	defaultSystemPort  = 20882
+	defaultHttpPort    = 9320
+	defaultSystemPort  = 9310
 	defaultSenderSize  = 65535
 	defaultSenderCount = 1024
 )
@@ -51,7 +52,12 @@ func main() {
 	version := flag.Bool("version", false, "show version")
 	flag.Parse()
 
-	if *configuration == "" || *tp == "" || *version {
+	if *version {
+		fmt.Println(utils.Version)
+		return
+	}
+
+	if *configuration == "" || *tp == "" {
 		if !*version {
 			fmt.Println("Please show me the '-conf' and '-type'")
 		}
@@ -59,6 +65,9 @@ func main() {
 		flag.PrintDefaults()
 		return
 	}
+
+	conf.Options.Version = utils.Version
+	conf.Options.Type = *tp
 
 	var file *os.File
 	if file, err = os.Open(*configuration); err != nil {
@@ -143,6 +152,10 @@ func initFreeOS() {
 }
 
 func startHttpServer() {
+	if conf.Options.HttpProfile == -1 {
+		return
+	}
+
 	utils.InitHttpApi(conf.Options.HttpProfile)
 	utils.HttpApi.RegisterAPI("/conf", nimo.HttpGet, func([]byte) interface{} {
 		return &conf.Options
@@ -181,8 +194,11 @@ func sanitizeOptions(tp string) error {
 		conf.Options.Parallel = int(math.Max(float64(conf.Options.Parallel), float64(conf.Options.NCpu)))
 	}
 
-	if conf.Options.BigKeyThreshold > 524288000 {
-		return fmt.Errorf("BigKeyThreshold[%v] should <= 524288000", conf.Options.BigKeyThreshold)
+	// 500 M
+	if conf.Options.BigKeyThreshold > 500 * utils.MB {
+		return fmt.Errorf("BigKeyThreshold[%v] should <= 500 MB", conf.Options.BigKeyThreshold)
+	} else if conf.Options.BigKeyThreshold == 0 {
+		conf.Options.BigKeyThreshold = 50 * utils.MB
 	}
 
 	// source password
@@ -205,31 +221,33 @@ func sanitizeOptions(tp string) error {
 		return fmt.Errorf("mode[%v] parse address failed[%v]", tp, err)
 	}
 
-	if (tp == conf.TypeRestore || tp == conf.TypeDecode) && len(conf.Options.RdbInput) == 0 {
-		return fmt.Errorf("input rdb shouldn't be empty when type in {restore, decode}")
+	if tp == conf.TypeRestore || tp == conf.TypeDecode {
+		if len(conf.Options.SourceRdbInput) == 0 {
+			return fmt.Errorf("input rdb shouldn't be empty when type in {restore, decode}")
+		}
+		// check file exist
+		for _, rdb := range conf.Options.SourceRdbInput {
+			if _, err := os.Stat(rdb); os.IsNotExist(err) {
+				return fmt.Errorf("input rdb file[%v] not exists", rdb)
+			}
+		}
 	}
-	if tp == conf.TypeDump && conf.Options.RdbOutput == "" {
-		conf.Options.RdbOutput = "output-rdb-dump"
+	if tp == conf.TypeDump && conf.Options.TargetRdbOutput == "" {
+		conf.Options.TargetRdbOutput = "output-rdb-dump"
 	}
 
-	if conf.Options.RdbParallel == 0 {
-		if tp == conf.TypeDump || tp == conf.TypeSync {
-			conf.Options.RdbParallel = len(conf.Options.SourceAddressList)
-		} else if tp == conf.TypeRestore {
-			conf.Options.RdbParallel = len(conf.Options.RdbInput)
+	if tp == conf.TypeDump || tp == conf.TypeSync {
+		if conf.Options.SourceRdbParallel <= 0 || conf.Options.SourceRdbParallel > len(conf.Options.SourceAddressList) {
+			conf.Options.SourceRdbParallel = len(conf.Options.SourceAddressList)
+		}
+	} else if tp == conf.TypeRestore || tp == conf.TypeDecode {
+		if conf.Options.SourceRdbParallel <= 0 || conf.Options.SourceRdbParallel > len(conf.Options.SourceRdbInput) {
+			conf.Options.SourceRdbParallel = len(conf.Options.SourceRdbInput)
 		}
 	}
 
-	if tp == conf.TypeRestore && conf.Options.RdbParallel > len(conf.Options.RdbInput) {
-		conf.Options.RdbParallel = len(conf.Options.RdbInput)
-	}
-
-	if conf.Options.RdbSpecialCloud != "" && conf.Options.RdbSpecialCloud != utils.UCloudCluster {
-		return fmt.Errorf("rdb special cloud type[%s] is not supported", conf.Options.RdbSpecialCloud)
-	}
-
-	if conf.Options.SourceParallel == 0 || conf.Options.SourceParallel > uint(len(conf.Options.SourceAddressList)) {
-		conf.Options.SourceParallel = uint(len(conf.Options.SourceAddressList))
+	if conf.Options.SourceRdbSpecialCloud != "" && conf.Options.SourceRdbSpecialCloud != utils.UCloudCluster {
+		return fmt.Errorf("rdb special cloud type[%s] is not supported", conf.Options.SourceRdbSpecialCloud)
 	}
 
 	if conf.Options.LogFile != "" {
@@ -256,6 +274,8 @@ func sanitizeOptions(tp string) error {
 		fallthrough
 	case utils.LogLevelInfo:
 		logDeepLevel = log.LEVEL_INFO
+	case utils.LogLevelDebug:
+		fallthrough
 	case utils.LogLevelAll:
 		logDeepLevel = log.LEVEL_DEBUG
 	default:
@@ -266,7 +286,10 @@ func sanitizeOptions(tp string) error {
 	// heartbeat, 86400 = 1 day
 	if conf.Options.HeartbeatInterval > 86400 {
 		return fmt.Errorf("HeartbeatInterval[%v] should in [0, 86400]", conf.Options.HeartbeatInterval)
+	} else if conf.Options.HeartbeatInterval == 0 {
+		conf.Options.HeartbeatInterval = 10
 	}
+
 	if conf.Options.HeartbeatNetworkInterface == "" {
 		conf.Options.HeartbeatIp = "127.0.0.1"
 	} else {
@@ -300,21 +323,17 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if conf.Options.FilterDB != "" {
-		if n, err := strconv.ParseInt(conf.Options.FilterDB, 10, 32); err != nil {
-			return fmt.Errorf("parse FilterDB failed[%v]", err)
-		} else {
-			base.AcceptDB = func(db uint32) bool {
-				return db == uint32(n)
-			}
-		}
+		conf.Options.FilterDBWhitelist = []string{conf.Options.FilterDB}
+	}
+	if len(conf.Options.FilterDBWhitelist) != 0 && len(conf.Options.FilterDBBlacklist) != 0 {
+		return fmt.Errorf("only one of 'filter.db.whitelist' and 'filter.db.blacklist' can be given")
 	}
 
-	// if the target is "cluster", only allow pass db 0
-	if conf.Options.TargetType == conf.RedisTypeCluster {
-		base.AcceptDB = func(db uint32) bool {
-			return db == 0
-		}
-		log.Info("the target redis type is cluster, only pass db0")
+	if len(conf.Options.FilterKey) != 0 {
+		conf.Options.FilterKeyWhitelist = conf.Options.FilterKey
+	}
+	if len(conf.Options.FilterKeyWhitelist) != 0 && len(conf.Options.FilterKeyBlacklist) != 0 {
+		return fmt.Errorf("only one of 'filter.key.whitelist' and 'filter.key.blacklist' can be given")
 	}
 
 	if len(conf.Options.FilterSlot) > 0 {
@@ -325,15 +344,37 @@ func sanitizeOptions(tp string) error {
 		}
 	}
 
-	if conf.Options.TargetDB >= 0 {
-		// pass, >= 0 means enable
+	if conf.Options.TargetDBString == "" {
+		conf.Options.TargetDB = -1
+	} else if v, err := strconv.Atoi(conf.Options.TargetDBString); err != nil {
+		return fmt.Errorf("parse target.db[%v] failed[%v]", conf.Options.TargetDBString, err)
+	} else if v < 0 {
+		conf.Options.TargetDB = -1
+	} else {
+		conf.Options.TargetDB = v
 	}
 
-	if conf.Options.HttpProfile < 0 || conf.Options.HttpProfile > 65535 {
+	// if the target is "cluster", only allow pass db 0
+	if conf.Options.TargetType == conf.RedisTypeCluster {
+		if conf.Options.TargetDB == -1 {
+			conf.Options.FilterDBWhitelist = []string{"0"} // set whitelist = 0
+			conf.Options.FilterDBBlacklist = []string{}    // reset blacklist
+			log.Info("the target redis type is cluster, only pass db0")
+		} else if conf.Options.TargetDB == 0 {
+			log.Info("the target redis type is cluster, all db syncing to db0")
+		} else {
+			// > 0
+			return fmt.Errorf("target.db[%v] should in {-1, 0} when target type is cluster", conf.Options.TargetDB)
+		}
+	}
+
+	if conf.Options.HttpProfile < -1 || conf.Options.HttpProfile > 65535 {
 		return fmt.Errorf("HttpProfile[%v] should in [0, 65535]", conf.Options.HttpProfile)
 	} else if conf.Options.HttpProfile == 0 {
 		// set to default when not set
 		conf.Options.HttpProfile = defaultHttpPort
+	} else if conf.Options.HttpProfile == -1 {
+		log.Info("http_profile is disable")
 	}
 
 	if conf.Options.SystemProfile < 0 || conf.Options.SystemProfile > 65535 {
@@ -356,23 +397,41 @@ func sanitizeOptions(tp string) error {
 		// set to default when not set
 		conf.Options.SenderCount = defaultSenderCount
 	}
+	if conf.Options.TargetType == conf.RedisTypeCluster && int(conf.Options.SenderCount) > utils.RecvChanSize {
+		log.Infof("RecvChanSize is modified from [%v] to [%v]", utils.RecvChanSize, int(conf.Options.SenderCount))
+		utils.RecvChanSize = int(conf.Options.SenderCount)
+	}
 
-	if tp == conf.TypeRestore || tp == conf.TypeSync {
-		// get target redis version and set TargetReplace.
-		for _, address := range conf.Options.TargetAddressList {
-			// single connection even if the target is cluster
-			if v, err := utils.GetRedisVersion(address, conf.Options.TargetAuthType,
-				conf.Options.TargetPasswordRaw, conf.Options.TargetTLSEnable); err != nil {
-				return fmt.Errorf("get target redis version failed[%v]", err)
-			} else if conf.Options.TargetRedisVersion != "" && conf.Options.TargetRedisVersion != v {
-				return fmt.Errorf("target redis version is different: [%v %v]", conf.Options.TargetRedisVersion, v)
-			} else {
-				conf.Options.TargetRedisVersion = v
+	if conf.Options.SenderDelayChannelSize == 0 {
+		conf.Options.SenderDelayChannelSize = 32
+	}
+
+	// [0, 100 million]
+	if conf.Options.Qps < 0 || conf.Options.Qps >= 100000000 {
+		return fmt.Errorf("qps[%v] should in (0, 100000000]", conf.Options.Qps)
+	} else if conf.Options.Qps == 0 {
+		conf.Options.Qps = 500000
+	}
+
+	if tp == conf.TypeRestore || tp == conf.TypeSync || tp == conf.TypeRump {
+		if conf.Options.TargetVersion == "" {
+			// get target redis version and set TargetReplace.
+			for _, address := range conf.Options.TargetAddressList {
+				// single connection even if the target is cluster
+				if v, err := utils.GetRedisVersion(address, conf.Options.TargetAuthType,
+					conf.Options.TargetPasswordRaw, conf.Options.TargetTLSEnable); err != nil {
+					return fmt.Errorf("get target redis version failed[%v]", err)
+				} else if conf.Options.TargetVersion != "" && conf.Options.TargetVersion != v {
+					return fmt.Errorf("target redis version is different: [%v %v]", conf.Options.TargetVersion, v)
+				} else {
+					conf.Options.TargetVersion = v
+				}
 			}
 		}
-		if strings.HasPrefix(conf.Options.TargetRedisVersion, "4.") ||
-			strings.HasPrefix(conf.Options.TargetRedisVersion, "3.") ||
-			strings.HasPrefix(conf.Options.TargetRedisVersion, "5.") {
+
+		if strings.HasPrefix(conf.Options.TargetVersion, "4.") ||
+			strings.HasPrefix(conf.Options.TargetVersion, "3.") ||
+			strings.HasPrefix(conf.Options.TargetVersion, "5.") {
 			conf.Options.TargetReplace = true
 		} else {
 			conf.Options.TargetReplace = false
@@ -390,14 +449,18 @@ func sanitizeOptions(tp string) error {
 		}
 
 		if conf.Options.ScanSpecialCloud != "" && conf.Options.ScanKeyFile != "" {
-			return fmt.Errorf("scan.special_cloud[%v] and scan.key_file[%v] cann't be given at the same time",
+			return fmt.Errorf("scan.special_cloud[%v] and scan.key_file[%v] can't all be given at the same time",
 				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
 		}
 
-		if (conf.Options.ScanSpecialCloud != "" || conf.Options.ScanKeyFile != "") && len(conf.Options.SourceAddressList) > 1 {
-			return fmt.Errorf("source address should <= 1 when scan.special_cloud[%v] or scan.key_file[%v] given",
-				conf.Options.ScanSpecialCloud, conf.Options.ScanKeyFile)
+		if int(conf.Options.ScanKeyNumber) > utils.RecvChanSize && conf.Options.TargetType == conf.RedisTypeCluster {
+			log.Infof("RecvChanSize is modified from [%v] to [%v]", utils.RecvChanSize, int(conf.Options.ScanKeyNumber))
+			utils.RecvChanSize = int(conf.Options.ScanKeyNumber)
 		}
+
+		//if len(conf.Options.SourceAddressList) == 1 {
+		//	return fmt.Errorf("source address length should == 1 when type is 'rump'")
+		//}
 	}
 
 	return nil

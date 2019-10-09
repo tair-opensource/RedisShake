@@ -1,3 +1,92 @@
+2019-09-19 Alibaba Cloud.
+	* VERSION: 1.6.19
+	* BUGFIX: update "redis-go-cluster" driver to fix bug to throw CROSSSLOT
+	error when migrating lua script.
+	* IMPROVE: only run hypervisor when type is `sync`.
+2019-09-04 Alibaba Cloud.
+	* VERSION: 1.6.18
+	* BUGFIX: restore quicklist panic when target is cluster. see #156
+2019-08-27 Alibaba Cloud.
+	* VERSION: 1.6.17
+	* BUGFIX: transaction syncing panic when target redis is cluster. see
+	#145.
+	* IMPROVE: adjust RecvChanSize based on `sender.count` or `scan.key_number`
+	if target redis type is cluster.
+	* IMPROVE: remove some variables in conf like `heartbeat`, `ncpu`.
+	* IMPROVE: print inner error message from redigo driver return message.
+2019-08-09 Alibaba Cloud.
+	* VERSION: 1.6.16
+	* BUGFIX: big key in `rump` mode all expired.
+	* BUGFIX: `rump` mode restores quick list failed. see #141.
+2019-08-09 Alibaba Cloud.
+	* VERSION: 1.6.15
+	* IMPROVE: add `target.version` to support some proxy like twemproxy.
+	* BUGFIX: filter `select` command in `rump` when only db0 supports in some
+	redis version.
+	* IMPROVE: remove the cluster limit when target type is rump.
+	* IMPROVE: add `scan.key_number` limit judge when target type is cluster
+	in type `rump`. see #136.
+2019-08-01 Alibaba Cloud.
+	* VERSION: 1.6.14
+	* BUGFIX: the `rdb.parallel` parameter limits concurrency without effect.
+	see #133
+	* BUGFIX: call `select` when target redis type is cluster in `rump` mode.
+	* IMPROVE: add `http_profile = -1` to exit once finish rdb syncing in
+	`restore` mode.
+	* IMPROVE: 'info xxx' command isn't supported in codis, used 'info' and 
+	parse 'xxx'.
+	* IMPROVE: rename `rdb.xx` to `source.rdb.xx` or `target.rdb.xx`.
+2019-07-24 Alibaba Cloud.
+	* VERSION: 1.6.13
+	* IMPROVE: support `filter.db.whitelist` and `filter.db.blacklist` to let
+	different db syncing to db0 even when target type is cluster. see #127.
+	* BUGFIX: fix bug of connection url in automatic discovery in cluster. see
+	#124.
+	* IMPROVE: support `target.db` in rump mode.
+	* IMPROVE: add debug log in RDB syncing.
+2019-07-11 Alibaba Cloud.
+	* VERSION: 1.6.12
+	* IMPROVE: support filter key with whitelist and blacklist.
+	* IMPROVE: support filter db with whitelist and blacklist.
+	* BUGFIX: fix "bypass" count in metric.
+2019-07-04 Alibaba Cloud.
+	* VERSION: 1.6.11
+	* BUGFIX: adapt "redis-go-cluster" driver to fix bug of big key syncing
+	block in `sync` mode. See #114
+2019-07-03 Alibaba Cloud.
+	* VERSION: 1.6.10
+	* IMPROVE: support print Lua in `decode` mode.
+	* BUGFIX: merge metric panic PR#111
+	* IMPROVE: check checksum and version once receiving error from the target in
+	`rump` mode.
+2019-06-21 Alibaba Cloud.
+	* VERSION: 1.6.9
+	* IMPROVE: support Lua and transaction when target is open source cluster
+	version.
+	* IMPROVE: support filter Lua: `filter.lua`
+2019-06-21 Alibaba Cloud.
+	* VERSION: 1.6.8
+	* IMPROVE: add hypervisor.
+	* IMPROVE: add key filter in `rump` mode.
+	* IMPROVE: add prometheus metrics with url: "localhost:$http_profile/metrics"
+2019-06-13 Alibaba Cloud.
+	* VERSION: 1.6.7
+	* IMPROVE: split big key in `rump` mode.
+	* IMPROVE: add rate transmission mechanism in `rump` mode.
+	* IMPROVE: add metric in `rump` mode.
+2019-06-09 Alibaba Cloud.
+	* VERSION: 1.6.6
+	* cherry-pick merge v1.4.4
+	* BUGFIX: delete single command failed when filter key given.
+2019-06-06 Alibaba Cloud.
+	* VERSION: 1.6.5
+	* IMPROVE: run rump in parallel to support several db nodes behind proxy.
+	* BUGFIX: run rump panic when the source is proxy with more than 1 db.
+2019-06-05 Alibaba Cloud.
+	* VERSION: 1.4.4
+	* BUGFIX: modify the ttl from millisecond to second in restore when
+	overpass big key threshold.
+	* IMPROVE: set some default values in configuration.
 2019-05-30 Alibaba Cloud.
 	* VERSION: 1.6.4
 	* BUGFIX: fix bug of `GetDetailedInfo` panic.
