@@ -41,6 +41,7 @@ if __name__ == "__main__":
     mp['source.auth_type'] = 'auth'
     mp['target.auth_type'] = 'auth'
     mp['rewrite'] = 'true'
+    mp['log.file'] = 'redis-shake.log'
 
     name = "run_direct.conf"
     f = open(name, "w+")
