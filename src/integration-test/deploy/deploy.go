@@ -11,10 +11,13 @@ import (
 
 const (
 	StandaloneScript = "deploy_standalone.sh"
-	ClusterScript = "deploy_cluster.sh"
+	ClusterScript    = "deploy_cluster.sh"
 
-	RedisShake = "redis-shake"
+	RedisShake     = "redis-shake"
 	RedisShakeConf = "redis-shake.conf"
+
+	CmdStart = "start"
+	CmdStop  = "stop"
 )
 
 func run(cmd *exec.Cmd) error {

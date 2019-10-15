@@ -51,6 +51,7 @@ done
 # copy scripts
 cp scripts/start.sh ${output}/
 cp scripts/stop.sh ${output}/
+cp scripts/run_direct.py ${output}/
 cp -r tools ${output}/
 cp -r test ${output}/
 
