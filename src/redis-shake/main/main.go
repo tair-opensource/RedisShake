@@ -434,6 +434,8 @@ func sanitizeOptions(tp string) error {
 			 * set 1 if target is target version can't be fetched just like twemproxy.
 			 */
 			conf.Options.BigKeyThreshold = 1
+			log.Warnf("target version[%v] given, set big_key_threshold = 1. see #173",
+				conf.Options.TargetVersion, conf.Options.SourceVersion)
 		}
 
 		if strings.HasPrefix(conf.Options.TargetVersion, "4.") ||
@@ -463,6 +465,8 @@ func sanitizeOptions(tp string) error {
 		// compare version. see github issue #173.
 		if ret := utils.CompareVersion(conf.Options.SourceVersion, conf.Options.TargetVersion, 2); ret != 0 && ret != 1 {
 			// target version is smaller than source version, or unknown
+			log.Warnf("target version[%v] < source version[%v], set big_key_threshold = 1. see #173",
+				conf.Options.TargetVersion, conf.Options.SourceVersion)
 			conf.Options.BigKeyThreshold = 1
 		}
 	}
@@ -490,6 +494,24 @@ func sanitizeOptions(tp string) error {
 		//if len(conf.Options.SourceAddressList) == 1 {
 		//	return fmt.Errorf("source address length should == 1 when type is 'rump'")
 		//}
+	}
+
+	// check rdbchecksum
+	if tp == conf.TypeDump || (tp == conf.TypeSync || tp == conf.TypeRump) && conf.Options.BigKeyThreshold > 1 {
+		for _, address := range conf.Options.SourceAddressList {
+			check, err := utils.GetRDBChecksum(address, conf.Options.SourceAuthType,
+				conf.Options.SourcePasswordRaw, conf.Options.SourceTLSEnable)
+			if err != nil {
+				// ignore
+				log.Warnf("fetch source rdb[%v] checksum failed[%v], ignore", address, err)
+				continue
+			}
+
+			log.Infof("source rdb[%v] checksum[%v]", address, check)
+			if check == "no" {
+				return fmt.Errorf("source rdb[%v] checksum should be open[config set rdbchecksum yes]", address)
+			}
+		}
 	}
 
 	return nil
