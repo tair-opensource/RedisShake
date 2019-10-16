@@ -414,6 +414,7 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if tp == conf.TypeRestore || tp == conf.TypeSync || tp == conf.TypeRump {
+		// version check is useless, we only want to verify the correctness of configuration.
 		if conf.Options.TargetVersion == "" {
 			// get target redis version and set TargetReplace.
 			for _, address := range conf.Options.TargetAddressList {
@@ -427,6 +428,12 @@ func sanitizeOptions(tp string) error {
 					conf.Options.TargetVersion = v
 				}
 			}
+		} else {
+			/*
+			 * see github issue #173.
+			 * set 1 if target is target version can't be fetched just like twemproxy.
+			 */
+			conf.Options.BigKeyThreshold = 1
 		}
 
 		if strings.HasPrefix(conf.Options.TargetVersion, "4.") ||
@@ -435,6 +442,28 @@ func sanitizeOptions(tp string) error {
 			conf.Options.TargetReplace = true
 		} else {
 			conf.Options.TargetReplace = false
+		}
+	}
+
+	// check version and set big_key_threshold. see #173
+	if tp == conf.TypeSync || tp == conf.TypeRump { // "tp == restore" hasn't been handled
+		// fetch source version
+		for _, address := range conf.Options.SourceAddressList {
+			// single connection even if the target is cluster
+			if v, err := utils.GetRedisVersion(address, conf.Options.SourceAuthType,
+				conf.Options.SourcePasswordRaw, conf.Options.SourceTLSEnable); err != nil {
+				return fmt.Errorf("get source redis version failed[%v]", err)
+			} else if conf.Options.SourceVersion != "" && conf.Options.SourceVersion != v {
+				return fmt.Errorf("source redis version is different: [%v %v]", conf.Options.SourceVersion, v)
+			} else {
+				conf.Options.SourceVersion = v
+			}
+		}
+
+		// compare version. see github issue #173.
+		if ret := utils.CompareVersion(conf.Options.SourceVersion, conf.Options.TargetVersion, 2); ret != 0 && ret != 1 {
+			// target version is smaller than source version, or unknown
+			conf.Options.BigKeyThreshold = 1
 		}
 	}
 

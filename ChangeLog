@@ -1,3 +1,9 @@
+2019-10-xx Alibaba Cloud.
+	* VERSION: 1.6.20
+	* IMPROVE: add progress bar in rump mode. see #174.
+	* IMPROVE: add run_direct.py script.
+	* IMRPOVE: set big_key_threshold to 1 to avoid some sync failed cases. see
+	#173.
 2019-09-19 Alibaba Cloud.
 	* VERSION: 1.6.19
 	* BUGFIX: update "redis-go-cluster" driver to fix bug to throw CROSSSLOT

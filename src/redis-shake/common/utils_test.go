@@ -85,3 +85,19 @@ func TestCutRedisInfoSegment(t *testing.T) {
 		assert.Equal(t, expect, ret, "should be equal")
 	}
 }
+
+func TestCompareVersion(t *testing.T) {
+	var nr int
+	{
+		fmt.Printf("TestCompareVersion case %d.\n", nr)
+		nr++
+
+		assert.Equal(t, 1, CompareVersion("1.2", "1.3", 2), "should be equal")
+		assert.Equal(t, 0, CompareVersion("1.2", "1.3", 1), "should be equal")
+		assert.Equal(t, 2, CompareVersion("1.4", "1.3", 2), "should be equal")
+		assert.Equal(t, 2, CompareVersion("1.4.x", "1.3", 2), "should be equal")
+		assert.Equal(t, 3, CompareVersion("1.4.x", "1.4", 3), "should be equal")
+		assert.Equal(t, 0, CompareVersion("1.4.x", "1.4", 0), "should be equal")
+		assert.Equal(t, 2, CompareVersion("2.4", "1.1", 2), "should be equal")
+	}
+}
