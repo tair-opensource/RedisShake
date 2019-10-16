@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     mp['id'] = 'redis-shake'
     mp['source.type'] = 'standalone' if 'source.type' not in mp else mp['source.type']
-    mp['target.type'] = 'standalone' if 'target.type' not in mp else mp['source.type']
+    mp['target.type'] = 'standalone' if 'target.type' not in mp else mp['target.type']
     mp['source.auth_type'] = 'auth'
     mp['target.auth_type'] = 'auth'
     mp['rewrite'] = 'true'
