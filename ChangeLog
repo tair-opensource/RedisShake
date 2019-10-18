@@ -1,4 +1,4 @@
-2019-10-xx Alibaba Cloud.
+2019-10-18 Alibaba Cloud.
 	* VERSION: 1.6.20
 	* IMPROVE: add progress bar in rump mode. see #174.
 	* IMPROVE: add run_direct.py script.
