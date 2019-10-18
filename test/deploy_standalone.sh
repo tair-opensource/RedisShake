@@ -20,7 +20,7 @@ if [ $2 == "start" ]; then
     # start
     mkdir -p $subPath 
     cd $subPath
-    ../../tools/redis-server --port $port --pidfile $subPath/$port.pid 1>/dev/null 2>&1 &
+    ../tools/redis-server --port $port --pidfile $subPath/$port.pid 1>/dev/null 2>&1 &
 else
     # stop
     kill -9 $(cat $subPath/$port.pid)

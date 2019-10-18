@@ -414,6 +414,7 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if tp == conf.TypeRestore || tp == conf.TypeSync || tp == conf.TypeRump {
+		// version check is useless, we only want to verify the correctness of configuration.
 		if conf.Options.TargetVersion == "" {
 			// get target redis version and set TargetReplace.
 			for _, address := range conf.Options.TargetAddressList {
@@ -427,6 +428,14 @@ func sanitizeOptions(tp string) error {
 					conf.Options.TargetVersion = v
 				}
 			}
+		} else {
+			/*
+			 * see github issue #173.
+			 * set 1 if target is target version can't be fetched just like twemproxy.
+			 */
+			conf.Options.BigKeyThreshold = 1
+			log.Warnf("target version[%v] given, set big_key_threshold = 1. see #173",
+				conf.Options.TargetVersion, conf.Options.SourceVersion)
 		}
 
 		if strings.HasPrefix(conf.Options.TargetVersion, "4.") ||
@@ -435,6 +444,30 @@ func sanitizeOptions(tp string) error {
 			conf.Options.TargetReplace = true
 		} else {
 			conf.Options.TargetReplace = false
+		}
+	}
+
+	// check version and set big_key_threshold. see #173
+	if tp == conf.TypeSync || tp == conf.TypeRump { // "tp == restore" hasn't been handled
+		// fetch source version
+		for _, address := range conf.Options.SourceAddressList {
+			// single connection even if the target is cluster
+			if v, err := utils.GetRedisVersion(address, conf.Options.SourceAuthType,
+				conf.Options.SourcePasswordRaw, conf.Options.SourceTLSEnable); err != nil {
+				return fmt.Errorf("get source redis version failed[%v]", err)
+			} else if conf.Options.SourceVersion != "" && conf.Options.SourceVersion != v {
+				return fmt.Errorf("source redis version is different: [%v %v]", conf.Options.SourceVersion, v)
+			} else {
+				conf.Options.SourceVersion = v
+			}
+		}
+
+		// compare version. see github issue #173.
+		if ret := utils.CompareVersion(conf.Options.SourceVersion, conf.Options.TargetVersion, 2); ret != 0 && ret != 1 {
+			// target version is smaller than source version, or unknown
+			log.Warnf("target version[%v] < source version[%v], set big_key_threshold = 1. see #173",
+				conf.Options.TargetVersion, conf.Options.SourceVersion)
+			conf.Options.BigKeyThreshold = 1
 		}
 	}
 
@@ -456,6 +489,28 @@ func sanitizeOptions(tp string) error {
 		if int(conf.Options.ScanKeyNumber) > utils.RecvChanSize && conf.Options.TargetType == conf.RedisTypeCluster {
 			log.Infof("RecvChanSize is modified from [%v] to [%v]", utils.RecvChanSize, int(conf.Options.ScanKeyNumber))
 			utils.RecvChanSize = int(conf.Options.ScanKeyNumber)
+		}
+
+		//if len(conf.Options.SourceAddressList) == 1 {
+		//	return fmt.Errorf("source address length should == 1 when type is 'rump'")
+		//}
+	}
+
+	// check rdbchecksum
+	if tp == conf.TypeDump || (tp == conf.TypeSync || tp == conf.TypeRump) && conf.Options.BigKeyThreshold > 1 {
+		for _, address := range conf.Options.SourceAddressList {
+			check, err := utils.GetRDBChecksum(address, conf.Options.SourceAuthType,
+				conf.Options.SourcePasswordRaw, conf.Options.SourceTLSEnable)
+			if err != nil {
+				// ignore
+				log.Warnf("fetch source rdb[%v] checksum failed[%v], ignore", address, err)
+				continue
+			}
+
+			log.Infof("source rdb[%v] checksum[%v]", address, check)
+			if check == "no" {
+				return fmt.Errorf("source rdb[%v] checksum should be open[config set rdbchecksum yes]", address)
+			}
 		}
 
 		//if len(conf.Options.SourceAddressList) == 1 {

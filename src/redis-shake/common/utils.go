@@ -923,6 +923,22 @@ func GetRedisVersion(target, authType, auth string, tlsEnable bool) (string, err
 	}
 }
 
+func GetRDBChecksum(target, authType, auth string, tlsEnable bool) (string, error) {
+	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable)
+	defer c.Close()
+
+	content, err := c.Do("config", "get", "rdbchecksum")
+	if err != nil {
+		return "", err
+	}
+
+	conentList := content.([]interface{})
+	if len(conentList) != 2 {
+		return "", fmt.Errorf("return length != 2, return: %v", conentList)
+	}
+	return string(conentList[1].([]byte)), nil
+}
+
 func CheckHandleNetError(err error) bool {
 	if err == io.EOF {
 		return true
