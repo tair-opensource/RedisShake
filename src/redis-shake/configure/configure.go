@@ -68,6 +68,7 @@ type Configuration struct {
 	// generated variables
 	SourceAddressList []string      // source address list
 	TargetAddressList []string      // target address list
+	SourceVersion     string        // source version
 	HeartbeatIp       string        // heartbeat ip
 	ShiftTime         time.Duration // shift
 	TargetReplace     bool          // to_replace

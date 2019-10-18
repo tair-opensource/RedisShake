@@ -14,6 +14,7 @@ import (
 
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 	"github.com/cupcake/rdb/crc64"
+	"strconv"
 )
 
 const (
@@ -163,4 +164,52 @@ func GetMetric(input int64) string {
 	default:
 		return fmt.Sprintf("%dB", input)
 	}
+}
+
+/*
+ * compare the version with given level. e.g.,
+ * 2.0.1, 2.0.3, level = 2 => equal: 0
+ * 2.0.1, 2.0.3, level = 3 => smaller: 1
+ * 3.1.1, 2.1 level = 2 => bigger: 2
+ * 3, 3.2, level = 2 => smaller: 1
+ * 3.a, 3.2, level = 2 => unknown: 3
+ */
+func CompareVersion(a, b string, level int) int {
+	if level <= 0 {
+		return 0
+	}
+
+	var err error
+	as := strings.Split(a, ".")
+	bs := strings.Split(b, ".")
+	for l := 0; l < level; l++ {
+		var av, bv int
+		// parse av
+		if l > len(as) {
+			av = 0
+		} else {
+			av, err = strconv.Atoi(as[l])
+			if err != nil {
+				return 3
+			}
+		}
+
+		// parse bv
+		if l > len(bs) {
+			bv = 0
+		} else {
+			bv, err = strconv.Atoi(bs[l])
+			if err != nil {
+				return 3
+			}
+		}
+
+		if av > bv {
+			return 2
+		} else if av < bv {
+			return 1
+		}
+	}
+
+	return 0
 }

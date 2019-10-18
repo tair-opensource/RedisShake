@@ -50,9 +50,9 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 	case "":
 		fallthrough
 	case conf.RedisTypeStandalone:
-		if addressLen != 1 {
+		/*if addressLen != 1 {
 			return fmt.Errorf("redis type[%v] address[%v] length[%v] != 1", redisType, address, addressLen)
-		}
+		}*/
 		setAddressList(isSource, address)
 	case conf.RedisTypeSentinel:
 		arr := strings.Split(address, AddressSplitter)
