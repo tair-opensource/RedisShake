@@ -52,8 +52,8 @@ done
 cp scripts/start.sh ${output}/
 cp scripts/stop.sh ${output}/
 cp scripts/run_direct.py ${output}/
-cp -r tools ${output}/
-cp -r test ${output}/
+#cp -r tools ${output}/
+#cp -r test ${output}/
 
 if [ "Linux" == "$(uname -s)" ];then
 	# hypervisor
