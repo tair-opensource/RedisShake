@@ -512,6 +512,10 @@ func sanitizeOptions(tp string) error {
 				return fmt.Errorf("source rdb[%v] checksum should be open[config set rdbchecksum yes]", address)
 			}
 		}
+
+		//if len(conf.Options.SourceAddressList) == 1 {
+		//	return fmt.Errorf("source address length should == 1 when type is 'rump'")
+		//}
 	}
 
 	return nil
