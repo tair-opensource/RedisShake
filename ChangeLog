@@ -1,3 +1,7 @@
+2019-xx Alibaba Cloud.
+	* VERSION: 1.7-unstable
+	* FEATURE: in rump mode, filter key in fetching stage instead of in writing.
+	* FEATURE: add integration test.
 2019-10-18 Alibaba Cloud.
 	* VERSION: 1.6.20
 	* IMPROVE: add progress bar in rump mode. see #174.
