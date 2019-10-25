@@ -13,8 +13,10 @@ const (
 	StandaloneScript = "deploy_standalone.sh"
 	ClusterScript    = "deploy_cluster.sh"
 
-	RedisShake     = "redis-shake"
-	RedisShakeConf = "redis-shake.conf"
+	RedisShake             = "redis-shake"
+	RedisShakeConf         = "redis-shake.conf"
+	RedisFullCheck         = "redis-full-check"
+	RedisFullCheckDiffFile = "redis-full-check.diff"
 
 	CmdStart = "start"
 	CmdStop  = "stop"
@@ -63,7 +65,7 @@ func Deploy(tp string, port int, cmd string, node int) error {
 	}
 
 	portS := fmt.Sprintf("%d", port)
-	path := fmt.Sprintf("%s/%s", dir, script)
+	path := fmt.Sprintf("%s/test/%s", dir, script)
 
 	var execCmd *exec.Cmd
 	if tp != "cluster" {
@@ -106,4 +108,31 @@ func StartShake(shakeDir, runDir string, conf map[string]interface{}, mode strin
 	// start redis-shake
 	execCmd := exec.Command(to, fmt.Sprintf("-type=%s", mode), fmt.Sprintf("-conf=%s", RedisShakeConf), "&")
 	return run(execCmd)
+}
+
+func RunFullCheck(fullCheckDir, runDir string, conf map[string]interface{}) (bool, error) {
+	if _, err := os.Stat(runDir); os.IsNotExist(err) {
+		if err := os.Mkdir(runDir, os.ModePerm); err != nil {
+			return false, fmt.Errorf("mkdir %v failed[%v]", runDir, err)
+		}
+	}
+
+	from := fmt.Sprintf("%s/%s", fullCheckDir, RedisFullCheck)
+	to := fmt.Sprintf("%s/%s", runDir, RedisFullCheck)
+	cpCmd := exec.Command("cp", from, to)
+	if err := run(cpCmd); err != nil {
+		return false, fmt.Errorf("copy file from [%v] to [%v] failed[%v]", from, to, err)
+	}
+
+	execCmd := exec.Command(to, fmt.Sprintf("-s=%s", conf["s"]), fmt.Sprintf("-t=%s", conf["t"]),
+		fmt.Sprintf("--result=%s/%s", runDir, RedisFullCheckDiffFile),
+		fmt.Sprintf("--comparetimes=%s", conf["comparetimes"]))
+
+	diffFile := fmt.Sprintf("%s/%s",  runDir, RedisFullCheckDiffFile)
+	f, err := os.Stat(diffFile)
+	if err != nil {
+		return false, fmt.Errorf("stat file[%v] failed[%v]", RedisFullCheckDiffFile, err)
+	}
+
+	return f.Size() == 0, run(execCmd)
 }
