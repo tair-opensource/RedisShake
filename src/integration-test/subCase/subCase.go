@@ -62,6 +62,8 @@ func NewSubCase(sourceConn, targetConn redigo.Conn, sourcePort, targetPort int,
 			filterKeyBlack, filterKeyWhite,
 			filterDBBlack, filterDBWhite,
 			targetDB),
+		shakeDir: "../",
+		runDir:   "redis-shake/",
 	}
 
 	return sc
@@ -105,9 +107,9 @@ func (sc *SubCase) Run() {
 	}
 
 	// 4. start redis-full-check to check the correctness
-	fullCheckConf := map[string]interface{} {
-		"s": sc.shakeConf["source.address"],
-		"t": sc.shakeConf["target.address"],
+	fullCheckConf := map[string]interface{}{
+		"s":            sc.shakeConf["source.address"],
+		"t":            sc.shakeConf["target.address"],
 		"comparetimes": 1,
 	}
 	equal, err := deploy.RunFullCheck(sc.shakeDir, sc.runDir, fullCheckConf)
