@@ -13,7 +13,7 @@ const (
 	StandaloneScript = "deploy_standalone.sh"
 	ClusterScript    = "deploy_cluster.sh"
 
-	RedisShake             = "redis-shake"
+	RedisShake             = "redis-shake.linux"
 	RedisShakeConf         = "redis-shake.conf"
 	RedisFullCheck         = "redis-full-check"
 	RedisFullCheckDiffFile = "redis-full-check.diff"
@@ -110,14 +110,14 @@ func StartShake(shakeDir, runDir string, conf map[string]interface{}, mode strin
 	return run(execCmd)
 }
 
-func RunFullCheck(fullCheckDir, runDir string, conf map[string]interface{}) (bool, error) {
+func RunFullCheck(runDir string, conf map[string]interface{}) (bool, error) {
 	if _, err := os.Stat(runDir); os.IsNotExist(err) {
 		if err := os.Mkdir(runDir, os.ModePerm); err != nil {
 			return false, fmt.Errorf("mkdir %v failed[%v]", runDir, err)
 		}
 	}
 
-	from := fmt.Sprintf("%s/%s", fullCheckDir, RedisFullCheck)
+	from := fmt.Sprintf("tools/%s", RedisFullCheck)
 	to := fmt.Sprintf("%s/%s", runDir, RedisFullCheck)
 	cpCmd := exec.Command("cp", from, to)
 	if err := run(cpCmd); err != nil {
