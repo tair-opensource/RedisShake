@@ -6,8 +6,9 @@ import (
 	"pkg/libs/log"
 	"integration-test/deploy"
 	"strings"
+    "fmt"
 	"net/http"
-	"fmt"
+    "time"
 	"io/ioutil"
 	"encoding/json"
 )
@@ -47,7 +48,9 @@ func GenerateShakeConf(sourcePort, targetPort int, filterKeyBlack, filterKeyWhit
 	}
 
 	mp["target.db"] = targetDB
-    mp["id"] = "integration"
+    mp["id"] = "redis-shake-integration"
+    mp["log.file"] = "redis-shake-integration.log"
+    mp["http_profile"] = "9320"
 
 	return mp
 }
@@ -63,8 +66,8 @@ func NewSubCase(sourceConn, targetConn redigo.Conn, sourcePort, targetPort int,
 			filterKeyBlack, filterKeyWhite,
 			filterDBBlack, filterDBWhite,
 			targetDB),
-		shakeDir: "../",
-		runDir:   "redis-shake/",
+		shakeDir: "..",
+		runDir:   "redis-shake",
 	}
 
 	return sc
@@ -72,23 +75,30 @@ func NewSubCase(sourceConn, targetConn redigo.Conn, sourcePort, targetPort int,
 
 func (sc *SubCase) Run() {
 	// 1. inject key before full sync
+    log.Info("1. inject key before full sync")
 	_, err := inject.InjectData(sc.sourceConn)
 	if err != nil {
 		log.Panicf("inject data before sync failed[%v]", err)
 	}
 
 	// 2. start redis-shake
-	if err := deploy.StartShake(sc.shakeDir, sc.runDir, sc.shakeConf, "sync"); err != nil {
-		log.Panicf("start redis-shake failed[%v]", err)
-	}
+    log.Info("2. start redis-shake")
+    if err := deploy.StartShake(sc.shakeDir, sc.runDir, sc.shakeConf, "sync"); err != nil {
+        log.Panicf("start redis-shake failed[%v]", err)
+    }
 
 	// 3. check full-sync finish
+    log.Info("3. check full-sync finish")
 	type Val struct {
-		Status string `json:"status"`
+		Status string `json:"Status"`
 	}
-	var val Val
+	val := []Val{
+        {},
+    }
 	for {
-		request, err := http.Get(fmt.Sprintf("http://localhost:%d/foo", 9320))
+        time.Sleep(2 * time.Second)
+
+		request, err := http.Get(fmt.Sprintf("http://localhost:%d/metric", 9320))
 		if err != nil {
 			log.Panicf("curl redis-shake failed[%v]", err)
 		}
@@ -96,18 +106,25 @@ func (sc *SubCase) Run() {
 		if err != nil {
 			log.Panicf("parse redis-shake curl request failed[%v]", err)
 		}
-		if err = json.Unmarshal(body, val); err != nil {
+		if err = json.Unmarshal(body, &val); err != nil {
 			log.Panicf("unmarshal redis-shake curl request failed[%v]", err)
 		}
 		request.Body.Close()
 
 		// break until finish full sync
-		if val.Status == "incr" {
+        if len(val) == 0 {
+            log.Panic("invalid restful return length")
+        }
+		if val[0].Status == "incr" {
+            log.Info("check full-sync finish")
 			break
 		}
+
+        log.Info("check full-sync not ready")
 	}
 
 	// 4. start redis-full-check to check the correctness
+    log.Info("4. run full-check")
 	fullCheckConf := map[string]interface{}{
 		"s":            sc.shakeConf["source.address"],
 		"t":            sc.shakeConf["target.address"],
@@ -120,4 +137,5 @@ func (sc *SubCase) Run() {
 	if !equal {
 		log.Panicf("redis-full-check not equal")
 	}
+    log.Info("all finish")
 }

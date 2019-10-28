@@ -2,6 +2,7 @@ package deploy
 
 import (
     "path/filepath"
+    "pkg/libs/log"
     "os"
     "fmt"
     "os/exec"
@@ -17,16 +18,13 @@ const (
     RedisShakeConf         = "redis-shake.conf"
     RedisFullCheck         = "redis-full-check"
     RedisFullCheckDiffFile = "redis-full-check.diff"
+    RedisFullCheckLog      = "redis-full-check.log"
 
     CmdStart = "start"
     CmdStop  = "stop"
 )
 
-func run(cmd *exec.Cmd) error {
-    if err := cmd.Start(); err != nil {
-        return fmt.Errorf("start failed[%v]", err)
-    }
-
+func runWait(cmd *exec.Cmd) error {
     if err := cmd.Wait(); err != nil {
         if exiterr, ok := err.(*exec.ExitError); ok {
             // The program has exited with an exit code != 0
@@ -37,14 +35,30 @@ func run(cmd *exec.Cmd) error {
             // an ExitStatus() method with the same signature.
             if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
                 if retCode := status.ExitStatus(); retCode != 0 {
+                    log.Panicf("run with exit code[%v]", retCode)
                     return fmt.Errorf("run with exit code[%v]", retCode)
                 }
             }
         } else {
+            log.Errorf("wait failed[%s]", err)
             return fmt.Errorf("wait failed[%s]", err)
         }
     }
     return nil
+}
+
+func run(cmd *exec.Cmd, wait bool) error {
+    log.Info("run start")
+    if err := cmd.Start(); err != nil {
+        return fmt.Errorf("start failed[%v]", err)
+    }
+
+    log.Infof("run wait[%v]", wait)
+    if wait == false {
+        // go runWait(cmd)
+        return nil
+    }
+    return runWait(cmd)
 }
 
 /*
@@ -74,7 +88,7 @@ func Deploy(tp string, port int, cmd string, node int) error {
         execCmd = exec.Command(path, portS, cmd, strconv.Itoa(node))
     }
 
-    return run(execCmd)
+    return run(execCmd, true)
 }
 
 // start redis-shake with given configuration, mode means sync/rump/dump/restore/decode
@@ -87,8 +101,9 @@ func StartShake(shakeDir, runDir string, conf map[string]interface{}, mode strin
 
     from := fmt.Sprintf("%s/%s", shakeDir, RedisShake)
     to := fmt.Sprintf("%s/%s", runDir, RedisShake)
+    log.Infof("copy shake from [%v] to [%v]", from, to)
     cpCmd := exec.Command("cp", from, to)
-    if err := run(cpCmd); err != nil {
+    if err := run(cpCmd, true); err != nil {
         return fmt.Errorf("copy file from [%v] to [%v] failed[%v]", from, to, err)
     }
 
@@ -106,9 +121,10 @@ func StartShake(shakeDir, runDir string, conf map[string]interface{}, mode strin
         }
     }
 
+    log.Info("start shake")
     // start redis-shake
-    execCmd := exec.Command(to, fmt.Sprintf("-type=%s", mode), fmt.Sprintf("-conf=%s", shakeConf), "&")
-    return run(execCmd)
+    execCmd := exec.Command("nohup", to, fmt.Sprintf("-type=%s", mode), fmt.Sprintf("-conf=%s", shakeConf))
+    return run(execCmd, false)
 }
 
 func RunFullCheck(runDir string, conf map[string]interface{}) (bool, error) {
@@ -121,13 +137,17 @@ func RunFullCheck(runDir string, conf map[string]interface{}) (bool, error) {
     from := fmt.Sprintf("tools/%s", RedisFullCheck)
     to := fmt.Sprintf("%s/%s", runDir, RedisFullCheck)
     cpCmd := exec.Command("cp", from, to)
-    if err := run(cpCmd); err != nil {
+    if err := run(cpCmd, true); err != nil {
         return false, fmt.Errorf("copy file from [%v] to [%v] failed[%v]", from, to, err)
     }
 
     execCmd := exec.Command(to, fmt.Sprintf("-s=%s", conf["s"]), fmt.Sprintf("-t=%s", conf["t"]),
         fmt.Sprintf("--result=%s/%s", runDir, RedisFullCheckDiffFile),
-        fmt.Sprintf("--comparetimes=%s", conf["comparetimes"]))
+        fmt.Sprintf("--comparetimes=%v", conf["comparetimes"]),
+        fmt.Sprintf("--log=%s", RedisFullCheckLog))
+    if err := run(execCmd, true); err != nil {
+        return false, fmt.Errorf("run redis-full-check failed[%v]", err)
+    }
 
     diffFile := fmt.Sprintf("%s/%s",  runDir, RedisFullCheckDiffFile)
     f, err := os.Stat(diffFile)
@@ -135,6 +155,6 @@ func RunFullCheck(runDir string, conf map[string]interface{}) (bool, error) {
         return false, fmt.Errorf("stat file[%v] failed[%v]", RedisFullCheckDiffFile, err)
     }
 
-    return f.Size() == 0, run(execCmd)
+    return f.Size() == 0, nil
 }
 
