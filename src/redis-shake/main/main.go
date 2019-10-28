@@ -175,7 +175,7 @@ func sanitizeOptions(tp string) error {
 	}
 
 	if conf.Options.Id == "" {
-		return fmt.Errorf("id shoudn't be empty")
+        conf.Options.Id = "redis-shake-default"
 	}
 
 	if conf.Options.NCpu < 0 || conf.Options.NCpu > 1024 {

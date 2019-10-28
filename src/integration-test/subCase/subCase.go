@@ -47,6 +47,7 @@ func GenerateShakeConf(sourcePort, targetPort int, filterKeyBlack, filterKeyWhit
 	}
 
 	mp["target.db"] = targetDB
+    mp["id"] = "integration"
 
 	return mp
 }
@@ -112,7 +113,7 @@ func (sc *SubCase) Run() {
 		"t":            sc.shakeConf["target.address"],
 		"comparetimes": 1,
 	}
-	equal, err := deploy.RunFullCheck(sc.shakeDir, sc.runDir, fullCheckConf)
+	equal, err := deploy.RunFullCheck(sc.runDir, fullCheckConf)
 	if err != nil {
 		log.Panicf("start redis-full-check failed[%v]", err)
 	}

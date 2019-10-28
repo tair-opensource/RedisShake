@@ -14,13 +14,13 @@ fi
 port=$1
 path="standalone-$port"
 curPath=$(cd "$(dirname "$0")"; pwd)
+echo $curPath
 subPath="$curPath/$path"
 
 if [ $2 == "start" ]; then
     # start
     mkdir -p $subPath 
-    cd $subPath
-    ../tools/redis-server --port $port --pidfile $subPath/$port.pid 1>/dev/null 2>&1 &
+    $curPath/../tools/redis-server --port $port --pidfile $subPath/$port.pid --logfile $subPath/$port.log 1>/dev/null 2>&1 &
 else
     # stop
     kill -9 $(cat $subPath/$port.pid)
