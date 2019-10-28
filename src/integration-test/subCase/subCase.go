@@ -139,6 +139,7 @@ func (sc *SubCase) Run() {
 	}
 
 	// 5. stop shake
+    log.Info("5. stop shake")
 	err = deploy.StopShake(sc.shakeConf)
 	if err != nil {
 		log.Errorf("stop shake failed: %v", err)

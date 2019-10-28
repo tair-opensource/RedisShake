@@ -5,6 +5,7 @@ import (
     "pkg/libs/log"
     "os"
     "fmt"
+    "strings"
     "os/exec"
     "syscall"
     "strconv"
@@ -135,9 +136,11 @@ func StopShake(conf map[string]interface{}) error {
 		return fmt.Errorf("open file[%v] failed[%v]", filename, err)
 	}
 
-	pid, err := strconv.Atoi(string(data))
+    dataS := strings.TrimRight(string(data), "\n\r")
+
+	pid, err := strconv.Atoi(dataS)
 	if err != nil {
-		return fmt.Errorf("parse pid[%v] failed[%v]", string(data), pid)
+		return fmt.Errorf("parse pid[%v] failed[%v]", dataS, pid)
 	}
 
 	syscall.Kill(pid, 9)
