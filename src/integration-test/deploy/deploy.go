@@ -8,6 +8,7 @@ import (
     "os/exec"
     "syscall"
     "strconv"
+	"io/ioutil"
 )
 
 const (
@@ -125,6 +126,22 @@ func StartShake(shakeDir, runDir string, conf map[string]interface{}, mode strin
     // start redis-shake
     execCmd := exec.Command("nohup", to, fmt.Sprintf("-type=%s", mode), fmt.Sprintf("-conf=%s", shakeConf))
     return run(execCmd, false)
+}
+
+func StopShake(conf map[string]interface{}) error {
+	filename := fmt.Sprintf("%s.pid", conf["id"])
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("open file[%v] failed[%v]", filename, err)
+	}
+
+	pid, err := strconv.Atoi(string(data))
+	if err != nil {
+		return fmt.Errorf("parse pid[%v] failed[%v]", string(data), pid)
+	}
+
+	syscall.Kill(pid, 9)
+	return nil
 }
 
 func RunFullCheck(runDir string, conf map[string]interface{}) (bool, error) {

@@ -137,5 +137,12 @@ func (sc *SubCase) Run() {
 	if !equal {
 		log.Panicf("redis-full-check not equal")
 	}
+
+	// 5. stop shake
+	err = deploy.StopShake(sc.shakeConf)
+	if err != nil {
+		log.Errorf("stop shake failed: %v", err)
+	}
+
     log.Info("all finish")
 }
