@@ -3,6 +3,7 @@ package tcase
 import (
 	"integration-test/deploy"
 	"fmt"
+    "time"
 	shakeUtils "redis-shake/common"
 	"pkg/libs/log"
 	"integration-test/subCase"
@@ -33,6 +34,9 @@ func (s2s *Standalone2StandaloneCase) Before() error {
 		return fmt.Errorf("deploy source redis failed: %v", err)
 	}
 
+    // wait ready
+    time.Sleep(3 * time.Second)
+
 	return nil
 }
 
@@ -46,6 +50,7 @@ func (s2s *Standalone2StandaloneCase) Run() error {
 
 		sc := subCase.NewSubCase(sourceConn, targetConn, s2s.SourcePort, s2s.TargetPort, nil, nil,
 			nil, nil, "")
+		log.Info("run")
 		sc.Run()
 	}
 
