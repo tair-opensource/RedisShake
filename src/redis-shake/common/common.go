@@ -152,15 +152,15 @@ func CheckVersionChecksum(d []byte) (uint, uint64, error) {
 func GetMetric(input int64) string {
 	switch {
 	case input > PB:
-		return fmt.Sprintf("%.3fPB", float64(input) / PB)
+		return fmt.Sprintf("%.2fPB", float64(input) / PB)
 	case input > TB:
-		return fmt.Sprintf("%.3fTB", float64(input) / TB)
+		return fmt.Sprintf("%.2fTB", float64(input) / TB)
 	case input > GB:
-		return fmt.Sprintf("%.3fGB", float64(input) / GB)
+		return fmt.Sprintf("%.2fGB", float64(input) / GB)
 	case input > MB:
-		return fmt.Sprintf("%.3fMB", float64(input) / MB)
+		return fmt.Sprintf("%.2fMB", float64(input) / MB)
 	case input > KB:
-		return fmt.Sprintf("%.3fKB", float64(input) / KB)
+		return fmt.Sprintf("%.2fKB", float64(input) / KB)
 	default:
 		return fmt.Sprintf("%dB", input)
 	}
