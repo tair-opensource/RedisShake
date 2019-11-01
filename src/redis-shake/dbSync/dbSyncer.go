@@ -69,7 +69,7 @@ func (ds *DbSyncer) GetExtraInfo() map[string]interface{} {
 
 // main
 func (ds *DbSyncer) Sync() {
-	log.Infof("dbSyncer[%02d] starts syncing data from %v to %v with http[%v]",
+	log.Infof("DbSyncer[%2d] starts syncing data from %v to %v with http[%v]",
 		ds.id, ds.source, ds.target, ds.httpProfilePort)
 
 	var sockfile *os.File
@@ -88,7 +88,7 @@ func (ds *DbSyncer) Sync() {
 	}
 	defer input.Close()
 
-	log.Infof("dbSyncer[%02d] rdb file size = %d\n", ds.id, nsize)
+	log.Infof("DbSyncer[%2d] rdb file size = %d\n", ds.id, nsize)
 
 	if sockfile != nil {
 		r, w := pipe.NewFilePipe(int(conf.Options.SockFileSize), sockfile)
