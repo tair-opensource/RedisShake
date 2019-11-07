@@ -167,7 +167,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 		resp := redis.MustDecodeOpt(decoder)
 
 		if sCmd, argv, err = redis.ParseArgs(resp); err != nil {
-			log.PanicErrorf(err, "DbSyncer[%2d] parse command arguments failed", ds.id)
+			log.PanicErrorf(err, "DbSyncer[%2d] parse command arguments failed[%v]", ds.id, err)
 		} else {
 			metric.GetMetric(ds.id).AddPullCmdCount(ds.id, 1)
 
