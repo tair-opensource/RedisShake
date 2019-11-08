@@ -111,8 +111,8 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 				return fmt.Errorf("redis type[%v] address[%v] length[%v] != 2", redisType, address, len(arr))
 			}
 
-			if arr[0] == conf.StandAloneRoleSlave {
-				return fmt.Errorf("redis role should be master")
+			if tp == conf.TypeRump && arr[0] == conf.StandAloneRoleSlave {
+				return fmt.Errorf("redis role should be master when type is [rump]")
 			}
 			if isSource && arr[0] != conf.StandAloneRoleSlave && arr[0] != conf.StandAloneRoleMaster {
 				return fmt.Errorf("source redis role must be master or slave, when enable automatic discovery with '@'")
