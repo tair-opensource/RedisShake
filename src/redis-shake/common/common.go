@@ -213,3 +213,28 @@ func CompareVersion(a, b string, level int) int {
 
 	return 0
 }
+
+// compare two unordered list. return true means equal.
+func CompareUnorderedList(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	if len(a) == 0 {
+		return true
+	}
+
+	setA := map[string]struct{}{}
+
+	for _, x := range a {
+		setA[x] = struct{}{}
+	}
+
+	for _, x := range b {
+		if _, ok := setA[x]; !ok {
+			return false
+		}
+	}
+
+	return true
+}

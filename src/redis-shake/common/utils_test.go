@@ -101,3 +101,27 @@ func TestCompareVersion(t *testing.T) {
 		assert.Equal(t, 2, CompareVersion("2.4", "1.1", 2), "should be equal")
 	}
 }
+
+
+func TestCompareUnorderedList(t *testing.T) {
+	var nr int
+	{
+		fmt.Printf("TestCompareUnorderedList case %d.\n", nr)
+		nr++
+
+		var a, b []string
+		assert.Equal(t, true, CompareUnorderedList(a, b), "should be equal")
+
+		a = []string{"1", "2", "3"}
+		b = []string{"1", "2"}
+		assert.Equal(t, false, CompareUnorderedList(a, b), "should be equal")
+
+		a = []string{"1", "2", "3"}
+		b = []string{"3", "1", "2"}
+		assert.Equal(t, true, CompareUnorderedList(a, b), "should be equal")
+
+		a = []string{"1", "2", "3"}
+		b = []string{"4", "1", "2"}
+		assert.Equal(t, false, CompareUnorderedList(a, b), "should be equal")
+	}
+}
