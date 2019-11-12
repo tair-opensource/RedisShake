@@ -1,3 +1,9 @@
+2019-11-12 Alibaba Cloud.
+	* VERSION: 1.6.21
+	* BUGFIX: update redis-go-cluster to solve the MOVED error when target
+	redis type is cluster and key is unicode encoding. Thanks
+	@shuff1e(sfxu@foxmail.com). see#68.
+	* IMPROVE: rump: filter key in fetching stage instead of writing stage.
 2019-10-18 Alibaba Cloud.
 	* VERSION: 1.6.20
 	* IMPROVE: add progress bar in rump mode. see #174.
