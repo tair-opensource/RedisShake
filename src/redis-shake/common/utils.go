@@ -781,7 +781,8 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 
 	// TODO, need to judge big key
 	if e.Type != rdb.RDBTypeStreamListPacks &&
-		(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {
+			(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {
+		log.Debugf("restore big key[%s] with length[%v] and member count[%v]", e.Key, len(e.Value), e.RealMemberCount)
 		//use command
 		if conf.Options.Rewrite && e.NeedReadLen == 1 {
 			if !conf.Options.Metric {
