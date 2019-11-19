@@ -588,7 +588,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 
 		decoder := redis.NewDecoder(reader)
 
-		log.Infof("dbSyncer[%v] Event:IncrSyncStart\tId:%s\t", ds.id, conf.Options.Id)
+		log.Infof("dbSyncer[%v] FlushEvent:IncrSyncStart\tId:%s\t", ds.id, conf.Options.Id)
 
 		for {
 			ignorecmd := false
@@ -688,8 +688,8 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 				ds.addDelayChan(sendId.Get())
 			}
 
-			if noFlushCount > conf.Options.SenderCount || cachedSize > conf.Options.SenderSize ||
-				len(ds.sendBuf) == 0 { // 5000 ds in a batch
+			if noFlushCount >= conf.Options.SenderCount || cachedSize >= conf.Options.SenderSize ||
+					len(ds.sendBuf) == 0 { // 5000 ds in a batch
 				err := c.Flush()
 				noFlushCount = 0
 				cachedSize = 0
