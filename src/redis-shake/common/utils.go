@@ -41,11 +41,11 @@ func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTim
 		cluster, err := redigoCluster.NewCluster(
 			&redigoCluster.Options{
 				StartNodes:   target,
-				ConnTimeout:  1 * time.Second,
+				ConnTimeout:  10 * time.Second,
 				ReadTimeout:  readTimeout,
 				WriteTimeout: writeTimeout,
 				KeepAlive:    16,
-				AliveTime:    60 * time.Second,
+				AliveTime:    time.Duration(conf.Options.KeepAlive) * time.Second,
 				Password:     passwd,
 			})
 		if err != nil {
