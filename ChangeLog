@@ -1,3 +1,9 @@
+2019-11-28 Alibaba Cloud.
+	* VERSION: 1.6.23
+	* BUGFIX: update redis-go-cluster driver to solve MOVED error in lua
+	script.
+	* BUGFIX: update redis-go-clister driver to remove the error when meets
+	nil bluk string.
 2019-11-25 Alibaba Cloud.
 	* VERSION: 1.6.22
 	* BUGFIX: solve MOVED error when key is unicode encoding which is not
