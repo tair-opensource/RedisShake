@@ -535,7 +535,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 			id := recvId.Get() // receive id
 
 			// print debug log of receive reply
-			log.Debugf("receive reply-id[%v]: [%v], error:[%v]", id, reply, err)
+			log.Debugf("dbSyncer[%v] receive reply-id[%v]: [%v], error:[%v]", ds.id, id, reply, err)
 
 			if conf.Options.Metric == false {
 				continue
@@ -601,7 +601,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 				metric.GetMetric(ds.id).AddPullCmdCount(ds.id, 1)
 
 				// print debug log of send command
-				if conf.Options.LogLevel == utils.LogLevelDebug {
+				if conf.Options.LogLevel == utils.LogLevelDebug || conf.Options.LogLevel == utils.LogLevelAll {
 					strArgv := make([]string, len(argv))
 					for i, ele := range argv {
 						strArgv[i] = *(*string)(unsafe.Pointer(&ele))
