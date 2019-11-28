@@ -30,7 +30,7 @@ Supports `Standalone`, `Cluster`, and some proxies type like `Codis`, `twemproxy
 For `codis` and `twemproxy`, there maybe some constraints, please checkout this [question](https://github.com/alibaba/RedisShake/wiki/FAQ#q-does-redisshake-supports-codis-and-twemproxy).
 
 # Configuration
-Redis-shake has several parameters in the configuration(`conf/redis-shake.conf`) that maybe confusing, if this is your first time using, just configure the `source.address` and `target.address` parameters.
+Redis-shake has several parameters in the configuration(`conf/redis-shake.conf`) that maybe confusing, if this is your first time using, please visit this [tutorial](https://github.com/alibaba/RedisShake/wiki/tutorial-about-how-to-set-up).
 
 # Verification
 ---
