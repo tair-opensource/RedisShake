@@ -81,8 +81,8 @@ var crc16tab = [256]uint16{
 
 func crc16(buf string) uint16 {
 	var crc uint16
-	for _, n := range buf {
-		crc = (crc << uint16(8)) ^ crc16tab[((crc>>uint16(8))^uint16(n))&0x00FF]
+	for i := 0; i < len(buf); i++ {
+		crc = (crc << uint16(8)) ^ crc16tab[((crc>>uint16(8))^uint16(buf[i]))&0x00FF]
 	}
 	return crc
 }

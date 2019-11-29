@@ -1,15 +1,28 @@
 2019-xx Alibaba Cloud.
 	* VERSION: 1.7-unstable
 	* FEATURE: add integration test.
+2019-11-28 Alibaba Cloud.
+	* VERSION: 1.6.23
+	* BUGFIX: update redis-go-cluster driver to solve MOVED error in lua
+	script.
+	* BUGFIX: update redis-go-clister driver to remove the error when meets
+	nil bluk string.
+	* IMPROVE: add keep_alive in cluster connection.
+2019-11-25 Alibaba Cloud.
+	* VERSION: 1.6.22
+	* BUGFIX: solve MOVED error when key is unicode encoding which is not
+	solved completed in v1.6.21.
+	* BUGFIX: update redis-go-cluster to solve the bug of \r\n. see #73 in
+	redis-full-check.
+	* BUGFIX: solve flushcount comparison: "flushcount=4097 > 4096" =>
+	"flushcount=4096 >= 4096".
+	* IMPROVE: add more log in redis-go-cluster.
 2019-11-12 Alibaba Cloud.
 	* VERSION: 1.6.21
 	* BUGFIX: update redis-go-cluster to solve the MOVED error when target
 	redis type is cluster and key is unicode encoding. Thanks
-	@shuff1e(sfxu@foxmail.com). see#68.
-	* IMPROVE: rump: filter key in fetching stage instead of writing stage.
+	@shuff1e(sfxu@foxmail.com). see#68 in RedisFullCheck.
 	* IMPROVE: in rump mode, filter key in fetching stage instead of in writing.
-	* IMRPOVE: judge redis node role when redis type is cluster. And, in rump
-	mode only, accept role master due to redis restriction. see #149.
 2019-10-18 Alibaba Cloud.
 	* VERSION: 1.6.20
 	* IMPROVE: add progress bar in rump mode. see #174.
