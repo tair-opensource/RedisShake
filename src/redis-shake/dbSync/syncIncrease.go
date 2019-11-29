@@ -103,7 +103,7 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 		id := recvId.Get() // receive id
 
 		// print debug log of receive reply
-		log.Debugf("receive reply-id[%v]: [%v], error:[%v]", id, reply, err)
+		log.Debugf("DbSyncer[%2d] receive reply-id[%v]: [%v], error:[%v]", ds.id, id, reply, err)
 
 		if conf.Options.Metric == false {
 			continue
@@ -159,7 +159,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 
 	decoder := redis.NewDecoder(reader)
 
-	log.Infof("DbSyncer[%2d] Event:IncrSyncStart\tId:%s\t", ds.id, conf.Options.Id)
+	log.Infof("DbSyncer[%2d] FlushEvent:IncrSyncStart\tId:%s\t", ds.id, conf.Options.Id)
 
 	for {
 		ignoreCmd := false
@@ -172,7 +172,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 			metric.GetMetric(ds.id).AddPullCmdCount(ds.id, 1)
 
 			// print debug log of send command
-			if conf.Options.LogLevel == utils.LogLevelDebug {
+			if conf.Options.LogLevel == utils.LogLevelDebug || conf.Options.LogLevel == utils.LogLevelAll {
 				strArgv := make([]string, len(argv))
 				for i, ele := range argv {
 					strArgv[i] = *(*string)(unsafe.Pointer(&ele))
@@ -262,8 +262,8 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			ds.addDelayChan(sendId.Get())
 		}
 
-		if noFlushCount > conf.Options.SenderCount || cachedSize > conf.Options.SenderSize ||
-			len(ds.sendBuf) == 0 { // 5000 ds in a batch
+		if noFlushCount >= conf.Options.SenderCount || cachedSize >= conf.Options.SenderSize ||
+				len(ds.sendBuf) == 0 { // 5000 ds in a batch
 			err := c.Flush()
 			noFlushCount = 0
 			cachedSize = 0
