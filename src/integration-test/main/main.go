@@ -8,10 +8,14 @@ import (
 )
 
 func main() {
-	sourcePort := flag.Int("sourcePort", 20001, "source redis port")
-	targetPort := flag.Int("targetPort", 30001, "target redis port")
-
 	log.SetLevel(log.LEVEL_INFO)
+	sourcePort := flag.Int("s", 20001, "source redis port")
+	targetPort := flag.Int("t", 30001, "target redis port")
+    flag.Parse()
+
+	if sourcePort == nil || targetPort == nil {
+		log.Panicf("sourcePort and targetPort should be given")
+	}
 
 	log.Infof("run test starts")
 
