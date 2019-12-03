@@ -103,6 +103,10 @@ func (d *Decoder) decodeType() (respType, error) {
 		if b, err := d.r.ReadByte(); err != nil {
 			return 0, errors.Trace(err)
 		} else if string(b) == "\n" {
+			/*
+			 * Bugfix: see https://github.com/alibaba/RedisShake/issues/204.
+			 * "\n" occurs before and after the +FULLRESYNC response sometimes at the redis version of 3.2.7.
+			 */
 			goto ReadByte
 		} else {
 			return respType(b), nil
