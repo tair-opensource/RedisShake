@@ -99,11 +99,14 @@ func (d *Decoder) decodeResp(depth int) (Resp, error) {
 }
 
 func (d *Decoder) decodeType() (respType, error) {
-	if b, err := d.r.ReadByte(); err != nil {
-		return 0, errors.Trace(err)
-	} else {
-		return respType(b), nil
-	}
+	ReadByte:
+		if b, err := d.r.ReadByte(); err != nil {
+			return 0, errors.Trace(err)
+		} else if string(b) == "\n" {
+			goto ReadByte
+		} else {
+			return respType(b), nil
+		}
 }
 
 func (d *Decoder) decodeText() ([]byte, error) {
