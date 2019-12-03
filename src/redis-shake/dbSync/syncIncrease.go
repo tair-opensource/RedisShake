@@ -147,7 +147,7 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 
 func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	var (
-		lastDb        int32 = 0
+		lastDb        int32 = -1
 		bypass              = false
 		isSelect            = false
 		sCmd          string
@@ -164,7 +164,8 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	for {
 		ignoreCmd := false
 		isSelect = false
-		resp := redis.MustDecodeOpt(decoder)
+		// incrOffset is used to do resume from break-point job
+		resp, incrOffset := redis.MustDecodeOpt(decoder)
 
 		if sCmd, argv, err = redis.ParseArgs(resp); err != nil {
 			log.PanicErrorf(err, "DbSyncer[%2d] parse command arguments failed[%v]", ds.id, err)
@@ -219,14 +220,22 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 				lastDb = int32(conf.Options.TargetDB)
 				//sendBuf <- cmdDetail{Cmd: sCmd, Args: argv, Timestamp: time.Now()}
 				/* send select command. */
-				ds.sendBuf <- cmdDetail{Cmd: "SELECT", Args: [][]byte{[]byte(strconv.FormatInt(int64(lastDb), 10))}}
+				ds.sendBuf <- cmdDetail{
+					Cmd:    "SELECT",
+					Args:   [][]byte{[]byte(strconv.FormatInt(int64(lastDb), 10))},
+					Offset: ds.fullSyncOffset + incrOffset,
+				}
 			} else {
 				ds.stat.incrSyncFilter.Incr()
 				metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
 			}
 			continue
 		}
-		ds.sendBuf <- cmdDetail{Cmd: sCmd, Args: newArgv}
+		ds.sendBuf <- cmdDetail{
+			Cmd:    sCmd,
+			Args:   newArgv,
+			Offset: ds.fullSyncOffset + incrOffset,
+		}
 	}
 
 	log.Panicf("DbSyncer[%2d] something wrong if you see me", ds.id)
@@ -237,6 +246,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 	var cachedSize uint64
 	var sendId atomic2.Int64
 
+	// TODO, insert the data with checkpoint
 	for item := range ds.sendBuf {
 		length := len(item.Cmd)
 		data := make([]interface{}, len(item.Args))

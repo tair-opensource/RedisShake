@@ -52,8 +52,9 @@ type DbSyncer struct {
 	 */
 	delayChannel chan *delayNode
 
-	sendBuf  chan cmdDetail // sending queue
-	WaitFull chan struct{}  // wait full sync done
+	fullSyncOffset uint64         // full sync offset value
+	sendBuf        chan cmdDetail // sending queue
+	WaitFull       chan struct{}  // wait full sync done
 }
 
 func (ds *DbSyncer) GetExtraInfo() map[string]interface{} {

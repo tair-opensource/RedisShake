@@ -21,23 +21,25 @@ var (
 
 type Decoder struct {
 	r *bufio.Reader
+	offset uint64 // store the reading offset in incremental stage
 }
 
 func NewDecoder(r *bufio.Reader) *Decoder {
-	return &Decoder{r: r}
+	return &Decoder{r: r, offset: 0}
 }
 
 func Decode(r *bufio.Reader) (Resp, error) {
-	d := &Decoder{r}
+	d := &Decoder{r, 0}
 	return d.decodeResp(0)
 }
 
-func MustDecodeOpt(d *Decoder) Resp {
+// return the response and current reading offset
+func MustDecodeOpt(d *Decoder) (Resp, uint64) {
 	resp, err := d.decodeResp(0)
 	if err != nil {
 		log.PanicError(err, "decode redis resp failed")
 	}
-	return resp
+	return resp, d.offset
 }
 
 func MustDecode(r *bufio.Reader) Resp {
@@ -66,6 +68,7 @@ func (d *Decoder) decodeResp(depth int) (Resp, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	switch t {
 	case typeString:
 		resp := &String{}
@@ -99,6 +102,7 @@ func (d *Decoder) decodeResp(depth int) (Resp, error) {
 }
 
 func (d *Decoder) decodeType() (respType, error) {
+	d.offset++
 	if b, err := d.r.ReadByte(); err != nil {
 		return 0, errors.Trace(err)
 	} else {
@@ -111,6 +115,8 @@ func (d *Decoder) decodeText() ([]byte, error) {
 	if err != nil {
 		return make([]byte, 0, 0), errors.Trace(err)
 	}
+	d.offset += uint64(len(b))
+
 	if n := len(b) - 2; n < 0 || b[n] != '\r' {
 		return make([]byte, 0, 0), errors.Trace(ErrBadRespCRLFEnd)
 	} else {
@@ -124,6 +130,8 @@ func (d *Decoder) decodeInt() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	// offset has been added in the 'decodeText', no need to re-calculate
+
 	if n, err := strconv.ParseInt(string(b), 10, 64); err != nil {
 		return 0, errors.Trace(err)
 	} else {
@@ -136,15 +144,20 @@ func (d *Decoder) decodeBulkBytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	// offset has been added in the 'decodeInt', no need to re-calculate
+
 	if n < -1 {
 		return nil, errors.Trace(ErrBadRespBytesLen)
 	} else if n == -1 {
 		return nil, nil
 	}
+
 	b := make([]byte, n+2)
 	if _, err := io.ReadFull(d.r, b); err != nil {
 		return nil, errors.Trace(err)
 	}
+	d.offset += uint64(len(b))
+
 	if b[n] != '\r' || b[n+1] != '\n' {
 		return nil, errors.Trace(ErrBadRespCRLFEnd)
 	}
@@ -156,16 +169,20 @@ func (d *Decoder) decodeArray(depth int) ([]Resp, error) {
 	if err != nil {
 		return nil, err
 	}
+	// offset has been added in the 'decodeInt', no need to re-calculate
+
 	if n < -1 {
 		return nil, errors.Trace(ErrBadRespArrayLen)
 	} else if n == -1 {
 		return nil, nil
 	}
+
 	a := make([]Resp, n)
 	for i := 0; i < len(a); i++ {
 		if a[i], err = d.decodeResp(depth + 1); err != nil {
 			return nil, err
 		}
+		// offset has been added in the 'decodeResp', no need to re-calculate
 	}
 	return a, nil
 }
@@ -175,6 +192,8 @@ func (d *Decoder) decodeSingleLineBulkBytesArray() (Resp, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	d.offset += uint64(len(b))
+
 	if n := len(b) - 2; n < 0 || b[n] != '\r' {
 		return nil, errors.Trace(ErrBadRespCRLFEnd)
 	} else {
