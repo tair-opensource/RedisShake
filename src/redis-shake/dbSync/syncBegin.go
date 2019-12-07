@@ -48,7 +48,7 @@ func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool
 	// send psync command and decode the result
 	runid, offset, wait := utils.SendPSyncFullsync(br, bw)
 	ds.stat.targetOffset.Set(offset)
-	ds.fullSyncOffset = offset // store the full sync offset
+	ds.fullSyncOffset = uint64(offset) // store the full sync offset
 	log.Infof("DbSyncer[%2d] psync runid = %s offset = %d, fullsync", ds.id, runid, offset)
 
 	// get rdb file size

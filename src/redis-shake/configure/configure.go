@@ -49,6 +49,7 @@ type Configuration struct {
 	ScanSpecialCloud       string   `config:"scan.special_cloud"`
 	ScanKeyFile            string   `config:"scan.key_file"`
 	Qps                    int      `config:"qps"`
+	ResumeFromBreakPoint   bool     `config:"resume_from_break_point"`
 
 	/*---------------------------------------------------------*/
 	// inner variables
