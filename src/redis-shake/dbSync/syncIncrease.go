@@ -222,7 +222,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 				/* send select command. */
 				ds.sendBuf <- cmdDetail{
 					Cmd:    "SELECT",
-					Args:   [][]byte{[]byte(strconv.FormatInt(int64(lastDb), 10))},
+					Args:   []interface{}{[]byte(strconv.FormatInt(int64(lastDb), 10))},
 					Offset: ds.fullSyncOffset + incrOffset,
 				}
 			} else {
@@ -231,9 +231,14 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 			}
 			continue
 		}
+
+		data := make([]interface{}, 0, len(newArgv))
+		for _, item := range newArgv {
+			data = append(data, item)
+		}
 		ds.sendBuf <- cmdDetail{
 			Cmd:    sCmd,
-			Args:   newArgv,
+			Args:   data,
 			Offset: ds.fullSyncOffset + incrOffset,
 		}
 	}
@@ -242,25 +247,24 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 }
 
 func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
-	var noFlushCount uint
+	var cachedCount uint
 	var cachedSize uint64
 	var sendId atomic2.Int64
+	cachedTunnel := make([]cmdDetail, 0, conf.Options.SenderCount + 1)
+	checkpointBegin := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffsetBegin)
+	checkpointEnd := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffsetEnd)
 
-	// TODO, insert the data with checkpoint
 	for item := range ds.sendBuf {
 		length := len(item.Cmd)
-		data := make([]interface{}, len(item.Args))
 		for i := range item.Args {
-			data[i] = item.Args[i]
-			length += len(item.Args[i])
+			length += len(item.Args[i].([]byte))
 		}
-		err := c.Send(item.Cmd, data...)
-		if err != nil {
-			log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-				ds.id, conf.Options.Id, err.Error())
-		}
-		noFlushCount += 1
 
+		cachedTunnel = append(cachedTunnel, item)
+		cachedCount++
+		cachedSize += uint64(length)
+
+		// update metric
 		ds.stat.wCommands.Incr()
 		ds.stat.wBytes.Add(int64(length))
 		metric.GetMetric(ds.id).AddPushCmdCount(ds.id, 1)
@@ -272,15 +276,49 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			ds.addDelayChan(sendId.Get())
 		}
 
-		if noFlushCount >= conf.Options.SenderCount || cachedSize >= conf.Options.SenderSize ||
-				len(ds.sendBuf) == 0 { // 5000 ds in a batch
-			err := c.Flush()
-			noFlushCount = 0
-			cachedSize = 0
-			if utils.CheckHandleNetError(err) {
-				log.Panicf("DbSyncer[%2d] Event:NetErrorWhileFlush\tId:%s\tError:%s\t",
+		// flush cache
+		if cachedCount >= conf.Options.SenderCount || cachedSize >= conf.Options.SenderSize ||
+				(len(ds.sendBuf) == 0 && len(cachedTunnel) > 0) {
+			offset := cachedTunnel[len(checkpointBegin) - 1].Offset
+			// enable resume from break point
+			if conf.Options.ResumeFromBreakPoint {
+				if err := c.Send("multi"); err != nil {
+					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+						ds.id, conf.Options.Id, err.Error())
+				}
+				if err := c.Send("hset", utils.CheckpointKey, checkpointBegin, offset); err != nil {
+					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+						ds.id, conf.Options.Id, err.Error())
+				}
+			}
+
+			for _, cacheItem := range cachedTunnel {
+				if err := c.Send(cacheItem.Cmd, cacheItem.Args...); err != nil {
+					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+						ds.id, conf.Options.Id, err.Error())
+				}
+			}
+
+			if conf.Options.ResumeFromBreakPoint {
+				if err := c.Send("hset", utils.CheckpointKey, checkpointEnd, offset); err != nil {
+					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+						ds.id, conf.Options.Id, err.Error())
+				}
+				if err := c.Send("exec"); err != nil {
+					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+						ds.id, conf.Options.Id, err.Error())
+				}
+			}
+
+			if err := c.Flush(); err != nil {
+				log.Panicf("DbSyncer[%2d] Event:FlushFail\tId:%s\tError:%s\t",
 					ds.id, conf.Options.Id, err.Error())
 			}
+
+			// clear
+			cachedTunnel = cachedTunnel[:0]
+			cachedCount = 0
+			cachedSize = 0
 		}
 	}
 

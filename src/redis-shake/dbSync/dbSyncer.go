@@ -73,6 +73,9 @@ func (ds *DbSyncer) Sync() {
 	log.Infof("DbSyncer[%2d] starts syncing data from %v to %v with http[%v]",
 		ds.id, ds.source, ds.target, ds.httpProfilePort)
 
+	// checkpoint reload if has
+
+
 	var sockfile *os.File
 	if len(conf.Options.SockFileName) != 0 {
 		sockfile = utils.OpenReadWriteFile(conf.Options.SockFileName)

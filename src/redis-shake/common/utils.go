@@ -30,13 +30,13 @@ import (
 	redigoCluster "github.com/vinllen/redis-go-cluster"
 )
 
-func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool, tlsEnable bool) redigo.Conn {
-	return OpenRedisConnWithTimeout(target, auth_type, passwd, 0, 0, isCluster, tlsEnable)
+func OpenRedisConn(target []string, authType, passwd string, isCluster bool, tlsEnable bool) redigo.Conn {
+	return OpenRedisConnWithTimeout(target, authType, passwd, 0, 0, isCluster, tlsEnable)
 }
 
-func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTimeout, writeTimeout time.Duration,
+func OpenRedisConnWithTimeout(target []string, authType, passwd string, readTimeout, writeTimeout time.Duration,
 	isCluster bool, tlsEnable bool) redigo.Conn {
-	// return redigo.NewConn(OpenNetConn(target, auth_type, passwd), readTimeout, writeTimeout)
+	// return redigo.NewConn(OpenNetConn(target, authType, passwd), readTimeout, writeTimeout)
 	if isCluster {
 		cluster, err := redigoCluster.NewCluster(
 			&redigoCluster.Options{
@@ -55,11 +55,11 @@ func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTim
 		return NewClusterConn(cluster, 4096)
 	} else {
 		// tls only support single connection currently
-		return redigo.NewConn(OpenNetConn(target[0], auth_type, passwd, tlsEnable), readTimeout, writeTimeout)
+		return redigo.NewConn(OpenNetConn(target[0], authType, passwd, tlsEnable), readTimeout, writeTimeout)
 	}
 }
 
-func OpenNetConn(target, auth_type, passwd string, tlsEnable bool) net.Conn {
+func OpenNetConn(target, authType, passwd string, tlsEnable bool) net.Conn {
 	d := &net.Dialer{
 		KeepAlive: time.Duration(conf.Options.KeepAlive) * time.Second,
 	}
@@ -74,13 +74,13 @@ func OpenNetConn(target, auth_type, passwd string, tlsEnable bool) net.Conn {
 		log.PanicErrorf(err, "cannot connect to '%s'", target)
 	}
 
-	// log.Infof("try to auth address[%v] with type[%v]", target, auth_type)
-	AuthPassword(c, auth_type, passwd)
+	// log.Infof("try to auth address[%v] with type[%v]", target, authType)
+	AuthPassword(c, authType, passwd)
 	// log.Info("auth OK!")
 	return c
 }
 
-func OpenNetConnSoft(target, auth_type, passwd string, tlsEnable bool) net.Conn {
+func OpenNetConnSoft(target, authType, passwd string, tlsEnable bool) net.Conn {
 	var c net.Conn
 	var err error
 	if tlsEnable {
@@ -91,7 +91,7 @@ func OpenNetConnSoft(target, auth_type, passwd string, tlsEnable bool) net.Conn 
 	if err != nil {
 		return nil
 	}
-	AuthPassword(c, auth_type, passwd)
+	AuthPassword(c, authType, passwd)
 	return c
 }
 
@@ -138,13 +138,13 @@ func SendPSyncListeningPort(c net.Conn, port int) {
 	}
 }
 
-func AuthPassword(c net.Conn, auth_type, passwd string) {
+func AuthPassword(c net.Conn, authType, passwd string) {
 	if passwd == "" {
-		log.Infof("input password is empty, skip auth address[%v] with type[%v].", c.RemoteAddr(), auth_type)
+		log.Infof("input password is empty, skip auth address[%v] with type[%v].", c.RemoteAddr(), authType)
 		return
 	}
 
-	_, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand(auth_type, passwd)))
+	_, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand(authType, passwd)))
 	if err != nil {
 		log.PanicError(errors.Trace(err), "write auth command failed")
 	}
@@ -158,8 +158,8 @@ func AuthPassword(c net.Conn, auth_type, passwd string) {
 	}
 }
 
-func OpenSyncConn(target string, auth_type, passwd string, tlsEnable bool) (net.Conn, <-chan int64) {
-	c := OpenNetConn(target, auth_type, passwd, tlsEnable)
+func OpenSyncConn(target string, authType, passwd string, tlsEnable bool) (net.Conn, <-chan int64) {
+	c := OpenNetConn(target, authType, passwd, tlsEnable)
 	if _, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand("sync"))); err != nil {
 		log.PanicError(errors.Trace(err), "write sync command failed")
 	}
@@ -216,7 +216,7 @@ func SendPSyncFullsync(br *bufio.Reader, bw *bufio.Writer) (string, int64, <-cha
 	}
 	xx := strings.Split(string(x), " ")
 	if len(xx) < 3 || strings.ToLower(xx[0]) != "fullresync" {
-		log.Panicf("invalid psync response = '%s', should be fullsync", x)
+		log.Panicf("invalid psync response = '%s', should be fullresync", x)
 	}
 	v, err := strconv.ParseInt(xx[2], 10, 64)
 	if err != nil {

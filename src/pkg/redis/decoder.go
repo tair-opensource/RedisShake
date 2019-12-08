@@ -21,7 +21,7 @@ var (
 
 type Decoder struct {
 	r *bufio.Reader
-	offset uint64 // store the reading offset in incremental stage
+	offset int64 // store the reading offset in incremental stage
 }
 
 func NewDecoder(r *bufio.Reader) *Decoder {
@@ -34,7 +34,7 @@ func Decode(r *bufio.Reader) (Resp, error) {
 }
 
 // return the response and current reading offset
-func MustDecodeOpt(d *Decoder) (Resp, uint64) {
+func MustDecodeOpt(d *Decoder) (Resp, int64) {
 	resp, err := d.decodeResp(0)
 	if err != nil {
 		log.PanicError(err, "decode redis resp failed")
@@ -115,7 +115,7 @@ func (d *Decoder) decodeText() ([]byte, error) {
 	if err != nil {
 		return make([]byte, 0, 0), errors.Trace(err)
 	}
-	d.offset += uint64(len(b))
+	d.offset += int64(len(b))
 
 	if n := len(b) - 2; n < 0 || b[n] != '\r' {
 		return make([]byte, 0, 0), errors.Trace(ErrBadRespCRLFEnd)
@@ -156,7 +156,7 @@ func (d *Decoder) decodeBulkBytes() ([]byte, error) {
 	if _, err := io.ReadFull(d.r, b); err != nil {
 		return nil, errors.Trace(err)
 	}
-	d.offset += uint64(len(b))
+	d.offset += int64(len(b))
 
 	if b[n] != '\r' || b[n+1] != '\n' {
 		return nil, errors.Trace(ErrBadRespCRLFEnd)
@@ -192,7 +192,7 @@ func (d *Decoder) decodeSingleLineBulkBytesArray() (Resp, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	d.offset += uint64(len(b))
+	d.offset += int64(len(b))
 
 	if n := len(b) - 2; n < 0 || b[n] != '\r' {
 		return nil, errors.Trace(ErrBadRespCRLFEnd)

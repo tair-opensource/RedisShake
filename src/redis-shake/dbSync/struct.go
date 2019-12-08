@@ -14,14 +14,14 @@ type delayNode struct {
 
 type cmdDetail struct {
 	Cmd    string
-	Args   [][]byte
+	Args   []interface{}
 	Offset uint64
 }
 
 func (c *cmdDetail) String() string {
 	str := c.Cmd
 	for _, s := range c.Args {
-		str += " " + string(s)
+		str += " " + string(s.([]byte))
 	}
 	return str
 }

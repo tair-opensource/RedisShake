@@ -36,6 +36,11 @@ const (
 	CodisCluster   = "codis_cluster"
 
 	CoidsErrMsg = "ERR backend server 'server' not found"
+
+	CheckpointKey         = "redis-shake-checkpoint"
+	CheckpointOffsetBegin = "offset-begin"
+	CheckpointOffsetEnd   = "offset-end"
+	CheckpointRunId       = "runid"
 )
 
 var (
