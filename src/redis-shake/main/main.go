@@ -469,6 +469,13 @@ func sanitizeOptions(tp string) error {
 				conf.Options.TargetVersion, conf.Options.SourceVersion)
 			conf.Options.BigKeyThreshold = 1
 		}
+
+		// set "psync = true" if the source version is >= 2.8
+		if tp == conf.TypeSync {
+			if ret := utils.CompareVersion(conf.Options.SourceVersion, "2.8", 2); ret != 2 {
+				conf.Options.Psync = true
+			}
+		}
 	}
 
 	if tp == conf.TypeRump {

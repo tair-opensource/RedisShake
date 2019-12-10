@@ -22,101 +22,115 @@ func (ds *DbSyncer) sendSyncCmd(master, authType, passwd string, tlsEnable bool)
 		select {
 		case nsize := <-wait:
 			if nsize == 0 {
-				log.Infof("DbSyncer[%2d] + waiting source rdb", ds.id)
+				log.Infof("DbSyncer[%d] + waiting source rdb", ds.id)
 			} else {
 				return c, nsize
 			}
 		case <-time.After(time.Second):
-			log.Infof("DbSyncer[%2d] - waiting source rdb", ds.id)
+			log.Infof("DbSyncer[%d] - waiting source rdb", ds.id)
 		}
 	}
 }
 
-func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool) (pipe.Reader, int64) {
+func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool, runId string,
+		prevOffset int64) (pipe.Reader, int64, bool) {
 	c := utils.OpenNetConn(master, authType, passwd, tlsEnable)
-	log.Infof("DbSyncer[%2d] psync connect '%v' with auth type[%v] OK!", ds.id, master, authType)
+	log.Infof("DbSyncer[%d] psync connect '%v' with auth type[%v] OK!", ds.id, master, authType)
 
 	utils.SendPSyncListeningPort(c, conf.Options.HttpProfile)
-	log.Infof("DbSyncer[%2d] psync send listening port[%v] OK!", ds.id, conf.Options.HttpProfile)
+	log.Infof("DbSyncer[%d] psync send listening port[%v] OK!", ds.id, conf.Options.HttpProfile)
 
 	// reader buffer bind to client
 	br := bufio.NewReaderSize(c, utils.ReaderBufferSize)
 	// writer buffer bind to client
 	bw := bufio.NewWriterSize(c, utils.WriterBufferSize)
 
-	log.Infof("DbSyncer[%2d] try to send 'psync' command", ds.id)
+	log.Infof("DbSyncer[%d] try to send 'psync' command", ds.id)
 	// send psync command and decode the result
-	runid, offset, wait := utils.SendPSyncFullsync(br, bw)
+	runid, offset, wait := utils.SendPSyncContinue(br, bw, runId, prevOffset)
 	ds.stat.targetOffset.Set(offset)
-	ds.fullSyncOffset = uint64(offset) // store the full sync offset
-	log.Infof("DbSyncer[%2d] psync runid = %s offset = %d, fullsync", ds.id, runid, offset)
+	ds.fullSyncOffset = offset // store the full sync offset
+	piper, pipew := pipe.NewSize(utils.ReaderBufferSize)
+	if wait == nil {
+		// continue
+		log.Infof("DbSyncer[%d] psync runid = %s offset = %d, psync continue", ds.id, runId, offset)
+		go ds.runIncrementalSync(c, br, bw, 0, runid, offset, master, authType, passwd, tlsEnable, pipew, true)
+		return piper, 0, false
+	} else {
+		// fullresync
+		log.Infof("DbSyncer[%d] psync runid = %s offset = %d, fullsync", ds.id, runid, offset)
 
-	// get rdb file size
-	var nsize int64
-	for nsize == 0 {
-		select {
-		case nsize = <-wait:
-			if nsize == 0 {
-				log.Infof("DbSyncer[%2d] +", ds.id)
+		// get rdb file size, wait source rdb dump successfully.
+		var nsize int64
+		for nsize == 0 {
+			select {
+			case nsize = <-wait:
+				if nsize == 0 {
+					log.Infof("DbSyncer[%d] +", ds.id)
+				}
+			case <-time.After(time.Second):
+				log.Infof("DbSyncer[%d] -", ds.id)
 			}
-		case <-time.After(time.Second):
-			log.Infof("DbSyncer[%2d] -", ds.id)
+		}
+
+		go ds.runIncrementalSync(c, br, bw, int(nsize), runid, offset, master, authType, passwd, tlsEnable, pipew, true)
+		return piper, nsize, true
+	}
+}
+
+func (ds *DbSyncer) runIncrementalSync(c net.Conn, br *bufio.Reader, bw *bufio.Writer, rdbSize int, runId string,
+		offset int64, master, authType, passwd string, tlsEnable bool, pipew pipe.Writer,
+		isFullSync bool) {
+	// write -> pipew -> piper -> read
+	defer pipew.Close()
+	if isFullSync {
+		p := make([]byte, 8192)
+		// read rdb in for loop
+		for ; rdbSize != 0; {
+			// br -> pipew
+			rdbSize -= utils.Iocopy(br, pipew, p, rdbSize)
 		}
 	}
 
-	// write -> pipew -> piper -> read
-	piper, pipew := pipe.NewSize(utils.ReaderBufferSize)
-
-	go func() {
-		defer pipew.Close()
-		p := make([]byte, 8192)
-		// read rdb in for loop
-		for rdbsize := int(nsize); rdbsize != 0; {
-			// br -> pipew
-			rdbsize -= utils.Iocopy(br, pipew, p, rdbsize)
+	for {
+		/*
+		 * read from br(source redis) and write into pipew.
+		 * Generally speaking, this function is forever run.
+		 */
+		n, err := ds.pSyncPipeCopy(c, br, bw, offset, pipew)
+		if err != nil {
+			log.PanicErrorf(err, "DbSyncer[%d] psync runid = %s, offset = %d, pipe is broken",
+				ds.id, runId, offset)
 		}
+		// the 'c' is closed every loop
 
+		offset += n
+		ds.stat.targetOffset.Set(offset)
+
+		// reopen 'c' every time
 		for {
-			/*
-			 * read from br(source redis) and write into pipew.
-			 * Generally speaking, this function is forever run.
-			 */
-			n, err := ds.pSyncPipeCopy(c, br, bw, offset, pipew)
-			if err != nil {
-				log.PanicErrorf(err, "DbSyncer[%2d] psync runid = %s, offset = %d, pipe is broken",
-					ds.id, runid, offset)
+			// ds.SyncStat.SetStatus("reopen")
+			base.Status = "reopen"
+			time.Sleep(time.Second)
+			c = utils.OpenNetConnSoft(master, authType, passwd, tlsEnable)
+			if c != nil {
+				// log.PurePrintf("%s\n", NewLogItem("SourceConnReopenSuccess", "INFO", LogDetail{Info: strconv.FormatInt(offset, 10)}))
+				log.Infof("DbSyncer[%d] Event:SourceConnReopenSuccess\tId: %s\toffset = %d",
+					ds.id, conf.Options.Id, offset)
+				// ds.SyncStat.SetStatus("incr")
+				base.Status = "incr"
+				break
+			} else {
+				// log.PurePrintf("%s\n", NewLogItem("SourceConnReopenFail", "WARN", NewErrorLogDetail("", "")))
+				log.Errorf("DbSyncer[%d] Event:SourceConnReopenFail\tId: %s", ds.id, conf.Options.Id)
 			}
-			// the 'c' is closed every loop
-
-			offset += n
-			ds.stat.targetOffset.Set(offset)
-
-			// reopen 'c' every time
-			for {
-				// ds.SyncStat.SetStatus("reopen")
-				base.Status = "reopen"
-				time.Sleep(time.Second)
-				c = utils.OpenNetConnSoft(master, authType, passwd, tlsEnable)
-				if c != nil {
-					// log.PurePrintf("%s\n", NewLogItem("SourceConnReopenSuccess", "INFO", LogDetail{Info: strconv.FormatInt(offset, 10)}))
-					log.Infof("DbSyncer[%2d] Event:SourceConnReopenSuccess\tId: %s\toffset = %d",
-						ds.id, conf.Options.Id, offset)
-					// ds.SyncStat.SetStatus("incr")
-					base.Status = "incr"
-					break
-				} else {
-					// log.PurePrintf("%s\n", NewLogItem("SourceConnReopenFail", "WARN", NewErrorLogDetail("", "")))
-					log.Errorf("DbSyncer[%2d] Event:SourceConnReopenFail\tId: %s", ds.id, conf.Options.Id)
-				}
-			}
-			utils.AuthPassword(c, authType, passwd)
-			utils.SendPSyncListeningPort(c, conf.Options.HttpProfile)
-			br = bufio.NewReaderSize(c, utils.ReaderBufferSize)
-			bw = bufio.NewWriterSize(c, utils.WriterBufferSize)
-			utils.SendPSyncContinue(br, bw, runid, offset)
 		}
-	}()
-	return piper, nsize
+		utils.AuthPassword(c, authType, passwd)
+		utils.SendPSyncListeningPort(c, conf.Options.HttpProfile)
+		br = bufio.NewReaderSize(c, utils.ReaderBufferSize)
+		bw = bufio.NewWriterSize(c, utils.WriterBufferSize)
+		utils.SendPSyncContinue(br, bw, runId, offset)
+	}
 }
 
 func (ds *DbSyncer) pSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer, offset int64, copyto io.Writer) (int64, error) {

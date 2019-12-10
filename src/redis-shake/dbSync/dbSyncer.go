@@ -2,16 +2,15 @@ package dbSync
 
 import (
 	"redis-shake/metric"
-	"os"
 	"redis-shake/common"
 	"redis-shake/base"
 	"io"
 	"pkg/libs/log"
-	"pkg/libs/io/pipe"
 	"redis-shake/heartbeat"
 	"bufio"
 
 	"redis-shake/configure"
+	"redis-shake/checkpoint"
 )
 
 // one sync link corresponding to one DbSyncer
@@ -52,7 +51,7 @@ type DbSyncer struct {
 	 */
 	delayChannel chan *delayNode
 
-	fullSyncOffset uint64         // full sync offset value
+	fullSyncOffset int64         // full sync offset value
 	sendBuf        chan cmdDetail // sending queue
 	WaitFull       chan struct{}  // wait full sync done
 }
@@ -70,42 +69,32 @@ func (ds *DbSyncer) GetExtraInfo() map[string]interface{} {
 
 // main
 func (ds *DbSyncer) Sync() {
-	log.Infof("DbSyncer[%2d] starts syncing data from %v to %v with http[%v]",
+	log.Infof("DbSyncer[%d] starts syncing data from %v to %v with http[%v]",
 		ds.id, ds.source, ds.target, ds.httpProfilePort)
 
 	// checkpoint reload if has
-
-
-	var sockfile *os.File
-	if len(conf.Options.SockFileName) != 0 {
-		sockfile = utils.OpenReadWriteFile(conf.Options.SockFileName)
-		defer sockfile.Close()
+	runId, offset, err := checkpoint.LoadCheckpoint(ds.source, ds.target, conf.Options.TargetAuthType,
+		ds.targetPassword, conf.Options.TargetType == conf.RedisTypeCluster, conf.Options.SourceTLSEnable)
+	if err != nil {
+		log.Panicf("DbSyncer[%d] load checkpoint from %v failed[%v]", ds.id, ds.target, err)
+		return
 	}
 
 	base.Status = "waitfull"
 	var input io.ReadCloser
 	var nsize int64
+	var isFullSync bool
 	if conf.Options.Psync {
-		input, nsize = ds.sendPSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword, conf.Options.SourceTLSEnable)
+		input, nsize, isFullSync = ds.sendPSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
+			conf.Options.SourceTLSEnable, runId, offset)
 	} else {
-		input, nsize = ds.sendSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword, conf.Options.SourceTLSEnable)
+		// sync
+		input, nsize = ds.sendSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
+			conf.Options.SourceTLSEnable)
 	}
 	defer input.Close()
 
-	log.Infof("DbSyncer[%2d] rdb file size = %d\n", ds.id, nsize)
-
-	if sockfile != nil {
-		r, w := pipe.NewFilePipe(int(conf.Options.SockFileSize), sockfile)
-		defer r.Close()
-		go func(r io.Reader) {
-			defer w.Close()
-			p := make([]byte, utils.ReaderBufferSize)
-			for {
-				utils.Iocopy(r, w, p, len(p))
-			}
-		}(input)
-		input = r
-	}
+	log.Infof("DbSyncer[%d] rdb file size = %d\n", ds.id, nsize)
 
 	// start heartbeat
 	if len(conf.Options.HeartbeatUrl) > 0 {
@@ -118,9 +107,11 @@ func (ds *DbSyncer) Sync() {
 
 	reader := bufio.NewReaderSize(input, utils.ReaderBufferSize)
 
-	// sync rdb
-	base.Status = "full"
-	ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize, conf.Options.TargetTLSEnable)
+	if isFullSync {
+		// sync rdb
+		base.Status = "full"
+		ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize, conf.Options.TargetTLSEnable)
+	}
 
 	// sync increment
 	base.Status = "incr"

@@ -2,8 +2,6 @@ package checkpoint
 
 import (
 	"redis-shake/common"
-	"redis-shake/configure"
-
 	redigo "github.com/garyburd/redigo/redis"
 	"fmt"
 	"strconv"
@@ -11,7 +9,7 @@ import (
 	"pkg/libs/log"
 )
 
-func LoadCheckpoint(sourceAddr string, target []string, authType, passwd string, isCluster bool, tlsEnable bool) (string, uint64, error) {
+func LoadCheckpoint(sourceAddr string, target []string, authType, passwd string, isCluster bool, tlsEnable bool) (string, int64, error) {
 	c := utils.OpenRedisConn(target, authType, passwd, isCluster, tlsEnable)
 
 	// fetch logical db list
@@ -27,17 +25,40 @@ func LoadCheckpoint(sourceAddr string, target []string, authType, passwd string,
 		return "", 0, err
 	}
 
+	var newestOffsetBeg int64 = -1
+	var newestOffsetEnd int64 = -1
+	var recRunId string
+	var recDb int
 	for db := range mp {
 		log.Infof("load checkpoint check db[%v]", db)
-		runId, offsetBegin, offsetEnd, err := fetchCheckpoint(sourceAddr, c, db)
+		runId, offsetBegin, offsetEnd, err := fetchCheckpoint(sourceAddr, c, int(db))
 		if err != nil {
-			return "", -1, err
+			return "", 0, err
+		}
+
+		if offsetBegin > newestOffsetBeg {
+			newestOffsetBeg = offsetBegin
+			newestOffsetEnd = offsetEnd
+			recRunId = runId
+			recDb = int(db)
 		}
 
 		if offsetBegin != offsetEnd {
-			log.Warnf("offsetBegin[%v] != offsetEnd[%v]", offsetBegin, offsetEnd)
+			log.Warnf("db[%v] offsetBegin[%v] != offsetEnd[%v]", db, offsetBegin, offsetEnd)
 			continue
 		}
+	}
+
+	if newestOffsetBeg != newestOffsetEnd {
+		log.Warnf("offset check failed, need full sync")
+		if err := ClearCheckpoint(c, -1, mp, sourceAddr); err != nil {
+			log.Warnf("clear old checkpoint failed[%v]", err)
+		}
+		return "?", -1, nil
+	} else {
+		ClearCheckpoint(c, recDb, mp, sourceAddr)
+		log.Warnf("clear old checkpoint failed[%v]", err)
+		return recRunId, newestOffsetBeg, nil
 	}
 }
 
@@ -45,11 +66,11 @@ func LoadCheckpoint(sourceAddr string, target []string, authType, passwd string,
  * fetch checkpoint from give address
  * @return:
  *     string: runid
- *     int64: offset-begin
+ *     int64: offset-beginint
  *     int64: offset-end
  *     error
  */
-func fetchCheckpoint(sourceAddr string, c redigo.Conn, db string) (string, int64, int64, error) {
+func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int) (string, int64, int64, error) {
 	_, err := c.Do("select", db)
 	if err != nil {
 		return "", -1, -1, fmt.Errorf("fetch checkpoint do select db[%v] failed[%v]", db, err)
@@ -69,7 +90,7 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db string) (string, int64
 	if reply, err := c.Do("hgetall", utils.CheckpointKey); err != nil {
 		return "", -1, -1, fmt.Errorf("fetch checkpoint do hgetall failed[%v]", err)
 	} else {
-		runId := ""
+		runId := "?"
 		var offsetBegin int64 = -1
 		var offsetEnd int64 = -1
 		replyList := reply.([]interface{})
@@ -105,6 +126,25 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db string) (string, int64
 	}
 }
 
-func ClearCheckpoint(target []string, authType, passwd string, isCluster bool, tlsEnable bool) {
+func ClearCheckpoint(c redigo.Conn, exceptDb int, dbKeyMap map[int32]int64, sourceAddr string) error {
+	runId := fmt.Sprintf("%s-%s", sourceAddr, utils.CheckpointRunId)
+	offsetBeg := fmt.Sprintf("%s-%s", sourceAddr, utils.CheckpointOffsetBegin)
+	offsetEnd := fmt.Sprintf("%s-%s", sourceAddr, utils.CheckpointOffsetEnd)
 
+	for db := range dbKeyMap {
+		if int(db) == exceptDb {
+			continue
+		}
+
+		if _, err := c.Do("hdel", runId); err != nil {
+			return err
+		}
+		if _, err := c.Do("hdel", offsetBeg); err != nil {
+			return err
+		}
+		if _, err := c.Do("hdel", offsetEnd); err != nil {
+			return err
+		}
+	}
+	return nil
 }

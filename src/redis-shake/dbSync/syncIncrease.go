@@ -47,7 +47,7 @@ func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType,
 		time.Sleep(time.Second)
 		nStat := ds.stat.Stat()
 		var b bytes.Buffer
-		fmt.Fprintf(&b, "DbSyncer[%2d] sync: ", ds.id)
+		fmt.Fprintf(&b, "DbSyncer[%d] sync: ", ds.id)
 		fmt.Fprintf(&b, " +forwardCommands=%-6d", nStat.wCommands - lStat.wCommands)
 		fmt.Fprintf(&b, " +filterCommands=%-6d", nStat.incrSyncFilter - lStat.incrSyncFilter)
 		fmt.Fprintf(&b, " +writeBytes=%d", nStat.wBytes - lStat.wBytes)
@@ -58,7 +58,7 @@ func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType,
 
 func (ds *DbSyncer) fetchOffset() {
 	if conf.Options.Psync == false {
-		log.Warnf("DbSyncer[%2d] GetFakeSlaveOffset not enable when psync == false", ds.id)
+		log.Warnf("DbSyncer[%d] GetFakeSlaveOffset not enable when psync == false", ds.id)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (ds *DbSyncer) fetchOffset() {
 		offset, err := utils.GetFakeSlaveOffset(srcConn)
 		if err != nil {
 			// log.PurePrintf("%s\n", NewLogItem("GetFakeSlaveOffsetFail", "WARN", NewErrorLogDetail("", err.Error())))
-			log.Warnf("DbSyncer[%2d] Event:GetFakeSlaveOffsetFail\tId:%s\tWarn:%s",
+			log.Warnf("DbSyncer[%d] Event:GetFakeSlaveOffsetFail\tId:%s\tWarn:%s",
 				ds.id, conf.Options.Id, err.Error())
 
 			// Reconnect while network error happen
@@ -83,13 +83,13 @@ func (ds *DbSyncer) fetchOffset() {
 		} else {
 			// ds.SyncStat.SetOffset(offset)
 			if ds.stat.sourceOffset, err = strconv.ParseInt(offset, 10, 64); err != nil {
-				log.Errorf("DbSyncer[%2d] Event:GetFakeSlaveOffsetFail\tId:%s\tError:%s",
+				log.Errorf("DbSyncer[%d] Event:GetFakeSlaveOffsetFail\tId:%s\tError:%s",
 					ds.id, conf.Options.Id, err.Error())
 			}
 		}
 	}
 
-	log.Panicf("DbSyncer[%2d] something wrong if you see me", ds.id)
+	log.Panicf("DbSyncer[%d] something wrong if you see me", ds.id)
 }
 
 func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
@@ -103,7 +103,7 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 		id := recvId.Get() // receive id
 
 		// print debug log of receive reply
-		log.Debugf("DbSyncer[%2d] receive reply-id[%v]: [%v], error:[%v]", ds.id, id, reply, err)
+		log.Debugf("DbSyncer[%d] receive reply-id[%v]: [%v], error:[%v]", ds.id, id, reply, err)
 
 		if conf.Options.Metric == false {
 			continue
@@ -114,10 +114,10 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 		} else {
 			metric.GetMetric(ds.id).AddFailCmdCount(ds.id, 1)
 			if utils.CheckHandleNetError(err) {
-				log.Panicf("DbSyncer[%2d] Event:NetErrorWhileReceive\tId:%s\tError:%s",
+				log.Panicf("DbSyncer[%d] Event:NetErrorWhileReceive\tId:%s\tError:%s",
 					ds.id, conf.Options.Id, err.Error())
 			} else {
-				log.Panicf("DbSyncer[%2d] Event:ErrorReply\tId:%s\tCommand: [unknown]\tError: %s",
+				log.Panicf("DbSyncer[%d] Event:ErrorReply\tId:%s\tCommand: [unknown]\tError: %s",
 					ds.id, conf.Options.Id, err.Error())
 			}
 		}
@@ -136,13 +136,13 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 				metric.GetMetric(ds.id).AddDelay(uint64(time.Now().Sub(node.t).Nanoseconds()) / 1000000) // ms
 				node = nil
 			} else if node.id < id {
-				log.Panicf("DbSyncer[%2d] receive id invalid: node-id[%v] < receive-id[%v]",
+				log.Panicf("DbSyncer[%d] receive id invalid: node-id[%v] < receive-id[%v]",
 					ds.id, node.id, id)
 			}
 		}
 	}
 
-	log.Panicf("DbSyncer[%2d] something wrong if you see me", ds.id)
+	log.Panicf("DbSyncer[%d] something wrong if you see me", ds.id)
 }
 
 func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
@@ -159,7 +159,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 
 	decoder := redis.NewDecoder(reader)
 
-	log.Infof("DbSyncer[%2d] FlushEvent:IncrSyncStart\tId:%s\t", ds.id, conf.Options.Id)
+	log.Infof("DbSyncer[%d] FlushEvent:IncrSyncStart\tId:%s\t", ds.id, conf.Options.Id)
 
 	for {
 		ignoreCmd := false
@@ -168,7 +168,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 		resp, incrOffset := redis.MustDecodeOpt(decoder)
 
 		if sCmd, argv, err = redis.ParseArgs(resp); err != nil {
-			log.PanicErrorf(err, "DbSyncer[%2d] parse command arguments failed[%v]", ds.id, err)
+			log.PanicErrorf(err, "DbSyncer[%d] parse command arguments failed[%v]", ds.id, err)
 		} else {
 			metric.GetMetric(ds.id).AddPullCmdCount(ds.id, 1)
 
@@ -179,18 +179,18 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					strArgv[i] = *(*string)(unsafe.Pointer(&ele))
 				}
 				sendMarkId.Incr()
-				log.Debugf("DbSyncer[%2d] send command[%v]: [%s %v]", ds.id, sendMarkId.Get(), sCmd, strArgv)
+				log.Debugf("DbSyncer[%d] send command[%v]: [%s %v]", ds.id, sendMarkId.Get(), sCmd, strArgv)
 			}
 
 			if sCmd != "ping" {
 				if strings.EqualFold(sCmd, "select") {
 					if len(argv) != 1 {
-						log.Panicf("DbSyncer[%2d] select command len(args) = %d", ds.id, len(argv))
+						log.Panicf("DbSyncer[%d] select command len(args) = %d", ds.id, len(argv))
 					}
 					s := string(argv[0])
 					n, err := strconv.Atoi(s)
 					if err != nil {
-						log.PanicErrorf(err, "DbSyncer[%2d] parse db = %s failed", ds.id, s)
+						log.PanicErrorf(err, "DbSyncer[%d] parse db = %s failed", ds.id, s)
 					}
 					bypass = filter.FilterDB(n)
 					isSelect = true
@@ -201,7 +201,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					ds.stat.incrSyncFilter.Incr()
 					// ds.SyncStat.BypassCmdCount.Incr()
 					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
-					log.Debugf("DbSyncer[%2d] ignore command[%v]", ds.id, sCmd)
+					log.Debugf("DbSyncer[%d] ignore command[%v]", ds.id, sCmd)
 					continue
 				}
 			}
@@ -210,7 +210,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 			if bypass || ignoreCmd || reject {
 				ds.stat.incrSyncFilter.Incr()
 				metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
-				log.Debugf("DbSyncer[%2d] filter command[%v]", ds.id, sCmd)
+				log.Debugf("DbSyncer[%d] filter command[%v]", ds.id, sCmd)
 				continue
 			}
 		}
@@ -218,7 +218,6 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 		if isSelect && conf.Options.TargetDB != -1 {
 			if conf.Options.TargetDB != int(lastDb) {
 				lastDb = int32(conf.Options.TargetDB)
-				//sendBuf <- cmdDetail{Cmd: sCmd, Args: argv, Timestamp: time.Now()}
 				/* send select command. */
 				ds.sendBuf <- cmdDetail{
 					Cmd:    "SELECT",
@@ -243,7 +242,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 		}
 	}
 
-	log.Panicf("DbSyncer[%2d] something wrong if you see me", ds.id)
+	log.Panicf("DbSyncer[%d] something wrong if you see me", ds.id)
 }
 
 func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
@@ -283,35 +282,35 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			// enable resume from break point
 			if conf.Options.ResumeFromBreakPoint {
 				if err := c.Send("multi"); err != nil {
-					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
 				}
 				if err := c.Send("hset", utils.CheckpointKey, checkpointBegin, offset); err != nil {
-					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
 				}
 			}
 
 			for _, cacheItem := range cachedTunnel {
 				if err := c.Send(cacheItem.Cmd, cacheItem.Args...); err != nil {
-					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
 				}
 			}
 
 			if conf.Options.ResumeFromBreakPoint {
 				if err := c.Send("hset", utils.CheckpointKey, checkpointEnd, offset); err != nil {
-					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
 				}
 				if err := c.Send("exec"); err != nil {
-					log.Panicf("DbSyncer[%2d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
 				}
 			}
 
 			if err := c.Flush(); err != nil {
-				log.Panicf("DbSyncer[%2d] Event:FlushFail\tId:%s\tError:%s\t",
+				log.Panicf("DbSyncer[%d] Event:FlushFail\tId:%s\tError:%s\t",
 					ds.id, conf.Options.Id, err.Error())
 			}
 
@@ -322,7 +321,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 		}
 	}
 
-	log.Warnf("DbSyncer[%2d] sender exit", ds.id)
+	log.Warnf("DbSyncer[%d] sender exit", ds.id)
 }
 
 func (ds *DbSyncer) addDelayChan(id int64) {
@@ -343,7 +342,7 @@ func (ds *DbSyncer) addDelayChan(id int64) {
 		case ds.delayChannel <- &delayNode{t: time.Now(), id: id}:
 		default:
 			// do nothing but print when channel is full
-			log.Warnf("DbSyncer[%2d] delayChannel is full", ds.id)
+			log.Warnf("DbSyncer[%d] delayChannel is full", ds.id)
 		}
 	}
 }

@@ -37,7 +37,6 @@ type Configuration struct {
 	FilterSlot             []string `config:"filter.slot"`
 	FilterLua              bool     `config:"filter.lua"`
 	BigKeyThreshold        uint64   `config:"big_key_threshold"`
-	Psync                  bool     `config:"psync"`
 	Metric                 bool     `config:"metric"`
 	MetricPrintLog         bool     `config:"metric.print_log"`
 	SenderSize             uint64   `config:"sender.size"`
@@ -53,6 +52,7 @@ type Configuration struct {
 
 	/*---------------------------------------------------------*/
 	// inner variables
+	Psync                     bool     `config:"psync"`
 	NCpu                      int      `config:"ncpu"`
 	HeartbeatUrl              string   `config:"heartbeat.url"`
 	HeartbeatInterval         uint     `config:"heartbeat.interval"`

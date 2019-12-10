@@ -36,7 +36,7 @@ func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType,
 					} else {
 						ds.stat.keys.Incr()
 
-						log.Debugf("DbSyncer[%2d] try restore key[%s] with value length[%v]", ds.id, e.Key, len(e.Value))
+						log.Debugf("DbSyncer[%d] try restore key[%s] with value length[%v]", ds.id, e.Key, len(e.Value))
 
 						if conf.Options.TargetDB != -1 {
 							if conf.Options.TargetDB != int(lastdb) {
@@ -63,10 +63,10 @@ func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType,
 							}
 						}
 
-						log.Debugf("DbSyncer[%2d] start restoring key[%s] with value length[%v]", ds.id, e.Key, len(e.Value))
+						log.Debugf("DbSyncer[%d] start restoring key[%s] with value length[%v]", ds.id, e.Key, len(e.Value))
 
 						utils.RestoreRdbEntry(c, e)
-						log.Debugf("DbSyncer[%2d] restore key[%s] ok", ds.id, e.Key)
+						log.Debugf("DbSyncer[%d] restore key[%s] ok", ds.id, e.Key)
 					}
 				}
 			}()
@@ -87,7 +87,7 @@ func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType,
 
 		stat = ds.stat.Stat()
 		var b bytes.Buffer
-		fmt.Fprintf(&b, "DbSyncer[%2d] total = %s - %12s [%3d%%]  entry=%-12d",
+		fmt.Fprintf(&b, "DbSyncer[%d] total = %s - %12s [%3d%%]  entry=%-12d",
 			ds.id, utils.GetMetric(nsize), utils.GetMetric(stat.rBytes), 100*stat.rBytes/nsize, stat.keys)
 		if stat.fullSyncFilter != 0 {
 			fmt.Fprintf(&b, "  filter=%-12d", stat.fullSyncFilter)
@@ -95,5 +95,5 @@ func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType,
 		log.Info(b.String())
 		metric.GetMetric(ds.id).SetFullSyncProgress(ds.id, uint64(100*stat.rBytes/nsize))
 	}
-	log.Infof("DbSyncer[%2d] sync rdb done", ds.id)
+	log.Infof("DbSyncer[%d] sync rdb done", ds.id)
 }

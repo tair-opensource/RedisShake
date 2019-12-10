@@ -15,7 +15,7 @@ type delayNode struct {
 type cmdDetail struct {
 	Cmd    string
 	Args   []interface{}
-	Offset uint64
+	Offset int64
 }
 
 func (c *cmdDetail) String() string {

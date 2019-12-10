@@ -229,8 +229,12 @@ func SendPSyncFullsync(br *bufio.Reader, bw *bufio.Writer) (string, int64, <-cha
 	return runid, offset, waitRdbDump(br)
 }
 
-func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset int64) {
-	cmd := redis.NewCommand("psync", runid, offset+1)
+func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset int64) (string, int64, <-chan int64) {
+	if offset != -1 {
+		offset += 1
+	}
+
+	cmd := redis.NewCommand("psync", runid, offset)
 	if err := redis.Encode(bw, cmd, true); err != nil {
 		log.PanicError(err, "write psync command failed, continue")
 	}
@@ -238,6 +242,8 @@ func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset 
 	if err != nil {
 		log.PanicError(err, "invalid psync response, continue")
 	}
+
+	// parse return message
 	if e, ok := r.(*redis.Error); ok {
 		log.Panicf("invalid psync response, continue, %s", e.Value)
 	}
@@ -246,17 +252,29 @@ func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset 
 		log.PanicError(err, "invalid psync response, continue")
 	}
 	xx := strings.Split(string(x), " ")
-	if len(xx) != 1 || strings.ToLower(xx[0]) != "continue" {
-		if strings.ToLower(xx[0]) == "fullresync" {
 
-			// log.PurePrintf("%s\n", NewLogItem("ExpectContinueButFullSync", "ERROR", NewErrorLogDetail(string(x), "")))
-			log.Errorf("Event:ExpectContinueButFullSync\tId:%s\tReply:%s", conf.Options.Id, x)
+	// is full sync?
+	if len(xx) == 1 && strings.ToLower(xx[0]) == "continue" {
+		// continue
+		log.Infof("Event:FullSyncStart\tId:%s\t", conf.Options.Id)
+		return runid, offset - 1, nil
+	} else if len(xx) == 3 && strings.ToLower(xx[0]) == "fullresync" {
+		v, err := strconv.ParseInt(xx[2], 10, 64)
+		if err != nil {
+			log.PanicError(err, "parse psync offset failed")
 		}
+
+		log.Infof("Event:FullSyncStart\tId:%s\t", conf.Options.Id)
+		runid, offset := xx[1], v
+
+		log.Infof("Event:IncSyncStart\tId:%s\t", conf.Options.Id)
+		return runid, offset, waitRdbDump(br)
+	} else {
 		log.Panicf("invalid psync response = '%s', should be continue", x)
 	}
 
-	// log.PurePrintf("%s\n", NewLogItem("IncSyncStart", "INFO", LogDetail{}))
-	log.Infof("Event:IncSyncStart\tId:%s\t", conf.Options.Id)
+	// unreachable
+	return "", -1, nil
 }
 
 func SendPSyncAck(bw *bufio.Writer, offset int64) error {
