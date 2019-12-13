@@ -1,3 +1,8 @@
+2019-12-13 Alibaba Cloud.
+	* VERSION: 1.6.24
+	* BUGFIX: cluster receive channel size adjust from 4096 to `sender.count`.
+	* BUGFIX: update redis-go-cluster to solve the send and receive
+	concurrency conflict.
 2019-11-28 Alibaba Cloud.
 	* VERSION: 1.6.23
 	* BUGFIX: update redis-go-cluster driver to solve MOVED error in lua

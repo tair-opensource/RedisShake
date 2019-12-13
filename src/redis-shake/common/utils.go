@@ -35,24 +35,24 @@ func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool, tl
 }
 
 func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTimeout, writeTimeout time.Duration,
-	isCluster bool, tlsEnable bool) redigo.Conn {
-	// return redigo.NewConn(OpenNetConn(target, auth_type, passwd), readTimeout, writeTimeout)
+		isCluster bool, tlsEnable bool) redigo.Conn {
 	if isCluster {
+		// the alive time isn't the tcp keep_alive parameter
 		cluster, err := redigoCluster.NewCluster(
 			&redigoCluster.Options{
 				StartNodes:   target,
 				ConnTimeout:  30 * time.Second,
 				ReadTimeout:  readTimeout,
 				WriteTimeout: writeTimeout,
-				KeepAlive:    16,
-				AliveTime:    time.Duration(conf.Options.KeepAlive) * time.Second,
+				KeepAlive:    32,               // number of available connections
+				AliveTime:    10 * time.Second, // hard code to set alive time in single connection, not the tcp keep alive
 				Password:     passwd,
 			})
 		if err != nil {
 			log.Panicf("create cluster connection error[%v]", err)
 			return nil
 		}
-		return NewClusterConn(cluster, 4096)
+		return NewClusterConn(cluster, RecvChanSize)
 	} else {
 		// tls only support single connection currently
 		return redigo.NewConn(OpenNetConn(target[0], auth_type, passwd, tlsEnable), readTimeout, writeTimeout)
