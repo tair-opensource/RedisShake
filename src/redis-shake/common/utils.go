@@ -41,7 +41,7 @@ func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTim
 		cluster, err := redigoCluster.NewCluster(
 			&redigoCluster.Options{
 				StartNodes:   target,
-				ConnTimeout:  30 * time.Second,
+				ConnTimeout:  5 * time.Second,
 				ReadTimeout:  readTimeout,
 				WriteTimeout: writeTimeout,
 				KeepAlive:    32,               // number of available connections
