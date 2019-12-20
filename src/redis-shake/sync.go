@@ -361,24 +361,24 @@ func (ds *dbSyncer) sendPSyncCmd(master, auth_type, passwd string, tlsEnable boo
 }
 
 func (ds *dbSyncer) pSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer, offset int64, copyto io.Writer) (int64, error) {
-	// TODO, two times call c.Close() ? maybe a bug
-	defer c.Close()
 	var nread atomic2.Int64
 	go func() {
 		defer c.Close()
-		for {
-			time.Sleep(time.Second * 1)
+		for range time.NewTicker(1 * time.Second).C {
 			select {
 			case <-ds.waitFull:
 				if err := utils.SendPSyncAck(bw, offset+nread.Get()); err != nil {
+					log.Errorf("dbSyncer[%v] send offset to source redis failed[%v]", ds.id, err)
 					return
 				}
 			default:
 				if err := utils.SendPSyncAck(bw, 0); err != nil {
+					log.Errorf("dbSyncer[%v] send offset to source redis failed[%v]", ds.id, err)
 					return
 				}
 			}
 		}
+		log.Errorf("dbSyncer[%v] heartbeat thread closed!", ds.id)
 	}()
 
 	var p = make([]byte, 8192)
