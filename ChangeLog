@@ -1,3 +1,16 @@
+2019-12-20 Alibaba Cloud.
+	* VERSION: 1.6.24
+	* BUGFIX: cluster receive channel size adjust from 4096 to `sender.count`.
+	* BUGFIX: update redis-go-cluster to solve the send and receive
+	concurrency conflict.
+	* BUGFIX: fix some bugs in redis-go-cluster including io timeout problem,
+	see #192, #210.
+	* IMPROVE: set 'psync' to true by default in configuration, if the source
+	redis version is less than v2.8, switch to false.
+	* IMPROVE: when target version is less than the source, do restore
+	directly. Then catch the "Bad data format" and retry by split value. see
+	#211.
+	* IMPROVE: catch more errors in `restoreBigRdbEntry` function.
 2019-11-28 Alibaba Cloud.
 	* VERSION: 1.6.23
 	* BUGFIX: update redis-go-cluster driver to solve MOVED error in lua
