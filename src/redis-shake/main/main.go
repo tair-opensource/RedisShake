@@ -463,11 +463,18 @@ func sanitizeOptions(tp string) error {
 		}
 
 		// compare version. see github issue #173.
-		if ret := utils.CompareVersion(conf.Options.SourceVersion, conf.Options.TargetVersion, 2); ret != 0 && ret != 1 {
+		// v1.6.24. update in #211 again. if the source version is bigger than the target version, do restore directly, if failed,
+		// then try to split it
+		/*if ret := utils.CompareVersion(conf.Options.SourceVersion, conf.Options.TargetVersion, 2); ret != 0 && ret != 1 {
 			// target version is smaller than source version, or unknown
 			log.Warnf("target version[%v] < source version[%v], set big_key_threshold = 1. see #173",
 				conf.Options.TargetVersion, conf.Options.SourceVersion)
 			conf.Options.BigKeyThreshold = 1
+		}*/
+
+		// use 'sync' instead of 'psync' if the source version < 2.8
+		if ret := utils.CompareVersion(conf.Options.SourceVersion, "2.8", 2); ret == 1 && conf.Options.Psync {
+			conf.Options.Psync = false
 		}
 	}
 

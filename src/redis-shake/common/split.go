@@ -29,12 +29,14 @@ func RestoreBigkey(client redigo.Conn, key string, value string, pttl int64, db 
 		Freq:            0,
 	}
 
-	restoreBigRdbEntry(client, &entry)
+	if err := restoreBigRdbEntry(client, &entry); err != nil {
+		log.Panicf("restore big rdb key[%s] failed[%v]", key, err)
+	}
 
 	if pttl > 0 {
 		// pttl
 		if _, err := client.Do("pexpire", key, pttl); err != nil {
-			log.Panicf("send key[%v] pexpire failed[%v]", key, err)
+			log.Panicf("send key[%s] pexpire failed[%v]", key, err)
 		}
 	}
 }
