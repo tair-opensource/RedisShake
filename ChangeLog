@@ -11,6 +11,7 @@
 	directly. Then catch the "Bad data format" and retry by split value. see
 	#211.
 	* IMPROVE: catch more errors in `restoreBigRdbEntry` function.
+	* BUGFIX: merge bad resp CRLF bugfix, see #204.
 2019-11-28 Alibaba Cloud.
 	* VERSION: 1.6.23
 	* BUGFIX: update redis-go-cluster driver to solve MOVED error in lua
