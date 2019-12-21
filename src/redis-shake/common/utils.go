@@ -813,13 +813,15 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 	}
 
 	params := []interface{}{e.Key, ttlms, e.Value}
-	if e.IdleTime != 0 {
-		params = append(params, "IDLETIME")
-		params = append(params, e.IdleTime)
-	}
-	if e.Freq != 0 {
-		params = append(params, "FREQ")
-		params = append(params, e.Freq)
+	if ret := CompareVersion(conf.Options.TargetVersion, "5.0", 2); ret == 0 || ret == 2 {
+		if e.IdleTime != 0 {
+			params = append(params, "IDLETIME")
+			params = append(params, e.IdleTime)
+		}
+		if e.Freq != 0 {
+			params = append(params, "FREQ")
+			params = append(params, e.Freq)
+		}
 	}
 
 	log.Debugf("restore key[%s] with params[%v]", e.Key, params)
