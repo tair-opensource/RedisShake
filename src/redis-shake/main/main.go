@@ -275,8 +275,6 @@ func sanitizeOptions(tp string) error {
 	case utils.LogLevelInfo:
 		logDeepLevel = log.LEVEL_INFO
 	case utils.LogLevelDebug:
-		fallthrough
-	case utils.LogLevelAll:
 		logDeepLevel = log.LEVEL_DEBUG
 	default:
 		return fmt.Errorf("invalid log level[%v]", conf.Options.LogLevel)
@@ -477,6 +475,8 @@ func sanitizeOptions(tp string) error {
 		if tp == conf.TypeSync {
 			if ret := utils.CompareVersion(conf.Options.SourceVersion, "2.8", 2); ret != 1 {
 				conf.Options.Psync = true
+			} else {
+				conf.Options.ResumeFromBreakPoint = false
 			}
 		}
 	}

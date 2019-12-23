@@ -259,7 +259,7 @@ func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset 
 		// continue
 		log.Infof("Event:FullSyncStart\tId:%s\t", conf.Options.Id)
 		return runid, offset - 1, nil
-	} else if len(xx) == 3 && strings.ToLower(xx[0]) == "fullresync" {
+	} else if len(xx) >= 3 && strings.ToLower(xx[0]) == "fullresync" {
 		v, err := strconv.ParseInt(xx[2], 10, 64)
 		if err != nil {
 			log.PanicError(err, "parse psync offset failed")

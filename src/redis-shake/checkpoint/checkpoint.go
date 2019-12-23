@@ -80,7 +80,7 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int) (string, int64, i
 	if reply, err := c.Do("exists", utils.CheckpointKey); err != nil {
 		return "", -1, -1, fmt.Errorf("fetch checkpoint do judge checkpoint exists failed[%v]", err)
 	} else {
-		if reply.(byte) == byte(0) {
+		if reply.(int64) == 0 {
 			// not exist
 			return "", -1, -1, nil
 		}

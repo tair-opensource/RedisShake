@@ -8,7 +8,6 @@ import (
 	"pkg/libs/log"
 	"time"
 	"pkg/redis"
-	"unsafe"
 	"strings"
 	"strconv"
 	"redis-shake/filter"
@@ -20,6 +19,7 @@ import (
 	"redis-shake/metric"
 
 	redigo "github.com/garyburd/redigo/redis"
+	"unsafe"
 )
 
 func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool) {
@@ -154,7 +154,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 		argv, newArgv [][]byte
 		err           error
 		reject        bool
-		sendMarkId atomic2.Int64 // sendMarkId is also used as mark the sendId in sender routine
+		// sendMarkId atomic2.Int64 // sendMarkId is also used as mark the sendId in sender routine
 	)
 
 	decoder := redis.NewDecoder(reader)
@@ -171,16 +171,6 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 			log.PanicErrorf(err, "DbSyncer[%d] parse command arguments failed[%v]", ds.id, err)
 		} else {
 			metric.GetMetric(ds.id).AddPullCmdCount(ds.id, 1)
-
-			// print debug log of send command
-			if conf.Options.LogLevel == utils.LogLevelDebug || conf.Options.LogLevel == utils.LogLevelAll {
-				strArgv := make([]string, len(argv))
-				for i, ele := range argv {
-					strArgv[i] = *(*string)(unsafe.Pointer(&ele))
-				}
-				sendMarkId.Incr()
-				log.Debugf("DbSyncer[%d] send command[%v]: [%s %v]", ds.id, sendMarkId.Get(), sCmd, strArgv)
-			}
 
 			if sCmd != "ping" {
 				if strings.EqualFold(sCmd, "select") {
@@ -249,38 +239,56 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 	var cachedCount uint
 	var cachedSize uint64
 	var sendId atomic2.Int64
+	// cache the batch oplog
 	cachedTunnel := make([]cmdDetail, 0, conf.Options.SenderCount + 1)
 	checkpointBegin := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffsetBegin)
 	checkpointEnd := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffsetEnd)
+	ticker := time.NewTicker(500 * time.Millisecond)
 
-	for item := range ds.sendBuf {
-		length := len(item.Cmd)
-		for i := range item.Args {
-			length += len(item.Args[i].([]byte))
-		}
+	for {
+		flush := false
+		select {
+		case item := <-ds.sendBuf:
+			length := len(item.Cmd)
+			for i := range item.Args {
+				length += len(item.Args[i].([]byte))
+			}
 
-		cachedTunnel = append(cachedTunnel, item)
-		cachedCount++
-		cachedSize += uint64(length)
+			cachedTunnel = append(cachedTunnel, item)
+			cachedCount++
+			cachedSize += uint64(length)
 
-		// update metric
-		ds.stat.wCommands.Incr()
-		ds.stat.wBytes.Add(int64(length))
-		metric.GetMetric(ds.id).AddPushCmdCount(ds.id, 1)
-		metric.GetMetric(ds.id).AddNetworkFlow(ds.id, uint64(length))
-		sendId.Incr()
-
-		if conf.Options.Metric {
-			// delay channel
-			ds.addDelayChan(sendId.Get())
+			// update metric
+			ds.stat.wCommands.Incr()
+			ds.stat.wBytes.Add(int64(length))
+			metric.GetMetric(ds.id).AddPushCmdCount(ds.id, 1)
+			metric.GetMetric(ds.id).AddNetworkFlow(ds.id, uint64(length))
+		case <-ticker.C:
+			if len(ds.sendBuf) == 0 && len(cachedTunnel) > 0 {
+				flush = true
+			}
 		}
 
 		// flush cache
-		if cachedCount >= conf.Options.SenderCount || cachedSize >= conf.Options.SenderSize ||
-				(len(ds.sendBuf) == 0 && len(cachedTunnel) > 0) {
-			offset := cachedTunnel[len(checkpointBegin) - 1].Offset
+		if cachedCount >= conf.Options.SenderCount || cachedSize >= conf.Options.SenderSize || flush {
+			lastOplog := cachedTunnel[len(cachedTunnel) - 1]
+			needBatch := true
+			if !conf.Options.ResumeFromBreakPoint || (cachedCount == 1 && lastOplog.Cmd == "ping") {
+				needBatch = false
+			}
+
+			var offset int64
 			// enable resume from break point
-			if conf.Options.ResumeFromBreakPoint {
+			if needBatch {
+				sendId.Add(2)
+				// redis client may flush the data in "send()" so we need to put the data into delay channel here
+				if conf.Options.Metric {
+					// delay channel
+					ds.addDelayChan(sendId.Get())
+				}
+
+				// the last offset
+				offset = lastOplog.Offset
 				if err := c.Send("multi"); err != nil {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
@@ -291,14 +299,36 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 				}
 			}
 
+			sendId.Add(int64(len(cachedTunnel)))
+			if conf.Options.Metric {
+				// delay channel
+				ds.addDelayChan(sendId.Get())
+			}
 			for _, cacheItem := range cachedTunnel {
 				if err := c.Send(cacheItem.Cmd, cacheItem.Args...); err != nil {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
 				}
+
+				// print debug log of send command
+				if conf.Options.LogLevel == utils.LogLevelDebug {
+					strArgv := make([]string, len(cacheItem.Args))
+					for i, ele := range cacheItem.Args {
+						eleB := ele.([]byte)
+						strArgv[i] = *(*string)(unsafe.Pointer(&eleB))
+						// strArgv[i] = string(ele.([]byte))
+					}
+					log.Debugf("DbSyncer[%d] send command[%v]: [%s %v]", ds.id, sendId.Get(), cacheItem.Cmd,
+						strArgv)
+				}
 			}
 
-			if conf.Options.ResumeFromBreakPoint {
+			if needBatch {
+				sendId.Add(2)
+				if conf.Options.Metric {
+					// delay channel
+					ds.addDelayChan(sendId.Get())
+				}
 				if err := c.Send("hset", utils.CheckpointKey, checkpointEnd, offset); err != nil {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())

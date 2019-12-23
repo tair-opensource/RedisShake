@@ -28,7 +28,6 @@ const (
 	LogLevelWarn  = "warn"
 	LogLevelInfo  = "info"
 	LogLevelDebug = "debug"
-	LogLevelAll   = "all"
 
 	TencentCluster = "tencent_cluster"
 	AliyunCluster  = "aliyun_cluster"
