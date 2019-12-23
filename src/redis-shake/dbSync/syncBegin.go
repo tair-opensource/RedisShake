@@ -137,15 +137,16 @@ func (ds *DbSyncer) pSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer
 	var nread atomic2.Int64
 	go func() {
 		defer c.Close()
-		for {
-			time.Sleep(time.Second * 1)
+		for range time.NewTicker(1 * time.Second).C {
 			select {
 			case <-ds.WaitFull:
 				if err := utils.SendPSyncAck(bw, offset+nread.Get()); err != nil {
+					log.Errorf("dbSyncer[%v] send offset to source redis failed[%v]", ds.id, err)
 					return
 				}
 			default:
 				if err := utils.SendPSyncAck(bw, 0); err != nil {
+					log.Errorf("dbSyncer[%v] send offset to source redis failed[%v]", ds.id, err)
 					return
 				}
 			}
