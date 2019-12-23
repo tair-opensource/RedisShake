@@ -147,7 +147,7 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 
 func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	var (
-		lastDb        int32 = -1
+		lastDb              = -1
 		bypass              = false
 		isSelect            = false
 		sCmd          string
@@ -184,6 +184,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					}
 					bypass = filter.FilterDB(n)
 					isSelect = true
+					lastDb = n
 				} else if filter.FilterCommands(sCmd) {
 					ignoreCmd = true
 				}
@@ -206,13 +207,14 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 		}
 
 		if isSelect && conf.Options.TargetDB != -1 {
-			if conf.Options.TargetDB != int(lastDb) {
-				lastDb = int32(conf.Options.TargetDB)
+			if conf.Options.TargetDB != lastDb {
+				lastDb = conf.Options.TargetDB
 				/* send select command. */
 				ds.sendBuf <- cmdDetail{
 					Cmd:    "SELECT",
 					Args:   []interface{}{[]byte(strconv.FormatInt(int64(lastDb), 10))},
 					Offset: ds.fullSyncOffset + incrOffset,
+					Db:     lastDb,
 				}
 			} else {
 				ds.stat.incrSyncFilter.Incr()
@@ -229,6 +231,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 			Cmd:    sCmd,
 			Args:   data,
 			Offset: ds.fullSyncOffset + incrOffset,
+			Db:     lastDb,
 		}
 	}
 
@@ -241,9 +244,11 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 	var sendId atomic2.Int64
 	// cache the batch oplog
 	cachedTunnel := make([]cmdDetail, 0, conf.Options.SenderCount + 1)
+	checkpointRunId := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointRunId)
 	checkpointBegin := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffsetBegin)
 	checkpointEnd := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffsetEnd)
 	ticker := time.NewTicker(500 * time.Millisecond)
+	runIdMap := make(map[int]struct{})
 
 	for {
 		flush := false
@@ -280,12 +285,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			var offset int64
 			// enable resume from break point
 			if needBatch {
-				sendId.Add(2)
-				// redis client may flush the data in "send()" so we need to put the data into delay channel here
-				if conf.Options.Metric {
-					// delay channel
-					ds.addDelayChan(sendId.Get())
-				}
+				ds.addSendId(&sendId, 2)
 
 				// the last offset
 				offset = lastOplog.Offset
@@ -297,13 +297,16 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
 				}
+				if _, ok := runIdMap[lastOplog.Db]; !ok {
+					ds.addSendId(&sendId, 1)
+					if err := c.Send("hset", utils.CheckpointKey, checkpointRunId, ds.runId); err != nil {
+						log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+							ds.id, conf.Options.Id, err.Error())
+					}
+				}
 			}
 
-			sendId.Add(int64(len(cachedTunnel)))
-			if conf.Options.Metric {
-				// delay channel
-				ds.addDelayChan(sendId.Get())
-			}
+			ds.addSendId(&sendId, len(cachedTunnel))
 			for _, cacheItem := range cachedTunnel {
 				if err := c.Send(cacheItem.Cmd, cacheItem.Args...); err != nil {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
@@ -324,11 +327,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			}
 
 			if needBatch {
-				sendId.Add(2)
-				if conf.Options.Metric {
-					// delay channel
-					ds.addDelayChan(sendId.Get())
-				}
+				ds.addSendId(&sendId, 2)
 				if err := c.Send("hset", utils.CheckpointKey, checkpointEnd, offset); err != nil {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
@@ -374,5 +373,14 @@ func (ds *DbSyncer) addDelayChan(id int64) {
 			// do nothing but print when channel is full
 			log.Warnf("DbSyncer[%d] delayChannel is full", ds.id)
 		}
+	}
+}
+
+func (ds *DbSyncer) addSendId(sendId *atomic2.Int64, val int) {
+	(*sendId).Add(2)
+	// redis client may flush the data in "send()" so we need to put the data into delay channel here
+	if conf.Options.Metric {
+		// delay channel
+		ds.addDelayChan((*sendId).Get())
 	}
 }

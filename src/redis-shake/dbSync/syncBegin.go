@@ -33,7 +33,7 @@ func (ds *DbSyncer) sendSyncCmd(master, authType, passwd string, tlsEnable bool)
 }
 
 func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool, runId string,
-		prevOffset int64) (pipe.Reader, int64, bool) {
+		prevOffset int64) (pipe.Reader, int64, bool, string) {
 	c := utils.OpenNetConn(master, authType, passwd, tlsEnable)
 	log.Infof("DbSyncer[%d] psync connect '%v' with auth type[%v] OK!", ds.id, master, authType)
 
@@ -45,20 +45,21 @@ func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool
 	// writer buffer bind to client
 	bw := bufio.NewWriterSize(c, utils.WriterBufferSize)
 
-	log.Infof("DbSyncer[%d] try to send 'psync' command", ds.id)
+	log.Infof("DbSyncer[%d] try to send 'psync' command: run-id[%v], offset[%v]", ds.id, runId, prevOffset)
 	// send psync command and decode the result
 	runid, offset, wait := utils.SendPSyncContinue(br, bw, runId, prevOffset)
 	ds.stat.targetOffset.Set(offset)
 	ds.fullSyncOffset = offset // store the full sync offset
+
 	piper, pipew := pipe.NewSize(utils.ReaderBufferSize)
 	if wait == nil {
 		// continue
-		log.Infof("DbSyncer[%d] psync runid = %s offset = %d, psync continue", ds.id, runId, offset)
+		log.Infof("DbSyncer[%d] psync runid = %s, offset = %d, psync continue", ds.id, runId, offset)
 		go ds.runIncrementalSync(c, br, bw, 0, runid, offset, master, authType, passwd, tlsEnable, pipew, true)
-		return piper, 0, false
+		return piper, 0, false, runid
 	} else {
 		// fullresync
-		log.Infof("DbSyncer[%d] psync runid = %s offset = %d, fullsync", ds.id, runid, offset)
+		log.Infof("DbSyncer[%d] psync runid = %s, offset = %d, fullsync", ds.id, runid, offset)
 
 		// get rdb file size, wait source rdb dump successfully.
 		var nsize int64
@@ -74,7 +75,7 @@ func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool
 		}
 
 		go ds.runIncrementalSync(c, br, bw, int(nsize), runid, offset, master, authType, passwd, tlsEnable, pipew, true)
-		return piper, nsize, true
+		return piper, nsize, true, runid
 	}
 }
 

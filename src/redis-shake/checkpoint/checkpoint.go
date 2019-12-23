@@ -56,8 +56,9 @@ func LoadCheckpoint(sourceAddr string, target []string, authType, passwd string,
 		}
 		return "?", -1, nil
 	} else {
-		ClearCheckpoint(c, recDb, mp, sourceAddr)
-		log.Warnf("clear old checkpoint failed[%v]", err)
+		if err := ClearCheckpoint(c, recDb, mp, sourceAddr); err != nil {
+			log.Warnf("clear old checkpoint failed[%v]", err)
+		}
 		return recRunId, newestOffsetBeg, nil
 	}
 }

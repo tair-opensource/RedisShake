@@ -38,6 +38,7 @@ type DbSyncer struct {
 	sourcePassword string   // source password
 	target         []string // target address
 	targetPassword string   // target password
+	runId          string   // source runId
 
 	httpProfilePort int // http profile port
 
@@ -51,7 +52,7 @@ type DbSyncer struct {
 	 */
 	delayChannel chan *delayNode
 
-	fullSyncOffset int64         // full sync offset value
+	fullSyncOffset int64          // full sync offset value
 	sendBuf        chan cmdDetail // sending queue
 	WaitFull       chan struct{}  // wait full sync done
 }
@@ -85,8 +86,18 @@ func (ds *DbSyncer) Sync() {
 	var nsize int64
 	var isFullSync bool
 	if conf.Options.Psync {
-		input, nsize, isFullSync = ds.sendPSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
+		input, nsize, isFullSync, runId = ds.sendPSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
 			conf.Options.SourceTLSEnable, runId, offset)
+		ds.runId = runId
+		/*if isFullSync {
+			// store runId
+			err := checkpoint.StoreCheckpointRunId(ds.source, ds.target, conf.Options.TargetAuthType,
+				ds.targetPassword, conf.Options.TargetType == conf.RedisTypeCluster, conf.Options.SourceTLSEnable)
+			if err != nil {
+				log.Panicf("DbSyncer[%d] store checkpoint run-id into %v failed[%v]", ds.id, ds.target, err)
+				return
+			}
+		}*/
 	} else {
 		// sync
 		input, nsize = ds.sendSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,

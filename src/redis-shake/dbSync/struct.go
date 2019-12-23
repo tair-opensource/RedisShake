@@ -16,6 +16,7 @@ type cmdDetail struct {
 	Cmd    string
 	Args   []interface{}
 	Offset int64
+	Db     int
 }
 
 func (c *cmdDetail) String() string {

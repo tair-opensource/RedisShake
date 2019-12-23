@@ -257,7 +257,7 @@ func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset 
 	// is full sync?
 	if len(xx) == 1 && strings.ToLower(xx[0]) == "continue" {
 		// continue
-		log.Infof("Event:FullSyncStart\tId:%s\t", conf.Options.Id)
+		log.Infof("Event:IncSyncStart\tId:%s\t", conf.Options.Id)
 		return runid, offset - 1, nil
 	} else if len(xx) >= 3 && strings.ToLower(xx[0]) == "fullresync" {
 		v, err := strconv.ParseInt(xx[2], 10, 64)
