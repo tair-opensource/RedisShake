@@ -268,7 +268,6 @@ func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset 
 		log.Infof("Event:FullSyncStart\tId:%s\t", conf.Options.Id)
 		runid, offset := xx[1], v
 
-		log.Infof("Event:IncSyncStart\tId:%s\t", conf.Options.Id)
 		return runid, offset, waitRdbDump(br)
 	} else {
 		log.Panicf("invalid psync response = '%s', should be continue", x)

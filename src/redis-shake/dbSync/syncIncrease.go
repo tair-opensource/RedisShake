@@ -22,7 +22,7 @@ import (
 	"unsafe"
 )
 
-func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool) {
+func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool, dbid int) {
 	isCluster := conf.Options.TargetType == conf.RedisTypeCluster
 	c := utils.OpenRedisConnWithTimeout(target, authType, passwd, incrSyncReadeTimeout, incrSyncReadeTimeout, isCluster, tlsEnable)
 	defer c.Close()
@@ -131,7 +131,8 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 			}
 		}
 
-		if node != nil {
+		// TODO, how to calculate the delay in transaction mode?
+		/*if node != nil {
 			if node.id == id {
 				metric.GetMetric(ds.id).AddDelay(uint64(time.Now().Sub(node.t).Nanoseconds()) / 1000000) // ms
 				node = nil
@@ -139,7 +140,7 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 				log.Panicf("DbSyncer[%d] receive id invalid: node-id[%v] < receive-id[%v]",
 					ds.id, node.id, id)
 			}
-		}
+		}*/
 	}
 
 	log.Panicf("DbSyncer[%d] something wrong if you see me", ds.id)
@@ -156,6 +157,18 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 		reject        bool
 		// sendMarkId atomic2.Int64 // sendMarkId is also used as mark the sendId in sender routine
 	)
+
+	// if the start db id != 0, send dbid to the target at first
+	if ds.startDbId != 0 {
+		log.Infof("last dbid[%v] != 0, send 'select' first", ds.startDbId)
+		dbS := fmt.Sprintf("%d", ds.startDbId)
+		ds.sendBuf <- cmdDetail{
+			Cmd:    "select",
+			Args:   []interface{}{utils.String2Bytes(dbS)},
+			Offset: ds.fullSyncOffset,
+			Db:     ds.startDbId,
+		}
+	}
 
 	decoder := redis.NewDecoder(reader)
 
@@ -242,6 +255,9 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 	var cachedCount uint
 	var cachedSize uint64
 	var sendId atomic2.Int64
+	var bs string       // barrier status
+	var flushStatus int // need a barrier?
+
 	// cache the batch oplog
 	cachedTunnel := make([]cmdDetail, 0, conf.Options.SenderCount + 1)
 	checkpointRunId := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointRunId)
@@ -250,49 +266,39 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	runIdMap := make(map[int]struct{})
 
-	for {
-		flush := false
-		select {
-		case item := <-ds.sendBuf:
-			length := len(item.Cmd)
-			for i := range item.Args {
-				length += len(item.Args[i].([]byte))
-			}
-
-			cachedTunnel = append(cachedTunnel, item)
-			cachedCount++
-			cachedSize += uint64(length)
-
-			// update metric
-			ds.stat.wCommands.Incr()
-			ds.stat.wBytes.Add(int64(length))
-			metric.GetMetric(ds.id).AddPushCmdCount(ds.id, 1)
-			metric.GetMetric(ds.id).AddNetworkFlow(ds.id, uint64(length))
-		case <-ticker.C:
-			if len(ds.sendBuf) == 0 && len(cachedTunnel) > 0 {
-				flush = true
-			}
+	// do send
+	sendFunc := func() {
+		length := len(cachedTunnel)
+		if length == 0 {
+			// do nothing
+			return
 		}
 
-		// flush cache
-		if cachedCount >= conf.Options.SenderCount || cachedSize >= conf.Options.SenderSize || flush {
-			lastOplog := cachedTunnel[len(cachedTunnel) - 1]
-			needBatch := true
-			if !conf.Options.ResumeFromBreakPoint || (cachedCount == 1 && lastOplog.Cmd == "ping") {
-				needBatch = false
+		firstOplog := cachedTunnel[0]
+		lastOplog := cachedTunnel[len(cachedTunnel) - 1]
+		needBatch := true
+		if !conf.Options.ResumeFromBreakPoint || (cachedCount == 1 && lastOplog.Cmd == "ping") {
+			needBatch = false
+		}
+
+		var offset int64
+		// enable resume from break point
+		if needBatch {
+			ds.addSendId(&sendId, 2)
+
+			// the last offset
+			offset = lastOplog.Offset
+			if err := c.Send("multi"); err != nil {
+				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+					ds.id, conf.Options.Id, err.Error())
 			}
 
-			var offset int64
-			// enable resume from break point
-			if needBatch {
-				ds.addSendId(&sendId, 2)
-
-				// the last offset
-				offset = lastOplog.Offset
-				if err := c.Send("multi"); err != nil {
-					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-						ds.id, conf.Options.Id, err.Error())
-				}
+			/*
+			 * if the first oplog is "select", we do not store the head offset because the head offset
+			 * and tail offset maybe located in different logical db. So, in corner case, once crash here,
+			 * we do not support resume from break-point.
+			 */
+			if firstOplog.Cmd != "select" {
 				if err := c.Send("hset", utils.CheckpointKey, checkpointBegin, offset); err != nil {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
@@ -305,82 +311,97 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 					}
 				}
 			}
+		}
 
-			ds.addSendId(&sendId, len(cachedTunnel))
-			for _, cacheItem := range cachedTunnel {
-				if err := c.Send(cacheItem.Cmd, cacheItem.Args...); err != nil {
-					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-						ds.id, conf.Options.Id, err.Error())
-				}
-
-				// print debug log of send command
-				if conf.Options.LogLevel == utils.LogLevelDebug {
-					strArgv := make([]string, len(cacheItem.Args))
-					for i, ele := range cacheItem.Args {
-						eleB := ele.([]byte)
-						strArgv[i] = *(*string)(unsafe.Pointer(&eleB))
-						// strArgv[i] = string(ele.([]byte))
-					}
-					log.Debugf("DbSyncer[%d] send command[%v]: [%s %v]", ds.id, sendId.Get(), cacheItem.Cmd,
-						strArgv)
-				}
-			}
-
-			if needBatch {
-				ds.addSendId(&sendId, 2)
-				if err := c.Send("hset", utils.CheckpointKey, checkpointEnd, offset); err != nil {
-					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-						ds.id, conf.Options.Id, err.Error())
-				}
-				if err := c.Send("exec"); err != nil {
-					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-						ds.id, conf.Options.Id, err.Error())
-				}
-			}
-
-			if err := c.Flush(); err != nil {
-				log.Panicf("DbSyncer[%d] Event:FlushFail\tId:%s\tError:%s\t",
+		ds.addSendId(&sendId, len(cachedTunnel))
+		for _, cacheItem := range cachedTunnel {
+			if err := c.Send(cacheItem.Cmd, cacheItem.Args...); err != nil {
+				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 					ds.id, conf.Options.Id, err.Error())
 			}
 
-			// clear
-			cachedTunnel = cachedTunnel[:0]
-			cachedCount = 0
-			cachedSize = 0
+			// print debug log of send command
+			if conf.Options.LogLevel == utils.LogLevelDebug {
+				strArgv := make([]string, len(cacheItem.Args))
+				for i, ele := range cacheItem.Args {
+					eleB := ele.([]byte)
+					strArgv[i] = *(*string)(unsafe.Pointer(&eleB))
+					// strArgv[i] = string(ele.([]byte))
+				}
+				log.Debugf("DbSyncer[%d] send command[%v]: [%s %v]", ds.id, sendId.Get(), cacheItem.Cmd,
+					strArgv)
+			}
 		}
+
+		if needBatch {
+			ds.addSendId(&sendId, 2)
+			if err := c.Send("hset", utils.CheckpointKey, checkpointEnd, offset); err != nil {
+				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+					ds.id, conf.Options.Id, err.Error())
+			}
+			if err := c.Send("exec"); err != nil {
+				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+					ds.id, conf.Options.Id, err.Error())
+			}
+		}
+
+		if err := c.Flush(); err != nil {
+			log.Panicf("DbSyncer[%d] Event:FlushFail\tId:%s\tError:%s\t",
+				ds.id, conf.Options.Id, err.Error())
+		}
+
+		// clear
+		cachedTunnel = cachedTunnel[:0]
+		cachedCount = 0
+		cachedSize = 0
+	}
+
+	for {
+		select {
+		case item := <-ds.sendBuf:
+			length := len(item.Cmd)
+			for i := range item.Args {
+				length += len(item.Args[i].([]byte))
+			}
+
+			bs, flushStatus = barrierStatus(item.Cmd, bs)
+			log.Debugf("DbSyncer[%d] command[%s] with barrier status[%v] and flush status[%v]",
+				ds.id, item.Cmd, bs, flushStatus)
+			if flushStatus == flushStatusYes {
+				// flush previous data
+				sendFunc()
+				flushStatus = flushStatusNo
+			}
+
+			// remove command when bs == barrierStatusHoldStart or barrierStatusHoldEnd
+			if bs != barrierStatusHoldStart && bs != barrierStatusHoldEnd {
+				cachedTunnel = append(cachedTunnel, item)
+				cachedCount++
+				cachedSize += uint64(length)
+
+				// update metric
+				ds.stat.wCommands.Incr()
+				ds.stat.wBytes.Add(int64(length))
+				metric.GetMetric(ds.id).AddPushCmdCount(ds.id, 1)
+				metric.GetMetric(ds.id).AddNetworkFlow(ds.id, uint64(length))
+			}
+
+		case <-ticker.C:
+			if len(ds.sendBuf) == 0 && len(cachedTunnel) > 0 {
+				flushStatus = flushStatusYes
+			} else {
+				flushStatus = flushStatusNo
+			}
+		}
+
+		if cachedCount < conf.Options.SenderCount && cachedSize < conf.Options.SenderSize && flushStatus == flushStatusNo {
+			// do not flush
+			continue
+		}
+
+		// flush cache
+		sendFunc()
 	}
 
 	log.Warnf("DbSyncer[%d] sender exit", ds.id)
-}
-
-func (ds *DbSyncer) addDelayChan(id int64) {
-	// send
-	/*
-	 * available >=4096: 1:1 sampling
-	 * available >=1024: 1:10 sampling
-	 * available >=128: 1:100 sampling
-	 * else: 1:1000 sampling
-	 */
-	used := cap(ds.delayChannel) - len(ds.delayChannel)
-	if used >= 4096 ||
-		used >= 1024 && id%10 == 0 ||
-		used >= 128 && id%100 == 0 ||
-		id%1000 == 0 {
-		// non-blocking add
-		select {
-		case ds.delayChannel <- &delayNode{t: time.Now(), id: id}:
-		default:
-			// do nothing but print when channel is full
-			log.Warnf("DbSyncer[%d] delayChannel is full", ds.id)
-		}
-	}
-}
-
-func (ds *DbSyncer) addSendId(sendId *atomic2.Int64, val int) {
-	(*sendId).Add(2)
-	// redis client may flush the data in "send()" so we need to put the data into delay channel here
-	if conf.Options.Metric {
-		// delay channel
-		ds.addDelayChan((*sendId).Get())
-	}
 }

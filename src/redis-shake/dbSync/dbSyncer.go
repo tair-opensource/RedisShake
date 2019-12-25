@@ -45,6 +45,8 @@ type DbSyncer struct {
 	// stat info
 	stat Status
 
+	startDbId int // use in break resume from break-point
+
 	/*
 	 * this channel is used to calculate delay between redis-shake and target redis.
 	 * Once oplog sent, the corresponding delayNode push back into this queue. Next time
@@ -74,12 +76,13 @@ func (ds *DbSyncer) Sync() {
 		ds.id, ds.source, ds.target, ds.httpProfilePort)
 
 	// checkpoint reload if has
-	runId, offset, err := checkpoint.LoadCheckpoint(ds.source, ds.target, conf.Options.TargetAuthType,
+	runId, offset, dbid, err := checkpoint.LoadCheckpoint(ds.id, ds.source, ds.target, conf.Options.TargetAuthType,
 		ds.targetPassword, conf.Options.TargetType == conf.RedisTypeCluster, conf.Options.SourceTLSEnable)
 	if err != nil {
 		log.Panicf("DbSyncer[%d] load checkpoint from %v failed[%v]", ds.id, ds.target, err)
 		return
 	}
+	log.Infof("DbSyncer[%d] checkpoint info: runId[%v], offset[%v] dbid[%v]", ds.id, runId, offset, dbid)
 
 	base.Status = "waitfull"
 	var input io.ReadCloser
@@ -89,15 +92,6 @@ func (ds *DbSyncer) Sync() {
 		input, nsize, isFullSync, runId = ds.sendPSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
 			conf.Options.SourceTLSEnable, runId, offset)
 		ds.runId = runId
-		/*if isFullSync {
-			// store runId
-			err := checkpoint.StoreCheckpointRunId(ds.source, ds.target, conf.Options.TargetAuthType,
-				ds.targetPassword, conf.Options.TargetType == conf.RedisTypeCluster, conf.Options.SourceTLSEnable)
-			if err != nil {
-				log.Panicf("DbSyncer[%d] store checkpoint run-id into %v failed[%v]", ds.id, ds.target, err)
-				return
-			}
-		}*/
 	} else {
 		// sync
 		input, nsize = ds.sendSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
@@ -122,10 +116,13 @@ func (ds *DbSyncer) Sync() {
 		// sync rdb
 		base.Status = "full"
 		ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize, conf.Options.TargetTLSEnable)
+		ds.startDbId = 0
+	} else {
+		ds.startDbId = dbid
 	}
 
 	// sync increment
 	base.Status = "incr"
 	close(ds.WaitFull)
-	ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, conf.Options.TargetTLSEnable)
+	ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, conf.Options.TargetTLSEnable, dbid)
 }
