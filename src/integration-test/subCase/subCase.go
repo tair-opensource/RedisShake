@@ -20,15 +20,16 @@ import (
  * targetDB: target db != -1
  */
 type SubCase struct {
-	sourceConn redigo.Conn
-	targetConn redigo.Conn
-	shakeConf  map[string]interface{}
-	shakeDir   string // redis-shake binary directory location
-	runDir     string // redis-shake run directory
+	sourceConn       redigo.Conn
+	targetConn       redigo.Conn
+	shakeConf        map[string]interface{}
+	shakeDir         string // redis-shake binary directory location
+	runDir           string // redis-shake run directory
+	resumeBreakpoint bool   // enable resume from break point?
 }
 
 func GenerateShakeConf(sourcePort, targetPort int, filterKeyBlack, filterKeyWhite []string,
-	filterDBBlack, filterDBWhite []string, targetDB string) map[string]interface{} {
+	filterDBBlack, filterDBWhite []string, targetDB string, resumeBreakpoint bool) map[string]interface{} {
 	mp := make(map[string]interface{})
 	mp["source.address"] = fmt.Sprintf("127.0.0.1:%d", sourcePort)
 	mp["target.address"] = fmt.Sprintf("127.0.0.1:%d", targetPort)
@@ -52,22 +53,27 @@ func GenerateShakeConf(sourcePort, targetPort int, filterKeyBlack, filterKeyWhit
     mp["log.file"] = "redis-shake-integration.log"
     mp["http_profile"] = "9320"
 
+    if resumeBreakpoint {
+    	mp["resume_from_break_point"] = true
+    }
+
 	return mp
 }
 
 func NewSubCase(sourceConn, targetConn redigo.Conn, sourcePort, targetPort int,
 	filterKeyBlack, filterKeyWhite []string,
 	filterDBBlack, filterDBWhite []string,
-	targetDB string) *SubCase {
+	targetDB string, resumeBreakpoint bool) *SubCase {
 	sc := &SubCase{
 		sourceConn: sourceConn,
 		targetConn: targetConn,
 		shakeConf: GenerateShakeConf(sourcePort, targetPort,
 			filterKeyBlack, filterKeyWhite,
 			filterDBBlack, filterDBWhite,
-			targetDB),
-		shakeDir: "..",
-		runDir:   "redis-shake",
+			targetDB, resumeBreakpoint),
+		shakeDir:         "..",
+		runDir:           "redis-shake",
+		resumeBreakpoint: resumeBreakpoint,
 	}
 
 	return sc
@@ -83,7 +89,7 @@ func (sc *SubCase) Run() {
 
 	// 2. start redis-shake
     log.Info("2. start redis-shake")
-    if err := deploy.StartShake(sc.shakeDir, sc.runDir, sc.shakeConf, "sync"); err != nil {
+    if err := sc.startShake(); err != nil {
         log.Panicf("start redis-shake failed[%v]", err)
     }
 
@@ -146,4 +152,34 @@ func (sc *SubCase) Run() {
 	}
 
     log.Info("all finish")
+}
+
+func (sc *SubCase) startShake() error {
+	// 1.1: start shake
+	if err := deploy.StartShake(sc.shakeDir, sc.runDir, sc.shakeConf, "sync"); err != nil {
+		return fmt.Errorf("start redis-shake 1th failed[%v]", err)
+	}
+
+	if !sc.resumeBreakpoint {
+		return nil
+	}
+
+	// 1.2: stop shake
+	err := deploy.StopShake(sc.shakeConf)
+	if err != nil {
+		return fmt.Errorf("stop shake 1th failed: %v", err)
+	}
+
+	// 1.3: inject data
+	_, err = inject.InjectData(sc.sourceConn)
+	if err != nil {
+		return fmt.Errorf("inject data 1th failed[%v]", err)
+	}
+
+	// 2.1: start shake
+	if err := deploy.StartShake(sc.shakeDir, sc.runDir, sc.shakeConf, "sync"); err != nil {
+		return fmt.Errorf("start redis-shake 2th failed[%v]", err)
+	}
+
+	return nil
 }

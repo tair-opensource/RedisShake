@@ -56,7 +56,7 @@ $run_builder -o "${integration_test}/integration-test" "./src/integration-test/m
 # copy scripts
 cp scripts/start.sh ${output}/
 cp scripts/stop.sh ${output}/
-cp scripts/run_direct.py ${output}/
+#cp scripts/run_direct.py ${output}/
 cp -r tools ${integration_test}/
 cp -r test ${integration_test}/
 
