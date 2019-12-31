@@ -1,6 +1,7 @@
-2019-xx Alibaba Cloud.
+2019-12-31 Alibaba Cloud.
 	* VERSION: 1.7-unstable
 	* FEATURE: add integration test.
+	* FEATURE: support resuming from break-point.
 2019-12-20 Alibaba Cloud.
 	* VERSION: 1.6.24
 	* BUGFIX: cluster receive channel size adjust from 4096 to `sender.count`.
