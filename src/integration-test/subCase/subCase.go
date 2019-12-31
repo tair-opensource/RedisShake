@@ -52,6 +52,7 @@ func GenerateShakeConf(sourcePort, targetPort int, filterKeyBlack, filterKeyWhit
     mp["id"] = "redis-shake-integration"
     mp["log.file"] = "redis-shake-integration.log"
     mp["http_profile"] = "9320"
+    mp["rewrite"] = true
 
     if resumeBreakpoint {
     	mp["resume_from_break_point"] = true
@@ -175,6 +176,8 @@ func (sc *SubCase) startShake() error {
 	if err != nil {
 		return fmt.Errorf("inject data 1th failed[%v]", err)
 	}
+
+	time.Sleep(10 * time.Second)
 
 	// 2.1: start shake
 	if err := deploy.StartShake(sc.shakeDir, sc.runDir, sc.shakeConf, "sync"); err != nil {

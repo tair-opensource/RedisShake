@@ -49,7 +49,7 @@ func (s2s *Standalone2StandaloneCase) Run() error {
 		targetConn := shakeUtils.OpenRedisConn([]string{fmt.Sprintf(":%d", s2s.TargetPort)}, "auth", "", false, false)
 
 		sc := subCase.NewSubCase(sourceConn, targetConn, s2s.SourcePort, s2s.TargetPort, nil, nil,
-			nil, nil, "", true)
+			nil, nil, "", false)
 		log.Info("run")
 		sc.Run()
 	}
