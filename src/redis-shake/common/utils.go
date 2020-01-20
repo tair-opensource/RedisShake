@@ -880,7 +880,8 @@ RESTORE:
 				if conf.Options.TargetReplace {
 					params = append(params, "REPLACE")
 				} else {
-					if _, err = redigo.String(c.Do("del", e.Key)); err != nil {
+					_, err = redigoCluster.Int(c.Do("del", e.Key))
+					if err != nil {
 						log.Panicf("delete key[%v] failed[%v]", string(e.Key), err)
 					}
 				}
