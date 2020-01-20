@@ -813,13 +813,15 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 	}
 
 	params := []interface{}{e.Key, ttlms, e.Value}
-	if e.IdleTime != 0 {
-		params = append(params, "IDLETIME")
-		params = append(params, e.IdleTime)
-	}
-	if e.Freq != 0 {
-		params = append(params, "FREQ")
-		params = append(params, e.Freq)
+	if ret := CompareVersion(conf.Options.TargetVersion, "5.0", 2); ret == 0 || ret == 2 {
+		if e.IdleTime != 0 {
+			params = append(params, "IDLETIME")
+			params = append(params, e.IdleTime)
+		}
+		if e.Freq != 0 {
+			params = append(params, "FREQ")
+			params = append(params, e.Freq)
+		}
 	}
 
 	log.Debugf("restore key[%s] with params[%v]", e.Key, params)
@@ -840,7 +842,7 @@ RESTORE:
 				if conf.Options.TargetReplace {
 					params = append(params, "REPLACE")
 				} else {
-					_, err = redigo.String(c.Do("del", e.Key))
+					_, err = redigoCluster.Int(c.Do("del", e.Key))
 					if err != nil {
 						log.Panicf("delete key[%v] failed[%v]", string(e.Key), err)
 					}
