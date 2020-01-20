@@ -1,3 +1,7 @@
+2020-01-21 Alibaba Cloud.
+	* VERSION: 1.6.25
+	* BUGFIX: in redis 2.8, delete key but convert the returned reply failed.
+	see #227.
 2019-12-31 Alibaba Cloud.
 	* VERSION: 1.7-unstable
 	* FEATURE: add integration test.
