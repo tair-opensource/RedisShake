@@ -48,10 +48,10 @@ func (ds *DbSyncer) addDelayChan(id int64) {
 	 * available >=128: 1:100 sampling
 	 * else: 1:1000 sampling
 	 */
-	used := cap(ds.delayChannel) - len(ds.delayChannel)
-	if used >= 4096 ||
-		used >= 1024 && id%10 == 0 ||
-		used >= 128 && id%100 == 0 ||
+	available := cap(ds.delayChannel) - len(ds.delayChannel)
+	if available >= 4096 ||
+		available >= 1024 && id%10 == 0 ||
+		available >= 128 && id%100 == 0 ||
 		id%1000 == 0 {
 		// non-blocking add
 		select {
