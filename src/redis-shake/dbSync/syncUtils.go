@@ -32,7 +32,7 @@ var (
 )
 
 func (ds *DbSyncer) addSendId(sendId *atomic2.Int64, val int) {
-	(*sendId).Add(2)
+	(*sendId).Add(int64(val))
 	// redis client may flush the data in "send()" so we need to put the data into delay channel here
 	if conf.Options.Metric {
 		// delay channel

@@ -284,7 +284,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 		var offset int64
 		// enable resume from break point
 		if needBatch {
-			ds.addSendId(&sendId, 2)
+			ds.addSendId(&sendId, 1)
 
 			// the last offset
 			offset = lastOplog.Offset
@@ -299,6 +299,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			 * we do not support resume from break-point.
 			 */
 			if firstOplog.Cmd != "select" {
+				ds.addSendId(&sendId, 1)
 				if err := c.Send("hset", utils.CheckpointKey, checkpointBegin, offset); err != nil {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())

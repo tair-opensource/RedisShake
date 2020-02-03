@@ -119,6 +119,8 @@ func (ds *DbSyncer) Sync() {
 		ds.startDbId = 0
 	} else {
 		ds.startDbId = dbid
+		// set fullSyncProgress to 100 when skip full sync stage
+		metric.GetMetric(ds.id).SetFullSyncProgress(ds.id, 100)
 	}
 
 	// sync increment
