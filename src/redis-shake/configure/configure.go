@@ -96,3 +96,12 @@ const (
 	TypeSync    = "sync"
 	TypeRump    = "rump"
 )
+
+func GetSafeOptions() Configuration {
+	polish := Options
+	polish.SourcePasswordRaw = "***"
+	polish.SourcePasswordEncoding = "***"
+	polish.TargetPasswordRaw = "***"
+	polish.TargetPasswordEncoding = "***"
+	return polish
+}

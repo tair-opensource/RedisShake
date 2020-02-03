@@ -115,7 +115,7 @@ func main() {
 	go startHttpServer()
 
 	// print configuration
-	if opts, err := json.Marshal(conf.Options); err != nil {
+	if opts, err := json.Marshal(conf.GetSafeOptions()); err != nil {
 		crash(fmt.Sprintf("marshal configuration failed[%v]", err), -6)
 	} else {
 		log.Infof("redis-shake configuration: %s", string(opts))
@@ -158,7 +158,7 @@ func startHttpServer() {
 
 	utils.InitHttpApi(conf.Options.HttpProfile)
 	utils.HttpApi.RegisterAPI("/conf", nimo.HttpGet, func([]byte) interface{} {
-		return &conf.Options
+		return conf.GetSafeOptions()
 	})
 	restful.RestAPI()
 
