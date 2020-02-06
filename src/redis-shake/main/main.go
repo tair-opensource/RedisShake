@@ -281,6 +281,17 @@ func sanitizeOptions(tp string) error {
 	}
 	log.SetLevel(logDeepLevel)
 
+	if conf.Options.SourceAuthType == "" {
+		conf.Options.SourceAuthType = "auth"
+	} else {
+		log.Warnf("source.auth_type[%s] != %s", conf.Options.SourceAuthType, "auth")
+	}
+	if conf.Options.TargetAuthType == "" {
+		conf.Options.TargetAuthType = "auth"
+	} else {
+		log.Warnf("target.auth_type[%s] != %s", conf.Options.TargetAuthType, "auth")
+	}
+
 	// heartbeat, 86400 = 1 day
 	if conf.Options.HeartbeatInterval > 86400 {
 		return fmt.Errorf("HeartbeatInterval[%v] should in [0, 86400]", conf.Options.HeartbeatInterval)
