@@ -1,6 +1,6 @@
 2020-02-06 Alibaba Cloud.
 	* VERSION: 1.6.26
-	* BUGFIX: set auth_type to auth as default, see #237.
+	* IMPROVE: set auth_type to auth as default, see #237.
 	see #227.
 2020-01-21 Alibaba Cloud.
 	* VERSION: 1.6.25
