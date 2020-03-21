@@ -591,6 +591,7 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 		log.Infof("dbSyncer[%v] FlushEvent:IncrSyncStart\tId:%s\t", ds.id, conf.Options.Id)
 
 		for {
+			ignoresentinel:= false
 			ignorecmd := false
 			isselect = false
 			resp := redis.MustDecodeOpt(decoder)
@@ -625,7 +626,10 @@ func (ds *dbSyncer) syncCommand(reader *bufio.Reader, target []string, auth_type
 					} else if filter.FilterCommands(scmd) {
 						ignorecmd = true
 					}
-					if bypass || ignorecmd {
+					if strings.EqualFold(scmd, "publish") && strings.EqualFold(string(argv[0]), "__sentinel__:hello"){
+						ignoresentinel = true
+					}
+					if bypass || ignorecmd || ignoresentinel{
 						ds.nbypass.Incr()
 						// ds.SyncStat.BypassCmdCount.Incr()
 						metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
