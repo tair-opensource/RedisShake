@@ -875,7 +875,7 @@ func Iocopy(r io.Reader, w io.Writer, p []byte, max int) int {
 		p = p[:max]
 	}
 	if n, err := r.Read(p); err != nil {
-		log.PanicError(err, "read error")
+		log.PanicError(err, "read error, please check source redis log or network")
 	} else {
 		p = p[:n]
 	}
