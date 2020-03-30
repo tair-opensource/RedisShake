@@ -29,7 +29,7 @@ type Configuration struct {
 	TargetRdbOutput        string   `config:"target.rdb.output"`
 	TargetVersion          string   `config:"target.version"`
 	FakeTime               string   `config:"fake_time"`
-	Rewrite                bool     `config:"rewrite"`
+	KeyExists              string   `config:"key_exists"`
 	FilterDBWhitelist      []string `config:"filter.db.whitelist"`
 	FilterDBBlacklist      []string `config:"filter.db.blacklist"`
 	FilterKeyWhitelist     []string `config:"filter.key.whitelist"`
@@ -63,6 +63,7 @@ type Configuration struct {
 	SockFileSize              uint     `config:"sock.file_size"`
 	FilterKey                 []string `config:"filter.key"` // compatible with older versions
 	FilterDB                  string   `config:"filter.db"`  // compatible with older versions
+	Rewrite                   bool     `config:"rewrite"`    // compatible with older versions < 1.6.27
 
 	/*---------------------------------------------------------*/
 	// generated variables

@@ -333,6 +333,18 @@ func sanitizeOptions(tp string) error {
 		}
 	}
 
+	if conf.Options.Rewrite {
+		conf.Options.KeyExists = "rewrite"
+	}
+	if conf.Options.KeyExists == "" {
+		conf.Options.KeyExists = "none"
+	} else if conf.Options.KeyExists == "ignore" && tp == "rump" {
+		conf.Options.KeyExists = "none"
+	}
+	if conf.Options.KeyExists != "none" && conf.Options.KeyExists != "rewrite" && conf.Options.KeyExists != "ignore" {
+		return fmt.Errorf("key_exists should in {none, rewrite, ignore}")
+	}
+
 	if conf.Options.FilterDB != "" {
 		conf.Options.FilterDBWhitelist = []string{conf.Options.FilterDB}
 	}
