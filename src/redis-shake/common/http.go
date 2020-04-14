@@ -9,5 +9,5 @@ var (
 )
 
 func InitHttpApi(port int) {
-	HttpApi = nimo.NewHttpRestProvdier(port)
+	HttpApi = nimo.NewHttpRestProvider(port)
 }
