@@ -6,6 +6,12 @@ import (
 	"strconv"
 )
 
+var (
+	innerFilterKeys = map[string]struct{} {
+		"redis-shake-checkpoint": {},
+	}
+)
+
 // return true means not pass
 func FilterCommands(cmd string) bool {
 	if strings.EqualFold(cmd, "opinfo") {
@@ -22,6 +28,10 @@ func FilterCommands(cmd string) bool {
 
 // return true means not pass
 func FilterKey(key string) bool {
+	if _, ok := innerFilterKeys[key]; ok {
+		return true
+	}
+
 	if len(conf.Options.FilterKeyBlacklist) != 0 {
 		if hasAtLeastOnePrefix(key, conf.Options.FilterKeyBlacklist) {
 			return true
