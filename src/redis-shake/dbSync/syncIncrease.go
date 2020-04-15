@@ -265,9 +265,9 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 	// cache the batch oplog
 	cachedTunnel := make([]cmdDetail, 0, conf.Options.SenderCount + 1)
 	checkpointRunId := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointRunId)
-	checkpointBegin := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffsetBegin)
-	checkpointEnd := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffsetEnd)
+	checkpointOffset := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffset)
 	ticker := time.NewTicker(500 * time.Millisecond)
+	// mark whether the given db has already send runId, no need to send run-id each time.
 	runIdMap := make(map[int]struct{})
 
 	// do send
@@ -278,7 +278,6 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			return
 		}
 
-		firstOplog := cachedTunnel[0]
 		lastOplog := cachedTunnel[len(cachedTunnel) - 1]
 		needBatch := true
 		if !conf.Options.ResumeFromBreakPoint || (cachedCount == 1 && lastOplog.Cmd == "ping") {
@@ -295,26 +294,6 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			if err := c.Send("multi"); err != nil {
 				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 					ds.id, conf.Options.Id, err.Error())
-			}
-
-			/*
-			 * if the first oplog is "select", we do not store the head offset because the head offset
-			 * and tail offset maybe located in different logical db. So, in corner case, once crash here,
-			 * we do not support resume from break-point.
-			 */
-			if firstOplog.Cmd != "select" {
-				ds.addSendId(&sendId, 1)
-				if err := c.Send("hset", utils.CheckpointKey, checkpointBegin, offset); err != nil {
-					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-						ds.id, conf.Options.Id, err.Error())
-				}
-				if _, ok := runIdMap[lastOplog.Db]; !ok {
-					ds.addSendId(&sendId, 1)
-					if err := c.Send("hset", utils.CheckpointKey, checkpointRunId, ds.runId); err != nil {
-						log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-							ds.id, conf.Options.Id, err.Error())
-					}
-				}
 			}
 		}
 
@@ -339,8 +318,19 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 		}
 
 		if needBatch {
+			// need send run-id?
+			if _, ok := runIdMap[lastOplog.Db]; !ok {
+				runIdMap[lastOplog.Db] = struct{}{}
+				ds.addSendId(&sendId, 1)
+				if err := c.Send("hset", utils.CheckpointKey, checkpointRunId, ds.runId); err != nil {
+					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+						ds.id, conf.Options.Id, err.Error())
+				}
+			}
+
+			// add checkpoint
 			ds.addSendId(&sendId, 2)
-			if err := c.Send("hset", utils.CheckpointKey, checkpointEnd, offset); err != nil {
+			if err := c.Send("hset", utils.CheckpointKey, checkpointOffset, offset); err != nil {
 				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 					ds.id, conf.Options.Id, err.Error())
 			}

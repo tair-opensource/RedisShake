@@ -3,9 +3,11 @@ package checkpoint
 import (
 	"testing"
 	"fmt"
-	"github.com/stretchr/testify/assert"
+
 	"redis-shake/unit_test_common"
 	"redis-shake/common"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var (
