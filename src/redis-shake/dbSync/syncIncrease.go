@@ -175,6 +175,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	log.Infof("DbSyncer[%d] FlushEvent:IncrSyncStart\tId:%s\t", ds.id, conf.Options.Id)
 
 	for {
+		ignoresentinel:= false
 		ignoreCmd := false
 		isSelect = false
 		// incrOffset is used to do resume from break-point job
@@ -200,8 +201,11 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					lastDb = n
 				} else if filter.FilterCommands(sCmd) {
 					ignoreCmd = true
+				} else if strings.EqualFold(sCmd, "publish") && strings.EqualFold(string(argv[0]), "__sentinel__:hello"){
+					ignoresentinel = true
 				}
-				if bypass || ignoreCmd {
+
+				if bypass || ignoreCmd || ignoresentinel {
 					ds.stat.incrSyncFilter.Incr()
 					// ds.SyncStat.BypassCmdCount.Incr()
 					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
