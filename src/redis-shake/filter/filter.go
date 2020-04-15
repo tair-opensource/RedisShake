@@ -4,11 +4,12 @@ import (
 	"strings"
 	"redis-shake/configure"
 	"strconv"
+	"redis-shake/common"
 )
 
 var (
 	innerFilterKeys = map[string]struct{} {
-		"redis-shake-checkpoint": {},
+		utils.CheckpointKey: {},
 	}
 )
 
