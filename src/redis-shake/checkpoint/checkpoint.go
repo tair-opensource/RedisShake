@@ -9,7 +9,8 @@ import (
 	"pkg/libs/log"
 )
 
-func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType, passwd string, isCluster bool, tlsEnable bool) (string, int64, int, error) {
+func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType, passwd string,
+		isCluster bool, tlsEnable bool) (string, int64, int, error) {
 	c := utils.OpenRedisConn(target, authType, passwd, isCluster, tlsEnable)
 
 	// fetch logical db list
@@ -25,101 +26,76 @@ func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType
 		return "", 0, 0, err
 	}
 
-	var newestOffsetBeg int64 = -1
-	var newestOffsetEnd int64 = -1
+	var newestOffset int64 = -1
 	var recRunId string
 	var recDb int32
 	for db := range mp {
 		log.Infof("DbSyncer[%d] load checkpoint check db[%v]", dbSyncerId, db)
-		runId, offsetBegin, offsetEnd, err := fetchCheckpoint(sourceAddr, c, int(db))
+		runId, offset, err := fetchCheckpoint(sourceAddr, c, int(db))
 		if err != nil {
 			return "", 0, 0, err
 		}
 
-		// in some cases, begin offset or end offset may be empty
-		if offsetBegin > newestOffsetBeg || offsetEnd > newestOffsetEnd {
-			if offsetBegin > newestOffsetBeg {
-				newestOffsetBeg = offsetBegin
-			}
-			if offsetEnd > newestOffsetEnd {
-				newestOffsetEnd = offsetEnd
-			}
+		// pick the biggest offset
+		if offset > newestOffset {
+			newestOffset = offset
 			recRunId = runId
-			recDb = db
-		}
-
-		if offsetBegin != offsetEnd {
-			log.Warnf("DbSyncer[%d] db[%v] offsetBegin[%v] != offsetEnd[%v]", dbSyncerId, db, offsetBegin,
-				offsetEnd)
+			recDb = db // which db
 		}
 	}
 
-	log.Infof("DbSyncer[%d] newestOffsetBeg[%v], newestOffsetEnd[%v], recordDb[%v]", dbSyncerId, newestOffsetBeg,
-		newestOffsetEnd, recDb)
-	if newestOffsetBeg != newestOffsetEnd {
-		log.Warnf("DbSyncer[%d] offset check failed, need full sync", dbSyncerId)
-		if err := ClearCheckpoint(dbSyncerId, c, -1, mp, sourceAddr); err != nil {
-			log.Warnf("clear old checkpoint failed[%v]", err)
-		}
-		return "?", -1, 0, nil
-	} else {
-		if err := ClearCheckpoint(dbSyncerId, c, recDb, mp, sourceAddr); err != nil {
-			log.Warnf("DbSyncer[%d] clear old checkpoint failed[%v]", dbSyncerId, err)
-		}
-		return recRunId, newestOffsetBeg, int(recDb), nil
+	// do not set recDb when runId == "?" which means all checkpoint should be clean
+	if recRunId == "?" {
+		recDb = -1
 	}
+
+	log.Infof("DbSyncer[%d] newestOffset[%v], recordDb[%v]", dbSyncerId, newestOffset, recDb)
+	if err := ClearCheckpoint(dbSyncerId, c, recDb, mp, sourceAddr); err != nil {
+		log.Warnf("DbSyncer[%d] clear old checkpoint failed[%v]", dbSyncerId, err)
+	}
+	return recRunId, newestOffset, int(recDb), nil
 }
 
 /*
  * fetch checkpoint from give address
  * @return:
  *     string: runid
- *     int64: offset-beginint
- *     int64: offset-end
+ *     int64: offset
  *     error
  */
-func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int) (string, int64, int64, error) {
+func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int) (string, int64, error) {
 	_, err := c.Do("select", db)
 	if err != nil {
-		return "", -1, -1, fmt.Errorf("fetch checkpoint do select db[%v] failed[%v]", db, err)
+		return "", -1, fmt.Errorf("fetch checkpoint do select db[%v] failed[%v]", db, err)
 	}
 
 	// judge checkpoint exists
 	if reply, err := c.Do("exists", utils.CheckpointKey); err != nil {
-		return "", -1, -1, fmt.Errorf("fetch checkpoint do judge checkpoint exists failed[%v]", err)
+		return "", -1, fmt.Errorf("fetch checkpoint do judge checkpoint exists failed[%v]", err)
 	} else {
 		if reply.(int64) == 0 {
 			// not exist
-			return "", -1, -1, nil
+			return "", -1, nil
 		}
 	}
 
 	// hgetall
 	if reply, err := c.Do("hgetall", utils.CheckpointKey); err != nil {
-		return "", -1, -1, fmt.Errorf("fetch checkpoint do hgetall failed[%v]", err)
+		return "", -1, fmt.Errorf("fetch checkpoint do hgetall failed[%v]", err)
 	} else {
 		runId := "?"
-		var offsetBegin int64 = -1
-		var offsetEnd int64 = -1
+		var offset int64 = -1
 		replyList := reply.([]interface{})
+		// read line by line and parse the offset
 		for i := 0; i < len(replyList); i += 2 {
 			line := replyList[i].([]byte)
 			lineS := utils.Bytes2String(line)
 			if strings.HasPrefix(lineS, sourceAddr) {
-				if strings.Contains(lineS, utils.CheckpointOffsetBegin) {
+				if strings.Contains(lineS, utils.CheckpointOffset) {
 					next := utils.Bytes2String(replyList[i + 1].([]byte))
-					offsetBegin, err = strconv.ParseInt(next, 10, 64)
+					offset, err = strconv.ParseInt(next, 10, 64)
 					if err != nil {
-						return "", -1, -1, fmt.Errorf("fetch checkpoint do parse offset-begin[%v] failed[%v]",
-							next, err)
-					}
-				}
-
-				if strings.Contains(lineS, utils.CheckpointOffsetEnd) {
-					next := utils.Bytes2String(replyList[i + 1].([]byte))
-					offsetEnd, err = strconv.ParseInt(next, 10, 64)
-					if err != nil {
-						return "", -1, -1, fmt.Errorf("fetch checkpoint do parse offset-end[%v] failed[%v]",
+						return "", -1, fmt.Errorf("fetch checkpoint do parse offset[%v] failed[%v]",
 							next, err)
 					}
 				}
@@ -130,14 +106,13 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int) (string, int64, i
 			}
 		}
 
-		return runId, offsetBegin, offsetEnd, nil
+		return runId, offset, nil
 	}
 }
 
 func ClearCheckpoint(dbSyncerId int, c redigo.Conn, exceptDb int32, dbKeyMap map[int32]int64, sourceAddr string) error {
 	runId := fmt.Sprintf("%s-%s", sourceAddr, utils.CheckpointRunId)
-	offsetBeg := fmt.Sprintf("%s-%s", sourceAddr, utils.CheckpointOffsetBegin)
-	offsetEnd := fmt.Sprintf("%s-%s", sourceAddr, utils.CheckpointOffsetEnd)
+	offset := fmt.Sprintf("%s-%s", sourceAddr, utils.CheckpointOffset)
 
 	for db := range dbKeyMap {
 		if db == exceptDb {
@@ -148,11 +123,11 @@ func ClearCheckpoint(dbSyncerId int, c redigo.Conn, exceptDb int32, dbKeyMap map
 			return fmt.Errorf("do select db[%v] failed[%v]", db, err)
 		}
 
-		if ret, err := c.Do("hdel", utils.CheckpointKey, runId, offsetBeg, offsetEnd); err != nil {
+		if ret, err := c.Do("hdel", utils.CheckpointKey, runId, offset); err != nil {
 			return err
 		} else {
-			log.Debugf("DbSyncer[%d] db[%v] remove checkpoint[%v] field[%v %v %v] with return[%v]",
-				db, dbSyncerId, utils.CheckpointKey, runId, offsetBeg, offsetEnd, ret)
+			log.Debugf("DbSyncer[%d] db[%v] remove checkpoint[%v] field[%v %v] with return[%v]",
+				db, dbSyncerId, utils.CheckpointKey, runId, offset, ret)
 		}
 
 		log.Infof("DbSyncer[%d] clear checkpoint of logical db[%v]", dbSyncerId, db)
