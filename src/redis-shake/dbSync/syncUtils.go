@@ -66,7 +66,7 @@ func (ds *DbSyncer) addDelayChan(id int64) {
 /*
  * @return barrier status
  *     string: barrier status code
- *     int: 0: no barrier, 1: with barrier
+ *     int: flushStatusNo: no barrier, flushStatusYes: with barrier
  */
 func barrierStatus(cmd string, prevBarrierStatus string) (string, int) {
 	switch prevBarrierStatus {
