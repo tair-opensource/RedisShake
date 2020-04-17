@@ -5,6 +5,9 @@ package run
 
 import (
 	"sync"
+
+	"pkg/libs/log"
+
 	"redis-shake/common"
 	"redis-shake/configure"
 	"redis-shake/dbSync"
@@ -29,11 +32,23 @@ func (cmd *CmdSync) GetDetailedInfo() interface{} {
 
 func (cmd *CmdSync) Main() {
 	type syncNode struct {
-		id             int
-		source         string
-		sourcePassword string
-		target         []string
-		targetPassword string
+		id                int
+		source            string
+		sourcePassword    string
+		target            []string
+		targetPassword    string
+		slotLeftBoundary  int
+		slotRightBoundary int
+	}
+
+	var slotDistribution []utils.SlotOwner
+	var err error
+	if conf.Options.SourceType == conf.RedisTypeCluster && conf.Options.ResumeFromBreakPoint {
+		if slotDistribution, err = utils.GetSlotDistribution(conf.Options.SourceAddressList[0], conf.Options.SourceAuthType,
+			conf.Options.SourcePasswordRaw, false); err != nil {
+			log.Errorf("get source slot distribution failed: %v", err)
+			return
+		}
 	}
 
 	// source redis number
@@ -50,12 +65,17 @@ func (cmd *CmdSync) Main() {
 			target = []string{conf.Options.TargetAddressList[pick]}
 		}
 
+		// fetch slot boundary
+		leftSlotBoundary, rightSlotBoundary := utils.GetSlotBoundary(slotDistribution, source)
+
 		nd := syncNode{
-			id:             i,
-			source:         source,
-			sourcePassword: conf.Options.SourcePasswordRaw,
-			target:         target,
-			targetPassword: conf.Options.TargetPasswordRaw,
+			id:                i,
+			source:            source,
+			sourcePassword:    conf.Options.SourcePasswordRaw,
+			target:            target,
+			targetPassword:    conf.Options.TargetPasswordRaw,
+			slotLeftBoundary:  leftSlotBoundary,
+			slotRightBoundary: rightSlotBoundary,
 		}
 		syncChan <- nd
 	}
@@ -73,7 +93,7 @@ func (cmd *CmdSync) Main() {
 
 				// one sync link corresponding to one DbSyncer
 				ds := dbSync.NewDbSyncer(nd.id, nd.source, nd.sourcePassword, nd.target, nd.targetPassword,
-					conf.Options.HttpProfile+i)
+					nd.slotLeftBoundary, nd.slotRightBoundary, conf.Options.HttpProfile+i)
 				cmd.dbSyncers[nd.id] = ds
 				// run in routine
 				go ds.Sync()

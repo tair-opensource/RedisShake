@@ -32,6 +32,9 @@ func FilterKey(key string) bool {
 	if _, ok := innerFilterKeys[key]; ok {
 		return true
 	}
+	if strings.HasPrefix(key, utils.CheckpointKey) {
+		return true
+	}
 
 	if len(conf.Options.FilterKeyBlacklist) != 0 {
 		if hasAtLeastOnePrefix(key, conf.Options.FilterKeyBlacklist) {

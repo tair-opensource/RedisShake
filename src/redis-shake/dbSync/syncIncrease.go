@@ -280,7 +280,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 
 		lastOplog := cachedTunnel[len(cachedTunnel) - 1]
 		needBatch := true
-		if !conf.Options.ResumeFromBreakPoint || (cachedCount == 1 && lastOplog.Cmd == "ping") {
+		if !ds.enableResumeFromBreakPoint || (cachedCount == 1 && lastOplog.Cmd == "ping") {
 			needBatch = false
 		}
 
@@ -322,7 +322,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			if _, ok := runIdMap[lastOplog.Db]; !ok {
 				runIdMap[lastOplog.Db] = struct{}{}
 				ds.addSendId(&sendId, 1)
-				if err := c.Send("hset", utils.CheckpointKey, checkpointRunId, ds.runId); err != nil {
+				if err := c.Send("hset", ds.checkpointName, checkpointRunId, ds.runId); err != nil {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
 				}
@@ -330,7 +330,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 
 			// add checkpoint
 			ds.addSendId(&sendId, 2)
-			if err := c.Send("hset", utils.CheckpointKey, checkpointOffset, offset); err != nil {
+			if err := c.Send("hset", ds.checkpointName, checkpointOffset, offset); err != nil {
 				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 					ds.id, conf.Options.Id, err.Error())
 			}

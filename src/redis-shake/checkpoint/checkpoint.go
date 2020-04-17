@@ -10,7 +10,7 @@ import (
 )
 
 func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType, passwd string,
-		isCluster bool, tlsEnable bool) (string, int64, int, error) {
+		checkpointName string, isCluster bool, tlsEnable bool) (string, int64, int, error) {
 	c := utils.OpenRedisConn(target, authType, passwd, isCluster, tlsEnable)
 
 	// fetch logical db list
@@ -31,7 +31,7 @@ func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType
 	var recDb int32
 	for db := range mp {
 		log.Infof("DbSyncer[%d] load checkpoint check db[%v]", dbSyncerId, db)
-		runId, offset, err := fetchCheckpoint(sourceAddr, c, int(db))
+		runId, offset, err := fetchCheckpoint(sourceAddr, c, int(db), checkpointName)
 		if err != nil {
 			return "", 0, 0, err
 		}
@@ -50,7 +50,7 @@ func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType
 	}
 
 	log.Infof("DbSyncer[%d] newestOffset[%v], recordDb[%v]", dbSyncerId, newestOffset, recDb)
-	if err := ClearCheckpoint(dbSyncerId, c, recDb, mp, sourceAddr); err != nil {
+	if err := ClearCheckpoint(dbSyncerId, c, recDb, mp, sourceAddr, checkpointName); err != nil {
 		log.Warnf("DbSyncer[%d] clear old checkpoint failed[%v]", dbSyncerId, err)
 	}
 	return recRunId, newestOffset, int(recDb), nil
@@ -63,14 +63,14 @@ func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType
  *     int64: offset
  *     error
  */
-func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int) (string, int64, error) {
+func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int, checkpointName string) (string, int64, error) {
 	_, err := c.Do("select", db)
 	if err != nil {
 		return "", -1, fmt.Errorf("fetch checkpoint do select db[%v] failed[%v]", db, err)
 	}
 
 	// judge checkpoint exists
-	if reply, err := c.Do("exists", utils.CheckpointKey); err != nil {
+	if reply, err := c.Do("exists", checkpointName); err != nil {
 		return "", -1, fmt.Errorf("fetch checkpoint do judge checkpoint exists failed[%v]", err)
 	} else {
 		if reply.(int64) == 0 {
@@ -80,7 +80,7 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int) (string, int64, e
 	}
 
 	// hgetall
-	if reply, err := c.Do("hgetall", utils.CheckpointKey); err != nil {
+	if reply, err := c.Do("hgetall", checkpointName); err != nil {
 		return "", -1, fmt.Errorf("fetch checkpoint do hgetall failed[%v]", err)
 	} else {
 		runId := "?"
@@ -110,7 +110,8 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int) (string, int64, e
 	}
 }
 
-func ClearCheckpoint(dbSyncerId int, c redigo.Conn, exceptDb int32, dbKeyMap map[int32]int64, sourceAddr string) error {
+func ClearCheckpoint(dbSyncerId int, c redigo.Conn, exceptDb int32, dbKeyMap map[int32]int64, sourceAddr string,
+	checkpointName string) error {
 	runId := fmt.Sprintf("%s-%s", sourceAddr, utils.CheckpointRunId)
 	offset := fmt.Sprintf("%s-%s", sourceAddr, utils.CheckpointOffset)
 
@@ -123,11 +124,11 @@ func ClearCheckpoint(dbSyncerId int, c redigo.Conn, exceptDb int32, dbKeyMap map
 			return fmt.Errorf("do select db[%v] failed[%v]", db, err)
 		}
 
-		if ret, err := c.Do("hdel", utils.CheckpointKey, runId, offset); err != nil {
+		if ret, err := c.Do("hdel", checkpointName, runId, offset); err != nil {
 			return err
 		} else {
 			log.Debugf("DbSyncer[%d] db[%v] remove checkpoint[%v] field[%v %v] with return[%v]",
-				db, dbSyncerId, utils.CheckpointKey, runId, offset, ret)
+				db, dbSyncerId, checkpointName, runId, offset, ret)
 		}
 
 		log.Infof("DbSyncer[%d] clear checkpoint of logical db[%v]", dbSyncerId, db)

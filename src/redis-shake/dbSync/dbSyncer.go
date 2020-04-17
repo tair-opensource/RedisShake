@@ -14,15 +14,20 @@ import (
 )
 
 // one sync link corresponding to one DbSyncer
-func NewDbSyncer(id int, source, sourcePassword string, target []string, targetPassword string, httpPort int) *DbSyncer {
+func NewDbSyncer(id int, source, sourcePassword string, target []string, targetPassword string,
+	slotLeftBoundary, slotRightBoundary int, httpPort int) *DbSyncer {
 	ds := &DbSyncer{
-		id:              id,
-		source:          source,
-		sourcePassword:  sourcePassword,
-		target:          target,
-		targetPassword:  targetPassword,
-		httpProfilePort: httpPort,
-		WaitFull:        make(chan struct{}),
+		id:                         id,
+		source:                     source,
+		sourcePassword:             sourcePassword,
+		target:                     target,
+		targetPassword:             targetPassword,
+		slotLeftBoundary:           slotLeftBoundary,
+		slotRightBoundary:          slotRightBoundary,
+		httpProfilePort:            httpPort,
+		enableResumeFromBreakPoint: conf.Options.ResumeFromBreakPoint,
+		checkpointName:             utils.CheckpointKey, // default, may be modified
+		WaitFull:                   make(chan struct{}),
 	}
 
 	// add metric
@@ -34,18 +39,21 @@ func NewDbSyncer(id int, source, sourcePassword string, target []string, targetP
 type DbSyncer struct {
 	id int // current id in all syncer
 
-	source         string   // source address
-	sourcePassword string   // source password
-	target         []string // target address
-	targetPassword string   // target password
-	runId          string   // source runId
-
-	httpProfilePort int // http profile port
+	source            string   // source address
+	sourcePassword    string   // source password
+	target            []string // target address
+	targetPassword    string   // target password
+	runId             string   // source runId
+	slotLeftBoundary  int      // mark the left slot boundary if enable resuming from break point and is cluster
+	slotRightBoundary int      // mark the right slot boundary if enable resuming from break point and is cluster
+	httpProfilePort   int      // http profile port
 
 	// stat info
 	stat Status
 
-	startDbId int // use in break resume from break-point
+	startDbId                  int    // use in break resume from break-point
+	enableResumeFromBreakPoint bool   // enable?
+	checkpointName             string // checkpoint name, if is shard, this name has suffix
 
 	/*
 	 * this channel is used to calculate delay between redis-shake and target redis.
@@ -72,17 +80,28 @@ func (ds *DbSyncer) GetExtraInfo() map[string]interface{} {
 
 // main
 func (ds *DbSyncer) Sync() {
-	log.Infof("DbSyncer[%d] starts syncing data from %v to %v with http[%v]",
-		ds.id, ds.source, ds.target, ds.httpProfilePort)
+	log.Infof("DbSyncer[%d] starts syncing data from %v to %v with http[%v], enableResumeFromBreakPoint[%v], " +
+		"slot boundary[%v, %v]", ds.id, ds.source, ds.target, ds.httpProfilePort, ds.enableResumeFromBreakPoint,
+			ds.slotLeftBoundary, ds.slotRightBoundary)
 
-	// checkpoint reload if has
-	runId, offset, dbid, err := checkpoint.LoadCheckpoint(ds.id, ds.source, ds.target, conf.Options.TargetAuthType,
-		ds.targetPassword, conf.Options.TargetType == conf.RedisTypeCluster, conf.Options.SourceTLSEnable)
-	if err != nil {
-		log.Panicf("DbSyncer[%d] load checkpoint from %v failed[%v]", ds.id, ds.target, err)
-		return
+	var err error
+	runId, offset, dbid := "?", int64(-1), 0
+	if ds.enableResumeFromBreakPoint {
+		// assign the checkpoint name with suffix if is cluster
+		if ds.slotLeftBoundary != -1 {
+			ds.checkpointName = utils.ChoseSlotInRange(utils.CheckpointKey, ds.slotLeftBoundary, ds.slotRightBoundary)
+		}
+
+		// checkpoint reload if has
+		log.Infof("DbSyncer[%d] enable resume from break point, try to load checkpoint", ds.id)
+		runId, offset, dbid, err = checkpoint.LoadCheckpoint(ds.id, ds.source, ds.target, conf.Options.TargetAuthType,
+			ds.targetPassword, ds.checkpointName, conf.Options.TargetType == conf.RedisTypeCluster, conf.Options.SourceTLSEnable)
+		if err != nil {
+			log.Panicf("DbSyncer[%d] load checkpoint from %v failed[%v]", ds.id, ds.target, err)
+			return
+		}
+		log.Infof("DbSyncer[%d] checkpoint info: runId[%v], offset[%v] dbid[%v]", ds.id, runId, offset, dbid)
 	}
-	log.Infof("DbSyncer[%d] checkpoint info: runId[%v], offset[%v] dbid[%v]", ds.id, runId, offset, dbid)
 
 	base.Status = "waitfull"
 	var input io.ReadCloser
@@ -99,8 +118,6 @@ func (ds *DbSyncer) Sync() {
 	}
 	defer input.Close()
 
-	log.Infof("DbSyncer[%d] rdb file size = %d\n", ds.id, nsize)
-
 	// start heartbeat
 	if len(conf.Options.HeartbeatUrl) > 0 {
 		heartbeatCtl := heartbeat.HeartbeatController{
@@ -114,10 +131,12 @@ func (ds *DbSyncer) Sync() {
 
 	if isFullSync {
 		// sync rdb
+		log.Infof("DbSyncer[%d] rdb file size = %d", ds.id, nsize)
 		base.Status = "full"
 		ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize, conf.Options.TargetTLSEnable)
 		ds.startDbId = 0
 	} else {
+		log.Infof("DbSyncer[%d] run incr-sync directly with db_id[%v]", ds.id, dbid)
 		ds.startDbId = dbid
 		// set fullSyncProgress to 100 when skip full sync stage
 		metric.GetMetric(ds.id).SetFullSyncProgress(ds.id, 100)

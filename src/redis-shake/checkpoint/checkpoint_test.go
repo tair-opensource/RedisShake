@@ -29,7 +29,7 @@ func TestCheckpoint(t *testing.T) {
 		_, err := c.Do("flushall")
 		assert.Equal(t, nil, err, "should be equal")
 
-		runId, offset, err := fetchCheckpoint(testAddr, c, 0)
+		runId, offset, err := fetchCheckpoint(testAddr, c, 0, utils.CheckpointKey)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "", runId, "should be equal")
 		assert.Equal(t, int64(-1), offset, "should be equal")
@@ -51,7 +51,7 @@ func TestCheckpoint(t *testing.T) {
 		_, err = c.Do("hset", utils.CheckpointKey, "meaningless", 123)
 		assert.Equal(t, nil, err, "should be equal")
 
-		runId, offset, err := fetchCheckpoint(testAddr, c, 0)
+		runId, offset, err := fetchCheckpoint(testAddr, c, 0, utils.CheckpointKey)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "", runId, "should be equal")
 		assert.Equal(t, int64(-1), offset, "should be equal")
@@ -75,7 +75,7 @@ func TestCheckpoint(t *testing.T) {
 		_, err = c.Do("hset", utils.CheckpointKey, offsetKey, 123)
 		assert.Equal(t, nil, err, "should be equal")
 
-		runId, offset, err := fetchCheckpoint(testAddr, c, 5)
+		runId, offset, err := fetchCheckpoint(testAddr, c, 5, utils.CheckpointKey)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "?", runId, "should be equal")
 		assert.Equal(t, int64(123), offset, "should be equal")
@@ -85,7 +85,7 @@ func TestCheckpoint(t *testing.T) {
 		_, err = c.Do("hset", utils.CheckpointKey, runIdKey, "test_run_id")
 		assert.Equal(t, nil, err, "should be equal")
 
-		runId, offset, err = fetchCheckpoint(testAddr, c, 5)
+		runId, offset, err = fetchCheckpoint(testAddr, c, 5, utils.CheckpointKey)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "test_run_id", runId, "should be equal")
 		assert.Equal(t, int64(123), offset, "should be equal")
@@ -129,7 +129,7 @@ func TestCheckpoint(t *testing.T) {
 		assert.Equal(t, nil, err, "should be equal")
 
 		// run
-		runId, offset, db, err := LoadCheckpoint(0, testAddr, []string{testAddr}, "auth", "", false, false)
+		runId, offset, db, err := LoadCheckpoint(0, testAddr, []string{testAddr}, "auth", "", utils.CheckpointKey, false, false)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "?", runId, "should be equal")
 		assert.Equal(t, int64(8930), offset, "should be equal")
@@ -186,7 +186,7 @@ func TestCheckpoint(t *testing.T) {
 		assert.Equal(t, nil, err, "should be equal")
 
 		// run
-		runId, offset, db, err := LoadCheckpoint(0, testAddr, []string{testAddr}, "auth", "", false, false)
+		runId, offset, db, err := LoadCheckpoint(0, testAddr, []string{testAddr}, "auth", "", utils.CheckpointKey, false, false)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "test_run_id", runId, "should be equal")
 		assert.Equal(t, int64(8930), offset, "should be equal")
