@@ -29,10 +29,11 @@ func TestCheckpoint(t *testing.T) {
 		_, err := c.Do("flushall")
 		assert.Equal(t, nil, err, "should be equal")
 
-		runId, offset, err := fetchCheckpoint(testAddr, c, 0, utils.CheckpointKey)
+		runId, offset, version, err := fetchCheckpoint(testAddr, c, 0, utils.CheckpointKey)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "", runId, "should be equal")
 		assert.Equal(t, int64(-1), offset, "should be equal")
+		assert.Equal(t, int(-1), version, "should be equal")
 	}
 
 	// test fetchCheckpoint: empty
@@ -51,10 +52,11 @@ func TestCheckpoint(t *testing.T) {
 		_, err = c.Do("hset", utils.CheckpointKey, "meaningless", 123)
 		assert.Equal(t, nil, err, "should be equal")
 
-		runId, offset, err := fetchCheckpoint(testAddr, c, 0, utils.CheckpointKey)
+		runId, offset, version, err := fetchCheckpoint(testAddr, c, 0, utils.CheckpointKey)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "", runId, "should be equal")
 		assert.Equal(t, int64(-1), offset, "should be equal")
+		assert.Equal(t, int(-1), version, "should be equal")
 	}
 
 	// test fetchCheckpoint: not empty
@@ -75,17 +77,23 @@ func TestCheckpoint(t *testing.T) {
 		_, err = c.Do("hset", utils.CheckpointKey, offsetKey, 123)
 		assert.Equal(t, nil, err, "should be equal")
 
-		runId, offset, err := fetchCheckpoint(testAddr, c, 5, utils.CheckpointKey)
+		// version
+		versionKey := fmt.Sprintf("%s-%s", testAddr, utils.CheckpointVersion)
+		_, err = c.Do("hset", utils.CheckpointKey, versionKey, 3)
+		assert.Equal(t, nil, err, "should be equal")
+
+		runId, offset, version, err := fetchCheckpoint(testAddr, c, 5, utils.CheckpointKey)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "?", runId, "should be equal")
 		assert.Equal(t, int64(123), offset, "should be equal")
+		assert.Equal(t, int(3), version, "should be equal")
 
 		// with runId
 		runIdKey := fmt.Sprintf("%s-%s", testAddr, utils.CheckpointRunId)
 		_, err = c.Do("hset", utils.CheckpointKey, runIdKey, "test_run_id")
 		assert.Equal(t, nil, err, "should be equal")
 
-		runId, offset, err = fetchCheckpoint(testAddr, c, 5, utils.CheckpointKey)
+		runId, offset, _, err = fetchCheckpoint(testAddr, c, 5, utils.CheckpointKey)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "test_run_id", runId, "should be equal")
 		assert.Equal(t, int64(123), offset, "should be equal")

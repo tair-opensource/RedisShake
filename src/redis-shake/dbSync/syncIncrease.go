@@ -265,6 +265,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 	// cache the batch oplog
 	cachedTunnel := make([]cmdDetail, 0, conf.Options.SenderCount + 1)
 	checkpointRunId := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointRunId)
+	checkpointVersion := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointVersion)
 	checkpointOffset := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffset)
 	ticker := time.NewTicker(500 * time.Millisecond)
 	// mark whether the given db has already send runId, no need to send run-id each time.
@@ -321,8 +322,14 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			// need send run-id?
 			if _, ok := runIdMap[lastOplog.Db]; !ok {
 				runIdMap[lastOplog.Db] = struct{}{}
-				ds.addSendId(&sendId, 1)
+				ds.addSendId(&sendId, 2)
+				// run id
 				if err := c.Send("hset", ds.checkpointName, checkpointRunId, ds.runId); err != nil {
+					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+						ds.id, conf.Options.Id, err.Error())
+				}
+				// version
+				if err := c.Send("hset", ds.checkpointName, checkpointVersion, utils.FcvCheckpoint.CurrentVersion); err != nil {
 					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
 						ds.id, conf.Options.Id, err.Error())
 				}

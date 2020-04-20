@@ -69,6 +69,11 @@ func main() {
 		crash(fmt.Sprintf("Configure file open failed. %v", err), -1)
 	}
 
+	// read fcv and do comparison
+	if _, err := utils.CheckFcv(*configuration, utils.FcvConfiguration.FeatureCompatibleVersion); err != nil {
+		crash(err.Error(), -5)
+	}
+
 	configure := nimo.NewConfigLoader(file)
 	configure.SetDateFormat(utils.GolangSecurityTime)
 	if err := configure.Load(&conf.Options); err != nil {

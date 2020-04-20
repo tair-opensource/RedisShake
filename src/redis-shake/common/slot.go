@@ -2,8 +2,10 @@ package utils
 
 import (
 	"fmt"
-	"github.com/vinllen/redis-go-cluster"
+
 	"pkg/libs/log"
+
+	"github.com/vinllen/redis-go-cluster"
 )
 
 const (

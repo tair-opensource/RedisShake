@@ -3,6 +3,9 @@ package conf
 import "time"
 
 type Configuration struct {
+	// version
+	ConfVersion uint `config:"conf.version"` // do not modify the tag name
+
 	// config file variables
 	Id                     string   `config:"id"`
 	LogFile                string   `config:"log.file"`

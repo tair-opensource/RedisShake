@@ -29,9 +29,10 @@ func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType
 	var newestOffset int64 = -1
 	var recRunId string
 	var recDb int32
+	var recVersion int
 	for db := range mp {
 		log.Infof("DbSyncer[%d] load checkpoint check db[%v]", dbSyncerId, db)
-		runId, offset, err := fetchCheckpoint(sourceAddr, c, int(db), checkpointName)
+		runId, offset, version, err := fetchCheckpoint(sourceAddr, c, int(db), checkpointName)
 		if err != nil {
 			return "", 0, 0, err
 		}
@@ -41,7 +42,14 @@ func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType
 			newestOffset = offset
 			recRunId = runId
 			recDb = db // which db
+			recVersion = version
 		}
+	}
+
+	if recVersion < utils.FcvCheckpoint.FeatureCompatibleVersion {
+		return "", 0, 0, fmt.Errorf("current required configuration version[%v] > input[%v], please upgrade MongoShake to version >= %v",
+			utils.FcvCheckpoint.FeatureCompatibleVersion, recVersion,
+			utils.LowestCheckpointVersion[utils.FcvCheckpoint.FeatureCompatibleVersion])
 	}
 
 	// do not set recDb when runId == "?" which means all checkpoint should be clean
@@ -63,28 +71,29 @@ func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType
  *     int64: offset
  *     error
  */
-func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int, checkpointName string) (string, int64, error) {
+func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int, checkpointName string) (string, int64, int, error) {
 	_, err := c.Do("select", db)
 	if err != nil {
-		return "", -1, fmt.Errorf("fetch checkpoint do select db[%v] failed[%v]", db, err)
+		return "", -1, -1, fmt.Errorf("fetch checkpoint do select db[%v] failed[%v]", db, err)
 	}
 
 	// judge checkpoint exists
 	if reply, err := c.Do("exists", checkpointName); err != nil {
-		return "", -1, fmt.Errorf("fetch checkpoint do judge checkpoint exists failed[%v]", err)
+		return "", -1, -1, fmt.Errorf("fetch checkpoint do judge checkpoint exists failed[%v]", err)
 	} else {
 		if reply.(int64) == 0 {
 			// not exist
-			return "", -1, nil
+			return "", -1, -1, nil
 		}
 	}
 
 	// hgetall
 	if reply, err := c.Do("hgetall", checkpointName); err != nil {
-		return "", -1, fmt.Errorf("fetch checkpoint do hgetall failed[%v]", err)
+		return "", -1, -1, fmt.Errorf("fetch checkpoint do hgetall failed[%v]", err)
 	} else {
 		runId := "?"
 		var offset int64 = -1
+		var version int64 = 0
 		replyList := reply.([]interface{})
 		// read line by line and parse the offset
 		for i := 0; i < len(replyList); i += 2 {
@@ -95,7 +104,7 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int, checkpointName st
 					next := utils.Bytes2String(replyList[i + 1].([]byte))
 					offset, err = strconv.ParseInt(next, 10, 64)
 					if err != nil {
-						return "", -1, fmt.Errorf("fetch checkpoint do parse offset[%v] failed[%v]",
+						return "", -1, -1, fmt.Errorf("fetch checkpoint do parse offset[%v] failed[%v]",
 							next, err)
 					}
 				}
@@ -103,10 +112,19 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int, checkpointName st
 				if strings.Contains(lineS, utils.CheckpointRunId) {
 					runId = utils.Bytes2String(replyList[i + 1].([]byte))
 				}
+
+				if strings.Contains(lineS, utils.CheckpointVersion) {
+					str := utils.Bytes2String(replyList[i + 1].([]byte))
+					version, err = strconv.ParseInt(str, 10, 64)
+					if err != nil {
+						return "", -1, -1, fmt.Errorf("fetch checkpoint do parse version[%v] failed[%v]",
+							str, err)
+					}
+				}
 			}
 		}
 
-		return runId, offset, nil
+		return runId, offset, int(version), nil
 	}
 }
 

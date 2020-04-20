@@ -36,9 +36,10 @@ const (
 
 	CoidsErrMsg = "ERR backend server 'server' not found"
 
-	CheckpointKey    = "redis-shake-checkpoint"
-	CheckpointOffset = "offset"
-	CheckpointRunId  = "runid"
+	CheckpointKey     = "redis-shake-checkpoint"
+	CheckpointOffset  = "offset"
+	CheckpointRunId   = "runid"
+	CheckpointVersion = "version"
 )
 
 var (

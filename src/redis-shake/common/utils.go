@@ -23,6 +23,7 @@ import (
 	"pkg/libs/stats"
 	"pkg/rdb"
 	"pkg/redis"
+
 	"redis-shake/configure"
 
 	"github.com/FZambia/go-sentinel"
