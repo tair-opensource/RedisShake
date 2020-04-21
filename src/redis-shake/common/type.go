@@ -6,6 +6,8 @@ import (
 	"errors"
 )
 
+// this file is copied from redigo and do some modification to make log more clear
+
 type Error string
 func (err Error) Error() string { return string(err) }
 

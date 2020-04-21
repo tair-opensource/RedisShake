@@ -1,3 +1,6 @@
+2020-04-21 Alibaba Cloud.
+	* VERSION: 1.6.28
+	* IMPROVE: polish redigo log.
 2020-03-25 Alibaba Cloud.
 	* VERSION: 1.6.27
 	* BUGFIX: transaction bug that only using one key but still raised "not
