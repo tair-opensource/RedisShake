@@ -29,7 +29,7 @@ func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType
 	var newestOffset int64 = -1
 	var recRunId string
 	var recDb int32
-	var recVersion int
+	var recVersion = -1
 	for db := range mp {
 		log.Infof("DbSyncer[%d] load checkpoint check db[%v]", dbSyncerId, db)
 		runId, offset, version, err := fetchCheckpoint(sourceAddr, c, int(db), checkpointName)
@@ -46,8 +46,8 @@ func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType
 		}
 	}
 
-	if recVersion < utils.FcvCheckpoint.FeatureCompatibleVersion {
-		return "", 0, 0, fmt.Errorf("current required configuration version[%v] > input[%v], please upgrade MongoShake to version >= %v",
+	if recVersion != -1 && recVersion < utils.FcvCheckpoint.FeatureCompatibleVersion {
+		return "", 0, 0, fmt.Errorf("current required checkpoint version[%v] > input[%v], please upgrade RedisShake to version >= %v",
 			utils.FcvCheckpoint.FeatureCompatibleVersion, recVersion,
 			utils.LowestCheckpointVersion[utils.FcvCheckpoint.FeatureCompatibleVersion])
 	}

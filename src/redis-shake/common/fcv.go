@@ -85,7 +85,7 @@ func CheckFcv(file string, fcv int) (int, error) {
 	}
 
 	if version < fcv {
-		return version, fmt.Errorf("current required configuration version[%v] > input[%v], please upgrade MongoShake to version >= %v",
+		return version, fmt.Errorf("current required configuration version[%v] > input[%v], please upgrade RedisShake to version >= %v",
 			fcv, version, LowestConfigurationVersion[fcv])
 	}
 	return version, nil
