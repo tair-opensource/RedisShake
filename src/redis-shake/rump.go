@@ -387,7 +387,7 @@ func (dre *dbRumperExecutor) writer() {
 			preDb = ele.db
 		}
 
-		if conf.Options.Rewrite {
+		if conf.Options.KeyExists == "rewrite" {
 			err = dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value, "REPLACE")
 		} else {
 			err = dre.targetClient.Send("RESTORE", ele.key, ele.pttl, ele.value)

@@ -1,11 +1,16 @@
 2020-04-22 Alibaba Cloud.
 	* VERSION: 2.0
 	* FEATURE: support resuming from break point.
+2020-04-21 Alibaba Cloud.
+	* VERSION: 1.6.28
+	* IMPROVE: polish redigo log.
 2020-03-25 Alibaba Cloud.
 	* VERSION: 1.6.27
 	* BUGFIX: transaction bug that only using one key but still raised "not
 	hashed in the same slot" error, see #257.
 	* IMPROVE: polish redis save rdb failed log, see #256.
+	* IMPROVE: support mset/msetnx command, see #247.
+	* IMPROVE: change "rewrite" to "key_exists" in configuration, see #259. 
 2020-02-06 Alibaba Cloud.
 	* VERSION: 1.6.26
 	* IMPROVE: set auth_type to auth as default, see #237.
