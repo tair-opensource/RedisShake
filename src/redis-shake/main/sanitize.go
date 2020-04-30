@@ -411,6 +411,10 @@ func SanitizeOptions(tp string) error {
 			return fmt.Errorf("'psync' should == true if enable resume_from_break_point")
 		}
 
+		if conf.Options.TargetDB != -1 {
+			return fmt.Errorf("target.db should only == -1 if enable resume_from_break_point")
+		}
+
 		// check db type
 		if conf.Options.SourceType != conf.Options.TargetType {
 			return fmt.Errorf("source type must equal to the target type when 'resume_from_break_point == true'" +
