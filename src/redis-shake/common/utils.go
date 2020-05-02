@@ -789,7 +789,8 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 			log.Panicf(err.Error())
 		}
 		if exist {
-			if conf.Options.Rewrite {
+			switch conf.Options.KeyExists {
+			case "rewrite":
 				if !conf.Options.Metric {
 					log.Infof("warning, rewrite key: %v", string(e.Key))
 				}
@@ -797,8 +798,10 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 				if err != nil {
 					log.Panicf("del ", string(e.Key), err)
 				}
-			} else {
-				log.Panicf("target key name is busy: %s", string(e.Key))
+			case "ignore":
+				log.Warnf("target key name is busy but ignore: %v", string(e.Key))
+			case "none":
+				log.Panicf("target key name is busy: %v", string(e.Key))
 			}
 		}
 		restoreQuicklistEntry(c, e)
@@ -827,7 +830,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 			(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {
 		log.Debugf("restore big key[%s] with length[%v] and member count[%v]", e.Key, len(e.Value), e.RealMemberCount)
 		//use command
-		if conf.Options.Rewrite && e.NeedReadLen == 1 {
+		if conf.Options.KeyExists == "rewrite" && e.NeedReadLen == 1 {
 			if !conf.Options.Metric {
 				log.Infof("warning, rewrite big key:", string(e.Key))
 			}
@@ -872,7 +875,8 @@ RESTORE:
 		  but in 4.0 kernel is "BUSYKEY Target key name already exists"*/
 		if strings.Contains(err.Error(), "Target key name is busy") ||
 			strings.Contains(err.Error(), "BUSYKEY Target key name already exists") {
-			if conf.Options.Rewrite {
+			switch conf.Options.KeyExists {
+			case "rewrite":
 				if !conf.Options.Metric {
 					log.Infof("warning, rewrite key: %v", string(e.Key))
 				}
@@ -887,8 +891,10 @@ RESTORE:
 				}
 
 				goto RESTORE
-			} else {
-				log.Panicf("target key name is busy:", string(e.Key))
+			case "ignore":
+				log.Warnf("target key name is busy but ignore: %v", string(e.Key))
+				case "none":
+				log.Panicf("target key name is busy: %v", string(e.Key))
 			}
 		} else if strings.Contains(err.Error(), "Bad data format") {
 			// from big version to small version may has this error. we need to split the data struct

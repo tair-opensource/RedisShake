@@ -6,6 +6,8 @@ import (
 	"errors"
 )
 
+// this file is copied from redigo and do some modification to make log more clear
+
 type Error string
 func (err Error) Error() string { return string(err) }
 
@@ -242,4 +244,4 @@ func Values(reply interface{}, err error) ([]interface{}, error) {
 		return nil, fmt.Errorf("invalid return: %s", reply)
 	}
 	return nil, fmt.Errorf("redigo: unexpected type for Values, got type %T, value: %v", reply, reply)
-}
+} 
