@@ -23,6 +23,7 @@ import (
 	"pkg/libs/stats"
 	"pkg/rdb"
 	"pkg/redis"
+
 	"redis-shake/configure"
 
 	"github.com/FZambia/go-sentinel"
@@ -30,12 +31,13 @@ import (
 	redigoCluster "github.com/vinllen/redis-go-cluster"
 )
 
-func OpenRedisConn(target []string, auth_type, passwd string, isCluster bool, tlsEnable bool) redigo.Conn {
-	return OpenRedisConnWithTimeout(target, auth_type, passwd, 0, 0, isCluster, tlsEnable)
+func OpenRedisConn(target []string, authType, passwd string, isCluster bool, tlsEnable bool) redigo.Conn {
+	return OpenRedisConnWithTimeout(target, authType, passwd, 0, 0, isCluster, tlsEnable)
 }
 
-func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTimeout, writeTimeout time.Duration,
-		isCluster bool, tlsEnable bool) redigo.Conn {
+func OpenRedisConnWithTimeout(target []string, authType, passwd string, readTimeout, writeTimeout time.Duration,
+	isCluster bool, tlsEnable bool) redigo.Conn {
+	// return redigo.NewConn(OpenNetConn(target, authType, passwd), readTimeout, writeTimeout)
 	if isCluster {
 		// the alive time isn't the tcp keep_alive parameter
 		cluster, err := redigoCluster.NewCluster(
@@ -55,11 +57,11 @@ func OpenRedisConnWithTimeout(target []string, auth_type, passwd string, readTim
 		return NewClusterConn(cluster, RecvChanSize)
 	} else {
 		// tls only support single connection currently
-		return redigo.NewConn(OpenNetConn(target[0], auth_type, passwd, tlsEnable), readTimeout, writeTimeout)
+		return redigo.NewConn(OpenNetConn(target[0], authType, passwd, tlsEnable), readTimeout, writeTimeout)
 	}
 }
 
-func OpenNetConn(target, auth_type, passwd string, tlsEnable bool) net.Conn {
+func OpenNetConn(target, authType, passwd string, tlsEnable bool) net.Conn {
 	d := &net.Dialer{
 		KeepAlive: time.Duration(conf.Options.KeepAlive) * time.Second,
 	}
@@ -74,13 +76,13 @@ func OpenNetConn(target, auth_type, passwd string, tlsEnable bool) net.Conn {
 		log.PanicErrorf(err, "cannot connect to '%s'", target)
 	}
 
-	// log.Infof("try to auth address[%v] with type[%v]", target, auth_type)
-	AuthPassword(c, auth_type, passwd)
+	// log.Infof("try to auth address[%v] with type[%v]", target, authType)
+	AuthPassword(c, authType, passwd)
 	// log.Info("auth OK!")
 	return c
 }
 
-func OpenNetConnSoft(target, auth_type, passwd string, tlsEnable bool) net.Conn {
+func OpenNetConnSoft(target, authType, passwd string, tlsEnable bool) net.Conn {
 	var c net.Conn
 	var err error
 	if tlsEnable {
@@ -91,7 +93,7 @@ func OpenNetConnSoft(target, auth_type, passwd string, tlsEnable bool) net.Conn 
 	if err != nil {
 		return nil
 	}
-	AuthPassword(c, auth_type, passwd)
+	AuthPassword(c, authType, passwd)
 	return c
 }
 
@@ -138,13 +140,13 @@ func SendPSyncListeningPort(c net.Conn, port int) {
 	}
 }
 
-func AuthPassword(c net.Conn, auth_type, passwd string) {
+func AuthPassword(c net.Conn, authType, passwd string) {
 	if passwd == "" {
-		log.Infof("input password is empty, skip auth address[%v] with type[%v].", c.RemoteAddr(), auth_type)
+		log.Infof("input password is empty, skip auth address[%v] with type[%v].", c.RemoteAddr(), authType)
 		return
 	}
 
-	_, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand(auth_type, passwd)))
+	_, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand(authType, passwd)))
 	if err != nil {
 		log.PanicError(errors.Trace(err), "write auth command failed")
 	}
@@ -158,8 +160,8 @@ func AuthPassword(c net.Conn, auth_type, passwd string) {
 	}
 }
 
-func OpenSyncConn(target string, auth_type, passwd string, tlsEnable bool) (net.Conn, <-chan int64) {
-	c := OpenNetConn(target, auth_type, passwd, tlsEnable)
+func OpenSyncConn(target string, authType, passwd string, tlsEnable bool) (net.Conn, <-chan int64) {
+	c := OpenNetConn(target, authType, passwd, tlsEnable)
 	if _, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand("sync"))); err != nil {
 		log.PanicError(errors.Trace(err), "write sync command failed")
 	}
@@ -216,7 +218,7 @@ func SendPSyncFullsync(br *bufio.Reader, bw *bufio.Writer) (string, int64, <-cha
 	}
 	xx := strings.Split(string(x), " ")
 	if len(xx) < 3 || strings.ToLower(xx[0]) != "fullresync" {
-		log.Panicf("invalid psync response = '%s', should be fullsync", x)
+		log.Panicf("invalid psync response = '%s', should be fullresync", x)
 	}
 	v, err := strconv.ParseInt(xx[2], 10, 64)
 	if err != nil {
@@ -229,8 +231,12 @@ func SendPSyncFullsync(br *bufio.Reader, bw *bufio.Writer) (string, int64, <-cha
 	return runid, offset, waitRdbDump(br)
 }
 
-func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset int64) {
-	cmd := redis.NewCommand("psync", runid, offset+1)
+func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset int64) (string, int64, <-chan int64) {
+	if offset != -1 {
+		offset += 1
+	}
+
+	cmd := redis.NewCommand("psync", runid, offset)
 	if err := redis.Encode(bw, cmd, true); err != nil {
 		log.PanicError(err, "write psync command failed, continue")
 	}
@@ -238,6 +244,8 @@ func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset 
 	if err != nil {
 		log.PanicError(err, "invalid psync response, continue")
 	}
+
+	// parse return message
 	if e, ok := r.(*redis.Error); ok {
 		log.Panicf("invalid psync response, continue, %s", e.Value)
 	}
@@ -246,17 +254,28 @@ func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset 
 		log.PanicError(err, "invalid psync response, continue")
 	}
 	xx := strings.Split(string(x), " ")
-	if len(xx) != 1 || strings.ToLower(xx[0]) != "continue" {
-		if strings.ToLower(xx[0]) == "fullresync" {
 
-			// log.PurePrintf("%s\n", NewLogItem("ExpectContinueButFullSync", "ERROR", NewErrorLogDetail(string(x), "")))
-			log.Errorf("Event:ExpectContinueButFullSync\tId:%s\tReply:%s", conf.Options.Id, x)
+	// is full sync?
+	if len(xx) == 1 && strings.ToLower(xx[0]) == "continue" {
+		// continue
+		log.Infof("Event:IncSyncStart\tId:%s\t", conf.Options.Id)
+		return runid, offset - 1, nil
+	} else if len(xx) >= 3 && strings.ToLower(xx[0]) == "fullresync" {
+		v, err := strconv.ParseInt(xx[2], 10, 64)
+		if err != nil {
+			log.PanicError(err, "parse psync offset failed")
 		}
+
+		log.Infof("Event:FullSyncStart\tId:%s\t", conf.Options.Id)
+		runid, offset := xx[1], v
+
+		return runid, offset, waitRdbDump(br)
+	} else {
 		log.Panicf("invalid psync response = '%s', should be continue", x)
 	}
 
-	// log.PurePrintf("%s\n", NewLogItem("IncSyncStart", "INFO", LogDetail{}))
-	log.Infof("Event:IncSyncStart\tId:%s\t", conf.Options.Id)
+	// unreachable
+	return "", -1, nil
 }
 
 func SendPSyncAck(bw *bufio.Writer, offset int64) error {
@@ -266,14 +285,14 @@ func SendPSyncAck(bw *bufio.Writer, offset int64) error {
 
 // TODO
 func paclusterSlotsHB(c redigo.Conn) {
-	_, err := redigo.Values(c.Do("pacluster", "slotshb"))
+	_, err := Values(c.Do("pacluster", "slotshb"))
 	if err != nil {
 		log.PanicError(err, "pacluster slotshb error")
 	}
 }
 
 func SelectDB(c redigo.Conn, db uint32) {
-	s, err := redigo.String(c.Do("select", db))
+	s, err := String(c.Do("select", db))
 	if err != nil {
 		log.PanicError(err, "select command error")
 	}
@@ -283,14 +302,14 @@ func SelectDB(c redigo.Conn, db uint32) {
 }
 
 func lpush(c redigo.Conn, key []byte, field []byte) {
-	_, err := redigo.Int64(c.Do("lpush", string(key), string(field)))
+	_, err := Int64(c.Do("lpush", string(key), string(field)))
 	if err != nil {
 		log.PanicError(err, "lpush command error")
 	}
 }
 
 func rpush(c redigo.Conn, key []byte, field []byte) {
-	_, err := redigo.Int64(c.Do("rpush", string(key), string(field)))
+	_, err := Int64(c.Do("rpush", string(key), string(field)))
 	if err != nil {
 		log.PanicError(err, "rpush command error")
 	}
@@ -301,28 +320,28 @@ func Float64ToByte(float float64) string {
 }
 
 func zadd(c redigo.Conn, key []byte, score []byte, member []byte) {
-	_, err := redigo.Int64(c.Do("zadd", string(key), string(score), string(member)))
+	_, err := Int64(c.Do("zadd", string(key), string(score), string(member)))
 	if err != nil {
 		log.PanicError(err, "zadd command error key ", string(key))
 	}
 }
 
 func sadd(c redigo.Conn, key []byte, member []byte) {
-	_, err := redigo.Int64(c.Do("sadd", key, member))
+	_, err := Int64(c.Do("sadd", key, member))
 	if err != nil {
 		log.PanicError(err, "sadd command error key:", string(key))
 	}
 }
 
 func hset(c redigo.Conn, key []byte, field []byte, value []byte) {
-	_, err := redigo.Int64(c.Do("hset", string(key), string(field), string(value)))
+	_, err := Int64(c.Do("hset", string(key), string(field), string(value)))
 	if err != nil {
 		log.PanicError(err, "hset command error key ", string(key))
 	}
 }
 
 func set(c redigo.Conn, key []byte, value []byte) {
-	s, err := redigo.String(c.Do("set", string(key), string(value)))
+	s, err := String(c.Do("set", string(key), string(value)))
 	if err != nil {
 		log.PanicError(err, "set command error")
 	}
@@ -525,9 +544,12 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 			if err != nil {
 				log.PanicError(err, "read rdb ")
 			}
+
 			//rpush(c, e.Key, entry)
 			count++
-			err = c.Send("RPUSH", e.Key, entry)
+			if err = c.Send("RPUSH", e.Key, entry); err != nil {
+				break
+			}
 			if (count == 100) || (i == (length - 1)) {
 				flushAndCheckReply(c, count)
 				count = 0
@@ -564,7 +586,10 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 				log.PanicError(err, "read rdb ")
 			}
 			count++
-			err = c.Send("HSET", e.Key, field, value)
+			if err = c.Send("HSET", e.Key, field, value); err != nil {
+				break
+			}
+
 			if (count == 100) || (i == (int(length) - 1)) {
 				flushAndCheckReply(c, count)
 				count = 0
@@ -587,9 +612,12 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 				if err != nil {
 					log.PanicError(err, "read rdb ")
 				}
+
 				//rpush(c, e.Key, field)
 				count++
-				err = c.Send("RPUSH", e.Key, field)
+				if err = c.Send("RPUSH", e.Key, field); err != nil {
+					break
+				}
 				if (count == 100) || (i == (int(n) - 1)) {
 					flushAndCheckReply(c, count)
 					count = 0
@@ -606,8 +634,11 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 				if err != nil {
 					log.PanicError(err, "read rdb ")
 				}
+
 				count++
-				err = c.Send("SADD", e.Key, member)
+				if err = c.Send("SADD", e.Key, member); err != nil {
+					break
+				}
 				if (count == 100) || (i == (int(n) - 1)) {
 					flushAndCheckReply(c, count)
 					count = 0
@@ -634,10 +665,13 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 				if err != nil {
 					log.PanicError(err, "read rdb ")
 				}
+
 				count++
-				log.Info("restore big zset key ", string(e.Key), " score ", Float64ToByte(score),
-					" member ", string(member))
-				err = c.Send("ZADD", e.Key, Float64ToByte(score), member)
+				log.Info("restore big zset key ", string(e.Key), " score ", (Float64ToByte(score)), " member ", string(member))
+				if c.Send("ZADD", e.Key, Float64ToByte(score), member); err != nil {
+					break
+				}
+
 				if (count == 100) || (i == (int(n) - 1)) {
 					flushAndCheckReply(c, count)
 					count = 0
@@ -672,9 +706,13 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 				log.Info("idx: ", i, " n: ", n)
 				log.PanicError(err, "read rdb ")
 			}
+
 			//hset(c, e.Key, field, value)
 			count++
-			err = c.Send("HSET", e.Key, field, value)
+			if err = c.Send("HSET", e.Key, field, value); err != nil {
+				break
+			}
+
 			if (count == 100) || (i == (int(n) - 1)) {
 				flushAndCheckReply(c, count)
 				count = 0
@@ -702,9 +740,12 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 						if err != nil {
 							log.PanicError(err, "read rdb ")
 						}
+
 						log.Info("rpush key: ", e.Key, " value: ", entry)
 						count++
-						err = c.Send("RPUSH", e.Key, entry)
+						if err = c.Send("RPUSH", e.Key, entry); err != nil {
+							return err
+						}
 						if count == 100 {
 							flushAndCheckReply(c, count)
 							count = 0
@@ -746,26 +787,29 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		}
 	}
 	if e.Type == rdb.RdbTypeQuicklist {
-		exist, err := redigo.Bool(c.Do("exists", e.Key))
+		exist, err := Bool(c.Do("exists", e.Key))
 		if err != nil {
 			log.Panicf(err.Error())
 		}
 		if exist {
-			if conf.Options.Rewrite {
+			switch conf.Options.KeyExists {
+			case "rewrite":
 				if !conf.Options.Metric {
 					log.Infof("warning, rewrite key: %v", string(e.Key))
 				}
-				_, err := redigo.Int64(c.Do("del", e.Key))
+				_, err := Int64(c.Do("del", e.Key))
 				if err != nil {
 					log.Panicf("del ", string(e.Key), err)
 				}
-			} else {
-				log.Panicf("target key name is busy: %s", string(e.Key))
+			case "ignore":
+				log.Warnf("target key name is busy but ignore: %v", string(e.Key))
+			case "none":
+				log.Panicf("target key name is busy: %v", string(e.Key))
 			}
 		}
 		restoreQuicklistEntry(c, e)
 		if e.ExpireAt != 0 {
-			r, err := redigo.Int64(c.Do("pexpire", e.Key, ttlms))
+			r, err := Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
 				log.Panicf("expire ", string(e.Key), err)
 			}
@@ -789,11 +833,11 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 			(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {
 		log.Debugf("restore big key[%s] with length[%v] and member count[%v]", e.Key, len(e.Value), e.RealMemberCount)
 		//use command
-		if conf.Options.Rewrite && e.NeedReadLen == 1 {
+		if conf.Options.KeyExists == "rewrite" && e.NeedReadLen == 1 {
 			if !conf.Options.Metric {
 				log.Infof("warning, rewrite big key:", string(e.Key))
 			}
-			_, err := redigo.Int64(c.Do("del", e.Key))
+			_, err := Int64(c.Do("del", e.Key))
 			if err != nil {
 				log.Panicf("del ", string(e.Key), err)
 			}
@@ -804,7 +848,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		}
 
 		if e.ExpireAt != 0 {
-			r, err := redigo.Int64(c.Do("pexpire", e.Key, ttlms))
+			r, err := Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
 				log.Panicf("expire ", string(e.Key), err)
 			}
@@ -826,7 +870,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 
 	log.Debugf("restore key[%s] with params[%v]", e.Key, params)
 	// fmt.Printf("key: %v, value: %v params: %v\n", string(e.Key), e.Value, params)
-	// s, err := redigo.String(c.Do("restore", params...))
+	// s, err := String(c.Do("restore", params...))
 RESTORE:
 	s, err := redigoCluster.String(c.Do("restore", params...))
 	if err != nil {
@@ -834,7 +878,8 @@ RESTORE:
 		  but in 4.0 kernel is "BUSYKEY Target key name already exists"*/
 		if strings.Contains(err.Error(), "Target key name is busy") ||
 			strings.Contains(err.Error(), "BUSYKEY Target key name already exists") {
-			if conf.Options.Rewrite {
+			switch conf.Options.KeyExists {
+			case "rewrite":
 				if !conf.Options.Metric {
 					log.Infof("warning, rewrite key: %v", string(e.Key))
 				}
@@ -848,10 +893,17 @@ RESTORE:
 					}
 				}
 
-				// retry
 				goto RESTORE
-			} else {
-				log.Panicf("target key name is busy:", string(e.Key))
+			case "ignore":
+				log.Warnf("target key name is busy but ignore: %v", string(e.Key))
+				case "none":
+				log.Panicf("target key name is busy: %v", string(e.Key))
+			}
+		} else if strings.Contains(err.Error(), "Bad data format") {
+			// from big version to small version may has this error. we need to split the data struct
+			log.Warnf("return error[%v], ignore it and try to split the value", err)
+			if err := restoreBigRdbEntry(c, e); err != nil {
+				log.Panic(err)
 			}
 		} else if strings.Contains(err.Error(), "Bad data format") {
 			// from big version to small version may has this error. we need to split the data struct
@@ -875,7 +927,7 @@ func Iocopy(r io.Reader, w io.Writer, p []byte, max int) int {
 		p = p[:max]
 	}
 	if n, err := r.Read(p); err != nil {
-		log.PanicError(err, "read error")
+		log.PanicError(err, "read error, please check source redis log or network")
 	} else {
 		p = p[:n]
 	}
@@ -923,11 +975,11 @@ func GetRedisVersion(target, authType, auth string, tlsEnable bool) (string, err
 	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable)
 	defer c.Close()
 
-	infoStr, err := redigo.Bytes(c.Do("info", "server"))
+	infoStr, err := Bytes(c.Do("info", "server"))
 	if err != nil {
 		if err.Error() == CoidsErrMsg {
 			// "info xxx" command is disable in codis, try to use "info" and parse "xxx"
-			infoStr, err = redigo.Bytes(c.Do("info"))
+			infoStr, err = Bytes(c.Do("info"))
 			infoStr = CutRedisInfoSegment(infoStr, "server")
 		} else {
 			return "", err
@@ -968,7 +1020,7 @@ func CheckHandleNetError(err error) bool {
 }
 
 func GetFakeSlaveOffset(c redigo.Conn) (string, error) {
-	infoStr, err := redigo.Bytes(c.Do("info", "Replication"))
+	infoStr, err := Bytes(c.Do("info", "Replication"))
 	if err != nil {
 		return "", err
 	}

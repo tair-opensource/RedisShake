@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"pkg/libs/log"
 
 	redigoCluster "github.com/vinllen/redis-go-cluster"
 	redigo "github.com/garyburd/redigo/redis"
-	"pkg/libs/log"
 )
 
 var (

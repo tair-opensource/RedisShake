@@ -3,6 +3,9 @@ package conf
 import "time"
 
 type Configuration struct {
+	// version
+	ConfVersion uint `config:"conf.version"` // do not modify the tag name
+
 	// config file variables
 	Id                     string   `config:"id"`
 	LogFile                string   `config:"log.file"`
@@ -29,7 +32,7 @@ type Configuration struct {
 	TargetRdbOutput        string   `config:"target.rdb.output"`
 	TargetVersion          string   `config:"target.version"`
 	FakeTime               string   `config:"fake_time"`
-	Rewrite                bool     `config:"rewrite"`
+	KeyExists              string   `config:"key_exists"`
 	FilterDBWhitelist      []string `config:"filter.db.whitelist"`
 	FilterDBBlacklist      []string `config:"filter.db.blacklist"`
 	FilterKeyWhitelist     []string `config:"filter.key.whitelist"`
@@ -37,7 +40,6 @@ type Configuration struct {
 	FilterSlot             []string `config:"filter.slot"`
 	FilterLua              bool     `config:"filter.lua"`
 	BigKeyThreshold        uint64   `config:"big_key_threshold"`
-	Psync                  bool     `config:"psync"`
 	Metric                 bool     `config:"metric"`
 	MetricPrintLog         bool     `config:"metric.print_log"`
 	SenderSize             uint64   `config:"sender.size"`
@@ -49,9 +51,11 @@ type Configuration struct {
 	ScanSpecialCloud       string   `config:"scan.special_cloud"`
 	ScanKeyFile            string   `config:"scan.key_file"`
 	Qps                    int      `config:"qps"`
+	ResumeFromBreakPoint   bool     `config:"resume_from_break_point"`
 
 	/*---------------------------------------------------------*/
 	// inner variables
+	Psync                     bool     `config:"psync"`
 	NCpu                      int      `config:"ncpu"`
 	HeartbeatUrl              string   `config:"heartbeat.url"`
 	HeartbeatInterval         uint     `config:"heartbeat.interval"`
@@ -63,6 +67,7 @@ type Configuration struct {
 	SockFileSize              uint     `config:"sock.file_size"`
 	FilterKey                 []string `config:"filter.key"` // compatible with older versions
 	FilterDB                  string   `config:"filter.db"`  // compatible with older versions
+	Rewrite                   bool     `config:"rewrite"`    // compatible with older versions < 1.6.27
 
 	/*---------------------------------------------------------*/
 	// generated variables
@@ -95,3 +100,12 @@ const (
 	TypeSync    = "sync"
 	TypeRump    = "rump"
 )
+
+func GetSafeOptions() Configuration {
+	polish := Options
+	polish.SourcePasswordRaw = "***"
+	polish.SourcePasswordEncoding = "***"
+	polish.TargetPasswordRaw = "***"
+	polish.TargetPasswordEncoding = "***"
+	return polish
+}

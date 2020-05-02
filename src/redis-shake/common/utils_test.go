@@ -1,5 +1,5 @@
-// +build linux darwin windows
 // +build integration
+// +build linux darwin windows
 
 package utils
 
@@ -7,7 +7,13 @@ import (
 	"fmt"
 	"testing"
 
+	"redis-shake/unit_test_common"
+
 	"github.com/stretchr/testify/assert"
+)
+
+var (
+	testAddrCluster = unit_test_common.TestUrlCluster
 )
 
 /*func TestGetAllClusterNode(t *testing.T) {
@@ -99,5 +105,77 @@ func TestCompareVersion(t *testing.T) {
 		assert.Equal(t, 3, CompareVersion("1.4.x", "1.4", 3), "should be equal")
 		assert.Equal(t, 0, CompareVersion("1.4.x", "1.4", 0), "should be equal")
 		assert.Equal(t, 2, CompareVersion("2.4", "1.1", 2), "should be equal")
+	}
+}
+
+
+func TestCompareUnorderedList(t *testing.T) {
+	var nr int
+	{
+		fmt.Printf("TestCompareUnorderedList case %d.\n", nr)
+		nr++
+
+		var a, b []string
+		assert.Equal(t, true, CompareUnorderedList(a, b), "should be equal")
+
+		a = []string{"1", "2", "3"}
+		b = []string{"1", "2"}
+		assert.Equal(t, false, CompareUnorderedList(a, b), "should be equal")
+
+		a = []string{"1", "2", "3"}
+		b = []string{"3", "1", "2"}
+		assert.Equal(t, true, CompareUnorderedList(a, b), "should be equal")
+
+		a = []string{"1", "2", "3"}
+		b = []string{"4", "1", "2"}
+		assert.Equal(t, false, CompareUnorderedList(a, b), "should be equal")
+	}
+}
+
+func TestGetSlotDistribution(t *testing.T) {
+	var nr int
+	{
+		fmt.Printf("TestGetSlotDistribution case %d.\n", nr)
+		nr++
+
+		ret, err := GetSlotDistribution(testAddrCluster, "auth", "", false)
+		assert.Equal(t, nil, err, "should be equal")
+		assert.NotEqual(t, 0, len(ret), "should be equal")
+		assert.Equal(t, 16383, ret[len(ret) - 1].SlotRightBoundary, "should be equal")
+		for i := 1; i < len(ret) - 1; i++ {
+			assert.Equal(t, ret[i - 1].SlotRightBoundary + 1, ret[i].SlotLeftBoundary, "should be equal")
+			assert.NotEqual(t, "", ret[i].Master, "should be equal")
+		}
+		fmt.Println(ret)
+	}
+}
+
+func TestChoseSlotInRange(t *testing.T) {
+	var nr int
+	{
+		fmt.Printf("TestChoseSlotInRange case %d.\n", nr)
+		nr++
+
+		ret := ChoseSlotInRange(CheckpointKey, 0, 0)
+		fmt.Println(ret)
+		assert.NotEqual(t, "", ret, "should be equal")
+	}
+
+	{
+		fmt.Printf("TestChoseSlotInRange case %d.\n", nr)
+		nr++
+
+		// test all slots
+		mp := make(map[string]int)
+		for i := 0; i < 16384; i++ {
+			ret := ChoseSlotInRange(CheckpointKey, i, i)
+			assert.NotEqual(t, "", ret, "should be equal")
+
+			fmt.Printf("slot[%v] -> %v\n", i, ret)
+			_, ok := mp[ret]
+			assert.Equal(t, false, ok, "should be equal")
+			mp[ret] = i
+		}
+		// fmt.Println(mp)
 	}
 }

@@ -14,6 +14,7 @@ fi
 branch=$branch","$cid
 
 output=./bin/
+integration_test=./bin/integration-test
 rm -rf ${output}
 
 # make sure we're in the directory where the script lives
@@ -44,16 +45,27 @@ goos=(linux darwin windows)
 for g in "${goos[@]}"; do
     export GOOS=$g
     echo "try build goos=$g"
-    $run_builder -ldflags "-X $info" -o "${output}/redis-shake.$g" "./src/redis-shake/main/main.go"
+
+    build_dir="src/redis-shake/$i/main"
+    all_files=""
+    for j in $(ls $build_dir); do
+        all_files="$all_files $build_dir/$j "
+    done
+
+    $run_builder -ldflags "-X $info" -o "${output}/redis-shake.$g" $all_files
     echo "build $g successfully!"
 done
+unset GOOS
+
+# build integration test
+$run_builder -o "${integration_test}/integration-test" "./src/integration-test/main/main.go"
 
 # copy scripts
 cp scripts/start.sh ${output}/
 cp scripts/stop.sh ${output}/
-cp scripts/run_direct.py ${output}/
-#cp -r tools ${output}/
-#cp -r test ${output}/
+#cp scripts/run_direct.py ${output}/
+cp -r tools ${integration_test}/
+cp -r test ${integration_test}/
 
 if [ "Linux" == "$(uname -s)" ];then
 	# hypervisor

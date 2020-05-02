@@ -4,6 +4,13 @@ import (
 	"strings"
 	"redis-shake/configure"
 	"strconv"
+	"redis-shake/common"
+)
+
+var (
+	innerFilterKeys = map[string]struct{} {
+		utils.CheckpointKey: {},
+	}
 )
 
 // return true means not pass
@@ -22,6 +29,13 @@ func FilterCommands(cmd string) bool {
 
 // return true means not pass
 func FilterKey(key string) bool {
+	if _, ok := innerFilterKeys[key]; ok {
+		return true
+	}
+	if strings.HasPrefix(key, utils.CheckpointKey) {
+		return true
+	}
+
 	if len(conf.Options.FilterKeyBlacklist) != 0 {
 		if hasAtLeastOnePrefix(key, conf.Options.FilterKeyBlacklist) {
 			return true

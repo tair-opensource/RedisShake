@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
+	"sort"
+
 	"redis-shake/configure"
 
 	redigo "github.com/garyburd/redigo/redis"
-	"strings"
 )
 
 const (
@@ -149,8 +151,8 @@ func ClusterNodeChoose(input []*ClusterNodeInfo, role string) []*ClusterNodeInfo
 	ret := make([]*ClusterNodeInfo, 0, len(input))
 	for _, ele := range input {
 		if ele.Flags == conf.StandAloneRoleMaster && role == conf.StandAloneRoleMaster ||
-				ele.Flags == conf.StandAloneRoleSlave && role == conf.StandAloneRoleSlave ||
-				role == conf.StandAloneRoleAll {
+			ele.Flags == conf.StandAloneRoleSlave && role == conf.StandAloneRoleSlave ||
+			role == conf.StandAloneRoleAll {
 			ret = append(ret, ele)
 		}
 	}
@@ -177,4 +179,98 @@ func GetAllClusterNode(client redigo.Conn, role string, choose string) ([]string
 	}
 
 	return result, nil
+}
+
+/***************************************/
+type SlotOwner struct {
+	Master            string
+	Slave             []string
+	SlotLeftBoundary  int
+	SlotRightBoundary int
+}
+
+func GetSlotDistribution(target, authType, auth string, tlsEnable bool) ([]SlotOwner, error) {
+	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable)
+	defer c.Close()
+
+	content, err := c.Do("cluster", "slots")
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]SlotOwner, 0, 3)
+	// fetch each shard info
+	for _, shard := range content.([]interface{}) {
+		shardVar := shard.([]interface{})
+		left := shardVar[0].(int64)
+		right := shardVar[1].(int64)
+
+		// iterator each role
+		var master string
+		slave := make([]string, 0, 2)
+		for i := 2; i < len(shardVar); i++ {
+			roleVar := shardVar[i].([]interface{})
+			ip := roleVar[0]
+			port := roleVar[1]
+			combine := fmt.Sprintf("%s:%d", ip, port)
+			if i == 2 {
+				master = combine
+			} else {
+				slave = append(slave, combine)
+			}
+		}
+
+		ret = append(ret, SlotOwner{
+			Master:            master,
+			Slave:             slave,
+			SlotLeftBoundary:  int(left),
+			SlotRightBoundary: int(right),
+		})
+	}
+
+	// sort by the slot range
+	sort.Slice(ret, func(i, j int) bool {
+		return ret[i].SlotLeftBoundary < ret[j].SlotLeftBoundary
+	})
+	return ret, nil
+}
+
+func CheckSlotDistributionEqual(src, dst []SlotOwner) bool {
+	if len(src) != len(dst) {
+		return false
+	}
+
+	for i := 0; i < len(src); i++ {
+		if src[i].SlotLeftBoundary != src[i].SlotLeftBoundary ||
+			src[i].SlotRightBoundary != src[i].SlotRightBoundary {
+			return false
+		}
+	}
+	return true
+}
+
+// return -1, -1 means not found
+func GetSlotBoundary(shardList []SlotOwner, address string) (int, int) {
+	if shardList == nil || len(shardList) == 0 {
+		return -1, -1
+	}
+
+	for _, shard := range shardList {
+		if address == shard.Master {
+			return shard.SlotLeftBoundary, shard.SlotRightBoundary
+		}
+
+		// if match one of the slave list
+		match := false
+		for _, slave := range shard.Slave {
+			if address == slave {
+				match = true
+				break
+			}
+		}
+		if match {
+			return shard.SlotLeftBoundary, shard.SlotRightBoundary
+		}
+	}
+	return -1, -1
 }

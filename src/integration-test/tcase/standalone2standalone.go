@@ -3,7 +3,10 @@ package tcase
 import (
 	"integration-test/deploy"
 	"fmt"
+    "time"
 	shakeUtils "redis-shake/common"
+	"pkg/libs/log"
+	"integration-test/subCase"
 )
 
 type Standalone2StandaloneCase struct {
@@ -31,15 +34,27 @@ func (s2s *Standalone2StandaloneCase) Before() error {
 		return fmt.Errorf("deploy source redis failed: %v", err)
 	}
 
+    // wait ready
+    time.Sleep(3 * time.Second)
+
 	return nil
 }
 
 func (s2s *Standalone2StandaloneCase) Run() error {
-	// build client
-	sourceConn := shakeUtils.OpenRedisConn([]string{fmt.Sprintf(":%d", s2s.SourcePort)}, "auth", "", false, false)
-	targeteConn := shakeUtils.OpenRedisConn([]string{fmt.Sprintf(":%d", s2s.TargetPort)}, "auth", "", false, false)
+	{
+		// case 1
+		log.Info("case 1: all")
+		// build client
+		sourceConn := shakeUtils.OpenRedisConn([]string{fmt.Sprintf(":%d", s2s.SourcePort)}, "auth", "", false, false)
+		targetConn := shakeUtils.OpenRedisConn([]string{fmt.Sprintf(":%d", s2s.TargetPort)}, "auth", "", false, false)
 
+		sc := subCase.NewSubCase(sourceConn, targetConn, s2s.SourcePort, s2s.TargetPort, nil, nil,
+			nil, nil, "", false)
+		log.Info("run")
+		sc.Run()
+	}
 
+	return nil
 }
 
 func (s2s *Standalone2StandaloneCase) After() error {
