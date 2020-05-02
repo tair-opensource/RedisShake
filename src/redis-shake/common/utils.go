@@ -416,6 +416,7 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 	if err != nil {
 		log.PanicError(err, "read rdb ")
 	}
+
 	log.Debug("restore big key ", string(e.Key), " Value Length ", len(e.Value), " type ", t)
 	count := 0
 	switch t {
@@ -670,6 +671,7 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 				if c.Send("ZADD", e.Key, Float64ToByte(score), member); err != nil {
 					break
 				}
+
 				if (count == 100) || (i == (int(n) - 1)) {
 					flushAndCheckReply(c, count)
 					count = 0
@@ -710,6 +712,7 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 			if err = c.Send("HSET", e.Key, field, value); err != nil {
 				break
 			}
+
 			if (count == 100) || (i == (int(n) - 1)) {
 				flushAndCheckReply(c, count)
 				count = 0
@@ -895,6 +898,12 @@ RESTORE:
 				log.Warnf("target key name is busy but ignore: %v", string(e.Key))
 				case "none":
 				log.Panicf("target key name is busy: %v", string(e.Key))
+			}
+		} else if strings.Contains(err.Error(), "Bad data format") {
+			// from big version to small version may has this error. we need to split the data struct
+			log.Warnf("return error[%v], ignore it and try to split the value", err)
+			if err := restoreBigRdbEntry(c, e); err != nil {
+				log.Panic(err)
 			}
 		} else if strings.Contains(err.Error(), "Bad data format") {
 			// from big version to small version may has this error. we need to split the data struct
