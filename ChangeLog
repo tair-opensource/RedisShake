@@ -1,3 +1,7 @@
+2020-05-06 Alibaba Cloud.
+	* VERSION: 2.0.2
+	* BUGFIX: fix bug of `target.db` isn't work in cascade replication
+	scenario. see #277.
 2020-05-02 Alibaba Cloud.
 	* VERSION: 2.0.1
 	* IMPROVE: rebase v1.6.28.

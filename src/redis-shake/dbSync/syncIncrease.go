@@ -158,9 +158,19 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 		// sendMarkId atomic2.Int64 // sendMarkId is also used as mark the sendId in sender routine
 	)
 
-	// if the start db id != 0, send dbid to the target at first
+	// if enable target.db
+	if conf.Options.TargetDB != -1 {
+		ds.startDbId = conf.Options.TargetDB
+	}
+
+	/*
+	 * if the start db id != 0, send dbid to the target at first.
+	 * there're two cases that the statDbId != 0:
+	 * 1. enable target.db. see #277.
+	 * 2. start from resume-from-break-point
+	 */
 	if ds.startDbId != 0 {
-		log.Infof("last dbid[%v] != 0, send 'select' first", ds.startDbId)
+		log.Infof("start dbid[%v] != 0, send 'select' first", ds.startDbId)
 		dbS := fmt.Sprintf("%d", ds.startDbId)
 		ds.sendBuf <- cmdDetail{
 			Cmd:    "select",
