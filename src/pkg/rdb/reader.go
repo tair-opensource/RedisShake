@@ -341,25 +341,27 @@ func (r *rdbReader) ReadString() ([]byte, error) {
 	}
 }
 
-func (r *rdbReader) readEncodedLength() (length uint32, encoded bool, err error) {
+func (r *rdbReader) readEncodedLength() (length uint64, encoded bool, err error) {
 	u, err := r.readUint8()
 	if err != nil {
 		return
 	}
 	switch u >> 6 {
 	case rdb6bitLen:
-		length = uint32(u & 0x3f)
+		length = uint64(u & 0x3f)
 	case rdb14bitLen:
 		var u2 uint8
 		u2, err = r.readUint8()
-		length = (uint32(u & 0x3f) << 8) + uint32(u2)
+		length = (uint64(u & 0x3f) << 8) + uint64(u2)
 	case rdbEncVal:
 		encoded = true
-		length = uint32(u & 0x3f)
+		length = uint64(u & 0x3f)
 	default:
 		switch u {
 		case rdb32bitLen:
-			length, err = r.readUint32BigEndian()
+			length32, err := r.readUint32BigEndian()
+			length = uint64(length32)
+			err = err
 		case rdb64bitLen:
 			length, err = r.readUint64BigEndian()
 		default:
@@ -369,7 +371,7 @@ func (r *rdbReader) readEncodedLength() (length uint32, encoded bool, err error)
 	return
 }
 
-func (r *rdbReader) ReadLength() (uint32, error) {
+func (r *rdbReader) ReadLength() (uint64, error) {
 	length, encoded, err := r.readEncodedLength()
 	if err == nil && encoded {
 		err = errors.Errorf("encoded-length")
@@ -454,10 +456,10 @@ func (r *rdbReader) readUint32BigEndian() (uint32, error) {
 	return binary.BigEndian.Uint32(b), err
 }
 
-func (r *rdbReader) readUint64BigEndian() (uint32, error) {
+func (r *rdbReader) readUint64BigEndian() (uint64, error) {
 	b := r.buf[:8]
 	err := r.readFull(b)
-	return binary.BigEndian.Uint32(b), err
+	return binary.BigEndian.Uint64(b), err
 }
 
 func (r *rdbReader) readInt8() (int8, error) {
