@@ -12,14 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"pkg/libs/atomic2"
-	"pkg/libs/log"
-	"pkg/redis"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/redis"
 
-	"redis-shake/base"
-	"redis-shake/common"
-	"redis-shake/configure"
-	"redis-shake/filter"
+	"github.com/alibaba/RedisShake/redis-shake/base"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/filter"
 )
 
 type CmdRestore struct {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"fmt"
 
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 const (

@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"pkg/libs/log"
-	"redis-shake/base"
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/base"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 const (

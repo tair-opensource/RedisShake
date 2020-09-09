@@ -2,9 +2,9 @@ package filter
 
 import (
 	"strings"
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 	"strconv"
-	"redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/common"
 )
 
 var (

@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
 )
 
 func Num64(i interface{}) (n64 interface{}, ok bool) {

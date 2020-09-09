@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"pkg/libs/assert"
-	"pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/assert"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
 )
 
 func openFile(fileName string) *os.File {

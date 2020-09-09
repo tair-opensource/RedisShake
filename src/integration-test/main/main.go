@@ -1,10 +1,10 @@
 package main
 
 import (
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"flag"
 
-	"integration-test/tcase"
+	"github.com/alibaba/RedisShake/integration-test/tcase"
 )
 
 func main() {

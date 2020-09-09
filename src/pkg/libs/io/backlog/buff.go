@@ -3,7 +3,8 @@
 
 package backlog
 
-import "pkg/libs/errors"
+import "github.com/alibaba/RedisShake/pkg/libs/errors"
+import "github.com/alibaba/RedisShake/integration-test/"
 
 const (
 	BuffSizeAlign = 1024 * 4

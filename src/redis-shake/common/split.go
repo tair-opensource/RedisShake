@@ -2,8 +2,8 @@ package utils
 
 // big key split in rump
 import (
-	"pkg/rdb"
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/rdb"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 
 	redigo "github.com/garyburd/redigo/redis"
 )

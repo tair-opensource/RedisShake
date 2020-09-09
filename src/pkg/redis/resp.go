@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
 )
 
 type respType byte

@@ -2,21 +2,21 @@ package dbSync
 
 import (
 	"bufio"
-	"redis-shake/configure"
-	"redis-shake/common"
-	"pkg/libs/atomic2"
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"time"
-	"pkg/redis"
+	"github.com/alibaba/RedisShake/pkg/redis"
 	"strings"
 	"strconv"
-	"redis-shake/filter"
+	"github.com/alibaba/RedisShake/redis-shake/filter"
 	"bytes"
 	"fmt"
 	"io"
 	"net"
 
-	"redis-shake/metric"
+	"github.com/alibaba/RedisShake/redis-shake/metric"
 
 	redigo "github.com/garyburd/redigo/redis"
 	"unsafe"

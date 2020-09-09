@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"time"
 
-	"pkg/libs/atomic2"
-	"pkg/libs/log"
-	"pkg/rdb"
-	"redis-shake/common"
-	"redis-shake/configure"
-	"redis-shake/base"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/rdb"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/base"
 )
 
 type CmdDecode struct {

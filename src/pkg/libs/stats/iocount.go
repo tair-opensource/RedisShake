@@ -6,7 +6,7 @@ package stats
 import (
 	"io"
 
-	"pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 )
 
 type CountReader struct {

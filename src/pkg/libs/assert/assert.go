@@ -3,7 +3,7 @@
 
 package assert
 
-import "pkg/libs/log"
+import "github.com/alibaba/RedisShake/pkg/libs/log"
 
 func Must(b bool) {
 	if b {

@@ -6,11 +6,11 @@ package run
 import (
 	"sync"
 
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 
-	"redis-shake/common"
-	"redis-shake/configure"
-	"redis-shake/dbSync"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/dbSync"
 )
 
 // main struct

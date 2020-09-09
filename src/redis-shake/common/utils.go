@@ -17,14 +17,14 @@ import (
 	"strings"
 	"time"
 
-	"pkg/libs/atomic2"
-	"pkg/libs/errors"
-	"pkg/libs/log"
-	"pkg/libs/stats"
-	"pkg/rdb"
-	"pkg/redis"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/stats"
+	"github.com/alibaba/RedisShake/pkg/rdb"
+	"github.com/alibaba/RedisShake/pkg/redis"
 
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 
 	"github.com/FZambia/go-sentinel"
 	redigo "github.com/garyburd/redigo/redis"

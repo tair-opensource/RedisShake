@@ -10,9 +10,9 @@ import (
 	"io"
 	"strconv"
 
-	"pkg/libs/errors"
-	"pkg/libs/log"
-	"pkg/rdb/digest"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/rdb/digest"
 )
 
 type Loader struct {

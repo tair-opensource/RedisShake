@@ -3,7 +3,7 @@ package scanner
 import (
 	"fmt"
 
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 
 	"github.com/garyburd/redigo/redis"
 )

@@ -6,7 +6,7 @@ package pipe
 import (
 	"io"
 
-	"pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
 )
 
 const (

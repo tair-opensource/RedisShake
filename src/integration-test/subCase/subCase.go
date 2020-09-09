@@ -2,9 +2,9 @@ package subCase
 
 import (
 	redigo "github.com/garyburd/redigo/redis"
-	"integration-test/inject"
-	"pkg/libs/log"
-	"integration-test/deploy"
+	"github.com/alibaba/RedisShake/integration-test/inject"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/integration-test/deploy"
 	"strings"
     "fmt"
 	"net/http"

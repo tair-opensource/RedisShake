@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
 )
 
 const (

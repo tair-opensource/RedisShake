@@ -2,7 +2,7 @@ package deploy
 
 import (
     "path/filepath"
-    "pkg/libs/log"
+    "github.com/alibaba/RedisShake/pkg/libs/log"
     "os"
     "fmt"
     "strings"

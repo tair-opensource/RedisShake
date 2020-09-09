@@ -1,11 +1,11 @@
 package scanner
 
 import (
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 
 	"github.com/garyburd/redigo/redis"
 	"os"
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"bufio"
 )
 

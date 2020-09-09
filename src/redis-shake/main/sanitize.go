@@ -9,9 +9,9 @@ import (
 	"strings"
 	"strconv"
 
-	"pkg/libs/log"
-	"redis-shake/common"
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )

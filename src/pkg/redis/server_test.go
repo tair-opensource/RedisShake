@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"testing"
 
-	"pkg/libs/assert"
+	"github.com/alibaba/RedisShake/pkg/libs/assert"
 )
 
 type testHandler struct {

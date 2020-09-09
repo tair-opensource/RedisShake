@@ -2,16 +2,16 @@ package dbSync
 
 import (
 	"net"
-	"redis-shake/common"
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"time"
-	"pkg/libs/io/pipe"
+	"github.com/alibaba/RedisShake/pkg/libs/io/pipe"
 	"bufio"
-	"redis-shake/base"
+	"github.com/alibaba/RedisShake/redis-shake/base"
 	"io"
-	"pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 // send command to source redis

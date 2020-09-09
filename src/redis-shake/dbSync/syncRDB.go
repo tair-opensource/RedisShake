@@ -2,17 +2,17 @@ package dbSync
 
 import (
 	"bufio"
-	"redis-shake/common"
-	"redis-shake/base"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/base"
 	"sync"
-	"redis-shake/configure"
-	"redis-shake/filter"
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/filter"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"time"
 	"bytes"
 	"fmt"
 
-	"redis-shake/metric"
+	"github.com/alibaba/RedisShake/redis-shake/metric"
 )
 
 func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType, passwd string, nsize int64, tlsEnable bool) {
