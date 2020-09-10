@@ -43,7 +43,7 @@ run_builder='go build -v'
 main_package="$MODULE_NAME/redis-shake/main"
 
 cd src
-goos=(linux)
+goos=(linux darwin windows)
 for g in "${goos[@]}"; do
     export GOOS=$g
     echo "try build goos=$g"
