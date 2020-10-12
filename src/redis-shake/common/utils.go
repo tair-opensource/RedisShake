@@ -905,12 +905,6 @@ RESTORE:
 			if err := restoreBigRdbEntry(c, e); err != nil {
 				log.Panic(err)
 			}
-		} else if strings.Contains(err.Error(), "Bad data format") {
-			// from big version to small version may has this error. we need to split the data struct
-			log.Warnf("return error[%v], ignore it and try to split the value", err)
-			if err := restoreBigRdbEntry(c, e); err != nil {
-				log.Panic(err)
-			}
 		} else {
 			log.PanicError(err, "restore command error key:", string(e.Key), " err:", err.Error())
 		}
