@@ -28,6 +28,9 @@ func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType,
 				c := utils.OpenRedisConn(target, authType, passwd, conf.Options.TargetType == conf.RedisTypeCluster,
 					tlsEnable)
 				defer c.Close()
+				exitC := make(chan struct{})
+				defer close(exitC)
+				go utils.KeepAlive(c, exitC)
 				var lastdb uint32 = 0
 				for e := range pipe {
 					if filter.FilterDB(int(e.DB)) {
