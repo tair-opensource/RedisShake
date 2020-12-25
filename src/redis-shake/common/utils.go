@@ -283,21 +283,6 @@ func SendPSyncAck(bw *bufio.Writer, offset int64) error {
 	return redis.Encode(bw, cmd, true)
 }
 
-func KeepAlive(c redigo.Conn, exitC <-chan struct{}) {
-	var ticker = time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-exitC:
-			return
-		case <-ticker.C:
-			if _, err := c.Do("PING"); err != nil {
-				log.Infof("PING ", err)
-			}
-		}
-	}
-}
-
 // TODO
 func paclusterSlotsHB(c redigo.Conn) {
 	_, err := Values(c.Do("pacluster", "slotshb"))
