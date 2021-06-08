@@ -9,15 +9,18 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
 	"pkg/rdb"
+	"redis-shake/base"
 	"redis-shake/common"
 	"redis-shake/configure"
-	"redis-shake/base"
 )
+
+var wg = sync.WaitGroup{}
 
 type CmdDecode struct {
 	rbytes, wbytes, nentry atomic2.Int64
@@ -41,13 +44,13 @@ func (cmd *CmdDecode) GetDetailedInfo() interface{} {
 
 func (cmd *CmdDecode) Main() {
 	log.Infof("decode from '%s' to '%s'\n", conf.Options.SourceRdbInput, conf.Options.TargetRdbOutput)
+	wg.Add(len(conf.Options.SourceRdbInput))
 
 	for i, input := range conf.Options.SourceRdbInput {
-		// decode one by one. By now, we don't support decoding concurrence.
 		output := fmt.Sprintf("%s.%d", conf.Options.TargetRdbOutput, i)
-		cmd.decode(input, output)
+		go cmd.decode(input, output)
 	}
-
+	wg.Wait()
 	log.Info("decode: done")
 }
 
@@ -83,6 +86,7 @@ func (cmd *CmdDecode) decode(input, output string) {
 	wait := make(chan struct{})
 	go func() {
 		defer close(wait)
+		defer wg.Done()
 		for s := range opipe {
 			cmd.wbytes.Add(int64(len(s)))
 			if _, err := writer.WriteString(s); err != nil {
@@ -128,6 +132,7 @@ func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- strin
 	toBase64 := func(p []byte) string {
 		return base64.StdEncoding.EncodeToString(p)
 	}
+
 	toJson := func(o interface{}) string {
 		b, err := json.Marshal(o)
 		if err != nil {
@@ -139,9 +144,9 @@ func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- strin
 		var b bytes.Buffer
 		if e.Type == rdb.RdbFlagAUX {
 			o := &struct {
-				Type     string `json:"type"`
-				Key      string `json:"key"`
-				Value64  string `json:"value64"`
+				Type    string `json:"type"`
+				Key     string `json:"key"`
+				Value64 string `json:"value64"`
 			}{
 				"aux", string(e.Key), string(e.Value),
 			}
@@ -165,9 +170,11 @@ func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- strin
 				ExpireAt uint64 `json:"expireat"`
 				Key      string `json:"key"`
 				Key64    string `json:"key64"`
+				Value    string `json:"value"`
 				Value64  string `json:"value64"`
 			}{
 				e.DB, "string", e.ExpireAt, toText(e.Key), toBase64(e.Key),
+				string(obj),
 				toBase64(obj),
 			}
 			fmt.Fprintf(&b, "%s\n", toJson(o))
@@ -180,10 +187,13 @@ func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- strin
 					Key      string `json:"key"`
 					Key64    string `json:"key64"`
 					Index    int    `json:"index"`
+					Value    string `json:"value"`
 					Value64  string `json:"value64"`
 				}{
 					e.DB, "list", e.ExpireAt, toText(e.Key), toBase64(e.Key),
-					i, toBase64(ele),
+					i,
+					string(ele),
+					toBase64(ele),
 				}
 				fmt.Fprintf(&b, "%s\n", toJson(o))
 			}
@@ -197,10 +207,11 @@ func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- strin
 					Key64    string `json:"key64"`
 					Field    string `json:"field"`
 					Field64  string `json:"field64"`
+					Value    string `json:"value"`
 					Value64  string `json:"value64"`
 				}{
 					e.DB, "hash", e.ExpireAt, toText(e.Key), toBase64(e.Key),
-					toText(ele.Field), toBase64(ele.Field), toBase64(ele.Value),
+					toText(ele.Field), toBase64(ele.Field), string(ele.Value), toBase64(ele.Value),
 				}
 				fmt.Fprintf(&b, "%s\n", toJson(o))
 			}
