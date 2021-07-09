@@ -198,7 +198,6 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					}
 					bypass = filter.FilterDB(n)
 					isSelect = true
-					lastDb = n
 				} else if filter.FilterCommands(sCmd) {
 					ignoreCmd = true
 				} else if strings.EqualFold(sCmd, "publish") && strings.EqualFold(string(argv[0]), "__sentinel__:hello"){
