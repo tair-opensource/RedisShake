@@ -3,7 +3,7 @@ package metric
 import (
 	"strconv"
 
-	"redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/common"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"

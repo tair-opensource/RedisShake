@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"pkg/libs/trace"
+	"github.com/alibaba/RedisShake/pkg/libs/trace"
 )
 
 var TraceEnabled = true

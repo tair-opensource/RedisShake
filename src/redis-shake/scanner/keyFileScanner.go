@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"os"
 
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 type KeyFileScanner struct {

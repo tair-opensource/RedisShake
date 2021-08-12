@@ -1,6 +1,6 @@
 package dbSync
 
-import "pkg/libs/atomic2"
+import "github.com/alibaba/RedisShake/pkg/libs/atomic2"
 
 type Status struct {
 	rBytes         atomic2.Int64 // read bytes

@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 
 	"github.com/vinllen/redis-go-cluster"
 )

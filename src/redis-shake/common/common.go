@@ -9,8 +9,8 @@ import (
 	"unsafe"
 	"encoding/binary"
 
-	"pkg/libs/bytesize"
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/pkg/libs/bytesize"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 	"github.com/cupcake/rdb/crc64"

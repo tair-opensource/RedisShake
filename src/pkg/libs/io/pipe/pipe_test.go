@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"pkg/libs/assert"
-	"pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/assert"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
 )
 
 func openPipe(t *testing.T, fileName string) (pr Reader, pw Writer, pf *os.File) {

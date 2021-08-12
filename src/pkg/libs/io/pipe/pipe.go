@@ -8,7 +8,7 @@ import (
 	"os"
 	"sync"
 
-	"pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
 )
 
 type buffer interface {

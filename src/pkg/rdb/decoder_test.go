@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"pkg/libs/assert"
+	"github.com/alibaba/RedisShake/pkg/libs/assert"
 )
 
 func hexStringToObject(t *testing.T, s string) interface{} {

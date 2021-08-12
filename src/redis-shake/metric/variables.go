@@ -2,8 +2,8 @@ package metric
 
 import (
 	"fmt"
-	"redis-shake/base"
-	"redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/base"
+	"github.com/alibaba/RedisShake/redis-shake/common"
 )
 
 type MetricRest struct {

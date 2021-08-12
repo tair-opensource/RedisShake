@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"pkg/libs/atomic2"
-	"pkg/libs/log"
-	"redis-shake/common"
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 type CmdDump struct {

@@ -12,8 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"pkg/libs/errors"
-	"pkg/libs/trace"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/trace"
 )
 
 const (

@@ -2,6 +2,8 @@
 
 set -o errexit
 
+MODULE_NAME=$(grep module src/go.mod |cut -d ' ' -f 2)
+
 # older version Git don't support --short !
 if [ -d ".git" ];then
     #branch=`git symbolic-ref --short -q HEAD`
@@ -13,16 +15,13 @@ else
 fi
 branch=$branch","$cid
 
-output=./bin/
-integration_test=./bin/integration-test
-rm -rf ${output}
+export GOBIN=$(pwd)/bin/
+integration_test=$GOBIN/integration-test
+
 
 # make sure we're in the directory where the script lives
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-
-GOPATH=$(pwd)
-export GOPATH
 
 info="redis-shake/common.Version=$branch"
 # golang version
@@ -41,28 +40,25 @@ info=$info","$t
 echo "[ BUILD RELEASE ]"
 run_builder='go build -v'
 
+main_package="$MODULE_NAME/redis-shake/main"
+
+cd src
 goos=(linux darwin windows)
 for g in "${goos[@]}"; do
     export GOOS=$g
     echo "try build goos=$g"
 
-    build_dir="src/redis-shake/$i/main"
-    all_files=""
-    for j in $(ls $build_dir); do
-        all_files="$all_files $build_dir/$j "
-    done
-
-    $run_builder -ldflags "-X $info" -o "${output}/redis-shake.$g" $all_files
+    $run_builder -ldflags "-X $info" -o "$GOBIN/redis-shake.$g" $main_package
     echo "build $g successfully!"
 done
 unset GOOS
 
 # build integration test
-$run_builder -o "${integration_test}/integration-test" "./src/integration-test/main/main.go"
-
+$run_builder -o "${integration_test}/integration-test" "$MODULE_NAME/integration-test/main"
+cd ..
 # copy scripts
-cp scripts/start.sh ${output}/
-cp scripts/stop.sh ${output}/
+cp scripts/start.sh ${GOBIN}/
+cp scripts/stop.sh ${GOBIN}/
 #cp scripts/run_direct.py ${output}/
 cp -r tools ${integration_test}/
 cp -r test ${integration_test}/

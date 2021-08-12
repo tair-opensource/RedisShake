@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 
 	"github.com/nightlyone/lockfile"
 )

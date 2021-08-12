@@ -1,12 +1,12 @@
 package tcase
 
 import (
-	"integration-test/deploy"
+	"github.com/alibaba/RedisShake/integration-test/deploy"
 	"fmt"
     "time"
-	shakeUtils "redis-shake/common"
-	"pkg/libs/log"
-	"integration-test/subCase"
+	shakeUtils "github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/integration-test/subCase"
 )
 
 type Standalone2StandaloneCase struct {

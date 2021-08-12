@@ -1,11 +1,11 @@
 package dbSync
 
 import (
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 
-	"pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 	"time"
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 )
 
 const (

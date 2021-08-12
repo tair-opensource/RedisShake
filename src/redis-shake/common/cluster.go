@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 
 	redigoCluster "github.com/vinllen/redis-go-cluster"
 	redigo "github.com/garyburd/redigo/redis"

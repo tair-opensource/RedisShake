@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"pkg/libs/errors"
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 )
 
 const (

@@ -1,16 +1,16 @@
 package dbSync
 
 import (
-	"redis-shake/metric"
-	"redis-shake/common"
-	"redis-shake/base"
+	"github.com/alibaba/RedisShake/redis-shake/metric"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/base"
 	"io"
-	"pkg/libs/log"
-	"redis-shake/heartbeat"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/heartbeat"
 	"bufio"
 
-	"redis-shake/configure"
-	"redis-shake/checkpoint"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/checkpoint"
 )
 
 // one sync link corresponding to one DbSyncer

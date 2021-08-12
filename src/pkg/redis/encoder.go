@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"strconv"
 
-	"pkg/libs/errors"
-	"pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 )
 
 type encoder struct {

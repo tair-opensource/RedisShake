@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sort"
 
-	"redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 
 	redigo "github.com/garyburd/redigo/redis"
 )

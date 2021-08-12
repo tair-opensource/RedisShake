@@ -6,8 +6,8 @@ package bytesize
 import (
 	"testing"
 
-	"pkg/libs/assert"
-	"pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/assert"
+	"github.com/alibaba/RedisShake/pkg/libs/errors"
 )
 
 func TestBytesize(t *testing.T) {
