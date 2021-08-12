@@ -364,7 +364,9 @@ func (dre *dbRumperExecutor) writer() {
 		}
 		if conf.Options.TargetDB != -1 {
 			ele.db = conf.Options.TargetDB
-		}
+		}  else if tdb, ok := conf.Options.TargetDBMap[int(ele.db)]; ok {
+			ele.db = tdb
+		} 
 
 		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
 			len(ele.value))
