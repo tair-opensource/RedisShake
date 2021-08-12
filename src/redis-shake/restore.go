@@ -167,6 +167,9 @@ func (dr *dbRestorer) restoreRDBFile(reader *bufio.Reader, target []string, auth
 								lastdb = uint32(conf.Options.TargetDB)
 								utils.SelectDB(c, lastdb)
 							}
+						} else if tdb, ok := conf.Options.TargetDBMap[int(e.DB)]; ok {
+							lastdb = uint32(tdb)
+							utils.SelectDB(c, lastdb)
 						} else {
 							if e.DB != lastdb {
 								lastdb = e.DB

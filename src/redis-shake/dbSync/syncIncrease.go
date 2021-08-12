@@ -198,6 +198,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					}
 					bypass = filter.FilterDB(n)
 					isSelect = true
+					lastDb = n
 				} else if filter.FilterCommands(sCmd) {
 					ignoreCmd = true
 				} else if strings.EqualFold(sCmd, "publish") && strings.EqualFold(string(argv[0]), "__sentinel__:hello"){
@@ -222,21 +223,38 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 			}
 		}
 
-		if isSelect && conf.Options.TargetDB != -1 {
-			if conf.Options.TargetDB != lastDb {
-				lastDb = conf.Options.TargetDB
-				/* send select command. */
-				ds.sendBuf <- cmdDetail{
-					Cmd:    "SELECT",
-					Args:   []interface{}{[]byte(strconv.FormatInt(int64(lastDb), 10))},
-					Offset: ds.fullSyncOffset + incrOffset,
-					Db:     lastDb,
+		if isSelect {
+			if conf.Options.TargetDB != -1 {
+				if conf.Options.TargetDB != lastDb {
+					lastDb = conf.Options.TargetDB
+					/* send select command. */
+					ds.sendBuf <- cmdDetail{
+						Cmd:    "SELECT",
+						Args:   []interface{}{[]byte(strconv.FormatInt(int64(lastDb), 10))},
+						Offset: ds.fullSyncOffset + incrOffset,
+						Db:     lastDb,
+					}
+				} else {
+					ds.stat.incrSyncFilter.Incr()
+					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
 				}
-			} else {
-				ds.stat.incrSyncFilter.Incr()
-				metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
-			}
-			continue
+				continue
+			} else if tdb, ok := conf.Options.TargetDBMap[int(lastDb)]; ok {
+				if tdb != lastDb {
+					lastDb = tdb
+					/* send select command. */
+					ds.sendBuf <- cmdDetail{
+						Cmd:    "SELECT",
+						Args:   []interface{}{[]byte(strconv.FormatInt(int64(lastDb), 10))},
+						Offset: ds.fullSyncOffset + incrOffset,
+						Db:     lastDb,
+					}
+				} else {
+					ds.stat.incrSyncFilter.Incr()
+					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
+				}
+				continue
+			} 
 		}
 
 		data := make([]interface{}, 0, len(newArgv))

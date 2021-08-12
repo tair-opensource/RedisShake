@@ -26,6 +26,7 @@ type Configuration struct {
 	TargetPasswordRaw      string   `config:"target.password_raw"`
 	TargetPasswordEncoding string   `config:"target.password_encoding"`
 	TargetDBString         string   `config:"target.db"`
+	TargetDBMapString      string   `config:"target.dbmap"`
 	TargetAuthType         string   `config:"target.auth_type"`
 	TargetType             string   `config:"target.type"`
 	TargetTLSEnable        bool     `config:"target.tls_enable"`
@@ -80,6 +81,7 @@ type Configuration struct {
 	TargetDB          int           // int type
 	Version           string        // version
 	Type              string        // input mode -type=xxx
+	TargetDBMap       map[int]int   // target db map
 }
 
 var Options Configuration

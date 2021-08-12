@@ -223,6 +223,25 @@ func SanitizeOptions(tp string) error {
 	} else {
 		conf.Options.TargetDB = v
 	}
+	
+	if (conf.Options.TargetDB == -1 && conf.Options.TargetDBMapString != "") {		
+		conf.Options.TargetDBMap = make(map[int]int)
+		dbmaps := strings.Split(strings.TrimSpace(conf.Options.TargetDBMapString), ";")
+		for _, val := range dbmaps {
+			dbpair := strings.Split(val, "-")
+			if (len(dbpair) != 2) {
+				return fmt.Errorf("parse target.dbmap[%v] failed", conf.Options.TargetDBMapString)
+			}
+			
+			if sdb, err := strconv.Atoi(dbpair[0]); err != nil {
+				return fmt.Errorf("parse target.dbmap[%v] failed[%v]", conf.Options.TargetDBMapString, err)
+			} else if tdb, err := strconv.Atoi(dbpair[1]); err != nil {
+				return fmt.Errorf("parse target.dbmap[%v] failed[%v]", conf.Options.TargetDBMapString, err)
+			} else {
+				conf.Options.TargetDBMap[sdb] = tdb
+			}
+		}
+	}	
 
 	// if the target is "cluster", only allow pass db 0
 	if conf.Options.TargetType == conf.RedisTypeCluster {
@@ -235,6 +254,12 @@ func SanitizeOptions(tp string) error {
 		} else {
 			// > 0
 			return fmt.Errorf("target.db[%v] should in {-1, 0} when target type is cluster", conf.Options.TargetDB)
+		}
+
+		for _, v := range conf.Options.TargetDBMap {
+			if v != 0 {
+				return fmt.Errorf("when target type is cluster, all db should map to db0")
+			}
 		}
 	}
 
@@ -413,6 +438,10 @@ func SanitizeOptions(tp string) error {
 
 		if conf.Options.TargetDB != -1 {
 			return fmt.Errorf("target.db should only == -1 if enable resume_from_break_point")
+		}
+
+		if len(conf.Options.TargetDBMap) != 0 {
+			return fmt.Errorf("target.dbmap should only empty if enable resume_from_break_point")
 		}
 
 		// check db type

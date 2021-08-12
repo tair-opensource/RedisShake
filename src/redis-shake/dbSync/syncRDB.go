@@ -43,6 +43,9 @@ func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType,
 								lastdb = uint32(conf.Options.TargetDB)
 								utils.SelectDB(c, uint32(conf.Options.TargetDB))
 							}
+						} else if tdb, ok := conf.Options.TargetDBMap[int(e.DB)]; ok {
+							lastdb = uint32(tdb)
+							utils.SelectDB(c, lastdb)
 						} else {
 							if e.DB != lastdb {
 								lastdb = e.DB
