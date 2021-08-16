@@ -587,8 +587,12 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 				length += len(item.Args[i])
 			}
 			// TODO 改造成根据shard选择
+			var err error
+			if strings.EqualFold(item.Cmd, "SELECT") || strings.EqualFold(item.Cmd, "PUBLISH") || strings.EqualFold(item.Cmd, "PING") {
+				continue
+			}
 			c := shardMap[consistentHashing.GetShardIndex(item.Args[0])]
-			err := c.Send(item.Cmd, data...)
+			err = c.Send(item.Cmd, data...)
 			if err != nil {
 				// log.PurePrintf("%s\n", NewLogItem("SendToTargetFail", "ERROR", NewErrorLogDetail("", err.Error())))
 				log.Panicf("Event:SendToTargetFail\tId:%s\tError:%s\t", conf.Options.Id, err.Error())
