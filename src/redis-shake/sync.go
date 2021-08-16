@@ -49,7 +49,7 @@ type CmdSync struct {
 
 	// sending queue
 	sendBuf chan cmdDetail
-	
+
 	wait_full chan struct{}
 
 	status string
@@ -62,8 +62,8 @@ type cmdSyncStat struct {
 }
 
 type cmdDetail struct {
-	Cmd       string
-	Args      [][]byte
+	Cmd  string
+	Args [][]byte
 }
 
 func (c *cmdDetail) String() string {
@@ -486,9 +486,9 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 		var bypass bool = false
 		var isselect bool = false
 
-        var scmd string
-        var argv, new_argv [][]byte
-        var err error
+		var scmd string
+		var argv, new_argv [][]byte
+		var err error
 
 		decoder := redis.NewDecoder(reader)
 
@@ -571,6 +571,27 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 				}
 				continue
 			}
+			if strings.EqualFold(scmd, "SELECT") || strings.EqualFold(scmd, "PUBLISH") || strings.EqualFold(scmd, "PING") {
+				// 哪些命令能够处理，哪些命令不行，这个是个需要思考的问题
+				continue
+			}
+			if strings.EqualFold(scmd, "MSET") || strings.EqualFold(scmd, "MSETNX") {
+				var shardData = make(map[string][][]byte)
+				for i := 0; i < len(new_argv); i = i + 2 {
+					shardName := consistentHashing.GetShardIndex(new_argv[i])
+					mapData := shardData[shardName]
+					if mapData == nil{
+						mapData = [][]byte{new_argv[i], new_argv[i+1]}
+					} else {
+						mapData = append(mapData, new_argv[i], new_argv[i+1])
+					}
+					shardData[shardName] = mapData
+				}
+				for _, value := range shardData {
+					cmd.sendBuf <- cmdDetail{Cmd: scmd, Args: value}
+				}
+				continue
+			}
 			cmd.sendBuf <- cmdDetail{Cmd: scmd, Args: new_argv}
 		}
 	}()
@@ -587,10 +608,6 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 				length += len(item.Args[i])
 			}
 			// TODO 改造成根据shard选择
-			if strings.EqualFold(item.Cmd, "SELECT") || strings.EqualFold(item.Cmd, "PUBLISH") || strings.EqualFold(item.Cmd, "PING") {
-				// 哪些命令能够处理，哪些命令不行，这个是个需要思考的问题
-				continue
-			}
 			c := shardMap[consistentHashing.GetShardIndex(item.Args[0])]
 			err := c.Send(item.Cmd, data...)
 			if err != nil {
@@ -612,7 +629,7 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 			}
 
 			if noFlushCount > conf.Options.SenderCount || cachedSize > conf.Options.SenderSize ||
-					len(cmd.sendBuf) == 0 { // 5000 cmd in a batch
+				len(cmd.sendBuf) == 0 { // 5000 cmd in a batch
 				err := c.Flush()
 				noFlushCount = 0
 				cachedSize = 0
@@ -647,9 +664,9 @@ func (cmd *CmdSync) addDelayChan(id int64) {
 	 */
 	used := cap(cmd.delayChannel) - len(cmd.delayChannel)
 	if used >= 4096 ||
-			used >= 1024 && id % 10 == 0 ||
-			used >= 128 && id % 100 == 0 ||
-			id % 1000 == 0 {
+		used >= 1024 && id%10 == 0 ||
+		used >= 128 && id%100 == 0 ||
+		id%1000 == 0 {
 		// non-blocking add
 		select {
 		case cmd.delayChannel <- &delayNode{t: time.Now(), id: id}:
