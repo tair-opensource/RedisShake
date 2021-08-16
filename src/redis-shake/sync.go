@@ -587,7 +587,7 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 				length += len(item.Args[i])
 			}
 			// TODO 改造成根据shard选择
-			if strings.EqualFold(item.Cmd, "SELECT") || strings.EqualFold(item.Cmd, "PUBLISH") || strings.EqualFold(item.Cmd, "PUBLISH") {
+			if strings.EqualFold(item.Cmd, "SELECT") || strings.EqualFold(item.Cmd, "PUBLISH") || strings.EqualFold(item.Cmd, "PING") {
 				// 哪些命令能够处理，哪些命令不行，这个是个需要思考的问题
 				continue
 			}
