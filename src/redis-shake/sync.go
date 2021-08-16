@@ -429,6 +429,7 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 	go func() {
 		var node *delayNode
 		for {
+			// TODO 改造成shard多target
 			for _, c := range shardMap {
 				reply, err := c.Receive()
 
