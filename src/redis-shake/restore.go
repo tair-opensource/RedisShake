@@ -10,15 +10,16 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"time"
 	"strconv"
+	"strings"
+	"time"
 
 	"pkg/libs/atomic2"
 	"pkg/libs/log"
 	"pkg/redis"
-	"redis-shake/configure"
-	"redis-shake/common"
 	"redis-shake/base"
+	"redis-shake/common"
+	"redis-shake/configure"
 )
 
 type CmdRestore struct {
@@ -99,10 +100,20 @@ func (cmd *CmdRestore) RestoreRDBFile(reader *bufio.Reader, target, auth_type, p
 				defer func() {
 					group <- 0
 				}()
-				c := utils.OpenRedisConn(target, auth_type, passwd)
-				defer c.Close()
+				// TODO 改造成根据shard选择
+				//c := utils.OpenRedisConn(target, auth_type, passwd)
+				//defer c.Close()
+				shardMap, _ := utils.OpenRedisConnMap(target, auth_type, passwd, conf.Options.TargetCluster)
+				consistentHashing, _ := utils.NewConsistentHashing(strings.Split(conf.Options.TargetShards, ","))
+				defer func() {
+					for _, value := range shardMap {
+						value.Close()
+					}
+				}()
 				var lastdb uint32 = 0
 				for e := range pipe {
+					// TODO 改造成根据shard选择
+					c := shardMap[consistentHashing.GetShardIndex(e.Key)]
 					if !base.AcceptDB(e.DB) {
 						cmd.ignore.Incr()
 					} else {

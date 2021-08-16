@@ -3,6 +3,15 @@ Thanks to the Douyu's WSD team for the support. <br>
 
 * [中文文档](https://yq.aliyun.com/articles/691794)
 
+# 雪球MurmurHash改版，支持目标集群的client sharding逻辑
+新增Java版本redis-cluster SDK的 [MurmurHash](http://git.snowballfinance.com/lib/redis-cluster) golang实现，配置新增target的sentinel地址、集群名、shard名，修改restore、sync到target的代码逻辑  
+例如，同步数据源到stock-indicator-core这个新集群的shard 01~16 下，详细参考 `redis-shake.conf`：  
+```
+target.address = 10.10.26.7:26377  
+target.cluster = stock-indicator-core  
+target.shards = shard01,shard02,shard03,shard04,shard05,shard06,shard07,shard08,shard09,shard10,shard11,shard12,shard13,shard14,shard15,shard16  
+```
+
 # Redis-Shake
 ---
 Redis-shake is developed and maintained by NoSQL Team in Alibaba-Cloud Database department.<br>

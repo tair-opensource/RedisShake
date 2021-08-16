@@ -18,10 +18,10 @@ import (
 	"pkg/libs/io/pipe"
 	"pkg/libs/log"
 	"pkg/redis"
+	"redis-shake/base"
+	"redis-shake/command"
 	"redis-shake/common"
 	"redis-shake/configure"
-	"redis-shake/command"
-	"redis-shake/base"
 	"redis-shake/heartbeat"
 	"redis-shake/metric"
 	"unsafe"
@@ -295,10 +295,20 @@ func (cmd *CmdSync) SyncRDBFile(reader *bufio.Reader, target, auth_type, passwd 
 				defer func() {
 					group <- 0
 				}()
-				c := utils.OpenRedisConn(target, auth_type, passwd)
-				defer c.Close()
+				// TODO 改造成根据shard选择
+				//c := utils.OpenRedisConn(target, auth_type, passwd)
+				//defer c.Close()
+				shardMap, _ := utils.OpenRedisConnMap(target, auth_type, passwd, conf.Options.TargetCluster)
+				consistentHashing, _ := utils.NewConsistentHashing(strings.Split(conf.Options.TargetShards, ","))
+				defer func() {
+					for _, value := range shardMap {
+						value.Close()
+					}
+				}()
 				var lastdb uint32 = 0
 				for e := range pipe {
+					// TODO 改造成根据shard选择
+					c := shardMap[consistentHashing.GetShardIndex(e.Key)]
 					if !base.AcceptDB(e.DB) {
 						cmd.ignore.Incr()
 					} else {
@@ -364,8 +374,16 @@ func (cmd *CmdSync) SyncRDBFile(reader *bufio.Reader, target, auth_type, passwd 
 }
 
 func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd string) {
-	c := utils.OpenRedisConnWithTimeout(target, auth_type, passwd, time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
-	defer c.Close()
+	// TODO 改造成根据shard选择
+	//c := utils.OpenRedisConnWithTimeout(target, auth_type, passwd, time.Duration(10)*time.Minute, time.Duration(10)*time.Minute)
+	//defer c.Close()
+	shardMap, _ := utils.OpenRedisConnMap(target, auth_type, passwd, conf.Options.TargetCluster)
+	consistentHashing, _ := utils.NewConsistentHashing(strings.Split(conf.Options.TargetShards, ","))
+	defer func() {
+		for _, value := range shardMap {
+			value.Close()
+		}
+	}()
 
 	cmd.sendBuf = make(chan cmdDetail, conf.Options.SenderCount)
 	cmd.delayChannel = make(chan *delayNode, conf.Options.SenderDelayChannelSize)
@@ -411,50 +429,52 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 	go func() {
 		var node *delayNode
 		for {
-			reply, err := c.Receive()
+			for _, c := range shardMap {
+				reply, err := c.Receive()
 
-			recvId.Incr()
-			id := recvId.Get() // receive id
+				recvId.Incr()
+				id := recvId.Get() // receive id
 
-			// print debug log of receive reply
-			log.Debugf("receive reply[%v]: [%v], error: [%v]", id, reply, err)
+				// print debug log of receive reply
+				log.Debugf("receive reply[%v]: [%v], error: [%v]", id, reply, err)
 
-			if conf.Options.Metric == false {
-				continue
-			}
+				if conf.Options.Metric == false {
+					continue
+				}
 
-			if err == nil {
-				// cmd.SyncStat.SuccessCmdCount.Incr()
-				metric.MetricVar.AddSuccessCmdCount(1)
-			} else {
-				// cmd.SyncStat.FailCmdCount.Incr()
-				metric.MetricVar.AddFailCmdCount(1)
-				if utils.CheckHandleNetError(err) {
-					// log.PurePrintf("%s\n", NewLogItem("NetErrorWhileReceive", "ERROR", NewErrorLogDetail("", err.Error())))
-					log.Panicf("Event:NetErrorWhileReceive\tId:%s\tError:%s", conf.Options.Id, err.Error())
+				if err == nil {
+					// cmd.SyncStat.SuccessCmdCount.Incr()
+					metric.MetricVar.AddSuccessCmdCount(1)
 				} else {
-					// log.PurePrintf("%s\n", NewLogItem("ErrorReply", "ERROR", NewErrorLogDetail("", err.Error())))
-					log.Panicf("Event:ErrorReply\tId:%s\tCommand: [unknown]\tError: %s",
-						conf.Options.Id, err.Error())
+					// cmd.SyncStat.FailCmdCount.Incr()
+					metric.MetricVar.AddFailCmdCount(1)
+					if utils.CheckHandleNetError(err) {
+						// log.PurePrintf("%s\n", NewLogItem("NetErrorWhileReceive", "ERROR", NewErrorLogDetail("", err.Error())))
+						log.Panicf("Event:NetErrorWhileReceive\tId:%s\tError:%s", conf.Options.Id, err.Error())
+					} else {
+						// log.PurePrintf("%s\n", NewLogItem("ErrorReply", "ERROR", NewErrorLogDetail("", err.Error())))
+						log.Panicf("Event:ErrorReply\tId:%s\tCommand: [unknown]\tError: %s",
+							conf.Options.Id, err.Error())
+					}
 				}
-			}
 
-			if node == nil {
-				// non-blocking read from delay channel
-				select {
-				case node = <-cmd.delayChannel:
-				default:
-					// it's ok, channel is empty
+				if node == nil {
+					// non-blocking read from delay channel
+					select {
+					case node = <-cmd.delayChannel:
+					default:
+						// it's ok, channel is empty
+					}
 				}
-			}
 
-			if node != nil {
-				if node.id == id {
-					// cmd.SyncStat.Delay.Add(time.Now().Sub(node.t).Nanoseconds())
-					metric.MetricVar.AddDelay(uint64(time.Now().Sub(node.t).Nanoseconds()) / 1000000) // ms
-					node = nil
-				} else if node.id < id {
-					log.Panicf("receive id invalid: node-id[%v] < receive-id[%v]", node.id, id)
+				if node != nil {
+					if node.id == id {
+						// cmd.SyncStat.Delay.Add(time.Now().Sub(node.t).Nanoseconds())
+						metric.MetricVar.AddDelay(uint64(time.Now().Sub(node.t).Nanoseconds()) / 1000000) // ms
+						node = nil
+					} else if node.id < id {
+						log.Panicf("receive id invalid: node-id[%v] < receive-id[%v]", node.id, id)
+					}
 				}
 			}
 		}
@@ -565,6 +585,8 @@ func (cmd *CmdSync) SyncCommand(reader *bufio.Reader, target, auth_type, passwd 
 				data[i] = item.Args[i]
 				length += len(item.Args[i])
 			}
+			// TODO 改造成根据shard选择
+			c := shardMap[consistentHashing.GetShardIndex(item.Args[0])]
 			err := c.Send(item.Cmd, data...)
 			if err != nil {
 				// log.PurePrintf("%s\n", NewLogItem("SendToTargetFail", "ERROR", NewErrorLogDetail("", err.Error())))

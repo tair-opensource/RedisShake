@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	redigo "github.com/garyburd/redigo/redis"
 	"pkg/libs/atomic2"
 	"pkg/libs/errors"
 	"pkg/libs/log"
@@ -22,8 +23,40 @@ import (
 	"pkg/rdb"
 	"pkg/redis"
 	"redis-shake/configure"
-	redigo "github.com/garyburd/redigo/redis"
 )
+
+func OpenRedisConnMap(target, auth_type, passwd, cluster_name string) (map[string]redigo.Conn, error) {
+	c := OpenRedisConn(target, auth_type, passwd)
+	infoStr, err := redigo.String(c.Do("info"))
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(infoStr, "\n")
+	shardAddrMap := make(map[string]redigo.Conn)
+	for _, line := range lines {
+		if !strings.HasPrefix(line, "master") {
+			continue
+		}
+		//举例:master0:name=snowx-snowballsecurities/shard02,status=ok,address=10.10.37.3:15901,slaves=1,sentinels=8
+		tmpStrArr := strings.Split(line, ",")
+		clusterTmpArr := strings.Split(tmpStrArr[0], "name=")
+		shardName := clusterTmpArr[len(clusterTmpArr)-1] //snowx-snowballsecurities/shard02
+		clusterTmpArr = strings.Split(shardName, "/")
+		if len(clusterTmpArr) != 2 {
+			log.Println("|WARN| split length not equal 2, shardName:", shardName)
+			continue
+		}
+		clusterName := clusterTmpArr[0] //snowx-snowballsecurities
+		if clusterName != cluster_name {
+			continue
+		}
+
+		addrTmpStr := strings.Split(tmpStrArr[2], "address=")
+		addrName := addrTmpStr[len(addrTmpStr)-1] //10.10.37.3:15901
+		shardAddrMap[clusterTmpArr[1]] = OpenRedisConn(addrName, auth_type, passwd)
+	}
+	return shardAddrMap, nil
+}
 
 func OpenRedisConn(target, auth_type, passwd string) redigo.Conn {
 	return redigo.NewConn(OpenNetConn(target, auth_type, passwd), 0, 0)
@@ -668,7 +701,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 				}
 				_, err := redigo.Int64(c.Do("del", e.Key))
 				if err != nil {
-					log.Panicf("del ", string(e.Key), err)
+					log.Panicf("del " + string(e.Key), err)
 				}
 			} else {
 				log.Panicf("target key name is busy: %s", string(e.Key))
@@ -678,7 +711,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		if e.ExpireAt != 0 {
 			r, err := redigo.Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
-				log.Panicf("expire ", string(e.Key), err)
+				log.Panicf("expire " + string(e.Key), err)
 			}
 		}
 		return
@@ -699,18 +732,18 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		//use command
 		if conf.Options.Rewrite && e.NeedReadLen == 1 {
 			if !conf.Options.Metric {
-				log.Infof("warning, rewrite big key:", string(e.Key))
+				log.Infof("warning, rewrite big key:" + string(e.Key))
 			}
 			_, err := redigo.Int64(c.Do("del", e.Key))
 			if err != nil {
-				log.Panicf("del ", string(e.Key), err)
+				log.Panicf("del " + string(e.Key), err)
 			}
 		}
 		restoreBigRdbEntry(c, e)
 		if e.ExpireAt != 0 {
 			r, err := redigo.Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
-				log.Panicf("expire ", string(e.Key), err)
+				log.Panicf("expire " + string(e.Key), err)
 			}
 		}
 		return
@@ -749,7 +782,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 					log.Info(s2, rerr, "key ", string(e.Key))
 				}
 			} else {
-				log.Panicf("target key name is busy:", string(e.Key))
+				log.Panicf("target key name is busy:" + string(e.Key))
 			}
 		} else {
 			log.PanicError(err, "restore command error key:", string(e.Key), " err:", err.Error())

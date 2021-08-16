@@ -4,8 +4,9 @@ import (
 	"testing"
 )
 
+
 func Test_Get_Match_Keys_Mset_Cmd(t *testing.T) {
-	mset_cmd := redisCommands["mset"]
+	mset_cmd := RedisCommands["mset"]
 	/*filterkey: x
 	 *cmd: mset kk 1
 	 */
@@ -58,7 +59,7 @@ func Test_Get_Match_Keys_Mset_Cmd(t *testing.T) {
 }
 
 func Test_Get_Match_Keys_SetXX_Cmd(t *testing.T) {
-	set_cmd := redisCommands["set"]
+	set_cmd := RedisCommands["set"]
 	/*filterkey: x
 	 *cmd: set kk 1
 	 */
@@ -90,7 +91,7 @@ func Test_Get_Match_Keys_SetXX_Cmd(t *testing.T) {
 	/*filterkey: k
 	 *cmd: setex kk 3000 lll
 	 */
-	set_cmd = redisCommands["setex"]
+	set_cmd = RedisCommands["setex"]
 	args = make([][]byte, 3)
 	args[0] = []byte("kk")
 	args[1] = []byte("3000")
@@ -108,7 +109,7 @@ func Test_Get_Match_Keys_SetXX_Cmd(t *testing.T) {
 	/*filterkey: k
 	 *cmd: setrange kk 3000 lll
 	 */
-	set_cmd = redisCommands["setrange"]
+	set_cmd = RedisCommands["setrange"]
 	args = make([][]byte, 3)
 	args[0] = []byte("kk")
 	args[1] = []byte("3000")
