@@ -22,6 +22,8 @@ type Configuration struct {
 	TargetPasswordRaw         string   `config:"target.password_raw"`
 	TargetPasswordEncoding    string   `config:"target.password_encoding"`
 	TargetVersion             uint     `config:"target.version"`
+	TargetCluster             string   `config:"target.cluster"`
+	TargetShards               string   `config:"target.shards"`
 	TargetDBString            string   `config:"target.db"`
 	TargetAuthType            string   `config:"target.auth_type"`
 	FakeTime                  string   `config:"fake_time"`

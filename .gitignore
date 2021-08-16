@@ -29,3 +29,6 @@ diagnostic/
 *.pid
 src/vendor/*
 !src/vendor/vendor.json
+pkg/
+src/github.com/
+src/pkg/darwin_amd64/
