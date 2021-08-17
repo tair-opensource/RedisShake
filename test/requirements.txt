@@ -1,0 +1,2 @@
+redis==3.5.3
+redis_trib==0.6.2

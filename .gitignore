@@ -1,3 +1,7 @@
+.pytest_cache
+__pycache__
+tmp
+
 .gopath
 .idea
 *.iml
