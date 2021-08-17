@@ -1,4 +1,4 @@
-2020-05-02 Alibaba Cloud.
+0000-00-00 Alibaba Cloud.
 	* VERSION: 2.1.0*
 	* IMPROVE:  1. Go modules migration. #305
 	            2. Add target.dbmap config option. #352
