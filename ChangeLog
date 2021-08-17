@@ -1,4 +1,10 @@
 2020-05-02 Alibaba Cloud.
+	* VERSION: 2.1.0*
+	* IMPROVE:  1. Go modules migration. #305
+	            2. Add target.dbmap config option. #352
+	            3. Add big key split for stream. #354
+	            4. Add simple CI.
+2020-05-02 Alibaba Cloud.
 	* VERSION: 2.0.1
 	* IMPROVE: rebase v1.6.28.
 2020-04-22 Alibaba Cloud.

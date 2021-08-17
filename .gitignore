@@ -32,3 +32,4 @@ data
 diagnostic/
 src/vendor/*
 !src/vendor/vendor.json
+/scripts/hypervisor
