@@ -9,15 +9,11 @@ class Launcher:
 
     def fire(self):
         self.process = subprocess.Popen(self.args, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE, cwd=self.work_dir, encoding="utf-8")
-        # while True:
-        #     ret = process.poll()
-        #     if ret is None:  # No process is done, wait a bit and check again.
-        #         time.sleep(.1)
-        #         continue
-        # out, err = process.communicate()
-        # print(out)
+                                        stderr=subprocess.PIPE, cwd=self.work_dir,
+                                        encoding="utf-8")
 
-    def p(self):
-        out, err = self.process.communicate()
-        print(out, err)
+    def readline(self):
+        return self.process.stdout.readline().strip()
+
+    def stop(self):
+        self.process.terminate()

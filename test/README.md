@@ -1,14 +1,15 @@
 we need python version >=3.5 and < 3.9.
 
-## requirements.txt
-
-run
+install deps & run
 
 ```shell
+conda create -n redis-shake python=3.8
 conda activate redis-shake 
+pip install -r requirements.txt
+python main.py
 ```
 
-update:
+update requirements.txt:
 
 ```shell
 pipreqs --force      
