@@ -58,6 +58,37 @@ If the source is redis cluster, redis-shake launches multiple goroutines for par
 
 The "move slot" operations must be disabled on the source side.
 
+# Usage
+
+## download the binary
+You can **directly download** the binary in the [release package](https://github.com/alibaba/RedisShake/releases).
+Run through similar commands:
+```shell
+./redis-shake.linux -type=sync -conf=redis-shake.conf # please note: user must modify redis-shake.conf first to match needs.
+```
+
+## build by yourself
+You can also build redis-shake yourself according to the following steps:
+```shell
+git clone https://github.com/alibaba/RedisShake.git
+cd RedisShake
+sh build.sh
+cd bin
+./redis-shake.linux -type=sync -conf=redis-shake.conf # please note: user must modify redis-shake.conf first to match needs.
+```
+
+# Shake series tool
+
+We also provide some tools for synchronization in Shake series.
+
+* [MongoShake](https://github.com/aliyun/MongoShake): mongodb data synchronization tool.
+* [RedisShake](https://github.com/aliyun/RedisShake): redis data synchronization tool.
+* [RedisFullCheck](https://github.com/aliyun/RedisFullCheck): redis data synchronization verification tool.
+* [NimoShake](https://github.com/alibaba/NimoShake): sync dynamodb to mongodb.
+
+Plus, we have a [DingTalk](https://www.dingtalk.com/) group, so that users can join and discuss.  
+Group code: 23165540
+
 # Code branch rules
 
 Version rules: a.b.c.
@@ -77,28 +108,6 @@ Version rules: a.b.c.
 Tag rules:  
 Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.2-20180628"  
 User can use `-version` to print the version.
-
-# Usage
-
-You can **directly download** the binary in the [release package](https://github.com/alibaba/RedisShake/releases), and use `start.sh` script to start it directly: `./start.sh redis-shake.conf sync`.
-
-You can also build redis-shake yourself according to the following steps, the `go` and `govendor` must be installed before compile:
-* git clone https://github.com/alibaba/RedisShake.git
-* cd RedisShake
-* sh build.sh
-* ./bin/redis-shake -type=$(type_must_be_sync_dump_restore_decode_or_rump) -conf=./conf/redis-shake.conf # please note: user must modify redis-shake.conf first to match needs.
-
-# Shake series tool
-
-We also provide some tools for synchronization in Shake series.
-
-* [MongoShake](https://github.com/aliyun/MongoShake): mongodb data synchronization tool.
-* [RedisShake](https://github.com/aliyun/RedisShake): redis data synchronization tool.
-* [RedisFullCheck](https://github.com/aliyun/RedisFullCheck): redis data synchronization verification tool.
-* [NimoShake](https://github.com/alibaba/NimoShake): sync dynamodb to mongodb.
-
-Plus, we have a [DingTalk](https://www.dingtalk.com/) group, so that users can join and discuss.  
-Group code: 23165540
 
 # Thanks
 
