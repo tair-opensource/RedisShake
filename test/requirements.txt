@@ -1,0 +1,4 @@
+colorama==0.4.4
+redis_trib==0.6.2
+redis==3.5.3
+requests==2.26.0
