@@ -14,6 +14,11 @@ def green_print(string):
     print(Fore.GREEN + str(string) + Style.RESET_ALL)
 
 
+def wait():
+    while True:
+        time.sleep(1024)
+
+
 DIR = "."  # RedisShake/test
 BASE_CONF_PATH = "../conf/redis-shake.conf"
 SHAKE_EXE = "../bin/redis-shake.darwin"
@@ -68,16 +73,22 @@ def save_conf(conf, file_path):
 class Redis:
     def __init__(self, port, work_dir, cluster_enable=False):
         if cluster_enable:
-            self.server = launcher.Launcher(["redis-server", f"--port {port}", "--cluster-enabled yes"], work_dir)
+            self.server = launcher.Launcher(
+                ["redis-server", "--logfile", "redis.log", "--port", str(port), "--cluster-enabled yes"], work_dir)
         else:
-            self.server = launcher.Launcher(["redis-server", f"--port {port}"], work_dir)
+            self.server = launcher.Launcher(["redis-server", "--logfile", "redis.log", "--port", str(port)], work_dir)
         self.server.fire()
         self.client = None
         self.port = port
+        self.work_dir = work_dir
 
     def wait_start(self):
-        while "Ready to accept connections" not in self.server.readline():
-            time.sleep(0.1)
+        log_file = f"{self.work_dir}/redis.log"
+        while not os.path.exists(log_file):
+            time.sleep(0.3)
+        with open(log_file, "r") as f:
+            while "Ready to accept connections" not in f.readline():
+                time.sleep(0.1)
         self.client = redis.Redis(port=self.port)
         print(f"Redis start at {self.port}.")
 
@@ -236,6 +247,49 @@ def test_sync_standalone2cluster():
     shake.stop()
 
 
+def action_sync_standalone2standalone_bigdata():
+    r1 = get_redis()
+    r2 = get_redis()
+    r1.client.execute_command(f"DEBUG POPULATE 1000000 prefix_{r1.port} 10")  # 4GB RAM
+    conf = load_conf(BASE_CONF_PATH)
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("sync_standalone2standalone")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+
+    print("need run redis-shake manually, and command+c to shutdown main.py")
+    wait()
+
+
+def action_sync_standalone2cluster():
+    r = get_redis()
+    port_list, r_list = get_cluster_redis(3)
+    print(f"redis source:", r.port)
+    redistrib.command.create([('127.0.0.1', port_list[0]),
+                              ('127.0.0.1', port_list[1]),
+                              ('127.0.0.1', port_list[2])], max_slots=16384)
+    print(f"redis cluster target:", port_list)
+
+    conf = load_conf(BASE_CONF_PATH)
+    conf["source.type"] = f"standalone"
+    conf["source.address"] = f"127.0.0.1:{r.port}"
+    conf["source.password_raw"] = ""
+    conf["target.type"] = f"cluster"
+    conf["target.address"] = f"127.0.0.1:{port_list[0]};127.0.0.1:{port_list[1]};127.0.0.1:{port_list[2]}"
+    conf["target.password_raw"] = ""
+    conf["target.dbmap"] = ""
+    conf["key_exists"] = "rewrite"
+    work_dir = get_work_dir("sync_standalone2cluster")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+
+    print("need run redis-shake manually, and command+c to shutdown main.py")
+    wait()
+
+
 if __name__ == '__main__':
     SHAKE_EXE = os.path.abspath(SHAKE_EXE)
     os.system("killall -9 redis-server")
@@ -246,3 +300,5 @@ if __name__ == '__main__':
     test_sync_cluster2cluster()
     green_print("----------- test_sync_standalone2cluster --------")
     test_sync_standalone2cluster()
+    # action_sync_standalone2standalone_bigdata()
+    # action_sync_standalone2cluster()
