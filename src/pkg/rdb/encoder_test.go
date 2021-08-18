@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"testing"
 
-	"pkg/libs/assert"
-	"pkg/libs/atomic2"
-	"pkg/libs/stats"
+	"github.com/alibaba/RedisShake/pkg/libs/assert"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/stats"
 )
 
 func toString(text string) String {

@@ -13,12 +13,11 @@ import (
 	"github.com/alibaba/RedisShake/redis-shake/dbSync"
 )
 
-// main struct
 type CmdSync struct {
 	dbSyncers []*dbSync.DbSyncer
 }
 
-// return send buffer length, delay channel length, target db offset
+// GetDetailedInfo return send buffer length, delay channel length, target db offset
 func (cmd *CmdSync) GetDetailedInfo() interface{} {
 	ret := make([]map[string]interface{}, len(cmd.dbSyncers))
 	for i, syncer := range cmd.dbSyncers {

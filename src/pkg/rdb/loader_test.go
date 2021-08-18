@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"pkg/libs/assert"
+	"github.com/alibaba/RedisShake/pkg/libs/assert"
 )
 
 func DecodeHexRdb(t *testing.T, s string, n int) map[string]*BinEntry {
@@ -27,8 +27,10 @@ func DecodeHexRdb(t *testing.T, s string, n int) map[string]*BinEntry {
 		e, err := l.NextBinEntry()
 		assert.MustNoError(err)
 		if e == nil {
+			t.Log(err)
 			break
 		}
+		t.Log(e)
 		assert.Must(e.DB == 0)
 		entries[string(e.Key)] = e
 		i++

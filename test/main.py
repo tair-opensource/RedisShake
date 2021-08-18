@@ -256,7 +256,8 @@ def action_sync_standalone2standalone_bigdata():
     conf["target.address"] = f"127.0.0.1:{r2.port}"
     conf["source.password_raw"] = ""
     conf["target.password_raw"] = ""
-    work_dir = get_work_dir("sync_standalone2standalone")
+    conf["key_exists"] = "rewrite"
+    work_dir = get_work_dir("action_sync_standalone2standalone_bigdata")
     conf_path = f"{work_dir}/redis-shake.conf"
     save_conf(conf, conf_path)
 
@@ -282,7 +283,7 @@ def action_sync_standalone2cluster():
     conf["target.password_raw"] = ""
     conf["target.dbmap"] = ""
     conf["key_exists"] = "rewrite"
-    work_dir = get_work_dir("sync_standalone2cluster")
+    work_dir = get_work_dir("action_sync_standalone2cluster")
     conf_path = f"{work_dir}/redis-shake.conf"
     save_conf(conf, conf_path)
 
