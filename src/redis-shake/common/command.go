@@ -3,9 +3,9 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
-	"sort"
 
 	"github.com/alibaba/RedisShake/redis-shake/configure"
 

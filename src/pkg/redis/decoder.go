@@ -20,7 +20,7 @@ var (
 )
 
 type Decoder struct {
-	r *bufio.Reader
+	r      *bufio.Reader
 	offset int64 // store the reading offset in incremental stage
 }
 

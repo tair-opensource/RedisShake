@@ -42,7 +42,7 @@ for g in "linux" "darwin" "windows";
 do
     echo "try build GOOS=$g"
     export GOOS=$g
-    go build -v -ldflags "-X $info" -o "$BIN_DIR/redis-shake.$g" "$MODULE_NAME/redis-shake/main"
+    go build -v -trimpath -ldflags "-X $info" -o "$BIN_DIR/redis-shake.$g" "$MODULE_NAME/redis-shake/main"
     unset GOOS
     echo "build $g successfully!"
 done

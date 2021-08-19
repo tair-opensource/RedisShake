@@ -13,7 +13,6 @@ import (
 	"strconv"
 
 	"github.com/alibaba/RedisShake/pkg/libs/errors"
-
 )
 
 var FromVersion int64 = 9

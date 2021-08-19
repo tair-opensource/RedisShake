@@ -1,11 +1,11 @@
 package utils
 
 import (
-	"os"
 	"bufio"
-	"strings"
-	"strconv"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -18,11 +18,11 @@ var (
 		FeatureCompatibleVersion: 0,
 	}
 
-	LowestCheckpointVersion = map[int]string {
+	LowestCheckpointVersion = map[int]string{
 		0: "1.0.0",
 		1: "2.0.0",
 	}
-	LowestConfigurationVersion = map[int]string {
+	LowestConfigurationVersion = map[int]string{
 		0: "1.0.0",
 		1: "2.0.0",
 	}

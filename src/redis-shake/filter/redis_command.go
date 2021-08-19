@@ -102,12 +102,12 @@ func getMatchKeys(redis_cmd redisCommand, args [][]byte) (new_args [][]byte, pas
 	}
 
 	pass = false
-	new_args = make([][]byte, number * redis_cmd.keystep + len(args) - lastkey - redis_cmd.keystep)
+	new_args = make([][]byte, number*redis_cmd.keystep+len(args)-lastkey-redis_cmd.keystep)
 	if number > 0 {
 		pass = true
 		for i := 0; i < number; i++ {
 			for j := 0; j < redis_cmd.keystep; j++ {
-				new_args[i * redis_cmd.keystep + j] = args[array[i] + j]
+				new_args[i*redis_cmd.keystep+j] = args[array[i]+j]
 			}
 		}
 	}
@@ -115,7 +115,7 @@ func getMatchKeys(redis_cmd redisCommand, args [][]byte) (new_args [][]byte, pas
 	// add alias parameters
 	j := 0
 	for i := lastkey + redis_cmd.keystep; i < len(args); i++ {
-		new_args[number * redis_cmd.keystep + j] = args[i]
+		new_args[number*redis_cmd.keystep+j] = args[i]
 		j = j + 1
 	}
 

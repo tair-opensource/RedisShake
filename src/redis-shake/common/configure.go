@@ -1,15 +1,15 @@
 package utils
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 
 	"github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 const (
-	AddressSplitter       = "@"
-	AddressHeaderSplitter = ":"
+	AddressSplitter        = "@"
+	AddressHeaderSplitter  = ":"
 	AddressClusterSplitter = ";"
 )
 
@@ -57,7 +57,7 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 	case conf.RedisTypeSentinel:
 		arr := strings.Split(address, AddressSplitter)
 		if len(arr) != 2 {
-			return fmt.Errorf("redis type[%v] address[%v] must begin with or has '%v': e.g., \"master@ip1:port1;ip2:port2\", " +
+			return fmt.Errorf("redis type[%v] address[%v] must begin with or has '%v': e.g., \"master@ip1:port1;ip2:port2\", "+
 				"\"@ip1:port1,ip2:port2\"",
 				conf.RedisTypeSentinel, address, AddressSplitter)
 		}
@@ -154,7 +154,7 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 						endpoint = "target"
 					}
 					return fmt.Errorf("[%s] redis address should be all masters or all slaves, master:[%v], slave[%v]",
-					endpoint, masterAddressList, slaveAddressList)
+						endpoint, masterAddressList, slaveAddressList)
 				}
 			}
 

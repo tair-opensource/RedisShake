@@ -3,8 +3,8 @@ package utils
 import (
 	"github.com/alibaba/RedisShake/pkg/libs/log"
 
-	redigoCluster "github.com/vinllen/redis-go-cluster"
 	redigo "github.com/garyburd/redigo/redis"
+	redigoCluster "github.com/vinllen/redis-go-cluster"
 )
 
 var (
@@ -103,6 +103,6 @@ func (cc *ClusterConn) Flush() error {
 
 // read recvChan
 func (cc *ClusterConn) Receive() (reply interface{}, err error) {
-	ret := <- cc.recvChan
+	ret := <-cc.recvChan
 	return ret.answer, ret.err
 }

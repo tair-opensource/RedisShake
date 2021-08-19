@@ -1,16 +1,16 @@
 package dbSync
 
 import (
-	"github.com/alibaba/RedisShake/redis-shake/metric"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/base"
-	"io"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/redis-shake/heartbeat"
 	"bufio"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/base"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/heartbeat"
+	"github.com/alibaba/RedisShake/redis-shake/metric"
+	"io"
 
-	"github.com/alibaba/RedisShake/redis-shake/configure"
 	"github.com/alibaba/RedisShake/redis-shake/checkpoint"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 // one sync link corresponding to one DbSyncer
@@ -80,9 +80,9 @@ func (ds *DbSyncer) GetExtraInfo() map[string]interface{} {
 
 // main
 func (ds *DbSyncer) Sync() {
-	log.Infof("DbSyncer[%d] starts syncing data from %v to %v with http[%v], enableResumeFromBreakPoint[%v], " +
+	log.Infof("DbSyncer[%d] starts syncing data from %v to %v with http[%v], enableResumeFromBreakPoint[%v], "+
 		"slot boundary[%v, %v]", ds.id, ds.source, ds.target, ds.httpProfilePort, ds.enableResumeFromBreakPoint,
-			ds.slotLeftBoundary, ds.slotRightBoundary)
+		ds.slotLeftBoundary, ds.slotRightBoundary)
 
 	var err error
 	runId, offset, dbid := "?", int64(-1), 0

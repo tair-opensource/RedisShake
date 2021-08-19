@@ -1,14 +1,15 @@
 package utils
 
 import (
-	"strconv"
-	"fmt"
 	"errors"
+	"fmt"
+	"strconv"
 )
 
 // this file is copied from redigo and do some modification to make log more clear
 
 type Error string
+
 func (err Error) Error() string { return string(err) }
 
 // ErrNil indicates that a reply value is nil.
@@ -244,4 +245,4 @@ func Values(reply interface{}, err error) ([]interface{}, error) {
 		return nil, fmt.Errorf("invalid return: %s", reply)
 	}
 	return nil, fmt.Errorf("redigo: unexpected type for Values, got type %T, value: %v", reply, reply)
-} 
+}

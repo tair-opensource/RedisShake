@@ -11,13 +11,13 @@ import (
 	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"github.com/alibaba/RedisShake/redis-shake/common"
 	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/filter"
 	"github.com/alibaba/RedisShake/redis-shake/metric"
 	"github.com/alibaba/RedisShake/redis-shake/scanner"
-	"github.com/alibaba/RedisShake/redis-shake/filter"
 
+	"bytes"
 	"github.com/garyburd/redigo/redis"
 	"time"
-	"bytes"
 )
 
 type CmdRump struct {
@@ -310,7 +310,7 @@ func (dre *dbRumperExecutor) exec() {
 		var b bytes.Buffer
 		fmt.Fprintf(&b, "dbRumper[%v] total = %v(keys) - %10v(keys) [%3d%%]  entry=%-12d",
 			dre.rumperId, dre.keyNumber, dre.stat.cCommands.Get(),
-			100 * dre.stat.cCommands.Get() / dre.keyNumber, dre.stat.wCommands.Get())
+			100*dre.stat.cCommands.Get()/dre.keyNumber, dre.stat.wCommands.Get())
 		log.Info(b.String())
 	}
 
@@ -364,9 +364,9 @@ func (dre *dbRumperExecutor) writer() {
 		}
 		if conf.Options.TargetDB != -1 {
 			ele.db = conf.Options.TargetDB
-		}  else if tdb, ok := conf.Options.TargetDBMap[int(ele.db)]; ok {
+		} else if tdb, ok := conf.Options.TargetDBMap[int(ele.db)]; ok {
 			ele.db = tdb
-		} 
+		}
 
 		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
 			len(ele.value))

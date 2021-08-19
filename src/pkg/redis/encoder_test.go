@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"pkg/libs/assert"
+	"github.com/alibaba/RedisShake/pkg/libs/assert"
 )
 
 func TestItos(t *testing.T) {
@@ -20,12 +20,12 @@ func TestItos(t *testing.T) {
 }
 
 func TestEncodeString(t *testing.T) {
-	resp := &String{"OK"}
+	resp := &String{[]byte("OK")}
 	testEncodeAndCheck(t, resp, []byte("+OK\r\n"))
 }
 
 func TestEncodeError(t *testing.T) {
-	resp := &Error{"Error"}
+	resp := &Error{[]byte("Error")}
 	testEncodeAndCheck(t, resp, []byte("-Error\r\n"))
 }
 

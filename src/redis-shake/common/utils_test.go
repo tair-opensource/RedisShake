@@ -108,7 +108,6 @@ func TestCompareVersion(t *testing.T) {
 	}
 }
 
-
 func TestCompareUnorderedList(t *testing.T) {
 	var nr int
 	{
@@ -141,9 +140,9 @@ func TestGetSlotDistribution(t *testing.T) {
 		ret, err := GetSlotDistribution(testAddrCluster, "auth", "", false)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.NotEqual(t, 0, len(ret), "should be equal")
-		assert.Equal(t, 16383, ret[len(ret) - 1].SlotRightBoundary, "should be equal")
-		for i := 1; i < len(ret) - 1; i++ {
-			assert.Equal(t, ret[i - 1].SlotRightBoundary + 1, ret[i].SlotLeftBoundary, "should be equal")
+		assert.Equal(t, 16383, ret[len(ret)-1].SlotRightBoundary, "should be equal")
+		for i := 1; i < len(ret)-1; i++ {
+			assert.Equal(t, ret[i-1].SlotRightBoundary+1, ret[i].SlotLeftBoundary, "should be equal")
 			assert.NotEqual(t, "", ret[i].Master, "should be equal")
 		}
 		fmt.Println(ret)
