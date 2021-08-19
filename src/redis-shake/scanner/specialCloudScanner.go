@@ -13,7 +13,7 @@ type SpecialCloudScanner struct {
 	cursor int64
 
 	tencentNodeId string
-	aliyunNodeId int
+	aliyunNodeId  int
 }
 
 func (scs *SpecialCloudScanner) ScanKey() ([]string, error) {

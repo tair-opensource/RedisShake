@@ -62,12 +62,12 @@ func pickSuffixDfs(depth int, judge func(int) bool, prefix []byte) (bool, string
 	var i byte
 	for i = 'a'; i <= 'z'; i++ {
 		prefix = append(prefix, i)
-		ok, ret := pickSuffixDfs(depth + 1, judge, prefix)
+		ok, ret := pickSuffixDfs(depth+1, judge, prefix)
 		if ok {
 			return ok, ret
 		}
 		// backtrace
-		prefix = prefix[:len(prefix) - 1]
+		prefix = prefix[:len(prefix)-1]
 	}
 	return false, ""
 }

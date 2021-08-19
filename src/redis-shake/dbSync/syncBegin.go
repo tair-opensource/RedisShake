@@ -1,15 +1,15 @@
 package dbSync
 
 import (
-	"net"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"time"
-	"github.com/alibaba/RedisShake/pkg/libs/io/pipe"
 	"bufio"
-	"github.com/alibaba/RedisShake/redis-shake/base"
-	"io"
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/io/pipe"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/base"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"io"
+	"net"
+	"time"
 
 	"github.com/alibaba/RedisShake/redis-shake/configure"
 )
@@ -33,7 +33,7 @@ func (ds *DbSyncer) sendSyncCmd(master, authType, passwd string, tlsEnable bool)
 }
 
 func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool, runId string,
-		prevOffset int64) (pipe.Reader, int64, bool, string) {
+	prevOffset int64) (pipe.Reader, int64, bool, string) {
 	c := utils.OpenNetConn(master, authType, passwd, tlsEnable)
 	log.Infof("DbSyncer[%d] psync connect '%v' with auth type[%v] OK!", ds.id, master, authType)
 
@@ -80,14 +80,14 @@ func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool
 }
 
 func (ds *DbSyncer) runIncrementalSync(c net.Conn, br *bufio.Reader, bw *bufio.Writer, rdbSize int, runId string,
-		offset int64, master, authType, passwd string, tlsEnable bool, pipew pipe.Writer,
-		isFullSync bool) {
+	offset int64, master, authType, passwd string, tlsEnable bool, pipew pipe.Writer,
+	isFullSync bool) {
 	// write -> pipew -> piper -> read
 	defer pipew.Close()
 	if isFullSync {
 		p := make([]byte, 8192)
 		// read rdb in for loop
-		for ; rdbSize != 0; {
+		for rdbSize != 0 {
 			// br -> pipew
 			rdbSize -= utils.Iocopy(br, pipew, p, rdbSize)
 		}

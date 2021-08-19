@@ -1,14 +1,14 @@
 package filter
 
 import (
-	"strings"
+	"github.com/alibaba/RedisShake/redis-shake/common"
 	"github.com/alibaba/RedisShake/redis-shake/configure"
 	"strconv"
-	"github.com/alibaba/RedisShake/redis-shake/common"
+	"strings"
 )
 
 var (
-	innerFilterKeys = map[string]struct{} {
+	innerFilterKeys = map[string]struct{}{
 		utils.CheckpointKey: {},
 	}
 )
@@ -20,7 +20,7 @@ func FilterCommands(cmd string) bool {
 	}
 
 	if conf.Options.FilterLua && (strings.EqualFold(cmd, "eval") || strings.EqualFold(cmd, "script") ||
-			strings.EqualFold(cmd, "evalsha")) {
+		strings.EqualFold(cmd, "evalsha")) {
 		return true
 	}
 

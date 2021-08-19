@@ -4,8 +4,8 @@ import (
 	"github.com/alibaba/RedisShake/redis-shake/configure"
 
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
-	"time"
 	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"time"
 )
 
 const (
@@ -15,8 +15,8 @@ const (
 	barrierStatusHolding   = "holding barrier" // holding
 	barrierStatusHoldEnd   = "release barrier" // "exec" release the previous barrier
 
-	flushStatusNo      = 0
-	flushStatusYes     = 1
+	flushStatusNo  = 0
+	flushStatusYes = 1
 	// flushStatusMustNot = 2
 )
 
@@ -24,7 +24,7 @@ var (
 	/*
 	 * should add barrier?
 	 */
-	barrierMap = map[string]string {
+	barrierMap = map[string]string{
 		"select": barrierStatusAdd,
 		"multi":  barrierStatusHoldStart,
 		"exec":   barrierStatusHoldEnd,

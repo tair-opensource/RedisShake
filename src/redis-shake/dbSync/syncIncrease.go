@@ -2,19 +2,19 @@ package dbSync
 
 import (
 	"bufio"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"time"
-	"github.com/alibaba/RedisShake/pkg/redis"
-	"strings"
-	"strconv"
-	"github.com/alibaba/RedisShake/redis-shake/filter"
 	"bytes"
 	"fmt"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/redis"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/filter"
 	"io"
 	"net"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/alibaba/RedisShake/redis-shake/metric"
 
@@ -48,9 +48,9 @@ func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType,
 		nStat := ds.stat.Stat()
 		var b bytes.Buffer
 		fmt.Fprintf(&b, "DbSyncer[%d] sync: ", ds.id)
-		fmt.Fprintf(&b, " +forwardCommands=%-6d", nStat.wCommands - lStat.wCommands)
-		fmt.Fprintf(&b, " +filterCommands=%-6d", nStat.incrSyncFilter - lStat.incrSyncFilter)
-		fmt.Fprintf(&b, " +writeBytes=%d", nStat.wBytes - lStat.wBytes)
+		fmt.Fprintf(&b, " +forwardCommands=%-6d", nStat.wCommands-lStat.wCommands)
+		fmt.Fprintf(&b, " +filterCommands=%-6d", nStat.incrSyncFilter-lStat.incrSyncFilter)
+		fmt.Fprintf(&b, " +writeBytes=%d", nStat.wBytes-lStat.wBytes)
 		log.Info(b.String())
 		lStat = nStat
 	}
@@ -148,9 +148,9 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 
 func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	var (
-		lastDb              = -1
-		bypass              = false
-		isSelect            = false
+		lastDb        = -1
+		bypass        = false
+		isSelect      = false
 		sCmd          string
 		argv, newArgv [][]byte
 		err           error
@@ -175,7 +175,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	log.Infof("DbSyncer[%d] FlushEvent:IncrSyncStart\tId:%s\t", ds.id, conf.Options.Id)
 
 	for {
-		ignoresentinel:= false
+		ignoresentinel := false
 		ignoreCmd := false
 		isSelect = false
 		// incrOffset is used to do resume from break-point job
@@ -201,7 +201,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					lastDb = n
 				} else if filter.FilterCommands(sCmd) {
 					ignoreCmd = true
-				} else if strings.EqualFold(sCmd, "publish") && strings.EqualFold(string(argv[0]), "__sentinel__:hello"){
+				} else if strings.EqualFold(sCmd, "publish") && strings.EqualFold(string(argv[0]), "__sentinel__:hello") {
 					ignoresentinel = true
 				}
 
@@ -254,7 +254,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
 				}
 				continue
-			} 
+			}
 		}
 
 		data := make([]interface{}, 0, len(newArgv))
@@ -280,7 +280,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 	var flushStatus int // need a barrier?
 
 	// cache the batch oplog
-	cachedTunnel := make([]cmdDetail, 0, conf.Options.SenderCount + 1)
+	cachedTunnel := make([]cmdDetail, 0, conf.Options.SenderCount+1)
 	checkpointRunId := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointRunId)
 	checkpointVersion := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointVersion)
 	checkpointOffset := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffset)
@@ -296,7 +296,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 			return
 		}
 
-		lastOplog := cachedTunnel[len(cachedTunnel) - 1]
+		lastOplog := cachedTunnel[len(cachedTunnel)-1]
 		needBatch := true
 		if !ds.enableResumeFromBreakPoint || (cachedCount == 1 && lastOplog.Cmd == "ping") {
 			needBatch = false

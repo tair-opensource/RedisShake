@@ -10,7 +10,7 @@ import (
 )
 
 func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType, passwd string,
-		checkpointName string, isCluster bool, tlsEnable bool) (string, int64, int, error) {
+	checkpointName string, isCluster bool, tlsEnable bool) (string, int64, int, error) {
 	c := utils.OpenRedisConn(target, authType, passwd, isCluster, tlsEnable)
 
 	// fetch logical db list
@@ -101,7 +101,7 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int, checkpointName st
 			lineS := utils.Bytes2String(line)
 			if strings.HasPrefix(lineS, sourceAddr) {
 				if strings.Contains(lineS, utils.CheckpointOffset) {
-					next := utils.Bytes2String(replyList[i + 1].([]byte))
+					next := utils.Bytes2String(replyList[i+1].([]byte))
 					offset, err = strconv.ParseInt(next, 10, 64)
 					if err != nil {
 						return "", -1, -1, fmt.Errorf("fetch checkpoint do parse offset[%v] failed[%v]",
@@ -110,11 +110,11 @@ func fetchCheckpoint(sourceAddr string, c redigo.Conn, db int, checkpointName st
 				}
 
 				if strings.Contains(lineS, utils.CheckpointRunId) {
-					runId = utils.Bytes2String(replyList[i + 1].([]byte))
+					runId = utils.Bytes2String(replyList[i+1].([]byte))
 				}
 
 				if strings.Contains(lineS, utils.CheckpointVersion) {
-					str := utils.Bytes2String(replyList[i + 1].([]byte))
+					str := utils.Bytes2String(replyList[i+1].([]byte))
 					version, err = strconv.ParseInt(str, 10, 64)
 					if err != nil {
 						return "", -1, -1, fmt.Errorf("fetch checkpoint do parse version[%v] failed[%v]",

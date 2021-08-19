@@ -2,15 +2,15 @@ package dbSync
 
 import (
 	"bufio"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/base"
-	"sync"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
-	"github.com/alibaba/RedisShake/redis-shake/filter"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"time"
 	"bytes"
 	"fmt"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/base"
+	"github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/filter"
+	"sync"
+	"time"
 
 	"github.com/alibaba/RedisShake/redis-shake/metric"
 )

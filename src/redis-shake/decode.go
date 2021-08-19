@@ -14,9 +14,9 @@ import (
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"github.com/alibaba/RedisShake/pkg/rdb"
+	"github.com/alibaba/RedisShake/redis-shake/base"
 	"github.com/alibaba/RedisShake/redis-shake/common"
 	"github.com/alibaba/RedisShake/redis-shake/configure"
-	"github.com/alibaba/RedisShake/redis-shake/base"
 )
 
 type CmdDecode struct {
@@ -139,9 +139,9 @@ func (cmd *CmdDecode) decoderMain(ipipe <-chan *rdb.BinEntry, opipe chan<- strin
 		var b bytes.Buffer
 		if e.Type == rdb.RdbFlagAUX {
 			o := &struct {
-				Type     string `json:"type"`
-				Key      string `json:"key"`
-				Value64  string `json:"value64"`
+				Type    string `json:"type"`
+				Key     string `json:"key"`
+				Value64 string `json:"value64"`
 			}{
 				"aux", string(e.Key), string(e.Value),
 			}

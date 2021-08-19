@@ -3,10 +3,10 @@ package scanner
 import (
 	"github.com/alibaba/RedisShake/redis-shake/configure"
 
+	"bufio"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"github.com/garyburd/redigo/redis"
 	"os"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"bufio"
 )
 
 // scanner used to scan keys
