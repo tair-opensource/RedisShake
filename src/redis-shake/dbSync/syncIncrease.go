@@ -149,6 +149,7 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	var (
 		lastDb        = -1
+		selectDB      = -1
 		bypass        = false
 		isSelect      = false
 		sCmd          string
@@ -198,7 +199,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					}
 					bypass = filter.FilterDB(n)
 					isSelect = true
-					lastDb = n
+					selectDB = n
 				} else if filter.FilterCommands(sCmd) {
 					ignoreCmd = true
 				} else if strings.EqualFold(sCmd, "publish") && strings.EqualFold(string(argv[0]), "__sentinel__:hello") {
@@ -239,7 +240,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					metric.GetMetric(ds.id).AddBypassCmdCount(ds.id, 1)
 				}
 				continue
-			} else if tdb, ok := conf.Options.TargetDBMap[int(lastDb)]; ok {
+			} else if tdb, ok := conf.Options.TargetDBMap[int(selectDB)]; ok {
 				if tdb != lastDb {
 					lastDb = tdb
 					/* send select command. */
