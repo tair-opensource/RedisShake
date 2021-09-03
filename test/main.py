@@ -291,15 +291,63 @@ def action_sync_standalone2cluster():
     wait()
 
 
+def test_sync_select_db(target_db=-1):
+    r1 = get_redis()
+    r2 = get_redis()
+    r1.client.execute_command("select", "1")
+    for i in range(10):
+        r1.client.set(str(i), "v")
+
+    conf = load_conf(BASE_CONF_PATH)
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    conf["target.db"] = target_db
+
+    work_dir = get_work_dir("test_sync_select_db_with_target_db")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+    shake = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "sync"], work_dir)
+    shake.fire()
+    time.sleep(3)
+    ret = requests.get(METRIC_URL)
+    assert ret.json()[0]["FullSyncProgress"] == 100
+
+    r1.client.execute_command("select", "2" if target_db == -1 else target_db)
+    for i in range(10, 20):
+        r1.client.set(str(i), "v20")
+    time.sleep(1)
+
+    r2.client.execute_command("select", "1" if target_db == -1 else target_db)
+    for i in range(10):
+        assert r2.client.get(str(i)) == b'v'
+
+    r2.client.execute_command("select", "2" if target_db == -1 else target_db)
+    for i in range(10, 20):
+        assert r2.client.get(str(i)) == b'v20'
+
+    print("sync successful!")
+
+    r1.stop()
+    r2.stop()
+    shake.stop()
+
+
 if __name__ == '__main__':
     SHAKE_EXE = os.path.abspath(SHAKE_EXE)
     os.system("killall -9 redis-server")
     shutil.rmtree(f"{DIR}/tmp")
+    green_print("----------- test_sync_select_db --------")
+    test_sync_select_db()
+    green_print("----------- test_sync_select_db with target db--------")
+    test_sync_select_db(3)
     green_print("----------- test_sync_standalone2standalone --------")
     test_sync_standalone2standalone()
     green_print("----------- test_sync_cluster2cluster --------")
     test_sync_cluster2cluster()
     green_print("----------- test_sync_standalone2cluster --------")
     test_sync_standalone2cluster()
+
     # action_sync_standalone2standalone_bigdata()
     # action_sync_standalone2cluster()
