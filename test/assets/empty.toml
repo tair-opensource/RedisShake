@@ -1,0 +1,38 @@
+[source] # standalone
+address = "127.0.0.1:6379"
+password = ""
+tls = false
+
+[target]
+type = "standalone" # standalone or cluster
+addresses = ["127.0.0.1:6380"]
+password = ""
+tls = false
+
+[advanced]
+dir = "data"
+
+# runtime.GOMAXPROCS, 0 means use runtime.NumCPU() cpu cores
+ncpu = 3
+
+# log
+log_file = "redis-shake.log"
+log_level = "info" # debug, info or warn
+log_interval = 5 # in seconds
+
+# redis-shake gets key and value from rdb file, and uses RESTORE command to
+# create the key in target redis. Redis RESTORE will return a "Target key name
+# is busy" error when key already exists. You can use this configuration item
+# to change the default behavior of restore:
+# panic:   redis-shake will stop when meet "Target key name is busy" error.
+# rewrite: redis-shake will replace the key with new value.
+# ignore:  redis-shake will skip restore the key when meet "Target key name is busy" error.
+rdb_restore_command_behavior = "rewrite" # panic, rewrite or skip
+
+# Client query buffers accumulate new commands. They are limited to a fixed
+# amount by default. This amount is normally 1gb.
+target_redis_client_max_querybuf_len = 1024_000_000
+
+# In the Redis protocol, bulk requests, that are, elements representing single
+# strings, are normally limited to 512 mb.
+target_redis_proto_max_bulk_len = 512_000_000

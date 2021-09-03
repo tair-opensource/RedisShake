@@ -1,128 +1,108 @@
-RedisShake is mainly used to synchronize data from one redis to another.<br>
-Thanks to the Douyu's WSD team for the support. <br>
+# redis-shake
 
-* [中文文档](https://yq.aliyun.com/articles/691794)
-* [English tutorial](https://github.com/alibaba/RedisShake/wiki/tutorial-about-how-to-set-up)
-* [中文使用文档](https://github.com/alibaba/RedisShake/wiki/%E7%AC%AC%E4%B8%80%E6%AC%A1%E4%BD%BF%E7%94%A8%EF%BC%8C%E5%A6%82%E4%BD%95%E8%BF%9B%E8%A1%8C%E9%85%8D%E7%BD%AE%EF%BC%9F)
-* [Release package](https://github.com/alibaba/RedisShake/releases)
+[![CI](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml/badge.svg?branch=v3)](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml)
 
-# Redis-Shake
+redis-shake 是一个用来做 Redis 数据迁移的工具，并提供一定程度的数据清洗能力。
 
-Redis-shake is developed and maintained by NoSQL Team in Alibaba-Cloud Database department.  
+## 特性
 
-Redis-shake has made some improvements based on [redis-port](https://github.com/CodisLabs/redis-port), including bug fixes, performance improvements and feature enhancements.
+* 支持 Redis 原生数据结构
+* 支持源端为单机实例，目的端为单机或集群实例
+* 测试在 5.0、6.0 和 7.0
+* 支持使用 lua 自定义过滤规则
 
-# Main Functions
+![image.png](https://s2.loli.net/2022/06/30/vU346lVBrNofKzu.png)
 
-The type can be one of the following:
+# 文档
 
-* **decode**: Decode dumped payload to human readable format (hex-encoding).
-* **restore**: Restore RDB file to target redis.
-* **dump**: Dump RDB file from source redis.
-* **sync**: Sync data from source redis to target redis by `sync` or `psync` command. Including full synchronization and incremental synchronization.
-* **rump**: Sync data from source redis to target redis by `scan` command. Only support full synchronization. Plus, RedisShake also supports fetching data from given keys in the input file when `scan` command is not supported on the source side. This mode is usually used when `sync` and `psync` redis commands aren't supported.
+## 安装
 
-Please check out the `conf/redis-shake.conf` to see the detailed parameters description.
+### 从 Release 下载安装
 
-# Support
+unstable 版本，暂不支持。
 
-Redis version from 2.x to 6.x.
+### 从源码编译
 
-Supports `Standalone`, `Cluster` and some proxies type like `Codis`, `twemproxy`,  `Aliyun Cluster Proxy`, `Tencent Cloud Proxy` and so on.
+下载源码后，运行 `sh build.sh` 命令编译。
 
-For `codis` and `twemproxy`, there maybe some constraints, please checkout this [question](https://github.com/alibaba/RedisShake/wiki/FAQ#q-does-redisshake-supports-codis-and-twemproxy).
-
-
-Support Redis Modules:   
-[TairHash](https://github.com/alibaba/TairHash): A redis module, similar to redis hash, but you can set expire and version for the field  
-[TairZset](https://github.com/alibaba/TairZset): A redis module, similar to redis zset, but you can set multiple scores for each member to support multi-dimensional sorting  
-[TairString](https://github.com/alibaba/TairString): A redis module, similar to redis string, but you can set expire and version for the value. It also provides many very useful commands, such as cas/cad, etc.  
-
-
-# Configuration
-
-Redis-shake has several parameters in the configuration `conf/redis-shake.conf`, that maybe confusing, if this is your first time using, please visit this [tutorial](https://github.com/alibaba/RedisShake/wiki/tutorial-about-how-to-set-up).
-
-# Verification
-
-User can use [RedisFullCheck](https://github.com/alibaba/RedisFullCheck) to verify correctness.
-
-# Metric
-
-Redis-shake offers metrics through restful api and log file.<br>
-
-* restful api: `curl 127.0.0.1:9320/metric`.
-* log: the metric info will be printed in the log periodically if enable.
-* inner routine heap: `curl http://127.0.0.1:9310/debug/pprof/goroutine?debug=2`
-
-# Redis Type
-
-Both the source and target type can be standalone, opensource cluster and proxy. Although the architecture patterns of different vendors are different for the proxy architecture, we still support different cloud vendors like alibaba-cloud, tencent-cloud and so on.
-
-If the target is open source redis cluster, redis-shake uses [redis-go-cluster](https://github.com/chasex/redis-go-cluster) driver to write data. When target type is proxy, redis-shakes write data in round-robin way.
-
-If the source is redis cluster, redis-shake launches multiple goroutines for parallel pull. User can use `rdb.parallel` to control the RDB syncing concurrency.
-
-The "move slot" operations must be disabled on the source side.
-
-# Usage
-
-## download the binary
-You can **directly download** the binary in the [release package](https://github.com/alibaba/RedisShake/releases).
-Run through similar commands:
 ```shell
-./redis-shake.linux -type=sync -conf=redis-shake.conf # please note: user must modify redis-shake.conf first to match needs.
-```
-
-## build by yourself
-You can also build redis-shake yourself according to the following steps:
-```shell
-git clone https://github.com/alibaba/RedisShake.git
-cd RedisShake
 sh build.sh
-cd bin
-./redis-shake.linux -type=sync -conf=redis-shake.conf # please note: user must modify redis-shake.conf first to match needs.
 ```
 
-# Shake series tool
+## 运行
 
-We also provide some tools for synchronization in Shake series.
+1. 编辑 redis-shake.toml，修改其中的 source 与 target 配置项
+2. 启动 redis-shake：
 
-* [MongoShake](https://github.com/aliyun/MongoShake): mongodb data synchronization tool.
-* [RedisShake](https://github.com/aliyun/RedisShake): redis data synchronization tool.
-* [RedisFullCheck](https://github.com/aliyun/RedisFullCheck): redis data synchronization verification tool.
-* [NimoShake](https://github.com/alibaba/NimoShake): sync dynamodb to mongodb.
+```shell
+./bin/redis-shake redis-shake.toml
+```
 
-Plus, we have a [DingTalk](https://www.dingtalk.com/) group, so that users can join and discuss.  
-Group code: 23165540
+3. 观察数据同步情况
 
-# Code branch rules
+## 配置
 
-Version rules: a.b.c.
+redis-shake 配置文件参考：https://github.com/alibaba/RedisShake/blob/v3/redis-shake.toml
 
-*  a: major version
-*  b: minor version. even number means stable version.
-*  c: bugfix version
+为避免歧义强制要求配置文件中的每一项配置均需要赋值，否则会报错。
 
-| branch name | rules |
-| --- | :--- |
-| master | master branch, do not allowed push code. store the latest stable version. develop branch will merge into this branch once new version created.|
-| **develop**(main branch) | develop branch. all the bellowing branches fork from this. |
-| feature-\* | new feature branch. forked from develop branch and then merge back after finish developing, testing, and code review. |
-| bugfix-\* | bugfix branch. forked from develop branch and then merge back after finish developing, testing, and code review. |
-| improve-\* | improvement branch. forked from develop branch and then merge back after finish developing, testing, and code review.  |
+## 数据过滤
 
-Tag rules:  
-Add tag when releasing: "release-v{version}-{date}". for example: "release-v1.0.2-20180628"  
-User can use `-version` to print the version.
+redis-shake 支持使用 lua 脚本自定义过滤规则，可以实现对数据进行过滤。 搭配 lua 脚本时，redis-shake 启动命令：
 
-# Thanks
+```shell
+./bin/redis-shake redis-shake.toml filter/xxx.lua
+```
 
-| Username | Mail |
-| :------: | :------: |
-| ceshihao | davidzheng23@gmail.com |
-| wangyiyang | wangyiyang.kk@gmail.com |
-| muicoder | muicoder@gmail.com |
-| zhklcf | huikangzhu@126.com |
-| shuff1e | sfxu@foxmail.com |
-| xuhualin | xuhualing8439523@163.com |
+lua 的书写参照 `filter/*.lua` 文件，目前提供以下过滤模板供参考：
+
+1. `filter/print.lua`：打印收到的所有命令
+2. `filter/swap_db.lua`：交换 db0 和 db1 的数据
+
+### 自定义过滤规则
+
+参照 `filter/print.lua` 新建一个 lua 脚本，并在 lua 脚本中实现 filter 函数，该函数的参数为：
+
+- id：命令序列号
+- is_base：是否是从 dump.rdb 文件中读取的命令
+- group：命令组，不同命令所归属的 Group 见 [redis/src/commands](https://github.com/redis/redis/tree/unstable/src/commands) 下的描述文件
+- cmd_name：命令名称
+- keys：命令的 keys
+- slots：keys 的 slots
+- db_id：数据库 id
+- timestamp_ms：命令的时间戳，单位为毫秒。目前版本不支持。
+
+返回值为：
+
+- code
+    - 0：表示不过滤该命令
+    - 1：表示过滤该命令
+    - 2：表示不应该出现该命令，并让 redis-shake 报错退出
+- db_id：重定向的 db_id
+
+# 贡献
+
+## lua 脚本
+
+欢迎分享更有创意的 lua 脚本。
+
+1. 在 `filters/` 下添加相关脚本。
+2. 在 `README.md` 中添加相关描述。
+3. 提交一份 pull request。
+
+## Redis Module 支持
+
+1. 在 `internal/rdb/types` 下添加相关类型。
+2. 在 `scripts/commands` 下添加相关命令，并使用脚本生成 `table.go` 文件，移动至 `internal/commands` 目录。
+3. 在 `test/cases` 下添加相关测试用例。
+4. 提交一份 pull request。
+
+# 感谢
+
+redis-shake 旧版是阿里云基于豌豆荚开源的 redis-port 进行二次开发的一个支持 Redis 异构集群实时同步的工具。
+redis-shake v3 在 redis-shake 旧版的基础上重新组织代码结构，使其更具可维护性的版本。
+
+redis-shake v3 参考借鉴了以下项目：
+
+- https://github.com/HDT3213/rdb
+- https://github.com/sripathikrishnan/redis-rdb-tools

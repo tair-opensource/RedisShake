@@ -1,47 +1,39 @@
 name: CI
 
-on: [push, pull_request]
+on: [ push, pull_request ]
 
 jobs:
+    black-box-test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                redis-version: [ 5, 6, 7 ]
+        steps:
+            -   name: Git checkout
+                uses: actions/checkout@v2
 
-  test-ubuntu-with-redis-5:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: clone and make redis
-      run: |
-       sudo apt-get install git
-       git clone https://github.com/redis/redis
-       cd redis
-       git checkout 5.0
-       make REDIS_CFLAGS='-Werror' BUILD_TLS=no -j
-    - name: make RedisShake
-      run: |
-       make 
-       cp redis/src/redis-server bin/
-    - name: test
-      run: |
-        cd test
-        pip3 install -r requirements.txt
-        python3 main.py
+            -   name: clone and make redis
+                run: |
+                    sudo apt-get install git
+                    git clone https://github.com/redis/redis
+                    cd redis
+                    git checkout ${{ matrix.redis-version }}.0
+                    make -j
+                    mkdir bin
+                    cp src/redis-server bin/redis-server
+                    echo "$GITHUB_WORKSPACE/redis/bin" >> $GITHUB_PATH
 
-  test-ubuntu-with-redis-6:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: clone and make redis
-      run: |
-       sudo apt-get install git
-       git clone https://github.com/redis/redis
-       cd redis
-       git checkout 6.0
-       make REDIS_CFLAGS='-Werror' BUILD_TLS=no -j
-    - name: make RedisShake
-      run: |
-       make 
-       cp redis/src/redis-server bin/
-    - name: test
-      run: |
-        cd test
-        pip3 install -r requirements.txt
-        python3 main.py
+            -   name: Setup Python
+                uses: actions/setup-python@v4
+                with:
+                    python-version: '3.10'
+
+            -   name: make redis-shake
+                run: |
+                    sh build.sh 
+
+            -   name: test
+                run: |
+                    cd test
+                    pip3 install -r requirements.txt
+                    python3 main.py

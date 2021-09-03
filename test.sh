@@ -1,6 +1,7 @@
 #!/bin/bash
+set -e
 
-cd src
+go test ./... -v
 
-PKGS=$(go list ./...)
-go test $PKGS
+cd test
+python main.py
