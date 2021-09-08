@@ -12,8 +12,8 @@ import (
 
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 type CmdDump struct {
@@ -21,9 +21,11 @@ type CmdDump struct {
 }
 
 type node struct {
-	id     int
-	source string
-	output string
+	id                 int
+	source             string
+	sourceSyncCommand  string
+	sourcePsyncCommand string
+	output             string
 }
 
 func (cmd *CmdDump) GetDetailedInfo() interface{} {
@@ -34,10 +36,23 @@ func (cmd *CmdDump) Main() {
 	cmd.dumpChan = make(chan node, len(conf.Options.SourceAddressList))
 
 	for i, source := range conf.Options.SourceAddressList {
+		sourceSyncCMD := "sync"
+		sourcePsyncCMD := "psync"
+
+		if customSyncCommand, exists := conf.Options.SourceCustomSyncCommandMap[source]; exists {
+			sourceSyncCMD = customSyncCommand
+		}
+
+		if customPsyncCommand, exists := conf.Options.SourceCustomPsyncCommandMap[source]; exists {
+			sourceSyncCMD = customPsyncCommand
+		}
+
 		nd := node{
-			id:     i,
-			source: source,
-			output: fmt.Sprintf("%s.%d", conf.Options.TargetRdbOutput, i),
+			id:                 i,
+			source:             source,
+			sourceSyncCommand:  sourceSyncCMD,
+			sourcePsyncCommand: sourcePsyncCMD,
+			output:             fmt.Sprintf("%s.%d", conf.Options.TargetRdbOutput, i),
 		}
 		cmd.dumpChan <- nd
 	}
@@ -61,10 +76,12 @@ func (cmd *CmdDump) Main() {
 					}
 
 					dd := &dbDumper{
-						id:             nd.id,
-						source:         nd.source,
-						sourcePassword: conf.Options.SourcePasswordRaw,
-						output:         nd.output,
+						id:                 nd.id,
+						source:             nd.source,
+						sourceSyncCommand:  nd.sourceSyncCommand,
+						sourcePsyncCommand: nd.sourcePsyncCommand,
+						sourcePassword:     conf.Options.SourcePasswordRaw,
+						output:             nd.output,
 					}
 					reader, writer, nsize = dd.dump()
 					wg.Done()
@@ -106,10 +123,12 @@ func (cmd *CmdDump) dumpCommand(reader *bufio.Reader, writer *bufio.Writer, nsiz
 /*------------------------------------------------------*/
 // one dump link corresponding to one dbDumper
 type dbDumper struct {
-	id             int    // id
-	source         string // source address
-	sourcePassword string
-	output         string // output
+	id                 int    // id
+	source             string // source address
+	sourceSyncCommand  string
+	sourcePsyncCommand string
+	sourcePassword     string
+	output             string // output
 }
 
 func (dd *dbDumper) dump() (*bufio.Reader, *bufio.Writer, int64) {
@@ -133,7 +152,7 @@ func (dd *dbDumper) dump() (*bufio.Reader, *bufio.Writer, int64) {
 }
 
 func (dd *dbDumper) sendCmd(master, auth_type, passwd string, tlsEnable bool) (net.Conn, int64) {
-	c, wait := utils.OpenSyncConn(master, auth_type, passwd, tlsEnable)
+	c, wait := utils.OpenSyncConn(master, dd.sourceSyncCommand, auth_type, passwd, tlsEnable)
 	var nsize int64
 
 	// wait rdb dump finish

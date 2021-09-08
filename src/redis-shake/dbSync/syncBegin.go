@@ -2,22 +2,22 @@ package dbSync
 
 import (
 	"bufio"
-	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
-	"github.com/alibaba/RedisShake/pkg/libs/io/pipe"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/redis-shake/base"
-	"github.com/alibaba/RedisShake/redis-shake/common"
 	"io"
 	"net"
 	"time"
 
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/io/pipe"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/base"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 // send command to source redis
 
 func (ds *DbSyncer) sendSyncCmd(master, authType, passwd string, tlsEnable bool) (net.Conn, int64) {
-	c, wait := utils.OpenSyncConn(master, authType, passwd, tlsEnable)
+	c, wait := utils.OpenSyncConn(master, ds.sourceSyncCommand, authType, passwd, tlsEnable)
 	for {
 		select {
 		case nsize := <-wait:
@@ -45,9 +45,9 @@ func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool
 	// writer buffer bind to client
 	bw := bufio.NewWriterSize(c, utils.WriterBufferSize)
 
-	log.Infof("DbSyncer[%d] try to send 'psync' command: run-id[%v], offset[%v]", ds.id, runId, prevOffset)
+	log.Infof("DbSyncer[%d] try to send %s command: run-id[%v], offset[%v]", ds.id, ds.sourcePsyncCommand, runId, prevOffset)
 	// send psync command and decode the result
-	runid, offset, wait := utils.SendPSyncContinue(br, bw, runId, prevOffset)
+	runid, offset, wait := utils.SendPSyncContinue(ds.sourcePsyncCommand, br, bw, runId, prevOffset)
 	ds.stat.targetOffset.Set(offset)
 	ds.fullSyncOffset = offset // store the full sync offset
 
@@ -130,7 +130,7 @@ func (ds *DbSyncer) runIncrementalSync(c net.Conn, br *bufio.Reader, bw *bufio.W
 		utils.SendPSyncListeningPort(c, conf.Options.HttpProfile)
 		br = bufio.NewReaderSize(c, utils.ReaderBufferSize)
 		bw = bufio.NewWriterSize(c, utils.WriterBufferSize)
-		utils.SendPSyncContinue(br, bw, runId, offset)
+		utils.SendPSyncContinue(ds.sourcePsyncCommand, br, bw, runId, offset)
 	}
 }
 

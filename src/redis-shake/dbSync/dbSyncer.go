@@ -2,24 +2,27 @@ package dbSync
 
 import (
 	"bufio"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/redis-shake/base"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/heartbeat"
-	"github.com/alibaba/RedisShake/redis-shake/metric"
 	"io"
 
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/base"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/heartbeat"
+	"github.com/alibaba/RedisShake/redis-shake/metric"
+
 	"github.com/alibaba/RedisShake/redis-shake/checkpoint"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 // one sync link corresponding to one DbSyncer
-func NewDbSyncer(id int, source, sourcePassword string, target []string, targetPassword string,
+func NewDbSyncer(id int, source, sourcePassword, sourceSyncCommand, sourcePsyncCommand string, target []string, targetPassword string,
 	slotLeftBoundary, slotRightBoundary int, httpPort int) *DbSyncer {
 	ds := &DbSyncer{
 		id:                         id,
 		source:                     source,
 		sourcePassword:             sourcePassword,
+		sourceSyncCommand:          sourceSyncCommand,
+		sourcePsyncCommand:         sourcePsyncCommand,
 		target:                     target,
 		targetPassword:             targetPassword,
 		slotLeftBoundary:           slotLeftBoundary,
@@ -39,8 +42,11 @@ func NewDbSyncer(id int, source, sourcePassword string, target []string, targetP
 type DbSyncer struct {
 	id int // current id in all syncer
 
-	source            string   // source address
-	sourcePassword    string   // source password
+	source             string // source address
+	sourcePassword     string // source password
+	sourceSyncCommand  string // sync command, default is 'sync'
+	sourcePsyncCommand string // psync command, default is 'psync'
+
 	target            []string // target address
 	targetPassword    string   // target password
 	runId             string   // source runId

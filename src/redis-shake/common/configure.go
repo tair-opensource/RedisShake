@@ -1,17 +1,79 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 const (
 	AddressSplitter        = "@"
 	AddressHeaderSplitter  = ":"
 	AddressClusterSplitter = ";"
+	AddressCommandSplitter = "#"
 )
+
+func ParseCustomCommandMap(tp string) error {
+	// init maps
+	conf.Options.SourceCustomSyncCommandMap = make(map[string]string)
+	conf.Options.SourceCustomPsyncCommandMap = make(map[string]string)
+
+	// check source
+	// currently, it supports customized sync and psync commands which only for cluster.
+	if tp == conf.TypeSync {
+		if conf.Options.SourceCustomSyncCommand != "" {
+			syncCMDMap, err := parseCustomCommandMap(tp, conf.Options.SourceCustomSyncCommand, conf.Options.SourceType, true)
+			if err != nil {
+				return err
+			}
+			conf.Options.SourceCustomSyncCommandMap = syncCMDMap
+		}
+
+		if conf.Options.SourceCustomPsyncCommand != "" {
+			psyncCMDMap, err := parseCustomCommandMap(tp, conf.Options.SourceCustomPsyncCommand, conf.Options.SourceType, true)
+			if err != nil {
+				return err
+			}
+			conf.Options.SourceCustomPsyncCommandMap = psyncCMDMap
+		}
+	}
+
+	// no need to check target
+	return nil
+}
+
+func parseCustomCommandMap(tp string, customAddressCommand string, redisType string, isSource bool) (cmdMap map[string]string, err error) {
+	cmdMap = make(map[string]string)
+	if tp != conf.TypeSync {
+		err = fmt.Errorf("custom command only support for sync type")
+		return
+	}
+	if redisType != conf.RedisTypeCluster || !isSource {
+		err = fmt.Errorf("custom command only support for source redis cluster")
+		return
+	}
+
+	addressCommandList := strings.Split(customAddressCommand, AddressClusterSplitter)
+	if len(addressCommandList) == 0 {
+		err = errors.New("custom command address length[0] illegal")
+		return
+	}
+
+	for _, addressCommand := range addressCommandList {
+		parts := strings.Split(addressCommand, AddressCommandSplitter)
+		if len(parts) != 2 {
+			err = fmt.Errorf("custom command address[%v] is illegal", addressCommand)
+			return
+		}
+		address := parts[0]
+		customCommand := parts[1]
+		cmdMap[address] = customCommand
+	}
+
+	return
+}
 
 // parse source address and target address
 func ParseAddress(tp string) error {

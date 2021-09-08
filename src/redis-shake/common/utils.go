@@ -9,7 +9,6 @@ import (
 	"crypto/tls"
 	"encoding/binary"
 	"fmt"
-	"github.com/alibaba/RedisShake/redis-shake/bigkey"
 	"io"
 	"math/rand"
 	"net"
@@ -18,14 +17,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alibaba/RedisShake/redis-shake/bigkey"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
+
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 	"github.com/alibaba/RedisShake/pkg/libs/errors"
 	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"github.com/alibaba/RedisShake/pkg/libs/stats"
 	"github.com/alibaba/RedisShake/pkg/rdb"
 	"github.com/alibaba/RedisShake/pkg/redis"
-
-	"github.com/alibaba/RedisShake/redis-shake/configure"
 
 	"github.com/FZambia/go-sentinel"
 	redigo "github.com/garyburd/redigo/redis"
@@ -161,9 +161,9 @@ func AuthPassword(c net.Conn, authType, passwd string) {
 	}
 }
 
-func OpenSyncConn(target string, authType, passwd string, tlsEnable bool) (net.Conn, <-chan int64) {
+func OpenSyncConn(target string, syncCommand, authType, passwd string, tlsEnable bool) (net.Conn, <-chan int64) {
 	c := OpenNetConn(target, authType, passwd, tlsEnable)
-	if _, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand("sync"))); err != nil {
+	if _, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand(syncCommand))); err != nil {
 		log.PanicError(errors.Trace(err), "write sync command failed")
 	}
 	return c, waitRdbDump(c)
@@ -201,8 +201,8 @@ func waitRdbDump(r io.Reader) <-chan int64 {
 	return size
 }
 
-func SendPSyncFullsync(br *bufio.Reader, bw *bufio.Writer) (string, int64, <-chan int64) {
-	cmd := redis.NewCommand("psync", "?", -1)
+func SendPSyncFullsync(psyncCommand string, br *bufio.Reader, bw *bufio.Writer) (string, int64, <-chan int64) {
+	cmd := redis.NewCommand(psyncCommand, "?", -1)
 	if err := redis.Encode(bw, cmd, true); err != nil {
 		log.PanicError(err, "write psync command failed, fullsync")
 	}
@@ -232,12 +232,12 @@ func SendPSyncFullsync(br *bufio.Reader, bw *bufio.Writer) (string, int64, <-cha
 	return runid, offset, waitRdbDump(br)
 }
 
-func SendPSyncContinue(br *bufio.Reader, bw *bufio.Writer, runid string, offset int64) (string, int64, <-chan int64) {
+func SendPSyncContinue(psyncCommand string, br *bufio.Reader, bw *bufio.Writer, runid string, offset int64) (string, int64, <-chan int64) {
 	if offset != -1 {
 		offset += 1
 	}
 
-	cmd := redis.NewCommand("psync", runid, offset)
+	cmd := redis.NewCommand(psyncCommand, runid, offset)
 	if err := redis.Encode(bw, cmd, true); err != nil {
 		log.PanicError(err, "write psync command failed, continue")
 	}

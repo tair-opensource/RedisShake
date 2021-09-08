@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"redis-shake/common"
+	utils "redis-shake/common"
 	"redis-shake/unit_test_common"
 
 	"github.com/stretchr/testify/assert"

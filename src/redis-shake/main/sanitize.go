@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -68,6 +68,11 @@ func SanitizeOptions(tp string) error {
 	// parse source and target address and type
 	if err := utils.ParseAddress(tp); err != nil {
 		return fmt.Errorf("mode[%v] parse address failed[%v]", tp, err)
+	}
+
+	// parse source custom sync and psync command
+	if err := utils.ParseCustomCommandMap(tp); err != nil {
+		return fmt.Errorf("mode[%v] parse custom command failed[%v]", tp, err)
 	}
 
 	if tp == conf.TypeRestore || tp == conf.TypeDecode {

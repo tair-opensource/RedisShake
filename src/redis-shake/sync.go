@@ -8,8 +8,8 @@ import (
 
 	"github.com/alibaba/RedisShake/pkg/libs/log"
 
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 	"github.com/alibaba/RedisShake/redis-shake/dbSync"
 )
 
@@ -31,13 +31,15 @@ func (cmd *CmdSync) GetDetailedInfo() interface{} {
 
 func (cmd *CmdSync) Main() {
 	type syncNode struct {
-		id                int
-		source            string
-		sourcePassword    string
-		target            []string
-		targetPassword    string
-		slotLeftBoundary  int
-		slotRightBoundary int
+		id                 int
+		source             string
+		sourcePassword     string
+		sourceSyncCommand  string
+		sourcePsyncCommand string
+		target             []string
+		targetPassword     string
+		slotLeftBoundary   int
+		slotRightBoundary  int
 	}
 
 	var slotDistribution []utils.SlotOwner
@@ -67,14 +69,26 @@ func (cmd *CmdSync) Main() {
 		// fetch slot boundary
 		leftSlotBoundary, rightSlotBoundary := utils.GetSlotBoundary(slotDistribution, source)
 
+		sourceSyncCMD := "sync"
+		if customSyncCommand, exists := conf.Options.SourceCustomSyncCommandMap[source]; exists {
+			sourceSyncCMD = customSyncCommand
+		}
+
+		sourcePsyncCMD := "psync"
+		if customPsyncCommand, exists := conf.Options.SourceCustomPsyncCommandMap[source]; exists {
+			sourceSyncCMD = customPsyncCommand
+		}
+
 		nd := syncNode{
-			id:                i,
-			source:            source,
-			sourcePassword:    conf.Options.SourcePasswordRaw,
-			target:            target,
-			targetPassword:    conf.Options.TargetPasswordRaw,
-			slotLeftBoundary:  leftSlotBoundary,
-			slotRightBoundary: rightSlotBoundary,
+			id:                 i,
+			source:             source,
+			sourceSyncCommand:  sourceSyncCMD,
+			sourcePsyncCommand: sourcePsyncCMD,
+			sourcePassword:     conf.Options.SourcePasswordRaw,
+			target:             target,
+			targetPassword:     conf.Options.TargetPasswordRaw,
+			slotLeftBoundary:   leftSlotBoundary,
+			slotRightBoundary:  rightSlotBoundary,
 		}
 		syncChan <- nd
 	}
@@ -91,7 +105,7 @@ func (cmd *CmdSync) Main() {
 				}
 
 				// one sync link corresponding to one DbSyncer
-				ds := dbSync.NewDbSyncer(nd.id, nd.source, nd.sourcePassword, nd.target, nd.targetPassword,
+				ds := dbSync.NewDbSyncer(nd.id, nd.source, nd.sourcePassword, nd.sourceSyncCommand, nd.sourcePsyncCommand, nd.target, nd.targetPassword,
 					nd.slotLeftBoundary, nd.slotRightBoundary, conf.Options.HttpProfile+i)
 				cmd.dbSyncers[nd.id] = ds
 				// run in routine

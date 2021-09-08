@@ -2,11 +2,12 @@ package checkpoint
 
 import (
 	"fmt"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	redigo "github.com/garyburd/redigo/redis"
 	"strconv"
 	"strings"
+
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	redigo "github.com/garyburd/redigo/redis"
 )
 
 func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType, passwd string,
