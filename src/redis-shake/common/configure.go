@@ -215,8 +215,8 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 					if !isSource {
 						endpoint = "target"
 					}
-					return fmt.Errorf("[%s] redis address should be all masters or all slaves, master:[%v], slave[%v]",
-						endpoint, masterAddressList, slaveAddressList)
+					return fmt.Errorf("[%s] redis address should be all masters or all slaves, input:[%v], master:[%v], slave[%v]",
+						endpoint, addressList, masterAddressList, slaveAddressList)
 				}
 			}
 

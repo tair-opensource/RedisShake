@@ -76,7 +76,7 @@ func (cmd *CmdSync) Main() {
 
 		sourcePsyncCMD := "psync"
 		if customPsyncCommand, exists := conf.Options.SourceCustomPsyncCommandMap[source]; exists {
-			sourceSyncCMD = customPsyncCommand
+			sourcePsyncCMD = customPsyncCommand
 		}
 
 		nd := syncNode{

@@ -45,7 +45,7 @@ func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool
 	// writer buffer bind to client
 	bw := bufio.NewWriterSize(c, utils.WriterBufferSize)
 
-	log.Infof("DbSyncer[%d] try to send %s command: run-id[%v], offset[%v]", ds.id, ds.sourcePsyncCommand, runId, prevOffset)
+	log.Infof("DbSyncer[%d] try to send command: %s run-id[%v], offset[%v]", ds.id, ds.sourcePsyncCommand, runId, prevOffset)
 	// send psync command and decode the result
 	runid, offset, wait := utils.SendPSyncContinue(ds.sourcePsyncCommand, br, bw, runId, prevOffset)
 	ds.stat.targetOffset.Set(offset)
