@@ -4,22 +4,22 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/pkg/redis"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
-	"github.com/alibaba/RedisShake/redis-shake/filter"
 	"io"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/redis"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/filter"
 	"github.com/alibaba/RedisShake/redis-shake/metric"
 
 	redigo "github.com/garyburd/redigo/redis"
-	"unsafe"
 )
 
 func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool, dbid int) {
@@ -200,7 +200,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 					bypass = filter.FilterDB(n)
 					isSelect = true
 					selectDB = n
-				} else if filter.FilterCommands(sCmd) {
+				} else if filter.FilterCommands(sCmd, argv) {
 					ignoreCmd = true
 				} else if strings.EqualFold(sCmd, "publish") && strings.EqualFold(string(argv[0]), "__sentinel__:hello") {
 					ignoresentinel = true

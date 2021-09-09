@@ -1,10 +1,11 @@
 package filter
 
 import (
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
 	"strconv"
 	"strings"
+
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 var (
@@ -14,8 +15,12 @@ var (
 )
 
 // return true means not pass
-func FilterCommands(cmd string) bool {
+func FilterCommands(cmd string, argv [][]byte) bool {
 	if strings.EqualFold(cmd, "opinfo") {
+		return true
+	}
+
+	if strings.EqualFold(cmd, "replconf") && len(argv) > 1 && strings.EqualFold(string(argv[0]), "TIMESTAMP") {
 		return true
 	}
 
