@@ -190,11 +190,11 @@ func waitRdbDump(r io.Reader) <-chan int64 {
 			}
 		}
 		if rsp[0] != '$' {
-			log.Panicf("invalid sync response, rsp = '%s'", rsp)
+			log.Panicf("invalid sync response, no $ in head, rsp = '%#v'", rsp)
 		}
 		n, err := strconv.Atoi(rsp[1 : len(rsp)-2])
 		if err != nil || n <= 0 {
-			log.PanicErrorf(err, "invalid sync response = '%s', n = %d", rsp, n)
+			log.PanicErrorf(err, "invalid sync response = '%#v', n = %d", rsp, n)
 		}
 		size <- int64(n)
 	}()
@@ -238,6 +238,7 @@ func SendPSyncContinue(psyncCommand string, br *bufio.Reader, bw *bufio.Writer, 
 	}
 
 	cmd := redis.NewCommand(psyncCommand, runid, offset)
+	log.Infof("send command %s %s %d for continue psync", psyncCommand, runid, offset)
 	if err := redis.Encode(bw, cmd, true); err != nil {
 		log.PanicError(err, "write psync command failed, continue")
 	}
@@ -267,7 +268,7 @@ func SendPSyncContinue(psyncCommand string, br *bufio.Reader, bw *bufio.Writer, 
 			log.PanicError(err, "parse psync offset failed")
 		}
 
-		log.Infof("Event:FullSyncStart\tId:%s\t", conf.Options.Id)
+		log.Infof("Event:FullSyncStart\tId:%sOffset:%d\t", conf.Options.Id, v)
 		runid, offset := xx[1], v
 
 		return runid, offset, waitRdbDump(br)

@@ -114,9 +114,11 @@ func (ds *DbSyncer) Sync() {
 	var input io.ReadCloser
 	var nsize int64
 	var isFullSync bool
+	hasReconnSource := make(chan bool)
+	didReconn := make(chan bool)
 	if conf.Options.Psync {
 		input, nsize, isFullSync, runId = ds.sendPSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
-			conf.Options.SourceTLSEnable, runId, offset)
+			conf.Options.SourceTLSEnable, runId, offset, hasReconnSource, didReconn)
 		ds.runId = runId
 	} else {
 		// sync
@@ -152,5 +154,5 @@ func (ds *DbSyncer) Sync() {
 	// sync increment
 	base.Status = "incr"
 	close(ds.WaitFull)
-	ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, conf.Options.TargetTLSEnable, dbid)
+	ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, conf.Options.TargetTLSEnable, dbid, hasReconnSource, didReconn)
 }

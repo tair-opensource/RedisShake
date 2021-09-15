@@ -33,7 +33,7 @@ func (ds *DbSyncer) sendSyncCmd(master, authType, passwd string, tlsEnable bool)
 }
 
 func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool, runId string,
-	prevOffset int64) (pipe.Reader, int64, bool, string) {
+	prevOffset int64, hasReconnSource, didReconn chan bool) (pipe.Reader, int64, bool, string) {
 	c := utils.OpenNetConn(master, authType, passwd, tlsEnable)
 	log.Infof("DbSyncer[%d] psync connect '%v' with auth type[%v] OK!", ds.id, master, authType)
 
@@ -55,7 +55,7 @@ func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool
 	if wait == nil {
 		// continue
 		log.Infof("DbSyncer[%d] psync runid = %s, offset = %d, psync continue", ds.id, runId, offset)
-		go ds.runIncrementalSync(c, br, bw, 0, runid, offset, master, authType, passwd, tlsEnable, pipew, true)
+		go ds.runIncrementalSync(c, br, bw, 0, runid, offset, master, authType, passwd, tlsEnable, pipew, true, hasReconnSource, didReconn)
 		return piper, 0, false, runid
 	} else {
 		// fullresync
@@ -74,14 +74,14 @@ func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool
 			}
 		}
 
-		go ds.runIncrementalSync(c, br, bw, int(nsize), runid, offset, master, authType, passwd, tlsEnable, pipew, true)
+		go ds.runIncrementalSync(c, br, bw, int(nsize), runid, offset, master, authType, passwd, tlsEnable, pipew, true, hasReconnSource, didReconn)
 		return piper, nsize, true, runid
 	}
 }
 
 func (ds *DbSyncer) runIncrementalSync(c net.Conn, br *bufio.Reader, bw *bufio.Writer, rdbSize int, runId string,
 	offset int64, master, authType, passwd string, tlsEnable bool, pipew pipe.Writer,
-	isFullSync bool) {
+	isFullSync bool, hasReconnSource, didReconn chan bool) {
 	// write -> pipew -> piper -> read
 	defer pipew.Close()
 	if isFullSync {
@@ -104,6 +104,9 @@ func (ds *DbSyncer) runIncrementalSync(c net.Conn, br *bufio.Reader, bw *bufio.W
 				ds.id, runId, offset)
 		}
 		// the 'c' is closed every loop
+
+		// reach out here means conn brokn, send channel for syncing this to syncCommand.
+		hasReconnSource <- true
 
 		offset += n
 		ds.stat.targetOffset.Set(offset)
@@ -131,6 +134,10 @@ func (ds *DbSyncer) runIncrementalSync(c net.Conn, br *bufio.Reader, bw *bufio.W
 		br = bufio.NewReaderSize(c, utils.ReaderBufferSize)
 		bw = bufio.NewWriterSize(c, utils.WriterBufferSize)
 		utils.SendPSyncContinue(ds.sourcePsyncCommand, br, bw, runId, offset)
+
+		didReconn <- true
+		log.Infof("DbSyncer[%d] Event:ReconnPSyncContinued\tId: %s", ds.id, conf.Options.Id)
+		// 这里是否要根据 fullSync 与否来重新执行一次 rdbSize ioCopy？
 	}
 }
 
@@ -142,12 +149,12 @@ func (ds *DbSyncer) pSyncPipeCopy(c net.Conn, br *bufio.Reader, bw *bufio.Writer
 			select {
 			case <-ds.WaitFull:
 				if err := utils.SendPSyncAck(bw, offset+nread.Get()); err != nil {
-					log.Errorf("dbSyncer[%v] send offset to source redis failed[%v]", ds.id, err)
+					log.Errorf("dbSyncer[%v] send offset(%d) to source redis failed[%v]", ds.id, offset+nread.Get(), err)
 					return
 				}
 			default:
 				if err := utils.SendPSyncAck(bw, 0); err != nil {
-					log.Errorf("dbSyncer[%v] send offset to source redis failed[%v]", ds.id, err)
+					log.Errorf("dbSyncer[%v] send offset(0) to source redis failed[%v]", ds.id, err)
 					return
 				}
 			}

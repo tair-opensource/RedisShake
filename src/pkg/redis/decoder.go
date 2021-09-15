@@ -34,12 +34,9 @@ func Decode(r *bufio.Reader) (Resp, error) {
 }
 
 // return the response and current reading offset
-func MustDecodeOpt(d *Decoder) (Resp, int64) {
+func MustDecodeOpt(d *Decoder) (Resp, int64, error) {
 	resp, err := d.decodeResp(0)
-	if err != nil {
-		log.PanicError(err, "decode redis resp failed")
-	}
-	return resp, d.offset
+	return resp, d.offset, err
 }
 
 func MustDecode(r *bufio.Reader) Resp {
@@ -166,6 +163,7 @@ func (d *Decoder) decodeBulkBytes() ([]byte, error) {
 	d.offset += int64(len(b))
 
 	if b[n] != '\r' || b[n+1] != '\n' {
+		log.Errorf("got bad end data |||%#v|||", string(b))
 		return nil, errors.Trace(ErrBadRespCRLFEnd)
 	}
 	return b[:n], nil
