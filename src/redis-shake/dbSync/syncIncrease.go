@@ -66,7 +66,7 @@ func (ds *DbSyncer) fetchOffset() {
 		incrSyncReadeTimeout, incrSyncReadeTimeout, false, conf.Options.SourceTLSEnable)
 	ticker := time.NewTicker(10 * time.Second)
 	for range ticker.C {
-		offset, err := utils.GetFakeSlaveOffset(srcConn)
+		slaveOffset, masterOffset, err := utils.GetFakeSlaveOffset(srcConn)
 		if err != nil {
 			// log.PurePrintf("%s\n", NewLogItem("GetFakeSlaveOffsetFail", "WARN", NewErrorLogDetail("", err.Error())))
 			log.Warnf("DbSyncer[%d] Event:GetFakeSlaveOffsetFail\tId:%s\tWarn:%s",
@@ -76,16 +76,35 @@ func (ds *DbSyncer) fetchOffset() {
 			if err == io.EOF {
 				srcConn = utils.OpenRedisConnWithTimeout([]string{ds.source}, conf.Options.SourceAuthType,
 					ds.sourcePassword, incrSyncReadeTimeout, incrSyncReadeTimeout, false, conf.Options.SourceTLSEnable)
+				log.Warnf("DbSyncer[%d] Event:GetFakeSlaveOffsetReconn\tId:%s\t",
+					ds.id, conf.Options.Id)
 			} else if _, ok := err.(net.Error); ok {
 				srcConn = utils.OpenRedisConnWithTimeout([]string{ds.source}, conf.Options.SourceAuthType,
 					ds.sourcePassword, incrSyncReadeTimeout, incrSyncReadeTimeout, false, conf.Options.SourceTLSEnable)
+				log.Warnf("DbSyncer[%d] Event:GetFakeSlaveOffsetReconn\tId:%s\t",
+					ds.id, conf.Options.Id)
 			}
 		} else {
 			// ds.SyncStat.SetOffset(offset)
-			if ds.stat.sourceOffset, err = strconv.ParseInt(offset, 10, 64); err != nil {
-				log.Errorf("DbSyncer[%d] Event:GetFakeSlaveOffsetFail\tId:%s\tError:%s",
+			var (
+				sourceOffset, sourceMasterOffset int64
+			)
+
+			if sourceOffset, err = strconv.ParseInt(slaveOffset, 10, 64); err != nil {
+				log.Errorf("DbSyncer[%d] Event:GetFakeSlaveOffsetFail\tId:%s\tError: parse slave offset failed(%s)",
 					ds.id, conf.Options.Id, err.Error())
+			} else {
+				ds.stat.sourceOffset.Set(sourceOffset)
 			}
+
+			if sourceMasterOffset, err = strconv.ParseInt(masterOffset, 10, 64); err != nil {
+				log.Errorf("DbSyncer[%d] Event:GetFakeSlaveOffsetFail\tId:%s\tError: parse master offset failed(%s)",
+					ds.id, conf.Options.Id, err.Error())
+			} else {
+				ds.stat.sourceMasterOffset.Set(sourceMasterOffset)
+			}
+
+			metric.GetMetric(ds.id).SetFakeSlaveDelayOffset(ds.id, uint64(sourceMasterOffset)-uint64(sourceOffset))
 		}
 	}
 

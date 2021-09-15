@@ -3,7 +3,7 @@ package metric
 import (
 	"strconv"
 
-	"github.com/alibaba/RedisShake/redis-shake/common"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -68,6 +68,14 @@ var (
 			Namespace: metricNamespace,
 			Name:      "full_sync_process_percent",
 			Help:      "RedisShake full sync process (%)",
+		},
+		[]string{dbSyncerLabelName},
+	)
+	fakeSlaveDelayOffset = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: metricNamespace,
+			Name:      "fake_slave_delay_offset",
+			Help:      "RedisShake fake slave delay offset",
 		},
 		[]string{dbSyncerLabelName},
 	)
