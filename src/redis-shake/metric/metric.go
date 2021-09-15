@@ -11,7 +11,7 @@ import (
 
 	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"github.com/alibaba/RedisShake/redis-shake/base"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 const (
@@ -90,7 +90,8 @@ type Metric struct {
 	AvgDelay    Percent // ms
 	NetworkFlow Combine // +speed
 
-	FullSyncProgress uint64
+	FullSyncProgress     uint64
+	FakeSlaveDelayOffset uint64
 }
 
 func CreateMetric(r base.Runner) {
@@ -249,6 +250,15 @@ func (m *Metric) GetNetworkFlowTotal() interface{} {
 func (m *Metric) SetFullSyncProgress(dbSyncerID int, val uint64) {
 	m.FullSyncProgress = val
 	fullSyncProcessPercent.WithLabelValues(strconv.Itoa(dbSyncerID)).Set(float64(val))
+}
+
+func (m *Metric) SetFakeSlaveDelayOffset(dbSyncerID int, val uint64) {
+	m.FakeSlaveDelayOffset = val
+	fakeSlaveDelayOffset.WithLabelValues(strconv.Itoa(dbSyncerID)).Set(float64(val))
+}
+
+func (m *Metric) GetFakeSlaveDelayOffset() interface{} {
+	return m.FakeSlaveDelayOffset
 }
 
 func (m *Metric) GetFullSyncProgress() interface{} {
