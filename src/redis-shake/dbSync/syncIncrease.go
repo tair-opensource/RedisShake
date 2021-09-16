@@ -12,7 +12,6 @@ import (
 	"unsafe"
 
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
-	"github.com/alibaba/RedisShake/pkg/libs/errors"
 	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"github.com/alibaba/RedisShake/pkg/redis"
 	utils "github.com/alibaba/RedisShake/redis-shake/common"
@@ -23,7 +22,7 @@ import (
 	redigo "github.com/garyburd/redigo/redis"
 )
 
-func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool, dbid int, hasReconnSource, didReconn chan bool) {
+func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool, dbid int) {
 	isCluster := conf.Options.TargetType == conf.RedisTypeCluster
 	c := utils.OpenRedisConnWithTimeout(target, authType, passwd, incrSyncReadeTimeout, incrSyncReadeTimeout, isCluster, tlsEnable)
 	defer c.Close()
@@ -38,7 +37,7 @@ func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType,
 	go ds.receiveTargetReply(c)
 
 	// parse command from source redis
-	go ds.parseSourceCommand(reader, hasReconnSource, didReconn)
+	go ds.parseSourceCommand(reader)
 
 	// do send to target
 	go ds.sendTargetCommand(c)
@@ -166,20 +165,7 @@ func (ds *DbSyncer) receiveTargetReply(c redigo.Conn) {
 	log.Panicf("DbSyncer[%d] something wrong if you see me", ds.id)
 }
 
-func (ds *DbSyncer) waitReconn(didReconn chan bool, timeout time.Duration) (err error) {
-	ticker := time.NewTicker(timeout)
-	for {
-		select {
-		case <-didReconn:
-			return
-		case <-ticker.C:
-			err = errors.New("wait incr reconnect timeout")
-			return
-		}
-	}
-}
-
-func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader, hasReconnSource, didReconn chan bool) {
+func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	var (
 		lastDb        = -1
 		selectDB      = -1
@@ -221,22 +207,9 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader, hasReconnSource, di
 		// incrOffset is used to do resume from break-point job
 		resp, incrOffset, err = redis.MustDecodeOpt(decoder)
 		if err != nil {
-			// the source conn within pSyncPipeCopy maybe broken
-			// let's re-try it.
-			select {
-			case <-hasReconnSource:
-				if !errors.Equal(err, redis.ErrBadRespCRLFEnd) {
-					log.PanicErrorf(err, "DbSyncer[%d] decode resp failed[%v] with an unknown error, should be ErrBadRespCRLFEnd", ds.id, err)
-				}
-				log.Warnf("DbSyncer[%d] decode resp failed[%v], do wait until conn recovered since it would be caused by source conn broken pipe", ds.id, err)
-				err := ds.waitReconn(didReconn, 30*time.Second)
-				if err != nil {
-					log.PanicErrorf(err, "DbSyncer[%d] wait reconn failed[%v]", err)
-				}
-				log.Infof("DbSyncer[%d] parse command rountine continued", ds.id)
-			default:
-				log.PanicErrorf(err, "DbSyncer[%d] decode resp failed[%v]", ds.id, err)
-			}
+			// FIXME: if redis fired full sync, this will panic.
+			// I prefer just make redis-shake failed, and re-start to do full sync.
+			log.PanicErrorf(err, "DbSyncer[%d] decode resp failed[%v]", ds.id, err)
 		}
 
 		if sCmd, argv, err = redis.ParseArgs(resp); err != nil {
