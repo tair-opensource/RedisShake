@@ -2,16 +2,17 @@ package dbSync
 
 import (
 	"bufio"
-	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
-	"github.com/alibaba/RedisShake/pkg/libs/io/pipe"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/redis-shake/base"
-	"github.com/alibaba/RedisShake/redis-shake/common"
 	"io"
 	"net"
 	"time"
 
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/io/pipe"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/redis-shake/base"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 // send command to source redis
@@ -47,7 +48,7 @@ func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool
 
 	log.Infof("DbSyncer[%d] try to send 'psync' command: run-id[%v], offset[%v]", ds.id, runId, prevOffset)
 	// send psync command and decode the result
-	runid, offset, wait := utils.SendPSyncContinue(br, bw, runId, prevOffset)
+	runid, offset, wait := utils.SendPSyncContinue(br, bw, runId, prevOffset, false)
 	ds.stat.targetOffset.Set(offset)
 	ds.fullSyncOffset = offset // store the full sync offset
 
@@ -130,7 +131,7 @@ func (ds *DbSyncer) runIncrementalSync(c net.Conn, br *bufio.Reader, bw *bufio.W
 		utils.SendPSyncListeningPort(c, conf.Options.HttpProfile)
 		br = bufio.NewReaderSize(c, utils.ReaderBufferSize)
 		bw = bufio.NewWriterSize(c, utils.WriterBufferSize)
-		utils.SendPSyncContinue(br, bw, runId, offset)
+		utils.SendPSyncContinue(br, bw, runId, offset, true)
 	}
 }
 
