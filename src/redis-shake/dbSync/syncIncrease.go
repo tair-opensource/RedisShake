@@ -349,8 +349,8 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 		ds.addSendId(&sendId, len(cachedTunnel))
 		for _, cacheItem := range cachedTunnel {
 			if err := c.Send(cacheItem.Cmd, cacheItem.Args...); err != nil {
-				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-					ds.id, conf.Options.Id, err.Error())
+				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tCMD:%s, Args:%v\tError:%s\t",
+					ds.id, conf.Options.Id, cacheItem.Cmd, cacheItem.Args, err.Error())
 			}
 
 			// print debug log of send command
@@ -373,30 +373,30 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 				ds.addSendId(&sendId, 2)
 				// run id
 				if err := c.Send("hset", ds.checkpointName, checkpointRunId, ds.runId); err != nil {
-					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-						ds.id, conf.Options.Id, err.Error())
+					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tCMD:hset, checkpointName:%s\tError:%s\t",
+						ds.id, conf.Options.Id, ds.checkpointName, err.Error())
 				}
 				// version
 				if err := c.Send("hset", ds.checkpointName, checkpointVersion, utils.FcvCheckpoint.CurrentVersion); err != nil {
-					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-						ds.id, conf.Options.Id, err.Error())
+					log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tCMD:hset, checkpointName:%s\tError:%s\t",
+						ds.id, conf.Options.Id, ds.checkpointName, err.Error())
 				}
 			}
 
 			// add checkpoint
 			ds.addSendId(&sendId, 2)
 			if err := c.Send("hset", ds.checkpointName, checkpointOffset, offset); err != nil {
-				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
-					ds.id, conf.Options.Id, err.Error())
+				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tCMD:hset, checkpointName:%s\tError:%s\t",
+					ds.id, conf.Options.Id, ds.checkpointName, err.Error())
 			}
 			if err := c.Send("exec"); err != nil {
-				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tError:%s\t",
+				log.Panicf("DbSyncer[%d] Event:SendToTargetFail\tId:%s\tCMD:exec\tError:%s\t",
 					ds.id, conf.Options.Id, err.Error())
 			}
 		}
 
 		if err := c.Flush(); err != nil {
-			log.Panicf("DbSyncer[%d] Event:FlushFail\tId:%s\tError:%s\t",
+			log.Panicf("DbSyncer[%d] Event:FlushFail\tId:%s\tCMD:flush\tError:%s\t",
 				ds.id, conf.Options.Id, err.Error())
 		}
 
