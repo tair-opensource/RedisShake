@@ -42,6 +42,7 @@ type Configuration struct {
 	FilterKeyBlacklist       []string `config:"filter.key.blacklist"`
 	FilterSlot               []string `config:"filter.slot"`
 	FilterLua                bool     `config:"filter.lua"`
+	FilterFlushall           bool     `config:"filter.flushall"`
 	BigKeyThreshold          uint64   `config:"big_key_threshold"`
 	Metric                   bool     `config:"metric"`
 	MetricPrintLog           bool     `config:"metric.print_log"`

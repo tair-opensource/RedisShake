@@ -20,6 +20,10 @@ func FilterCommands(cmd string, argv [][]byte) bool {
 		return true
 	}
 
+	if conf.Options.FilterFlushall && strings.EqualFold(cmd, "flushall") {
+		return true
+	}
+
 	if strings.EqualFold(cmd, "replconf") && len(argv) > 1 && strings.EqualFold(string(argv[0]), "TIMESTAMP") {
 		return true
 	}
