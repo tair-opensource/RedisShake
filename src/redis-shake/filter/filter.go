@@ -1,10 +1,11 @@
 package filter
 
 import (
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
 	"strconv"
 	"strings"
+
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 var (
@@ -16,6 +17,10 @@ var (
 // return true means not pass
 func FilterCommands(cmd string) bool {
 	if strings.EqualFold(cmd, "opinfo") {
+		return true
+	}
+
+	if conf.Options.FilterFlushall && strings.EqualFold(cmd, "flushall") {
 		return true
 	}
 
