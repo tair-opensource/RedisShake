@@ -20,6 +20,21 @@ func FilterCommands(cmd string, argv [][]byte) bool {
 		return true
 	}
 
+	if len(conf.Options.FilterCommandWhitelist) != 0 {
+		if matchOne(cmd, conf.Options.FilterCommandWhitelist) {
+			return false
+		}
+		return true
+	}
+
+	if len(conf.Options.FilterCommandBlacklist) != 0 {
+		if matchOne(cmd, conf.Options.FilterCommandBlacklist) {
+			return true
+		}
+	}
+
+	// besides the blacklist, do the other filterings.
+
 	if conf.Options.FilterFlushall && strings.EqualFold(cmd, "flushall") {
 		return true
 	}

@@ -210,6 +210,9 @@ func SanitizeOptions(tp string) error {
 	if len(conf.Options.FilterKeyWhitelist) != 0 && len(conf.Options.FilterKeyBlacklist) != 0 {
 		return fmt.Errorf("only one of 'filter.key.whitelist' and 'filter.key.blacklist' can be given")
 	}
+	if len(conf.Options.FilterCommandWhitelist) != 0 && len(conf.Options.FilterCommandBlacklist) != 0 {
+		return fmt.Errorf("only one of 'filter.command.whitelist' and 'filter.command.blacklist' can be given")
+	}
 
 	if len(conf.Options.FilterSlot) > 0 {
 		for i, val := range conf.Options.FilterSlot {

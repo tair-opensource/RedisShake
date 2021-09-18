@@ -41,6 +41,8 @@ type Configuration struct {
 	FilterKeyWhitelist       []string `config:"filter.key.whitelist"`
 	FilterKeyBlacklist       []string `config:"filter.key.blacklist"`
 	FilterSlot               []string `config:"filter.slot"`
+	FilterCommandWhitelist   []string `config:"filter.command.whitelist"`
+	FilterCommandBlacklist   []string `config:"filter.command.blacklist"`
 	FilterLua                bool     `config:"filter.lua"`
 	FilterFlushall           bool     `config:"filter.flushall"`
 	BigKeyThreshold          uint64   `config:"big_key_threshold"`
