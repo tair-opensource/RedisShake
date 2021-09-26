@@ -69,12 +69,13 @@ type DbSyncer struct {
 
 func (ds *DbSyncer) GetExtraInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"SourceAddress":      ds.source,
-		"TargetAddress":      ds.target,
-		"SenderBufCount":     len(ds.sendBuf),
-		"ProcessingCmdCount": len(ds.delayChannel),
-		"TargetDBOffset":     ds.stat.targetOffset.Get(),
-		"SourceDBOffset":     ds.stat.sourceOffset,
+		"SourceAddress":        ds.source,
+		"TargetAddress":        ds.target,
+		"SenderBufCount":       len(ds.sendBuf),
+		"ProcessingCmdCount":   len(ds.delayChannel),
+		"TargetDBOffset":       ds.stat.targetOffset.Get(),
+		"SourceMasterDBOffset": ds.stat.sourceMasterOffset.Get(),
+		"SourceDBOffset":       ds.stat.sourceOffset.Get(),
 	}
 }
 

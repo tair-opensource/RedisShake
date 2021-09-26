@@ -2,8 +2,9 @@ package metric
 
 import (
 	"fmt"
+
 	"github.com/alibaba/RedisShake/redis-shake/base"
-	"github.com/alibaba/RedisShake/redis-shake/common"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
 )
 
 type MetricRest struct {
@@ -28,6 +29,7 @@ type MetricRest struct {
 	ProcessingCmdCount   interface{} // length of delay channel
 	TargetDBOffset       interface{} // target redis offset
 	SourceDBOffset       interface{} // source redis offset
+	SourceMasterDBOffset interface{} // source redis master reply offset
 	SourceAddress        interface{}
 	TargetAddress        interface{}
 	Details              interface{} // other details info
@@ -78,6 +80,7 @@ func NewMetricRest() []MetricRest {
 			ProcessingCmdCount:   detailMap["ProcessingCmdCount"],
 			TargetDBOffset:       detailMap["TargetDBOffset"],
 			SourceDBOffset:       detailMap["SourceDBOffset"],
+			SourceMasterDBOffset: detailMap["SourceMasterDBOffset"],
 			SourceAddress:        detailMap["SourceAddress"],
 			TargetAddress:        detailMap["TargetAddress"],
 			Details:              detailMap["Details"],

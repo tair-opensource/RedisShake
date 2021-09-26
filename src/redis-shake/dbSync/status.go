@@ -3,14 +3,15 @@ package dbSync
 import "github.com/alibaba/RedisShake/pkg/libs/atomic2"
 
 type Status struct {
-	rBytes         atomic2.Int64 // read bytes
-	wBytes         atomic2.Int64 // write bytes
-	wCommands      atomic2.Int64 // write commands (forward)
-	keys           atomic2.Int64 // total key number (nentry)
-	fullSyncFilter atomic2.Int64 // filtered keys in full sync (ignore)
-	incrSyncFilter atomic2.Int64 // filtered keys in increase sync (nbypass)
-	targetOffset   atomic2.Int64 // target offset
-	sourceOffset   int64         // source offset
+	rBytes             atomic2.Int64 // read bytes
+	wBytes             atomic2.Int64 // write bytes
+	wCommands          atomic2.Int64 // write commands (forward)
+	keys               atomic2.Int64 // total key number (nentry)
+	fullSyncFilter     atomic2.Int64 // filtered keys in full sync (ignore)
+	incrSyncFilter     atomic2.Int64 // filtered keys in increase sync (nbypass)
+	targetOffset       atomic2.Int64 // target offset
+	sourceOffset       atomic2.Int64 // source offset
+	sourceMasterOffset atomic2.Int64 // source master offset
 }
 
 func (s *Status) Stat() *syncerStat {

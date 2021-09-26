@@ -1021,10 +1021,14 @@ func CheckHandleNetError(err error) bool {
 	return false
 }
 
-func GetFakeSlaveOffset(c redigo.Conn) (string, error) {
-	infoStr, err := Bytes(c.Do("info", "Replication"))
+func GetFakeSlaveOffset(c redigo.Conn) (fakeSlaveOffset string, masterOffset string, err error) {
+	var (
+		infoStr []byte
+	)
+
+	infoStr, err = Bytes(c.Do("info", "Replication"))
 	if err != nil {
-		return "", err
+		return
 	}
 
 	kv := ParseRedisInfo(infoStr)
@@ -1034,12 +1038,22 @@ func GetFakeSlaveOffset(c redigo.Conn) (string, error) {
 			list := strings.Split(v, ",")
 			for _, item := range list {
 				if strings.HasPrefix(item, "offset=") {
-					return strings.Split(item, "=")[1], nil
+					fakeSlaveOffset = strings.Split(item, "=")[1]
+					break
 				}
 			}
 		}
+		if strings.Contains(k, "master_repl_offset") {
+			masterOffset = v
+		}
 	}
-	return "", fmt.Errorf("OffsetNotFoundInInfo")
+
+	if len(fakeSlaveOffset) == 0 {
+		err = fmt.Errorf("OffsetNotFoundInInfo")
+		return
+	}
+
+	return
 }
 
 func GetLocalIp(preferdInterfaces []string) (ip string, interfaceName string, err error) {
