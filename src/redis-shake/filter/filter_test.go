@@ -1,3 +1,4 @@
+//go:build (linux || darwin || windows) && integration
 // +build linux darwin windows
 // +build integration
 
@@ -7,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"redis-shake/configure"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -20,15 +21,35 @@ func TestFilterCommands(t *testing.T) {
 		fmt.Printf("TestFilterCommands case %d.\n", nr)
 		nr++
 
-		assert.Equal(t, false, FilterCommands("unknown-cmd"), "should be equal")
-		assert.Equal(t, true, FilterCommands("opinfo"), "should be equal")
-		assert.Equal(t, false, FilterCommands("eval"), "should be equal")
-		conf.Options.FilterLua = true
-		assert.Equal(t, false, FilterCommands("unknown-cmd"), "should be equal")
-		assert.Equal(t, true, FilterCommands("eval"), "should be equal")
-		assert.Equal(t, true, FilterCommands("evalsha"), "should be equal")
-		assert.Equal(t, true, FilterCommands("script"), "should be equal")
+		fakedArgv := [][]byte{}
 
+		assert.Equal(t, false, FilterCommands("unknown-cmd", fakedArgv), "should be equal")
+		assert.Equal(t, true, FilterCommands("opinfo", fakedArgv), "should be equal")
+		assert.Equal(t, false, FilterCommands("eval", fakedArgv), "should be equal")
+
+		conf.Options.FilterLua = true
+
+		assert.Equal(t, false, FilterCommands("unknown-cmd", fakedArgv), "should be equal")
+		assert.Equal(t, true, FilterCommands("eval", fakedArgv), "should be equal")
+		assert.Equal(t, true, FilterCommands("evalsha", fakedArgv), "should be equal")
+		assert.Equal(t, true, FilterCommands("script", fakedArgv), "should be equal")
+
+		conf.Options.FilterCommandBlacklist = []string{}
+		conf.Options.FilterCommandWhitelist = []string{"unknown-cmd"}
+		conf.Options.FilterLua = false
+
+		assert.Equal(t, false, FilterCommands("unknown-cmd", fakedArgv), "should be equal")
+		assert.Equal(t, true, FilterCommands("eval", fakedArgv), "should be equal")
+		assert.Equal(t, true, FilterCommands("evalsha", fakedArgv), "should be equal")
+		assert.Equal(t, true, FilterCommands("script", fakedArgv), "should be equal")
+
+		conf.Options.FilterCommandBlacklist = []string{"eval"}
+		conf.Options.FilterCommandWhitelist = []string{}
+
+		assert.Equal(t, false, FilterCommands("unknown-cmd", fakedArgv), "should be equal")
+		assert.Equal(t, true, FilterCommands("eval", fakedArgv), "should be equal")
+		assert.Equal(t, false, FilterCommands("evalsha", fakedArgv), "should be equal")
+		assert.Equal(t, false, FilterCommands("script", fakedArgv), "should be equal")
 	}
 }
 

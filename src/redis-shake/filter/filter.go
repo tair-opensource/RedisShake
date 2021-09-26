@@ -1,10 +1,11 @@
 package filter
 
 import (
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
 	"strconv"
 	"strings"
+
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 )
 
 var (
@@ -18,6 +19,21 @@ func FilterCommands(cmd string) bool {
 	if strings.EqualFold(cmd, "opinfo") {
 		return true
 	}
+
+	if len(conf.Options.FilterCommandWhitelist) != 0 {
+		if matchOne(cmd, conf.Options.FilterCommandWhitelist) {
+			return false
+		}
+		return true
+	}
+
+	if len(conf.Options.FilterCommandBlacklist) != 0 {
+		if matchOne(cmd, conf.Options.FilterCommandBlacklist) {
+			return true
+		}
+	}
+
+	// besides the blacklist, do the other filterings.
 
 	if conf.Options.FilterLua && (strings.EqualFold(cmd, "eval") || strings.EqualFold(cmd, "script") ||
 		strings.EqualFold(cmd, "evalsha")) {
