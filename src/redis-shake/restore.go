@@ -17,8 +17,8 @@ import (
 	"github.com/alibaba/RedisShake/pkg/redis"
 
 	"github.com/alibaba/RedisShake/redis-shake/base"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 	"github.com/alibaba/RedisShake/redis-shake/filter"
 )
 
@@ -237,7 +237,7 @@ func (dr *dbRestorer) restoreCommand(reader *bufio.Reader, target []string, auth
 		for {
 			resp := redis.MustDecode(reader)
 			if scmd, args, err := redis.ParseArgs(resp); err != nil {
-				log.PanicError(err, "routine[%v] parse command arguments failed", dr.id)
+				log.PanicErrorf(err, "routine[%v] parse command arguments failed", dr.id)
 			} else if scmd != "ping" {
 				if scmd == "select" {
 					if len(args) != 1 {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"redis-shake/common"
-	"redis-shake/unit_test_common"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	"github.com/alibaba/RedisShake/redis-shake/unit_test_common"
 
 	"github.com/stretchr/testify/assert"
 )

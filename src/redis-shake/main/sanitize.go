@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
 )
@@ -332,7 +332,7 @@ func SanitizeOptions(tp string) error {
 			 * set 1 if target is target version can't be fetched just like twemproxy.
 			 */
 			conf.Options.BigKeyThreshold = 1
-			log.Warnf("target version[%v] given, set big_key_threshold = 1. see #173",
+			log.Warnf("target version[%v] given [%v], set big_key_threshold = 1. see #173",
 				conf.Options.TargetVersion, conf.Options.SourceVersion)
 		}
 

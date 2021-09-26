@@ -1,3 +1,4 @@
+//go:build integration && (linux || darwin || windows)
 // +build integration
 // +build linux darwin windows
 
@@ -7,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"redis-shake/unit_test_common"
+	"github.com/alibaba/RedisShake/redis-shake/unit_test_common"
 
 	"github.com/stretchr/testify/assert"
 )

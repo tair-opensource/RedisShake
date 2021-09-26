@@ -9,7 +9,6 @@ import (
 	"crypto/tls"
 	"encoding/binary"
 	"fmt"
-	"github.com/alibaba/RedisShake/redis-shake/bigkey"
 	"io"
 	"math/rand"
 	"net"
@@ -18,6 +17,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alibaba/RedisShake/redis-shake/bigkey"
+
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 	"github.com/alibaba/RedisShake/pkg/libs/errors"
 	"github.com/alibaba/RedisShake/pkg/libs/log"
@@ -25,7 +26,7 @@ import (
 	"github.com/alibaba/RedisShake/pkg/rdb"
 	"github.com/alibaba/RedisShake/pkg/redis"
 
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 
 	"github.com/FZambia/go-sentinel"
 	redigo "github.com/garyburd/redigo/redis"
@@ -802,7 +803,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 				}
 				_, err := Int64(c.Do("del", e.Key))
 				if err != nil {
-					log.Panicf("del ", string(e.Key), err)
+					log.Panicf("del %s error (%v)", string(e.Key), err)
 				}
 			case "ignore":
 				log.Warnf("target key name is busy but ignore: %v", string(e.Key))
@@ -814,7 +815,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		if e.ExpireAt != 0 {
 			r, err := Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
-				log.Panicf("expire ", string(e.Key), err)
+				log.Panicf("expire %s error (%v)", string(e.Key), err)
 			}
 		}
 		return
@@ -838,11 +839,11 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		//use command
 		if conf.Options.KeyExists == "rewrite" && e.NeedReadLen == 1 {
 			if !conf.Options.Metric {
-				log.Infof("warning, rewrite big key:", string(e.Key))
+				log.Infof("warning, rewrite big key: %s", string(e.Key))
 			}
 			_, err := Int64(c.Do("del", e.Key))
 			if err != nil {
-				log.Panicf("del ", string(e.Key), err)
+				log.Panicf("del %s error (%v)", string(e.Key), err)
 			}
 		}
 
@@ -853,7 +854,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		if e.ExpireAt != 0 {
 			r, err := Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
-				log.Panicf("expire ", string(e.Key), err)
+				log.Panicf("expire %s error (%v)", string(e.Key), err)
 			}
 		}
 		return
