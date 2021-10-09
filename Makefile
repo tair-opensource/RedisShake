@@ -1,4 +1,10 @@
-all: 
+all:
+	build test
+
+test:
+	./test.sh
+
+build:
 	./build.sh
 
 clean:
@@ -8,4 +14,3 @@ clean:
 	rm -rf logs
 	rm -rf diagnostic/
 	rm -rf *.pid
-	

@@ -807,7 +807,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 				}
 				_, err := Int64(c.Do("del", e.Key))
 				if err != nil {
-					log.Panicf("del ", string(e.Key), err)
+					log.Panicf("del %s error (%v)", string(e.Key), err)
 				}
 			case "ignore":
 				log.Warnf("target key name is busy but ignore: %v", string(e.Key))
@@ -819,7 +819,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		if e.ExpireAt != 0 {
 			r, err := Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
-				log.Panicf("expire ", string(e.Key), err)
+				log.Panicf("expire %s error (%v)", string(e.Key), err)
 			}
 		}
 		return
@@ -843,11 +843,11 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		//use command
 		if conf.Options.KeyExists == "rewrite" && e.NeedReadLen == 1 {
 			if !conf.Options.Metric {
-				log.Infof("warning, rewrite big key:", string(e.Key))
+				log.Infof("warning, rewrite big key: %s", string(e.Key))
 			}
 			_, err := Int64(c.Do("del", e.Key))
 			if err != nil {
-				log.Panicf("del ", string(e.Key), err)
+				log.Panicf("del %s error (%v)", string(e.Key), err)
 			}
 		}
 
@@ -858,7 +858,7 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		if e.ExpireAt != 0 {
 			r, err := Int64(c.Do("pexpire", e.Key, ttlms))
 			if err != nil && r != 1 {
-				log.Panicf("expire ", string(e.Key), err)
+				log.Panicf("expire %s error (%v)", string(e.Key), err)
 			}
 		}
 		return
