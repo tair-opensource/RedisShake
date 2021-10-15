@@ -15,7 +15,7 @@ import (
 	"github.com/alibaba/RedisShake/redis-shake/metric"
 )
 
-func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType, passwd string, nsize int64, tlsEnable bool) {
+func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType, passwd string, nsize int64, tlsEnable bool, tlsSkipVerify bool) {
 	pipe := utils.NewRDBLoader(reader, &ds.stat.rBytes, base.RDBPipeSize)
 	wait := make(chan struct{})
 	go func() {
@@ -26,7 +26,7 @@ func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType,
 			go func() {
 				defer wg.Done()
 				c := utils.OpenRedisConn(target, authType, passwd, conf.Options.TargetType == conf.RedisTypeCluster,
-					tlsEnable)
+					tlsEnable, tlsSkipVerify)
 				defer c.Close()
 				var lastdb uint32 = 0
 				for e := range pipe {

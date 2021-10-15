@@ -22,9 +22,9 @@ import (
 	"unsafe"
 )
 
-func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool, dbid int) {
+func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool, tlsSkipVerify bool, dbid int) {
 	isCluster := conf.Options.TargetType == conf.RedisTypeCluster
-	c := utils.OpenRedisConnWithTimeout(target, authType, passwd, incrSyncReadeTimeout, incrSyncReadeTimeout, isCluster, tlsEnable)
+	c := utils.OpenRedisConnWithTimeout(target, authType, passwd, incrSyncReadeTimeout, incrSyncReadeTimeout, isCluster, tlsEnable, tlsSkipVerify)
 	defer c.Close()
 
 	ds.sendBuf = make(chan cmdDetail, conf.Options.SenderCount)
@@ -63,7 +63,7 @@ func (ds *DbSyncer) fetchOffset() {
 	}
 
 	srcConn := utils.OpenRedisConnWithTimeout([]string{ds.source}, conf.Options.SourceAuthType, ds.sourcePassword,
-		incrSyncReadeTimeout, incrSyncReadeTimeout, false, conf.Options.SourceTLSEnable)
+		incrSyncReadeTimeout, incrSyncReadeTimeout, false, conf.Options.SourceTLSEnable, conf.Options.SourceTLSSkipVerify)
 	ticker := time.NewTicker(10 * time.Second)
 	for range ticker.C {
 		slaveOffset, masterOffset, err := utils.GetFakeSlaveOffset(srcConn)
@@ -75,12 +75,12 @@ func (ds *DbSyncer) fetchOffset() {
 			// Reconnect while network error happen
 			if err == io.EOF {
 				srcConn = utils.OpenRedisConnWithTimeout([]string{ds.source}, conf.Options.SourceAuthType,
-					ds.sourcePassword, incrSyncReadeTimeout, incrSyncReadeTimeout, false, conf.Options.SourceTLSEnable)
+					ds.sourcePassword, incrSyncReadeTimeout, incrSyncReadeTimeout, false, conf.Options.SourceTLSEnable, conf.Options.SourceTLSSkipVerify)
 				log.Warnf("DbSyncer[%d] Event:GetFakeSlaveOffsetReconn\tId:%s\t",
 					ds.id, conf.Options.Id)
 			} else if _, ok := err.(net.Error); ok {
 				srcConn = utils.OpenRedisConnWithTimeout([]string{ds.source}, conf.Options.SourceAuthType,
-					ds.sourcePassword, incrSyncReadeTimeout, incrSyncReadeTimeout, false, conf.Options.SourceTLSEnable)
+					ds.sourcePassword, incrSyncReadeTimeout, incrSyncReadeTimeout, false, conf.Options.SourceTLSEnable, conf.Options.SourceTLSSkipVerify)
 				log.Warnf("DbSyncer[%d] Event:GetFakeSlaveOffsetReconn\tId:%s\t",
 					ds.id, conf.Options.Id)
 			}

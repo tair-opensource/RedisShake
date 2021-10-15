@@ -33,12 +33,12 @@ import (
 	redigoCluster "github.com/vinllen/redis-go-cluster"
 )
 
-func OpenRedisConn(target []string, authType, passwd string, isCluster bool, tlsEnable bool) redigo.Conn {
-	return OpenRedisConnWithTimeout(target, authType, passwd, 0, 0, isCluster, tlsEnable)
+func OpenRedisConn(target []string, authType, passwd string, isCluster bool, tlsEnable bool, tlsSkipVerify bool) redigo.Conn {
+	return OpenRedisConnWithTimeout(target, authType, passwd, 0, 0, isCluster, tlsEnable, tlsSkipVerify)
 }
 
 func OpenRedisConnWithTimeout(target []string, authType, passwd string, readTimeout, writeTimeout time.Duration,
-	isCluster bool, tlsEnable bool) redigo.Conn {
+	isCluster bool, tlsEnable bool, tlsSkipVerify bool) redigo.Conn {
 	// return redigo.NewConn(OpenNetConn(target, authType, passwd), readTimeout, writeTimeout)
 	if isCluster {
 		// the alive time isn't the tcp keep_alive parameter
@@ -59,18 +59,18 @@ func OpenRedisConnWithTimeout(target []string, authType, passwd string, readTime
 		return NewClusterConn(cluster, RecvChanSize)
 	} else {
 		// tls only support single connection currently
-		return redigo.NewConn(OpenNetConn(target[0], authType, passwd, tlsEnable), readTimeout, writeTimeout)
+		return redigo.NewConn(OpenNetConn(target[0], authType, passwd, tlsEnable, tlsSkipVerify), readTimeout, writeTimeout)
 	}
 }
 
-func OpenNetConn(target, authType, passwd string, tlsEnable bool) net.Conn {
+func OpenNetConn(target, authType, passwd string, tlsEnable bool, tlsSkipVerify bool) net.Conn {
 	d := &net.Dialer{
 		KeepAlive: time.Duration(conf.Options.KeepAlive) * time.Second,
 	}
 	var c net.Conn
 	var err error
 	if tlsEnable {
-		c, err = tls.DialWithDialer(d, "tcp", target, &tls.Config{InsecureSkipVerify: false})
+		c, err = tls.DialWithDialer(d, "tcp", target, &tls.Config{InsecureSkipVerify: tlsSkipVerify})
 	} else {
 		c, err = d.Dial("tcp", target)
 	}
@@ -162,8 +162,8 @@ func AuthPassword(c net.Conn, authType, passwd string) {
 	}
 }
 
-func OpenSyncConn(target string, authType, passwd string, tlsEnable bool) (net.Conn, <-chan int64) {
-	c := OpenNetConn(target, authType, passwd, tlsEnable)
+func OpenSyncConn(target string, authType, passwd string, tlsEnable bool, tlsSkipVerify bool) (net.Conn, <-chan int64) {
+	c := OpenNetConn(target, authType, passwd, tlsEnable, tlsSkipVerify)
 	if _, err := c.Write(redis.MustEncodeToBytes(redis.NewCommand("sync"))); err != nil {
 		log.PanicError(errors.Trace(err), "write sync command failed")
 	}
@@ -973,8 +973,8 @@ func NewRDBLoader(reader *bufio.Reader, rbytes *atomic2.Int64, size int) chan *r
 	return pipe
 }
 
-func GetRedisVersion(target, authType, auth string, tlsEnable bool) (string, error) {
-	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable)
+func GetRedisVersion(target, authType, auth string, tlsEnable bool, tlsSkipVerify bool) (string, error) {
+	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable, tlsSkipVerify)
 	defer c.Close()
 
 	infoStr, err := Bytes(c.Do("info", "server"))
@@ -996,8 +996,8 @@ func GetRedisVersion(target, authType, auth string, tlsEnable bool) (string, err
 	}
 }
 
-func GetRDBChecksum(target, authType, auth string, tlsEnable bool) (string, error) {
-	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable)
+func GetRDBChecksum(target, authType, auth string, tlsEnable bool, tlsSkipVerify bool) (string, error) {
+	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable, tlsSkipVerify)
 	defer c.Close()
 
 	content, err := c.Do("config", "get", "rdbchecksum")

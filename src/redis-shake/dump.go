@@ -119,7 +119,7 @@ func (dd *dbDumper) dump() (*bufio.Reader, *bufio.Writer, int64) {
 	defer dumpto.Close()
 
 	// send command and get the returned channel
-	master, nsize := dd.sendCmd(dd.source, conf.Options.SourceAuthType, dd.sourcePassword, conf.Options.SourceTLSEnable)
+	master, nsize := dd.sendCmd(dd.source, conf.Options.SourceAuthType, dd.sourcePassword, conf.Options.SourceTLSEnable, conf.Options.SourceTLSSkipVerify)
 	defer master.Close()
 
 	log.Infof("routine[%v] source db[%v] dump rdb file-size[%d]\n", dd.id, dd.source, nsize)
@@ -132,8 +132,8 @@ func (dd *dbDumper) dump() (*bufio.Reader, *bufio.Writer, int64) {
 	return reader, writer, nsize
 }
 
-func (dd *dbDumper) sendCmd(master, auth_type, passwd string, tlsEnable bool) (net.Conn, int64) {
-	c, wait := utils.OpenSyncConn(master, auth_type, passwd, tlsEnable)
+func (dd *dbDumper) sendCmd(master, auth_type, passwd string, tlsEnable bool, tlsSkipVerify bool) (net.Conn, int64) {
+	c, wait := utils.OpenSyncConn(master, auth_type, passwd, tlsEnable, tlsSkipVerify)
 	var nsize int64
 
 	// wait rdb dump finish

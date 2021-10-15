@@ -96,7 +96,8 @@ func (ds *DbSyncer) Sync() {
 		// checkpoint reload if has
 		log.Infof("DbSyncer[%d] enable resume from break point, try to load checkpoint", ds.id)
 		runId, offset, dbid, err = checkpoint.LoadCheckpoint(ds.id, ds.source, ds.target, conf.Options.TargetAuthType,
-			ds.targetPassword, ds.checkpointName, conf.Options.TargetType == conf.RedisTypeCluster, conf.Options.SourceTLSEnable)
+			ds.targetPassword, ds.checkpointName, conf.Options.TargetType == conf.RedisTypeCluster, conf.Options.SourceTLSEnable,
+			conf.Options.SourceTLSSkipVerify)
 		if err != nil {
 			log.Panicf("DbSyncer[%d] load checkpoint from %v failed[%v]", ds.id, ds.target, err)
 			return
@@ -110,12 +111,12 @@ func (ds *DbSyncer) Sync() {
 	var isFullSync bool
 	if conf.Options.Psync {
 		input, nsize, isFullSync, runId = ds.sendPSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
-			conf.Options.SourceTLSEnable, runId, offset)
+			conf.Options.SourceTLSEnable, conf.Options.SourceTLSSkipVerify, runId, offset)
 		ds.runId = runId
 	} else {
 		// sync
 		input, nsize = ds.sendSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
-			conf.Options.SourceTLSEnable)
+			conf.Options.SourceTLSEnable, conf.Options.SourceTLSSkipVerify)
 	}
 	defer input.Close()
 
@@ -134,7 +135,7 @@ func (ds *DbSyncer) Sync() {
 		// sync rdb
 		log.Infof("DbSyncer[%d] rdb file size = %d", ds.id, nsize)
 		base.Status = "full"
-		ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize, conf.Options.TargetTLSEnable)
+		ds.syncRDBFile(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, nsize, conf.Options.TargetTLSEnable, conf.Options.TargetTLSSkipVerify)
 		ds.startDbId = 0
 	} else {
 		log.Infof("DbSyncer[%d] run incr-sync directly with db_id[%v]", ds.id, dbid)
@@ -146,5 +147,5 @@ func (ds *DbSyncer) Sync() {
 	// sync increment
 	base.Status = "incr"
 	close(ds.WaitFull)
-	ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, conf.Options.TargetTLSEnable, dbid)
+	ds.syncCommand(reader, ds.target, conf.Options.TargetAuthType, ds.targetPassword, conf.Options.TargetTLSEnable, conf.Options.TargetTLSSkipVerify, dbid)
 }

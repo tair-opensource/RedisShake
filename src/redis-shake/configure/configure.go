@@ -19,6 +19,7 @@ type Configuration struct {
 	SourcePasswordEncoding string   `config:"source.password_encoding"`
 	SourceAuthType         string   `config:"source.auth_type"`
 	SourceTLSEnable        bool     `config:"source.tls_enable"`
+	SourceTLSSkipVerify    bool     `config:"source.tls_skip_verify"`
 	SourceRdbInput         []string `config:"source.rdb.input"`
 	SourceRdbParallel      int      `config:"source.rdb.parallel"`
 	SourceRdbSpecialCloud  string   `config:"source.rdb.special_cloud"`
@@ -30,6 +31,7 @@ type Configuration struct {
 	TargetAuthType         string   `config:"target.auth_type"`
 	TargetType             string   `config:"target.type"`
 	TargetTLSEnable        bool     `config:"target.tls_enable"`
+	TargetTLSSkipVerify    bool     `config:"target.tls_skip_verify"`
 	TargetRdbOutput        string   `config:"target.rdb.output"`
 	TargetVersion          string   `config:"target.version"`
 	FakeTime               string   `config:"fake_time"`
