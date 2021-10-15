@@ -1,6 +1,6 @@
-all: build test
+all: build runtest
 
-test:
+runtest:
 	./test.sh
 
 build:
