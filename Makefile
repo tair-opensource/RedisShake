@@ -1,5 +1,4 @@
-all:
-	build test
+all: build test
 
 test:
 	./test.sh
