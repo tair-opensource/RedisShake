@@ -44,7 +44,7 @@ func (cmd *CmdSync) Main() {
 	var err error
 	if conf.Options.SourceType == conf.RedisTypeCluster && conf.Options.ResumeFromBreakPoint {
 		if slotDistribution, err = utils.GetSlotDistribution(conf.Options.SourceAddressList[0], conf.Options.SourceAuthType,
-			conf.Options.SourcePasswordRaw, false); err != nil {
+			conf.Options.SourcePasswordRaw, false, false); err != nil {
 			log.Errorf("get source slot distribution failed: %v", err)
 			return
 		}

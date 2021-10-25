@@ -189,8 +189,8 @@ type SlotOwner struct {
 	SlotRightBoundary int
 }
 
-func GetSlotDistribution(target, authType, auth string, tlsEnable bool) ([]SlotOwner, error) {
-	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable)
+func GetSlotDistribution(target, authType, auth string, tlsEnable bool, tlsSkipVerify bool) ([]SlotOwner, error) {
+	c := OpenRedisConn([]string{target}, authType, auth, false, tlsEnable, tlsSkipVerify)
 	defer c.Close()
 
 	content, err := c.Do("cluster", "slots")

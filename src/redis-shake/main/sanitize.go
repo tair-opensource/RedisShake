@@ -318,7 +318,7 @@ func SanitizeOptions(tp string) error {
 			for _, address := range conf.Options.TargetAddressList {
 				// single connection even if the target is cluster
 				if v, err := utils.GetRedisVersion(address, conf.Options.TargetAuthType,
-					conf.Options.TargetPasswordRaw, conf.Options.TargetTLSEnable); err != nil {
+					conf.Options.TargetPasswordRaw, conf.Options.TargetTLSEnable, conf.Options.TargetTLSSkipVerify); err != nil {
 					return fmt.Errorf("get target redis version failed[%v]", err)
 				} else if conf.Options.TargetVersion != "" && conf.Options.TargetVersion != v {
 					return fmt.Errorf("target redis version is different: [%v %v]", conf.Options.TargetVersion, v)
@@ -351,7 +351,7 @@ func SanitizeOptions(tp string) error {
 		for _, address := range conf.Options.SourceAddressList {
 			// single connection even if the target is cluster
 			if v, err := utils.GetRedisVersion(address, conf.Options.SourceAuthType,
-				conf.Options.SourcePasswordRaw, conf.Options.SourceTLSEnable); err != nil {
+				conf.Options.SourcePasswordRaw, conf.Options.SourceTLSEnable, conf.Options.SourceTLSSkipVerify); err != nil {
 				return fmt.Errorf("get source redis version failed[%v]", err)
 			} else if conf.Options.SourceVersion != "" && conf.Options.SourceVersion != v {
 				return fmt.Errorf("source redis version is different: [%v %v]", conf.Options.SourceVersion, v)
@@ -410,7 +410,7 @@ func SanitizeOptions(tp string) error {
 	if tp == conf.TypeDump || (tp == conf.TypeSync || tp == conf.TypeRump) && conf.Options.BigKeyThreshold > 1 {
 		for _, address := range conf.Options.SourceAddressList {
 			check, err := utils.GetRDBChecksum(address, conf.Options.SourceAuthType,
-				conf.Options.SourcePasswordRaw, conf.Options.SourceTLSEnable)
+				conf.Options.SourcePasswordRaw, conf.Options.SourceTLSEnable, conf.Options.SourceTLSSkipVerify)
 			if err != nil {
 				// ignore
 				log.Warnf("fetch source rdb[%v] checksum failed[%v], ignore", address, err)
@@ -464,13 +464,13 @@ func SanitizeOptions(tp string) error {
 			// check slot distribution
 			// 1. get source slot distribution
 			srcSlot, err := utils.GetSlotDistribution(conf.Options.SourceAddressList[0], conf.Options.SourceAuthType,
-				conf.Options.SourcePasswordRaw, false)
+				conf.Options.SourcePasswordRaw, false, false)
 			if err != nil {
 				return fmt.Errorf("resume_from_break_point get source slot distribution failed: %v", err)
 			}
 			// 2. get source slot distribution
 			dstSlot, err := utils.GetSlotDistribution(conf.Options.TargetAddressList[0], conf.Options.TargetAuthType,
-				conf.Options.TargetPasswordRaw, false)
+				conf.Options.TargetPasswordRaw, false, false)
 			if err != nil {
 				return fmt.Errorf("resume_from_break_point get target slot distribution failed: %v", err)
 			}

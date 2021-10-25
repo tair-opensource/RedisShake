@@ -17,8 +17,8 @@ import (
 
 // send command to source redis
 
-func (ds *DbSyncer) sendSyncCmd(master, authType, passwd string, tlsEnable bool) (net.Conn, int64) {
-	c, wait := utils.OpenSyncConn(master, authType, passwd, tlsEnable)
+func (ds *DbSyncer) sendSyncCmd(master, authType, passwd string, tlsEnable bool, tlsSkipVerify bool) (net.Conn, int64) {
+	c, wait := utils.OpenSyncConn(master, authType, passwd, tlsEnable, tlsSkipVerify)
 	for {
 		select {
 		case nsize := <-wait:
@@ -33,9 +33,9 @@ func (ds *DbSyncer) sendSyncCmd(master, authType, passwd string, tlsEnable bool)
 	}
 }
 
-func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool, runId string,
+func (ds *DbSyncer) sendPSyncCmd(master, authType, passwd string, tlsEnable bool, tlsSkipVerify bool, runId string,
 	prevOffset int64) (pipe.Reader, int64, bool, string) {
-	c := utils.OpenNetConn(master, authType, passwd, tlsEnable)
+	c := utils.OpenNetConn(master, authType, passwd, tlsEnable, tlsSkipVerify)
 	log.Infof("DbSyncer[%d] psync connect '%v' with auth type[%v] OK!", ds.id, master, authType)
 
 	utils.SendPSyncListeningPort(c, conf.Options.HttpProfile)

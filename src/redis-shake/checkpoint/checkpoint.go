@@ -10,8 +10,8 @@ import (
 )
 
 func LoadCheckpoint(dbSyncerId int, sourceAddr string, target []string, authType, passwd string,
-	checkpointName string, isCluster bool, tlsEnable bool) (string, int64, int, error) {
-	c := utils.OpenRedisConn(target, authType, passwd, isCluster, tlsEnable)
+	checkpointName string, isCluster bool, tlsEnable bool, tlsSkipVerify bool) (string, int64, int, error) {
+	c := utils.OpenRedisConn(target, authType, passwd, isCluster, tlsEnable, tlsSkipVerify)
 
 	// fetch logical db list
 	ret, err := c.Do("info", "keyspace")

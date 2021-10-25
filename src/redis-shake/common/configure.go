@@ -104,6 +104,12 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 			auth, password = conf.Options.TargetAuthType, conf.Options.TargetPasswordRaw
 		}
 		tls := isSource && conf.Options.SourceTLSEnable || !isSource && conf.Options.TargetTLSEnable
+		var tlsSkipVerify bool
+		if isSource {
+			tlsSkipVerify = conf.Options.SourceTLSSkipVerify
+		} else {
+			tlsSkipVerify = conf.Options.TargetTLSSkipVerify
+		}
 
 		if strings.Contains(address, AddressSplitter) {
 			arr := strings.Split(address, AddressSplitter)
@@ -129,7 +135,7 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 			}
 
 			// create client to fetch
-			client := OpenRedisConn(clusterList, auth, password, false, tls)
+			client := OpenRedisConn(clusterList, auth, password, false, tls, tlsSkipVerify)
 			if addressList, err := GetAllClusterNode(client, role, "address"); err != nil {
 				return err
 			} else {
@@ -142,7 +148,7 @@ func parseAddress(tp, address, redisType string, isSource bool) error {
 		} else {
 			// check source list legality: all master or all slave
 			addressList := strings.Split(address, AddressClusterSplitter)
-			client := OpenRedisConn(addressList, auth, password, false, tls)
+			client := OpenRedisConn(addressList, auth, password, false, tls, tlsSkipVerify)
 
 			// fetch master address and slave address, ignore error
 			masterAddressList, _ := GetAllClusterNode(client, conf.StandAloneRoleMaster, "address")
