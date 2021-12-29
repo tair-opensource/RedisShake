@@ -9,22 +9,26 @@ import (
 	"fmt"
 	"io"
 	"math"
+
 	// "runtime/debug"
 	"strconv"
 
 	"github.com/alibaba/RedisShake/pkg/libs/errors"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 )
 
 var FromVersion int64 = 9
 var ToVersion int64 = 6
 
 const (
-	RdbTypeString = 0
-	RdbTypeList   = 1
-	RdbTypeSet    = 2
-	RdbTypeZSet   = 3
-	RdbTypeHash   = 4
-	RdbTypeZSet2  = 5
+	RdbTypeString  = 0
+	RdbTypeList    = 1
+	RdbTypeSet     = 2
+	RdbTypeZSet    = 3
+	RdbTypeHash    = 4
+	RdbTypeZSet2   = 5
+	RdbTypeModule  = 6
+	RdbTypeModule2 = 7
 
 	RdbTypeHashZipmap      = 9
 	RdbTypeListZiplist     = 10
@@ -51,6 +55,8 @@ const (
 	rdbModuleOpcodeFloat  = 3
 	rdbModuleOpcodeDouble = 4
 	rdbModuleOpcodeString = 5
+
+	moduleTypeNameCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 )
 
 const (
@@ -297,6 +303,16 @@ func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 					}
 				}
 			}
+		}
+	case RdbTypeModule2:
+		// skip 64 bit
+		if moduleId, err := r.ReadLength64(); err != nil {
+			return nil, err
+		} else {
+			moduleName := moduleTypeNameByID(moduleId)
+			log.Debugf("handle module id[%v] name[%v]", moduleId, moduleName)
+			lr.lastReadCount, lr.remainMember, lr.totMemberCount = 0, 0, 0
+			return r.parseModule(moduleName, moduleId, t, &b)
 		}
 	}
 	return b.Bytes(), nil
@@ -663,4 +679,55 @@ func (r *rdbReader) CountZipmapItems(buf *sliceBuffer) (int, error) {
 	}
 	_, err := buf.Seek(0, 0)
 	return n, err
+}
+
+func moduleTypeNameByID(moduleId uint64) string {
+	nameList := make([]byte, 9)
+	moduleId >>= 10
+	for i := 8; i >= 0; i-- {
+		nameList[i] = moduleTypeNameCharSet[moduleId&63]
+		moduleId >>= 6
+	}
+	return string(nameList)
+}
+
+func (r *rdbReader) moduleLoadUnsigned(rdbType byte) (uint64, error) {
+	if rdbType == RdbTypeModule2 {
+		// ver == 2
+		if opCode, err := r.ReadLength(); err != nil {
+			return 0, err
+		} else if opCode != rdbModuleOpcodeUint {
+			return 0, fmt.Errorf("opcode[%v] != rdbModuleOpcodeUint[%v]", opCode, rdbModuleOpcodeUint)
+		}
+	}
+
+	val, err := r.ReadLength()
+	return uint64(val), err
+}
+
+func (r *rdbReader) moduleLoadDouble(rdbType byte) (float64, error) {
+	if rdbType == RdbTypeModule2 {
+		// ver == 2
+		if opCode, err := r.ReadLength(); err != nil {
+			return 0, err
+		} else if opCode != rdbModuleOpcodeDouble {
+			return 0, fmt.Errorf("opcode[%v] != rdbModuleOpcodeDouble[%v]", opCode,
+				rdbModuleOpcodeDouble)
+		}
+	}
+
+	return r.ReadDouble()
+}
+
+func (r *rdbReader) moduleLoadString(rdbType byte) (string, error) {
+	if rdbType == RdbTypeModule2 {
+		if opCode, err := r.ReadLength(); err != nil {
+			return "", err
+		} else if opCode != rdbModuleOpcodeString {
+			return "", fmt.Errorf("opcode[%v] != rdbModuleOpcodeString[%v]", opCode,
+				rdbModuleOpcodeString)
+		}
+	}
+	ret, err := r.ReadString()
+	return string(ret), err
 }

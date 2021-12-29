@@ -1,4 +1,4 @@
-all: build runtest
+all: build
 
 runtest:
 	./test.sh
