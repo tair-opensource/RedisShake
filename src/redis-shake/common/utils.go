@@ -955,7 +955,7 @@ func NewRDBLoader(reader *bufio.Reader, rbytes *atomic2.Int64, size int) chan *r
 		}
 		for {
 			if entry, err := l.NextBinEntry(); err != nil {
-				log.PanicError(err, "parse rdb entry error, if the err is :EOF, please check that if the src db log has client outout buffer oom, if so set output buffer larger.")
+				log.PanicError(err, "parse rdb entry error, if the err is :EOF, please check that if the src db log has client output buffer oom, if so set output buffer larger.")
 			} else {
 				if entry != nil {
 					pipe <- entry

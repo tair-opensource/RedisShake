@@ -24,7 +24,7 @@ func TestCheckpoint(t *testing.T) {
 		fmt.Printf("TestCheckpoint case %d.\n", nr)
 		nr++
 
-		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false)
+		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false, false)
 		// clean all
 		_, err := c.Do("flushall")
 		assert.Equal(t, nil, err, "should be equal")
@@ -41,7 +41,7 @@ func TestCheckpoint(t *testing.T) {
 		fmt.Printf("TestCheckpoint case %d.\n", nr)
 		nr++
 
-		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false)
+		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false, false)
 		// clean all
 		_, err := c.Do("flushall")
 		assert.Equal(t, nil, err, "should be equal")
@@ -64,7 +64,7 @@ func TestCheckpoint(t *testing.T) {
 		fmt.Printf("TestCheckpoint case %d.\n", nr)
 		nr++
 
-		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false)
+		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false, false)
 		// clean all
 		_, err := c.Do("flushall")
 		assert.Equal(t, nil, err, "should be equal")
@@ -104,7 +104,7 @@ func TestCheckpoint(t *testing.T) {
 		fmt.Printf("TestCheckpoint case %d.\n", nr)
 		nr++
 
-		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false)
+		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false, false)
 		// clean all
 		_, err := c.Do("flushall")
 		assert.Equal(t, nil, err, "should be equal")
@@ -137,7 +137,7 @@ func TestCheckpoint(t *testing.T) {
 		assert.Equal(t, nil, err, "should be equal")
 
 		// run
-		runId, offset, db, err := LoadCheckpoint(0, testAddr, []string{testAddr}, "auth", "", utils.CheckpointKey, false, false)
+		runId, offset, db, err := LoadCheckpoint(0, testAddr, []string{testAddr}, "auth", "", utils.CheckpointKey, false, false, false)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "?", runId, "should be equal")
 		assert.Equal(t, int64(8930), offset, "should be equal")
@@ -161,7 +161,7 @@ func TestCheckpoint(t *testing.T) {
 		fmt.Printf("TestCheckpoint case %d.\n", nr)
 		nr++
 
-		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false)
+		c := utils.OpenRedisConn([]string{testAddr}, "auth", "", false, false, false)
 		// clean all
 		_, err := c.Do("flushall")
 		assert.Equal(t, nil, err, "should be equal")
@@ -194,7 +194,7 @@ func TestCheckpoint(t *testing.T) {
 		assert.Equal(t, nil, err, "should be equal")
 
 		// run
-		runId, offset, db, err := LoadCheckpoint(0, testAddr, []string{testAddr}, "auth", "", utils.CheckpointKey, false, false)
+		runId, offset, db, err := LoadCheckpoint(0, testAddr, []string{testAddr}, "auth", "", utils.CheckpointKey, false, false, false)
 		assert.Equal(t, nil, err, "should be equal")
 		assert.Equal(t, "test_run_id", runId, "should be equal")
 		assert.Equal(t, int64(8930), offset, "should be equal")

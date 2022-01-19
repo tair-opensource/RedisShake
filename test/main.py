@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+import sys
 
 import redis
 import redistrib.command
@@ -21,7 +22,11 @@ def wait():
 
 DIR = "."  # RedisShake/test
 BASE_CONF_PATH = "../conf/redis-shake.conf"
-SHAKE_EXE = "../bin/redis-shake.darwin"
+SHAKE_PATH_LINUX = "../bin/redis-shake.linux"
+SHAKE_PATH_MACOS = "../bin/redis-shake.darwin"
+REDIS_PATH = "../bin/redis-server"
+SHAKE_EXE = ""
+REDIS_EXE = ""
 USED_PORT = []
 METRIC_URL = "http://127.0.0.1:9320/metric"
 
@@ -74,9 +79,9 @@ class Redis:
     def __init__(self, port, work_dir, cluster_enable=False):
         if cluster_enable:
             self.server = launcher.Launcher(
-                ["redis-server", "--logfile", "redis.log", "--port", str(port), "--cluster-enabled yes"], work_dir)
+                [REDIS_EXE, "--logfile", "redis.log", "--port", str(port), "--cluster-enabled yes"], work_dir)
         else:
-            self.server = launcher.Launcher(["redis-server", "--logfile", "redis.log", "--port", str(port)], work_dir)
+            self.server = launcher.Launcher([REDIS_EXE, "--logfile", "redis.log", "--port", str(port)], work_dir)
         self.server.fire()
         self.client = None
         self.port = port
@@ -335,9 +340,13 @@ def test_sync_select_db(target_db=-1):
 
 
 if __name__ == '__main__':
-    SHAKE_EXE = os.path.abspath(SHAKE_EXE)
+    if sys.platform.startswith('linux'):
+        SHAKE_EXE = os.path.abspath(SHAKE_PATH_LINUX)
+    elif sys.platform.startswith('darwin'):
+        SHAKE_EXE = os.path.abspath(SHAKE_PATH_MACOS)
+    REDIS_EXE = os.path.abspath(REDIS_PATH)
     os.system("killall -9 redis-server")
-    shutil.rmtree(f"{DIR}/tmp")
+    shutil.rmtree("{DIR}/tmp", ignore_errors=True, onerror=None)
     green_print("----------- test_sync_select_db --------")
     test_sync_select_db()
     green_print("----------- test_sync_select_db with target db--------")

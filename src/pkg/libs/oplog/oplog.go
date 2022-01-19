@@ -87,7 +87,7 @@ func (p *Oplog) IsOPLogDelByEviction() bool {
 // parseLen parses bulk string and array lengths.
 func parseLen(p []byte) (int64, error) {
 	if len(p) == 0 {
-		return -1, &errorOplog{"protocal error, malformed length"}
+		return -1, &errorOplog{"protocol error, malformed length"}
 	}
 
 	if p[0] == '-' && len(p) == 2 && p[1] == '1' {
@@ -99,7 +99,7 @@ func parseLen(p []byte) (int64, error) {
 	for _, b := range p {
 		n *= 10
 		if b < '0' || b > '9' {
-			return -1, &errorOplog{"protocal error, illegal bytes in length"}
+			return -1, &errorOplog{"protocol error, illegal bytes in length"}
 		}
 		n += int64(b - '0')
 	}
@@ -109,11 +109,11 @@ func parseLen(p []byte) (int64, error) {
 
 func parseCmd(fullcontent []byte) (*RedisCmd, []byte, error) {
 	if fullcontent[0] != '*' {
-		return nil, fullcontent, &errorOplog{fmt.Sprintf("protocal error, cmd not start with '*': %s", string(fullcontent))}
+		return nil, fullcontent, &errorOplog{fmt.Sprintf("protocol error, cmd not start with '*': %s", string(fullcontent))}
 	}
 	p := bytes.IndexByte(fullcontent, '\n')
 	if p == -1 || fullcontent[p-1] != '\r' {
-		return nil, fullcontent, &errorOplog{fmt.Sprintf("protocal error, expect line terminator: %s", string(fullcontent))}
+		return nil, fullcontent, &errorOplog{fmt.Sprintf("protocol error, expect line terminator: %s", string(fullcontent))}
 	}
 
 	arrayLen, err := parseLen(fullcontent[1 : p-1])
@@ -125,11 +125,11 @@ func parseCmd(fullcontent []byte) (*RedisCmd, []byte, error) {
 	left := fullcontent[p+1:]
 	for i := int64(0); i < arrayLen; i++ {
 		if left[0] != '$' {
-			return nil, fullcontent, &errorOplog{fmt.Sprintf("protocal error, expect '$': %s", string(left))}
+			return nil, fullcontent, &errorOplog{fmt.Sprintf("protocol error, expect '$': %s", string(left))}
 		}
 		endIndex := bytes.IndexByte(left, '\n')
 		if endIndex == -1 || left[endIndex-1] != '\r' {
-			return nil, fullcontent, &errorOplog{fmt.Sprintf("protocal error, expect line terminator: %s", string(left))}
+			return nil, fullcontent, &errorOplog{fmt.Sprintf("protocol error, expect line terminator: %s", string(left))}
 		}
 		bulkLen, err := parseLen(left[1 : endIndex-1])
 		if err != nil {

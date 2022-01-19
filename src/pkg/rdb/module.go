@@ -86,7 +86,7 @@ func (r *rdbReader) parseModule(moduleName string, moduleId uint64, t byte, b *b
 		}
 
 	default:
-		return nil, fmt.Errorf("unknown module name[%v] with modue id[%v]", moduleName, moduleId)
+		return nil, fmt.Errorf("unknown module name[%v] with module id[%v]", moduleName, moduleId)
 	}
 
 	if t == RdbTypeModule2 {

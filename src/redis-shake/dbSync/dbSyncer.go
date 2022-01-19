@@ -58,7 +58,7 @@ type DbSyncer struct {
 	/*
 	 * this channel is used to calculate delay between redis-shake and target redis.
 	 * Once oplog sent, the corresponding delayNode push back into this queue. Next time
-	 * receive reply from target redis, the front node poped and then delay calculated.
+	 * receive reply from target redis, the front node popped and then delay calculated.
 	 */
 	delayChannel chan *delayNode
 
