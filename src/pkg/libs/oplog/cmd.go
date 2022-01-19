@@ -186,7 +186,7 @@ const (
 	// LATENCY
 
 	QUIT
-	UNKOWN
+	UNKNOWN
 	CMD_CODE_END
 )
 
@@ -806,5 +806,5 @@ func ParseCommandStrToCode(cmd []byte) RedisCmdCode {
 			return GEORADIUSBYMEMBER
 		}
 	} // switch()
-	return UNKOWN
+	return UNKNOWN
 }

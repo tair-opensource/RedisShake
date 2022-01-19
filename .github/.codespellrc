@@ -1,0 +1,5 @@
+[codespell]
+quiet-level = 2
+count =
+skip = ./dep,./imgs
+ignore-words = ./.github/wordlist.txt

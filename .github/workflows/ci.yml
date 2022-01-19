@@ -1,0 +1,47 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+
+  test-ubuntu-with-redis-5:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: clone and make redis
+      run: |
+       sudo apt-get install git
+       git clone https://github.com/redis/redis
+       cd redis
+       git checkout 5.0
+       make REDIS_CFLAGS='-Werror' BUILD_TLS=no -j
+    - name: make RedisShake
+      run: |
+       make 
+       cp redis/src/redis-server bin/
+    - name: test
+      run: |
+        cd test
+        pip3 install -r requirements.txt
+        python3 main.py
+
+  test-ubuntu-with-redis-6:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: clone and make redis
+      run: |
+       sudo apt-get install git
+       git clone https://github.com/redis/redis
+       cd redis
+       git checkout 6.0
+       make REDIS_CFLAGS='-Werror' BUILD_TLS=no -j
+    - name: make RedisShake
+      run: |
+       make 
+       cp redis/src/redis-server bin/
+    - name: test
+      run: |
+        cd test
+        pip3 install -r requirements.txt
+        python3 main.py
