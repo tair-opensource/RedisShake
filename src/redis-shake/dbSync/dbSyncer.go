@@ -117,6 +117,7 @@ func (ds *DbSyncer) Sync() {
 		// sync
 		input, nsize = ds.sendSyncCmd(ds.source, conf.Options.SourceAuthType, ds.sourcePassword,
 			conf.Options.SourceTLSEnable, conf.Options.SourceTLSSkipVerify)
+		isFullSync = true
 	}
 	defer input.Close()
 
