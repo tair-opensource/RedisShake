@@ -49,6 +49,8 @@ func (l *Loader) Footer() error {
 	crc1 := l.crc.Sum64()
 	if crc2, err := l.readUint64(); err != nil {
 		return err
+	} else if crc2 == 0 {
+		log.Info("RDB file was saved with checksum disabled: no check performed.")
 	} else if crc1 != crc2 {
 		return errors.Errorf("checksum validation failed")
 	}
