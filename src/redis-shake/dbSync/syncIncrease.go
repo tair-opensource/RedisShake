@@ -4,22 +4,24 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/pkg/redis"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
-	"github.com/alibaba/RedisShake/redis-shake/filter"
 	"io"
 	"net"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
+	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/redis"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
+	"github.com/alibaba/RedisShake/redis-shake/filter"
+
 	"github.com/alibaba/RedisShake/redis-shake/metric"
 
-	redigo "github.com/garyburd/redigo/redis"
 	"unsafe"
+
+	redigo "github.com/garyburd/redigo/redis"
 )
 
 func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool, tlsSkipVerify bool, dbid int) {
@@ -304,7 +306,7 @@ func (ds *DbSyncer) sendTargetCommand(c redigo.Conn) {
 	checkpointRunId := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointRunId)
 	checkpointVersion := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointVersion)
 	checkpointOffset := fmt.Sprintf("%s-%s", ds.source, utils.CheckpointOffset)
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(time.Duration(conf.Options.SenderTickerMs) * time.Millisecond)
 	// mark whether the given db has already send runId, no need to send run-id each time.
 	runIdMap := make(map[int]struct{})
 
