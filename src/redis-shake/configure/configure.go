@@ -50,6 +50,7 @@ type Configuration struct {
 	SenderSize             uint64   `config:"sender.size"`
 	SenderCount            uint     `config:"sender.count"`
 	SenderDelayChannelSize uint     `config:"sender.delay_channel_size"`
+	SenderTickerMs         int      `config:"sender.ticker_ms"`
 	KeepAlive              uint     `config:"keep_alive"`
 	PidPath                string   `config:"pid_path"`
 	ScanKeyNumber          uint32   `config:"scan.key_number"`

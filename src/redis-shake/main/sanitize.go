@@ -304,6 +304,11 @@ func SanitizeOptions(tp string) error {
 		conf.Options.SenderDelayChannelSize = 32
 	}
 
+	//ticker (0,100s], default 20ms
+	if conf.Options.SenderTickerMs <= 0 || conf.Options.SenderTickerMs > 100000 {
+		conf.Options.SenderTickerMs = 20
+	}
+
 	// [0, 100 million]
 	if conf.Options.Qps < 0 || conf.Options.Qps >= 100000000 {
 		return fmt.Errorf("qps[%v] should in (0, 100000000]", conf.Options.Qps)
