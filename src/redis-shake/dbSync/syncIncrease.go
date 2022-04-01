@@ -27,6 +27,9 @@ import (
 func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType, passwd string, tlsEnable bool, tlsSkipVerify bool, dbid int) {
 	isCluster := conf.Options.TargetType == conf.RedisTypeCluster
 	c := utils.OpenRedisConnWithTimeout(target, authType, passwd, incrSyncReadeTimeout, incrSyncReadeTimeout, isCluster, tlsEnable, tlsSkipVerify)
+	if conf.Options.TargetDB != -1 {
+                utils.SelectDB(c, uint32(conf.Options.TargetDB))
+	}
 	defer c.Close()
 
 	ds.sendBuf = make(chan cmdDetail, conf.Options.SenderCount)
@@ -171,7 +174,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	var (
 		lastDb        = -1
 		selectDB      = -1
-		bypass        = false
+		bypass        = filter.FilterDB(0)
 		isSelect      = false
 		sCmd          string
 		argv, newArgv [][]byte
