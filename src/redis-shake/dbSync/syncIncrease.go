@@ -12,6 +12,7 @@ import (
 
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 	"github.com/alibaba/RedisShake/pkg/libs/log"
+	"github.com/alibaba/RedisShake/pkg/rdb/digest"
 	"github.com/alibaba/RedisShake/pkg/redis"
 	utils "github.com/alibaba/RedisShake/redis-shake/common"
 	conf "github.com/alibaba/RedisShake/redis-shake/configure"
@@ -28,7 +29,7 @@ func (ds *DbSyncer) syncCommand(reader *bufio.Reader, target []string, authType,
 	isCluster := conf.Options.TargetType == conf.RedisTypeCluster
 	c := utils.OpenRedisConnWithTimeout(target, authType, passwd, incrSyncReadeTimeout, incrSyncReadeTimeout, isCluster, tlsEnable, tlsSkipVerify)
 	if conf.Options.TargetDB != -1 {
-                utils.SelectDB(c, uint32(conf.Options.TargetDB))
+		utils.SelectDB(c, uint32(conf.Options.TargetDB))
 	}
 	defer c.Close()
 
@@ -174,7 +175,7 @@ func (ds *DbSyncer) parseSourceCommand(reader *bufio.Reader) {
 	var (
 		lastDb        = -1
 		selectDB      = -1
-		bypass        = filter.FilterDB(0)
+		bypass        = filter.FilterDB(digest.Slaveseldb)
 		isSelect      = false
 		sCmd          string
 		argv, newArgv [][]byte

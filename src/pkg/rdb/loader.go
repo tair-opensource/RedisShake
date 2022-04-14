@@ -137,6 +137,13 @@ func (l *Loader) NextBinEntry() (*BinEntry, error) {
 				entry.Value = aux_value
 				return entry, nil
 			}
+			if string(aux_key) == "repl-stream-db" {
+				repl_stream_db, err := strconv.Atoi(string(aux_value))
+				if err != nil {
+					return nil, err
+				}
+				digest.Slaveseldb = repl_stream_db
+			}
 		case rdbFlagResizeDB:
 			db_size, _ := l.ReadLength()
 			expire_size, _ := l.ReadLength()
