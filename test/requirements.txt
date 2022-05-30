@@ -1,5 +1,5 @@
 launchpadlib==1.10.15.1
 colorama==0.4.4
 redis_trib==0.6.2
-redis==3.5.3
+redis==4.3.1
 requests==2.26.0
