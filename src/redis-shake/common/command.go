@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 
 	redigo "github.com/garyburd/redigo/redis"
 )
@@ -241,8 +241,8 @@ func CheckSlotDistributionEqual(src, dst []SlotOwner) bool {
 	}
 
 	for i := 0; i < len(src); i++ {
-		if src[i].SlotLeftBoundary != src[i].SlotLeftBoundary ||
-			src[i].SlotRightBoundary != src[i].SlotRightBoundary {
+		if src[i].SlotLeftBoundary != dst[i].SlotLeftBoundary ||
+			src[i].SlotRightBoundary != dst[i].SlotRightBoundary {
 			return false
 		}
 	}
