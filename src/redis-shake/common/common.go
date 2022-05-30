@@ -10,11 +10,12 @@ import (
 	"unsafe"
 
 	"github.com/alibaba/RedisShake/pkg/libs/bytesize"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
+
+	"strconv"
 
 	"github.com/cupcake/rdb/crc64"
 	logRotate "gopkg.in/natefinch/lumberjack.v2"
-	"strconv"
 )
 
 const (
@@ -139,7 +140,7 @@ func CheckVersionChecksum(d []byte) (uint, uint64, error) {
 	}
 
 	footer := length - 10
-	rdbVersion := uint((d[footer+1] << 8) | d[footer])
+	rdbVersion := (uint(d[footer+1]) << 8) | uint(d[footer])
 	if rdbVersion > RDBVersion {
 		return 0, 0, fmt.Errorf("current version[%v] > RDBVersion[%v]", rdbVersion, RDBVersion)
 	}
