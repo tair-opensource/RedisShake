@@ -2,5 +2,5 @@
 
 cd src
 
-PKGS=$(go list ./... | grep -v /vendor/)
+PKGS=$(go list ./...)
 go test $PKGS
