@@ -28,6 +28,8 @@ func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType,
 				c := utils.OpenRedisConn(target, authType, passwd, conf.Options.TargetType == conf.RedisTypeCluster,
 					tlsEnable, tlsSkipVerify)
 				defer c.Close()
+				var ticker = time.NewTicker(time.Second)
+				defer ticker.Stop()
 				var lastdb uint32 = 0
 				for e := range pipe {
 					if filter.FilterDB(int(e.DB)) {
@@ -56,12 +58,26 @@ func (ds *DbSyncer) syncRDBFile(reader *bufio.Reader, target []string, authType,
 						if filter.FilterKey(string(e.Key)) == true {
 							// 1. judge if not pass filter key
 							ds.stat.fullSyncFilter.Incr()
+							select {
+							case <-ticker.C:
+								if _, err := c.Do("PING"); err != nil {
+									log.Infof("PING ", err)
+								}
+							default:
+							}
 							continue
 						} else {
 							slot := int(utils.KeyToSlot(string(e.Key)))
 							if filter.FilterSlot(slot) == true {
 								// 2. judge if not pass filter slot
 								ds.stat.fullSyncFilter.Incr()
+								select {
+								case <-ticker.C:
+									if _, err := c.Do("PING"); err != nil {
+										log.Infof("PING ", err)
+									}
+								default:
+								}
 								continue
 							}
 						}
