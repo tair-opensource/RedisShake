@@ -1,3 +1,10 @@
+🎉 redis-shake v3 已经发布，欢迎在非生产环境试用。
+
+🎉 redis-shake v3 has been released, welcome to try it in non-production environments.
+
+🔗: https://github.com/alibaba/RedisShake/tree/v3
+
+---
 RedisShake is mainly used to synchronize data from one redis to another.<br>
 Thanks to the Douyu's WSD team for the support. <br>
 
