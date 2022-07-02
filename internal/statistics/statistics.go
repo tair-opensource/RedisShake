@@ -34,7 +34,7 @@ func Init() {
 				continue
 			}
 			if rdbFileSize > rdbReceivedSize {
-				log.Infof("receiving rdb. percent=[%.2f]%, rdbFileSize=[%.3f]G, rdbReceivedSize=[%.3f]G",
+				log.Infof("receiving rdb. percent=[%.2f]%%, rdbFileSize=[%.3f]G, rdbReceivedSize=[%.3f]G",
 					float64(rdbReceivedSize)/float64(rdbFileSize)*100,
 					float64(rdbFileSize)/1024/1024/1024,
 					float64(rdbReceivedSize)/1024/1024/1024)
