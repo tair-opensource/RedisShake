@@ -4,8 +4,10 @@ password = ""
 tls = false
 
 [target]
-type = "standalone" # standalone or cluster
-addresses = ["127.0.0.1:6380"]
+type = "cluster" # standalone or cluster
+# When the target is a cluster, write the address of one of the nodes.
+# redis-shake will obtain other nodes through the `cluster nodes` command.
+address = "127.0.0.1:30001"
 password = ""
 tls = false
 

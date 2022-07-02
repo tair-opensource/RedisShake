@@ -16,10 +16,10 @@ type tomlSource struct {
 }
 
 type tomlTarget struct {
-	Type      string   `toml:"type"`
-	Addresses []string `toml:"addresses"`
-	Password  string   `toml:"password"`
-	IsTLS     bool     `toml:"tls"`
+	Type     string `toml:"type"`
+	Address  string `toml:"address"`
+	Password string `toml:"password"`
+	IsTLS    bool   `toml:"tls"`
 }
 
 type tomlAdvanced struct {

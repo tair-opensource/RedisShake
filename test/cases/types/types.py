@@ -12,7 +12,8 @@ def main():
     r1 = Redis()
     t = get_empty_config()
     t["source"]["address"] = r0.get_address()
-    t["target"]["addresses"] = [r1.get_address()]
+    t["target"]["type"] = "standalone"
+    t["target"]["address"] = r1.get_address()
 
     timer = jury.Timer()
     type_string.add_rdb_data(r0.client)

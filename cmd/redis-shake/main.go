@@ -41,15 +41,9 @@ func main() {
 	var theWriter writer.Writer
 	switch config.Config.Target.Type {
 	case "standalone":
-		if len(config.Config.Target.Addresses) != 1 {
-			log.Panicf("standalone target must have only one address")
-		}
-		theWriter = writer.NewRedisWriter(config.Config.Target.Addresses[0], config.Config.Target.Password, config.Config.Target.IsTLS)
+		theWriter = writer.NewRedisWriter(config.Config.Target.Address, config.Config.Target.Password, config.Config.Target.IsTLS)
 	case "cluster":
-		if len(config.Config.Target.Addresses) == 1 {
-			log.Panicf("cluster target must have at least two address")
-		}
-		theWriter = writer.NewRedisClusterWriter(config.Config.Target.Addresses, config.Config.Target.Password, config.Config.Target.IsTLS)
+		theWriter = writer.NewRedisClusterWriter(config.Config.Target.Address, config.Config.Target.Password, config.Config.Target.IsTLS)
 	default:
 		log.Panicf("unknown target type: %s", config.Config.Target.Type)
 	}

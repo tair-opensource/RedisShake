@@ -14,7 +14,8 @@ def main():
     t = get_empty_config()
     t["source"]["address"] = r0.get_address()
     t["source"]["password"] = "password"
-    t["target"]["addresses"] = [r1.get_address()]
+    t["target"]["type"] = "standalone"
+    t["target"]["address"] = r1.get_address()
     t["target"]["password"] = "password"
 
     rs = RedisShake()
