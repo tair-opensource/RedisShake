@@ -47,10 +47,10 @@ func (r *psyncReader) StartRead() chan *entry.Entry {
 
 	go func() {
 		r.clearDir()
+		go r.sendReplconfAck()
 		r.saveRDB()
 		startOffset := r.receivedOffset
 		go r.saveAOF(r.rd)
-		go r.sendReplconfAck()
 		r.sendRDB()
 		time.Sleep(1 * time.Second) // wait for saveAOF create aof file
 		r.sendAOF(startOffset)
