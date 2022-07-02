@@ -2,100 +2,107 @@
 
 [![CI](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml/badge.svg?branch=v3)](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml)
 
-redis-shake 是一个用来做 Redis 数据迁移的工具，并提供一定程度的数据清洗能力。
+- [中文文档](./README_zh.md)
 
-## 特性
+redis-shake is a tool for Redis data migration and provides a certain degree of data cleaning capabilities.
 
-* 支持 Redis 原生数据结构
-* 支持源端为单机实例，目的端为单机或集群实例
-* 测试在 5.0、6.0 和 7.0
-* 支持使用 lua 自定义过滤规则
+## Feature
+
+* ⚡ high efficiency
+* 🌲 Native Redis data structure support
+* 🌐 Support single instance and cluster
+* ✅ Tested on Redis 5.0, Redis 6.0 and Redis 7.0
+* 🤗 Supports custom filtering rules using lua
+* 💪 Support large instance migration
 
 ![image.png](https://s2.loli.net/2022/06/30/vU346lVBrNofKzu.png)
 
-# 文档
+# Document
 
-## 安装
+## Install
 
-### 从 Release 下载安装
+### Binary package
 
-unstable 版本，暂不支持。
+Release: [https://github.com/alibaba/RedisShake/releases](https://github.com/alibaba/RedisShake/releases)
 
-### 从源码编译
+### Compile from source
 
-下载源码后，运行 `sh build.sh` 命令编译。
+After downloading the source code, run the `sh build.sh` command to compile.
 
 ```shell
 sh build.sh
 ```
 
-## 运行
+## Usage
 
-1. 编辑 redis-shake.toml，修改其中的 source 与 target 配置项
-2. 启动 redis-shake：
+1. Edit redis-shake.toml and modify the source and target configuration items in it.
+2. Start redis-shake.
 
 ```shell
 ./bin/redis-shake redis-shake.toml
 ```
 
-3. 观察数据同步情况
+3. Check data synchronization status.
 
-## 配置
+## Configure
 
-redis-shake 配置文件参考：https://github.com/alibaba/RedisShake/blob/v3/redis-shake.toml
+The redis-shake configuration file refers to `redis-shake.toml`. In order to avoid ambiguity, it is mandatory that each
+configuration in the configuration file needs to be assigned a value, otherwise an error will be reported.
 
-为避免歧义强制要求配置文件中的每一项配置均需要赋值，否则会报错。
+## Data filtering
 
-## 数据过滤
-
-redis-shake 支持使用 lua 脚本自定义过滤规则，可以实现对数据进行过滤。 搭配 lua 脚本时，redis-shake 启动命令：
+redis-shake supports custom filtering rules using lua scripts. redis-shake can be started with
+the following command:
 
 ```shell
 ./bin/redis-shake redis-shake.toml filter/xxx.lua
 ```
 
-lua 的书写参照 `filter/*.lua` 文件，目前提供以下过滤模板供参考：
+Some following filter templates are provided in `filter` directory:
 
-1. `filter/print.lua`：打印收到的所有命令
-2. `filter/swap_db.lua`：交换 db0 和 db1 的数据
+1. `filter/print.lua`：print all commands
+2. `filter/swap_db.lua`：swap the data of db0 and db1
 
-### 自定义过滤规则
+### Custom filter rules
 
-参照 `filter/print.lua` 新建一个 lua 脚本，并在 lua 脚本中实现 filter 函数，该函数的参数为：
+Refer to `filter/print.lua` to create a new lua script, and implement the filter function in the lua script. The
+arguments of the function are:
 
-- id：命令序列号
-- is_base：是否是从 dump.rdb 文件中读取的命令
-- group：命令组，不同命令所归属的 Group 见 [redis/src/commands](https://github.com/redis/redis/tree/unstable/src/commands) 下的描述文件
-- cmd_name：命令名称
-- keys：命令的 keys
-- slots：keys 的 slots
-- db_id：数据库 id
-- timestamp_ms：命令的时间戳，单位为毫秒。目前版本不支持。
+- id: command id
+- is_base: is the command read from the dump.rdb file
+- group: command group, see the description file
+  under [redis/src/commands](https://github.com/redis/redis/tree/unstable/src/commands)
+- cmd_name: command name
+- keys: keys in command
+- slots: slots in command
+- db_id: database id
+- timestamp_ms: timestamp of the command in milliseconds. The current version does not support it.
 
-返回值为：
+The return value is:
 
 - code
-    - 0：表示不过滤该命令
-    - 1：表示过滤该命令
-    - 2：表示不应该出现该命令，并让 redis-shake 报错退出
-- db_id：重定向的 db_id
+    - 0: allow this command to pass
+    - 1: this command is not allowed to pass
+    - 2: this command should not appear, and let redis-shake exit with an error
+- db_id: redirected db_id
 
-# 贡献
+# Contribution
 
-## lua 脚本
+## Lua script
 
-欢迎分享更有创意的 lua 脚本。
+Welcome to share more creative lua scripts.
 
-1. 在 `filters/` 下添加相关脚本。
-2. 在 `README.md` 中添加相关描述。
-3. 提交一份 pull request。
+1. Add lua scripts under `filters/`.
+2. Add description to `README.md`.
+3. Submit a pull request.
 
-## Redis Module 支持
+## Redis Module support
 
-1. 在 `internal/rdb/types` 下添加相关类型。
-2. 在 `scripts/commands` 下添加相关命令，并使用脚本生成 `table.go` 文件，移动至 `internal/commands` 目录。
-3. 在 `test/cases` 下添加相关测试用例。
-4. 提交一份 pull request。
+1. Add code under `internal/rdb/types`.
+2. Add a command file under `scripts/commands`, and use the script to generate a `table.go` file and move it to
+   the `internal/commands` directory.
+3. Add test cases under `test/cases`.
+4. Submit a pull request.
 
 # 感谢
 
