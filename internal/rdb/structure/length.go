@@ -11,7 +11,7 @@ const (
 	RDB6ByteLen  = 0 // RDB_6BITLEN
 	RDB14ByteLen = 1 // RDB_14BITLEN
 	len32or64Bit = 2
-	lenSpecial   = 3
+	lenSpecial   = 3 // RDB_ENCVAL
 	RDB32ByteLen = 0x80
 	RDB64ByteLen = 0x81
 )

@@ -28,7 +28,7 @@ const (
 	rdbTypeList    = 1
 	rdbTypeSet     = 2
 	rdbTypeZSet    = 3
-	rdbTypeHash    = 4
+	rdbTypeHash    = 4 // RDB_TYPE_HASH
 	rdbTypeZSet2   = 5 // ZSET version 2 with doubles stored in binary.
 	rdbTypeModule  = 6 // RDB_TYPE_MODULE
 	rdbTypeModule2 = 7 // RDB_TYPE_MODULE2 Module value with annotations for parsing without the generating module being loaded.
