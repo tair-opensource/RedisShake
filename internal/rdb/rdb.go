@@ -58,6 +58,12 @@ func (ld *Loader) ParseRDB() int {
 	if err != nil {
 		log.Panicf("open file failed. file_path=[%s], error=[%s]", ld.filPath, err)
 	}
+	defer func() {
+		err = ld.fp.Close()
+		if err != nil {
+			log.Panicf("close file failed. file_path=[%s], error=[%s]", ld.filPath, err)
+		}
+	}()
 	rd := bufio.NewReader(ld.fp)
 	//magic + version
 	buf := make([]byte, 9)
@@ -76,7 +82,6 @@ func (ld *Loader) ParseRDB() int {
 
 	// read entries
 	ld.parseRDBEntry(rd)
-
 	return ld.replStreamDbId
 }
 

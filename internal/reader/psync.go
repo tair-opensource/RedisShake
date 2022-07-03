@@ -180,6 +180,7 @@ func (r *psyncReader) saveAOF(rd io.Reader) {
 	log.Infof("start save AOF. address=[%s]", r.address)
 	// create aof file
 	aofWriter := rotate.NewAOFWriter(r.receivedOffset)
+	defer aofWriter.Close()
 	buf := make([]byte, 16*1024) // 16KB is enough for writing file
 	for {
 		n, err := rd.Read(buf)
@@ -194,7 +195,6 @@ func (r *psyncReader) saveAOF(rd io.Reader) {
 		statistics.UpdateAOFReceivedOffset(r.receivedOffset)
 		aofWriter.Write(buf[:n])
 	}
-	aofWriter.Close()
 }
 
 func (r *psyncReader) sendRDB() {
@@ -207,6 +207,7 @@ func (r *psyncReader) sendRDB() {
 
 func (r *psyncReader) sendAOF(offset int64) {
 	aofReader := rotate.NewAOFReader(offset)
+	defer aofReader.Close()
 	r.client.SetBufioReader(bufio.NewReader(aofReader))
 	for {
 		argv := client.ArrayString(r.client.Receive())
