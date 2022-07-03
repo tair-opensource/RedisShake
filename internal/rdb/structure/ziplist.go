@@ -77,9 +77,7 @@ func readZipListEntry(rd io.Reader, firstByte byte) string {
 		return string(ReadBytes(rd, length))
 	case zipStr14B:
 		secondByte := ReadByte(rd)
-		println(int(firstByte&0x3f), int(secondByte))
 		length := (int(firstByte&0x3f) << 8) | int(secondByte)
-		println(length)
 		return string(ReadBytes(rd, length))
 	case zipStr32B:
 		lenBytes := ReadBytes(rd, 4)
