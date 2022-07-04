@@ -154,15 +154,20 @@ func (r *psyncReader) saveRDB() {
 	}
 
 	// read rdb
-	var readTotal int64 = 0
-	buf := make([]byte, 32*1024*1024)
-	for readTotal < length {
-		n, err := r.rd.Read(buf)
+	remainder := length
+	const bufSize int64 = 32 * 1024 * 1024 // 32MB
+	buf := make([]byte, bufSize)
+	for remainder != 0 {
+		readOnce := bufSize
+		if remainder < readOnce {
+			readOnce = remainder
+		}
+		n, err := r.rd.Read(buf[:readOnce])
 		if err != nil {
 			log.PanicError(err)
 		}
-		readTotal += int64(n)
-		statistics.UpdateRDBReceivedSize(readTotal)
+		remainder -= int64(n)
+		statistics.UpdateRDBReceivedSize(length - remainder)
 		_, err = rdbFileHandle.Write(buf[:n])
 		if err != nil {
 			log.PanicError(err)
@@ -172,7 +177,7 @@ func (r *psyncReader) saveRDB() {
 	if err != nil {
 		log.PanicError(err)
 	}
-	log.Infof("save RDB finished. address=[%s], total_bytes=[%d]", r.address, readTotal)
+	log.Infof("save RDB finished. address=[%s], total_bytes=[%d]", r.address, length)
 }
 
 func (r *psyncReader) saveAOF(rd io.Reader) {
