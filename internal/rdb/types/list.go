@@ -53,7 +53,6 @@ func (o *ListObject) readList(rd io.Reader) {
 
 func (o *ListObject) readQuickList(rd io.Reader) {
 	size := int(structure.ReadLength(rd))
-	log.Debugf("readQuickList size=[%d]", size)
 	for i := 0; i < size; i++ {
 		ziplistElements := structure.ReadZipList(rd)
 		o.elements = append(o.elements, ziplistElements...)
@@ -62,10 +61,8 @@ func (o *ListObject) readQuickList(rd io.Reader) {
 
 func (o *ListObject) readQuickList2(rd io.Reader) {
 	size := int(structure.ReadLength(rd))
-	log.Debugf("readQuickList2 size=[%d]", size)
 	for i := 0; i < size; i++ {
 		container := structure.ReadLength(rd)
-		log.Debugf("readQuickList2 container=[%d]", container)
 		if container == quicklistNodeContainerPlain {
 			ele := structure.ReadString(rd)
 			o.elements = append(o.elements, ele)

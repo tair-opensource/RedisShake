@@ -34,6 +34,9 @@ log_interval = 5 # in seconds
 # ignore:  redis-shake will skip restore the key when meet "Target key name is busy" error.
 rdb_restore_command_behavior = "rewrite" # panic, rewrite or skip
 
+# pipeline
+pipeline_count_limit = 1024
+
 # Client query buffers accumulate new commands. They are limited to a fixed
 # amount by default. This amount is normally 1gb.
 target_redis_client_max_querybuf_len = 1024_000_000

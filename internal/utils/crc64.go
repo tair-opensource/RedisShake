@@ -75,15 +75,23 @@ func NewDigest() *digest {
 	return d
 }
 
-func (d *digest) update(p []byte) {
+func (d *digest) Update(p []byte) {
 	for _, b := range p {
 		d.crc = crc64Table[byte(d.crc)^b] ^ (d.crc >> 8)
 	}
 }
 
 func (d *digest) Write(p []byte) (int, error) {
-	d.update(p)
+	d.Update(p)
 	return len(p), nil
 }
 
 func (d *digest) Sum64() uint64 { return d.crc }
+
+func CalcCRC64(p []byte) uint64 {
+	var crc uint64
+	for _, b := range p {
+		crc = crc64Table[byte(crc)^b] ^ (crc >> 8)
+	}
+	return crc
+}

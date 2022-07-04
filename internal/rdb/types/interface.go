@@ -59,7 +59,6 @@ type RedisObject interface {
 }
 
 func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
-	log.Debugf("parse rdb object. typeByte=[%d], key=[%s]", typeByte, key)
 	switch typeByte {
 	case rdbTypeString: // string
 		o := new(StringObject)

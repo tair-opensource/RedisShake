@@ -41,9 +41,8 @@ const (
 func ReadListpack(rd io.Reader) []string {
 	rd = bufio.NewReader(strings.NewReader(ReadString(rd)))
 
-	bytes := ReadUint32(rd) // bytes
+	_ = ReadUint32(rd) // bytes
 	size := int(ReadUint16(rd))
-	log.Debugf("ReadListpack: bytes=[%d], size=[%d]", bytes, size)
 	var elements []string
 	for i := 0; i < size; i++ {
 		ele := readListpackEntry(rd)

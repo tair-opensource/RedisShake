@@ -42,7 +42,8 @@ type Loader struct {
 	filPath string
 	fp      *os.File
 
-	ch chan *entry.Entry
+	ch         chan *entry.Entry
+	dumpBuffer bytes.Buffer
 }
 
 func NewLoader(filPath string, ch chan *entry.Entry) *Loader {
@@ -123,14 +124,10 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 			log.Infof("RDB resize db. db_size=[%d], expire_size=[%d]", dbSize, expireSize)
 		case kFlagExpireMs:
 			ld.expireAt = structure.ReadUint64(rd)
-			log.Debugf("RDB expire at %d", ld.expireAt)
 		case kFlagExpire:
 			ld.expireAt = uint64(structure.ReadUint32(rd)) * 1000
-			log.Debugf("RDB expire at %d", ld.expireAt)
 		case kFlagSelect:
-			dbid := structure.ReadLength(rd)
-			ld.nowDBId = int(dbid)
-			log.Debugf("RDB select db, DbId=[%d]", dbid)
+			ld.nowDBId = int(structure.ReadLength(rd))
 		case kEOF:
 			return
 		default:
@@ -187,12 +184,12 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 }
 
 func (ld *Loader) createValueDump(typeByte byte, val []byte) string {
-	var b bytes.Buffer
-	c := utils.NewDigest()
-	w := io.MultiWriter(&b, c)
-	_, _ = w.Write([]byte{typeByte})
-	_, _ = w.Write(val)
-	_ = binary.Write(w, binary.LittleEndian, uint16(6))
-	_ = binary.Write(w, binary.LittleEndian, c.Sum64())
-	return b.String()
+	ld.dumpBuffer.Reset()
+	_, _ = ld.dumpBuffer.Write([]byte{typeByte})
+	_, _ = ld.dumpBuffer.Write(val)
+	_ = binary.Write(&ld.dumpBuffer, binary.LittleEndian, uint16(6))
+	// calc crc
+	sum64 := utils.CalcCRC64(ld.dumpBuffer.Bytes())
+	_ = binary.Write(&ld.dumpBuffer, binary.LittleEndian, sum64)
+	return ld.dumpBuffer.String()
 }

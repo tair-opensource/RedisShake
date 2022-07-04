@@ -18,8 +18,7 @@ func ArrayString(replyInterface interface{}, err error) []string {
 	return replyArrayString
 }
 
-func EncodeArgv(argv []string) *bytes.Buffer {
-	buf := new(bytes.Buffer)
+func EncodeArgv(argv []string, buf *bytes.Buffer) {
 	writer := proto.NewWriter(buf)
 	argvInterface := make([]interface{}, len(argv))
 
@@ -30,5 +29,4 @@ func EncodeArgv(argv []string) *bytes.Buffer {
 	if err != nil {
 		log.PanicError(err)
 	}
-	return buf
 }

@@ -20,21 +20,8 @@ type Entry struct {
 }
 
 func NewEntry() *Entry {
-	e := Entry{}
-	e.Argv = make([]string, 0)
-	e.Keys = make([]string, 0)
-	e.Slots = make([]int, 0)
-	e.DbId = 0
-	e.TimestampMs = 0
-	return &e
-}
-
-func (e *Entry) NextEntry() *Entry {
-	newE := NewEntry()
-	newE.Id = e.Id + 1
-	newE.DbId = e.DbId
-	newE.TimestampMs = 0
-	return newE
+	e := new(Entry)
+	return e
 }
 
 func (e *Entry) ToString() string {

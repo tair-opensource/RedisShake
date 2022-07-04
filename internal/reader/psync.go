@@ -211,7 +211,6 @@ func (r *psyncReader) sendAOF(offset int64) {
 	r.client.SetBufioReader(bufio.NewReader(aofReader))
 	for {
 		argv := client.ArrayString(r.client.Receive())
-		log.Debugf("psyncReader receive. argv=%v", argv)
 		// select
 		if strings.EqualFold(argv[0], "select") {
 			DbId, err := strconv.Atoi(argv[1])
