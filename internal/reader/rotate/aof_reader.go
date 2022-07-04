@@ -38,6 +38,10 @@ func (r *AOFReader) readNextFile(offset int64) {
 	filename := fmt.Sprintf("%d.aof", offset)
 	if utils.DoesFileExist(filename) {
 		r.Close()
+		err := os.Remove(r.filename)
+		if err != nil {
+			return
+		}
 		r.openFile(offset)
 	}
 }
