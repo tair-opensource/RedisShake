@@ -17,6 +17,9 @@ dir = "data"
 # runtime.GOMAXPROCS, 0 means use runtime.NumCPU() cpu cores
 ncpu = 3
 
+# pprof port, 0 means disable
+pprof_port = 0
+
 # log
 log_file = "redis-shake.log"
 log_level = "info" # debug, info or warn

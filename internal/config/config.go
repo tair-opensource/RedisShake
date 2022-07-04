@@ -27,6 +27,8 @@ type tomlAdvanced struct {
 
 	Ncpu int `toml:"ncpu"`
 
+	PprofPort int `toml:"pprof_port"`
+
 	// log
 	LogFile     string `toml:"log_file"`
 	LogLevel    string `toml:"log_level"`

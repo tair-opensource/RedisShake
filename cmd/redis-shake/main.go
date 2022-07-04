@@ -9,6 +9,8 @@ import (
 	"github.com/alibaba/RedisShake/internal/reader"
 	"github.com/alibaba/RedisShake/internal/statistics"
 	"github.com/alibaba/RedisShake/internal/writer"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"runtime"
 )
@@ -33,8 +35,18 @@ func main() {
 	log.Infof("GOOS: %s, GOARCH: %s", runtime.GOOS, runtime.GOARCH)
 	log.Infof("Ncpu: %d, GOMAXPROCS: %d", config.Config.Advanced.Ncpu, runtime.GOMAXPROCS(0))
 	log.Infof("pid: %d", os.Getpid())
+	log.Infof("pprof_port: %d", config.Config.Advanced.PprofPort)
 	if len(os.Args) == 2 {
 		log.Infof("No lua file specified, will not filter any cmd.")
+	}
+
+	if config.Config.Advanced.PprofPort != 0 {
+		go func() {
+			err := http.ListenAndServe(fmt.Sprintf("localhost:%d", config.Config.Advanced.PprofPort), nil)
+			if err != nil {
+				log.PanicError(err)
+			}
+		}()
 	}
 
 	// create writer
