@@ -16,7 +16,7 @@ type Redis struct {
 	protoWriter *proto.Writer
 }
 
-func NewRedisClient(address string, password string, isTls bool) *Redis {
+func NewRedisClient(address string, username string, password string, isTls bool) *Redis {
 	r := new(Redis)
 	var conn net.Conn
 	var dialer net.Dialer
@@ -38,7 +38,12 @@ func NewRedisClient(address string, password string, isTls bool) *Redis {
 
 	// auth
 	if password != "" {
-		reply := r.DoWithStringReply("auth", password)
+		var reply string
+		if username != "" {
+			reply = r.DoWithStringReply("auth", username, password)
+		} else {
+			reply = r.DoWithStringReply("auth", password)
+		}
 		if reply != "OK" {
 			log.Panicf("auth failed with reply: %s", reply)
 		}

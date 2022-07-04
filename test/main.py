@@ -6,6 +6,7 @@ cases = [
     "cases/types/types_rewrite",
     "cases/cluster/sync",
     "cases/auth",
+    "cases/auth_acl",
 ]
 
 

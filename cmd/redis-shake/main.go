@@ -51,18 +51,19 @@ func main() {
 
 	// create writer
 	var theWriter writer.Writer
+	target := &config.Config.Target
 	switch config.Config.Target.Type {
 	case "standalone":
-		theWriter = writer.NewRedisWriter(config.Config.Target.Address, config.Config.Target.Password, config.Config.Target.IsTLS)
+		theWriter = writer.NewRedisWriter(target.Address, target.Username, target.Password, target.IsTLS)
 	case "cluster":
-		theWriter = writer.NewRedisClusterWriter(config.Config.Target.Address, config.Config.Target.Password, config.Config.Target.IsTLS)
+		theWriter = writer.NewRedisClusterWriter(target.Address, target.Username, target.Password, target.IsTLS)
 	default:
-		log.Panicf("unknown target type: %s", config.Config.Target.Type)
+		log.Panicf("unknown target type: %s", target.Type)
 	}
 
 	// create reader
 	source := &config.Config.Source
-	theReader := reader.NewPSyncReader(source.Address, source.Password, source.IsTLS)
+	theReader := reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS)
 	ch := theReader.StartRead()
 
 	// start sync

@@ -1,6 +1,7 @@
 [source] # standalone
 address = "127.0.0.1:6379"
-password = ""
+username = "" # keep empty if not using ACL
+password = "" # keep empty if no authentication is required
 tls = false
 
 [target]
@@ -8,7 +9,8 @@ type = "cluster" # standalone or cluster
 # When the target is a cluster, write the address of one of the nodes.
 # redis-shake will obtain other nodes through the `cluster nodes` command.
 address = "127.0.0.1:30001"
-password = ""
+username = "" # keep empty if not using ACL
+password = "" # keep empty if no authentication is required
 tls = false
 
 [advanced]

@@ -26,15 +26,15 @@ type psyncReader struct {
 	receivedOffset int64
 }
 
-func NewPSyncReader(address string, password string, isTls bool) Reader {
+func NewPSyncReader(address string, username string, password string, isTls bool) Reader {
 	r := new(psyncReader)
-	r.init(address, password, isTls)
+	r.init(address, username, password, isTls)
 	return r
 }
 
-func (r *psyncReader) init(address string, password string, isTls bool) {
+func (r *psyncReader) init(address string, username string, password string, isTls bool) {
 	r.address = address
-	standalone := client.NewRedisClient(address, password, isTls)
+	standalone := client.NewRedisClient(address, username, password, isTls)
 
 	r.client = standalone
 	r.rd = r.client.BufioReader()

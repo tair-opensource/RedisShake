@@ -16,17 +16,17 @@ type RedisClusterWriter struct {
 	router    [KeySlots]Writer
 }
 
-func NewRedisClusterWriter(address string, password string, isTls bool) Writer {
+func NewRedisClusterWriter(address string, username string, password string, isTls bool) Writer {
 	rw := new(RedisClusterWriter)
 
-	rw.loadClusterNodes(address, password, isTls)
+	rw.loadClusterNodes(address, username, password, isTls)
 
 	log.Infof("redisClusterWriter connected to redis cluster successful. addresses=%v", rw.addresses)
 	return rw
 }
 
-func (r *RedisClusterWriter) loadClusterNodes(address string, password string, isTls bool) {
-	client_ := client.NewRedisClient(address, password, isTls)
+func (r *RedisClusterWriter) loadClusterNodes(address string, username string, password string, isTls bool) {
+	client_ := client.NewRedisClient(address, username, password, isTls)
 	reply := client_.DoWithStringReply("cluster", "nodes")
 	reply = strings.TrimSpace(reply)
 	for _, line := range strings.Split(reply, "\n") {
@@ -43,7 +43,7 @@ func (r *RedisClusterWriter) loadClusterNodes(address string, password string, i
 		address := strings.Split(words[1], "@")[0]
 		r.addresses = append(r.addresses, address)
 		// writers
-		redisWriter := NewRedisWriter(address, password, isTls)
+		redisWriter := NewRedisWriter(address, username, password, isTls)
 		r.writers = append(r.writers, redisWriter)
 		// parse slots
 		for i := 8; i < len(words); i++ {

@@ -1,6 +1,7 @@
 [source] # standalone
 address = "127.0.0.1:6379"
-password = ""
+username = "" # keep empty if not using ACL
+password = "" # keep empty if no authentication is required
 tls = false
 
 [target]
@@ -8,7 +9,8 @@ type = "cluster" # standalone or cluster
 # When the target is a cluster, write the address of one of the nodes.
 # redis-shake will obtain other nodes through the `cluster nodes` command.
 address = "127.0.0.1:30001"
-password = ""
+username = "" # keep empty if not using ACL
+password = "" # keep empty if no authentication is required
 tls = false
 
 [advanced]
@@ -33,6 +35,9 @@ log_interval = 5 # in seconds
 # rewrite: redis-shake will replace the key with new value.
 # ignore:  redis-shake will skip restore the key when meet "Target key name is busy" error.
 rdb_restore_command_behavior = "rewrite" # panic, rewrite or skip
+
+# pipeline
+pipeline_count_limit = 1024
 
 # Client query buffers accumulate new commands. They are limited to a fixed
 # amount by default. This amount is normally 1gb.

@@ -11,12 +11,14 @@ import (
 
 type tomlSource struct {
 	Address  string `toml:"address"`
+	Username string `toml:"username"`
 	Password string `toml:"password"`
 	IsTLS    bool   `toml:"tls"`
 }
 
 type tomlTarget struct {
 	Type     string `toml:"type"`
+	Username string `toml:"username"`
 	Address  string `toml:"address"`
 	Password string `toml:"password"`
 	IsTLS    bool   `toml:"tls"`

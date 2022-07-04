@@ -22,9 +22,9 @@ type redisWriter struct {
 	UpdateUnansweredBytesCount uint64 // have sent in bytes
 }
 
-func NewRedisWriter(address string, password string, isTls bool) Writer {
+func NewRedisWriter(address string, username string, password string, isTls bool) Writer {
 	rw := new(redisWriter)
-	rw.client = client.NewRedisClient(address, password, isTls)
+	rw.client = client.NewRedisClient(address, username, password, isTls)
 	log.Infof("redisWriter connected to redis successful. address=[%s]", address)
 	rw.cmdBuffer = new(bytes.Buffer)
 	rw.chWaitReply = make(chan *entry.Entry, config.Config.Advanced.PipelineCountLimit)
