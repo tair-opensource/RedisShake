@@ -2,7 +2,6 @@ package reader
 
 import (
 	"bufio"
-	"errors"
 	"github.com/alibaba/RedisShake/internal/client"
 	"github.com/alibaba/RedisShake/internal/entry"
 	"github.com/alibaba/RedisShake/internal/log"
@@ -184,10 +183,6 @@ func (r *psyncReader) saveAOF(rd io.Reader) {
 	buf := make([]byte, 16*1024) // 16KB is enough for writing file
 	for {
 		n, err := rd.Read(buf)
-		if errors.Is(err, io.EOF) {
-			log.Infof("read aof finished. address=[%s]", r.address)
-			break
-		}
 		if err != nil {
 			log.PanicError(err)
 		}
