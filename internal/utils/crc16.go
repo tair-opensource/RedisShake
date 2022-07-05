@@ -81,8 +81,13 @@ var crc16tab = [256]uint16{
 
 func Crc16(buf string) uint16 {
 	var crc uint16
-	for _, n := range buf {
+	bytesBuf := []byte(buf)
+	for _, n := range bytesBuf {
 		crc = (crc << uint16(8)) ^ crc16tab[((crc>>uint16(8))^uint16(n))&0x00FF]
 	}
 	return crc
+}
+
+func KeyHash(buf string) uint16 {
+	return Crc16(buf) & 0x3FFF
 }

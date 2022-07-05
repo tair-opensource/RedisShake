@@ -106,7 +106,7 @@ func CalcSlots(keys []string) []int {
 		if len(hashtag) > 0 {
 			key = hashtag
 		}
-		slots[inx] = int(utils.Crc16(key) & 0x3fff)
+		slots[inx] = int(utils.KeyHash(key) & 0x3fff)
 	}
 	return slots
 }
