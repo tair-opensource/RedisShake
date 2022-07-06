@@ -68,7 +68,7 @@ func (w *redisWriter) flushInterval() {
 						log.Panicf("redisWriter received BUSYKEY reply. argv=%v", e.Argv)
 					}
 				} else {
-					log.Panicf("redisWriter received error. error=[%v], argv=%v, reply=[%s]", err, e.Argv, reply)
+					log.Panicf("redisWriter received error. error=[%v], argv=%v, slots=%v, reply=[%v]", err, e.Argv, e.Slots, reply)
 				}
 			}
 			atomic.AddUint64(&w.UpdateUnansweredBytesCount, ^(e.EncodedSize - 1))

@@ -91,22 +91,26 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string) {
 func CalcSlots(keys []string) []int {
 	slots := make([]int, len(keys))
 	for inx, key := range keys {
-		hashtag := ""
-	findHashTag:
-		for i, s := range key {
-			if s == '{' {
-				for k := i; k < len(key); k++ {
-					if key[k] == '}' {
-						hashtag = key[i+1 : k]
-						break findHashTag
-					}
+		slots[inx] = int(keyHash(key))
+	}
+	return slots
+}
+
+func keyHash(key string) uint16 {
+	hashtag := ""
+findHashTag:
+	for i, s := range key {
+		if s == '{' {
+			for k := i; k < len(key); k++ {
+				if key[k] == '}' {
+					hashtag = key[i+1 : k]
+					break findHashTag
 				}
 			}
 		}
-		if len(hashtag) > 0 {
-			key = hashtag
-		}
-		slots[inx] = int(utils.KeyHash(key) & 0x3fff)
 	}
-	return slots
+	if len(hashtag) > 0 {
+		key = hashtag
+	}
+	return utils.Crc16(key) & 0x3FFF
 }

@@ -40,5 +40,51 @@ func TestCalcKeys(t *testing.T) {
 	if cmd != "ZUNIONSTORE" || group != "SORTED_SET" || !testEq(keys, []string{"key", "key1", "key2"}) {
 		t.Errorf("CalcKeys(ZUNIONSTORE key 2 key1 key2) failed. cmd=%s, group=%s, keys=%v", cmd, group, keys)
 	}
+}
 
+func TestKeyHash(t *testing.T) {
+	ret := keyHash("abcde")
+	if ret != 16097 {
+		t.Errorf("keyHash(abcde) = %x", ret)
+	}
+	ret = keyHash("abcde{")
+	if ret != 14689 {
+		t.Errorf("keyHash(abcde{) = %x", ret)
+	}
+	ret = keyHash("abcde}")
+	if ret != 6567 {
+		t.Errorf("keyHash(abcde}) = %x", ret)
+	}
+	ret = keyHash("{abcde}")
+	if ret != 16097 {
+		t.Errorf("keyHash({abcde}) = %x", ret)
+	}
+	ret = keyHash("same")
+	if ret != 13447 {
+		t.Errorf("keyHash(same) = %x", ret)
+	}
+	ret = keyHash("abcdefghi{same}abcdefghi")
+	if ret != 13447 {
+		t.Errorf("keyHash(abcdefghi{same}abcdefghi) = %x", ret)
+	}
+	ret = keyHash("123456789{same}123456789")
+	if ret != 13447 {
+		t.Errorf("keyHash(123456789{same}123456789) = %x", ret)
+	}
+	ret = keyHash("1234我是你89{same}12我就456789")
+	if ret != 13447 {
+		t.Errorf("keyHash(1234我是你89{same}12我就456789) = %x", ret)
+	}
+	ret = keyHash("你你你{你你你}你你你")
+	if ret != 15023 {
+		t.Errorf("keyHash(1234我是你89{same}12我就456789) = %x", ret)
+	}
+	b := make([]byte, 0)
+	for i := 0; i < 256; i++ {
+		b = append(b, byte(i))
+	}
+	ret = keyHash(string(b))
+	if ret != 16155 {
+		t.Errorf("keyHash(%s) = %x", string(b), ret)
+	}
 }

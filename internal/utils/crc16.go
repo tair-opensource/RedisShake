@@ -87,7 +87,3 @@ func Crc16(buf string) uint16 {
 	}
 	return crc
 }
-
-func KeyHash(buf string) uint16 {
-	return Crc16(buf) & 0x3FFF
-}
