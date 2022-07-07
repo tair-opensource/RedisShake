@@ -63,7 +63,14 @@ func main() {
 
 	// create reader
 	source := &config.Config.Source
-	theReader := reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS)
+	var theReader reader.Reader
+	if source.Type == "sync" {
+		theReader = reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS)
+	} else if source.Type == "restore" {
+		theReader = reader.NewRDBReader(source.RDBFilePath)
+	} else {
+		log.Panicf("unknown source type: %s", source.Type)
+	}
 	ch := theReader.StartRead()
 
 	// start sync
@@ -88,4 +95,6 @@ func main() {
 			log.Panicf("error when run lua filter. entry: %s", e.ToString())
 		}
 	}
+
+	log.Infof("finished.")
 }

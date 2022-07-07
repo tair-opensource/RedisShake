@@ -25,12 +25,13 @@ for g in "linux" "darwin"; do
 done
 
 cp redis-shake.toml "$BIN_DIR"
+cp restore.toml "$BIN_DIR"
 
 if [ "$1" == "dist" ]; then
   echo "[ DIST ]"
   cd bin
   cp -r ../filters ./
-  tar -czvf ./redis-shake.tar.gz ./redis-shake.toml ./redis-shake-* ./filters
+  tar -czvf ./redis-shake.tar.gz ./redis-shake.toml ./restore.toml ./redis-shake-* ./filters
   rm -rf ./filters
   cd ..
 fi

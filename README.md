@@ -8,12 +8,13 @@ redis-shake is a tool for Redis data migration and provides a certain degree of 
 
 ## Feature
 
-* ⚡ high efficiency
+* ⚡ High efficiency
 * 🌲 Native Redis data structure support
 * 🌐 Support single instance and cluster
 * ✅ Tested on Redis 5.0, Redis 6.0 and Redis 7.0
 * 🤗 Supports custom filtering rules using lua
 * 💪 Support large instance migration
+* 💖 Support restore mode and sync mode
 
 ![image.png](https://s2.loli.net/2022/06/30/vU346lVBrNofKzu.png)
 
@@ -35,11 +36,13 @@ sh build.sh
 
 ## Usage
 
-1. Edit redis-shake.toml and modify the source and target configuration items in it.
+1. Edit `redis-shake.toml` or `restore.toml` and modify the source and target configuration items in it.
 2. Start redis-shake.
 
 ```shell
 ./bin/redis-shake redis-shake.toml
+# or
+./bin/redis-shake restore.toml
 ```
 
 3. Check data synchronization status.
