@@ -65,7 +65,7 @@ func main() {
 	source := &config.Config.Source
 	var theReader reader.Reader
 	if source.Type == "sync" {
-		theReader = reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS)
+		theReader = reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS, source.ElastiCachePSync)
 	} else if source.Type == "restore" {
 		theReader = reader.NewRDBReader(source.RDBFilePath)
 	} else {

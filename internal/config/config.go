@@ -10,12 +10,13 @@ import (
 )
 
 type tomlSource struct {
-	Type        string `toml:"type"`
-	Address     string `toml:"address"`
-	Username    string `toml:"username"`
-	Password    string `toml:"password"`
-	IsTLS       bool   `toml:"tls"`
-	RDBFilePath string `toml:"rdb_file_path"`
+	Type             string `toml:"type"`
+	Address          string `toml:"address"`
+	Username         string `toml:"username"`
+	Password         string `toml:"password"`
+	IsTLS            bool   `toml:"tls"`
+	ElastiCachePSync string `toml:"elasticache_psync"`
+	RDBFilePath      string `toml:"rdb_file_path"`
 }
 
 type tomlTarget struct {

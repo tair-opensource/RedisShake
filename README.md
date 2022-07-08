@@ -13,8 +13,9 @@ redis-shake is a tool for Redis data migration and provides a certain degree of 
 * 🌐 Support single instance and cluster
 * ✅ Tested on Redis 5.0, Redis 6.0 and Redis 7.0
 * 🤗 Supports custom filtering rules using lua
-* 💪 Support large instance migration
-* 💖 Support restore mode and sync mode
+* 💪 Supports large instance migration
+* 💖 Supports restore mode and sync mode
+* ☁️ Supports ElastiCache and Aliyun Redis
 
 ![image.png](https://s2.loli.net/2022/06/30/vU346lVBrNofKzu.png)
 
