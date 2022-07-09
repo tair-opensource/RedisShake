@@ -57,6 +57,17 @@ type tomlShakeConfig struct {
 var Config tomlShakeConfig
 
 func LoadFromFile(filename string) {
+	Config.Advanced.Dir = "data"
+	Config.Advanced.Ncpu = 3
+	Config.Advanced.PprofPort = 0
+	Config.Advanced.LogFile = "redis-shake.log"
+	Config.Advanced.LogLevel = "info"
+	Config.Advanced.LogInterval = 5
+	Config.Advanced.RDBRestoreCommandBehavior = "rewrite"
+	Config.Advanced.PipelineCountLimit = 1024
+	Config.Advanced.TargetRedisClientMaxQuerybufLen = 1024 * 1000 * 1000
+	Config.Advanced.TargetRedisProtoMaxBulkLen = 512 * 1000 * 1000
+
 	buf, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err.Error())
