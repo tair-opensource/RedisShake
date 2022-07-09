@@ -6,16 +6,19 @@
 
 redis-shake is a tool for Redis data migration and provides a certain degree of data cleaning capabilities.
 
+
 ## Feature
 
-* ⚡ High efficiency
-* 🌲 Native Redis data structure support
-* 🌐 Support single instance and cluster
+* ⚡ High performance
 * ✅ Tested on Redis 5.0, Redis 6.0 and Redis 7.0
-* 🤗 Supports custom filtering rules using lua
-* 💪 Supports large instance migration
-* 💖 Supports restore mode and sync mode
-* ☁️ Supports ElastiCache and Aliyun Redis
+* 🤗 Support custom filtering rules using lua
+* 💪 Support large instance migration
+* 💖 Support `restore` mode and `sync` mode
+* ☁️ Support Aliyun Redis and ElastiCache
+
+For older versions of redis-shake (support codis, twemproxy) please visit [here](https://github.com/alibaba/RedisShake/tree/develop). 
+
+![redis-shake2.PNG](https://s2.loli.net/2022/07/10/OZrSGutknlI8XNp.png)
 
 ![image.png](https://s2.loli.net/2022/06/30/vU346lVBrNofKzu.png)
 
@@ -25,13 +28,15 @@ redis-shake is a tool for Redis data migration and provides a certain degree of 
 
 ### Binary package
 
-Release: [https://github.com/alibaba/RedisShake/releases](https://github.com/alibaba/RedisShake/releases)
+Download from Release: [https://github.com/alibaba/RedisShake/releases](https://github.com/alibaba/RedisShake/releases)
 
 ### Compile from source
 
 After downloading the source code, run the `sh build.sh` command to compile.
 
 ```shell
+git clone https://github.com/alibaba/RedisShake
+cd RedisShake
 sh build.sh
 ```
 
@@ -51,7 +56,7 @@ sh build.sh
 ## Configure
 
 The redis-shake configuration file refers to `redis-shake.toml`. In order to avoid ambiguity, it is mandatory that each
-configuration in the configuration file needs to be assigned a value, otherwise an error will be reported.
+configuration in the configuration file needs to be assigned a value.
 
 ## Data filtering
 
