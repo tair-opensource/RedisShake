@@ -17,7 +17,7 @@ import (
 	"github.com/alibaba/RedisShake/pkg/libs/log"
 )
 
-var FromVersion int64 = 9
+var FromVersion int64 = 10
 var ToVersion int64 = 6
 
 const (
@@ -37,6 +37,8 @@ const (
 	RdbTypeHashZiplist     = 13
 	RdbTypeQuicklist       = 14
 	RDBTypeStreamListPacks = 15 // stream
+	RdbTypeHashListpack    = 16
+	RdbTypeZSetListpack    = 17
 
 	rdbFlagModuleAux = 0xf7
 	rdbFlagIdle      = 0xf8
@@ -127,7 +129,7 @@ func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 		fallthrough
 	case RdbTypeHashZiplist:
 		fallthrough
-	case RdbTypeString:
+	case RdbTypeString, RdbTypeHashListpack, RdbTypeZSetListpack:
 		lr.lastReadCount, lr.remainMember, lr.totMemberCount = 0, 0, 0
 		_, err := r.ReadString()
 		if err != nil {

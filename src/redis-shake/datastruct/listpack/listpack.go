@@ -2,9 +2,10 @@ package listpack
 
 import (
 	"encoding/binary"
-	"github.com/alibaba/RedisShake/pkg/libs/log"
 	"math"
 	"strconv"
+
+	"github.com/alibaba/RedisShake/pkg/libs/log"
 )
 
 /*
@@ -134,6 +135,10 @@ func (lp *Listpack) NextInteger() int64 {
 		log.Errorf("str to int error: %v\n", str)
 	}
 	return ret
+}
+
+func (lp *Listpack) NumElements() uint16 {
+	return lp.numElements
 }
 
 /* the function just returns the length(byte) of `backlen`. */

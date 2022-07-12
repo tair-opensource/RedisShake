@@ -338,6 +338,120 @@ def test_sync_select_db(target_db=-1):
     r2.stop()
     shake.stop()
 
+def test_listpack_standalone2standalone():
+    r1 = get_redis()
+    r2 = get_redis()
+    
+    for i in range(100):
+        rt = r1.client.hset(name=f"HKEY_LISTPACK{r1.port}_{i}",key=f"HKEY_LISTPACK{r1.port}", value=f"{i}")
+        print(f"add hash {i}, ret = {rt}")
+        assert rt == 1
+    for i in range(100):
+        r1.client.execute_command(f"ZADD ZKEY_LISTPACK{r1.port}_{i} {i} {i}")
+        rt = r1.client.zadd(f"ZKEY_LISTPACK{r1.port}_{i}", {f"HKEY_LISTPACK{r1.port}" : i})
+        print(f"add zset {i}, ret = {rt}")
+        assert rt == 1
+    conf = load_conf(BASE_CONF_PATH)
+    conf["id"] = "redis-shakedump"
+    conf["metric.print_log"] = "true"
+    conf["log.file"] = "listpack_dump.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("listpack_standalone2standalone")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+    shake_dump = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "dump"], work_dir)
+    shake_dump.fire()
+    time.sleep(5)
+    shake_dump.stop()
+    
+    conf["id"] = "redis-shakedecode"
+    conf["log.file"] = "listpack_decode.log"
+    conf["source.rdb.input"] = conf["target.rdb.output"] + ".0"
+    conf["target.rdb.output"] = f"local{r1.port}.json"
+    
+    save_conf(conf, conf_path)
+    shake_decode = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "decode"], work_dir)
+    shake_decode.fire()
+    print(shake_decode.readline())
+    
+    
+    conf["id"] = "redis-shakerestore"
+    conf["log.file"] = "listpack_restore.log"
+    save_conf(conf, conf_path)
+    shake_restore = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "restore"], work_dir)
+    shake_restore.fire()
+    
+    time.sleep(5)
+
+    source_cnt = int(r1.client.execute_command("dbsize"))
+    target_cnt = int(r2.client.execute_command("dbsize"))
+    print(f"source_cnt: {source_cnt}, target_cnt: {target_cnt}")
+    assert source_cnt == target_cnt  == 200
+
+    r1.client.execute_command("FLUSHALL")
+    r2.client.execute_command("FLUSHALL")
+    r1.stop()
+    r2.stop()
+    shake_decode.stop()
+    shake_restore.stop()
+
+def test_listpack_sync_standalone2standalone():
+    r1 = get_redis()
+    r2 = get_redis()
+    r3 = get_redis()   
+    for i in range(100):
+        rt = r1.client.hset(name=f"HKEY_LISTPACK{r1.port}_{i}",key=f"HKEY_LISTPACK{r1.port}", value=f"{i}")
+        print(f"add hash {i}, ret = {rt}")
+        assert rt == 1
+    for i in range(100):
+        r1.client.execute_command(f"ZADD ZKEY_LISTPACK{r1.port}_{i} {i} {i}")
+        rt = r1.client.zadd(f"ZKEY_LISTPACK{r1.port}_{i}", {f"HKEY_LISTPACK{r1.port}" : i})
+        print(f"add zset {i}, ret = {rt}")
+        assert rt == 1
+    conf = load_conf(BASE_CONF_PATH)
+    conf["id"] = "redis-shakeasync"
+    conf["metric.print_log"] = "true"
+    conf["log.file"] = "listpack_sync.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("listpack_sync_standalone2standalone")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+    shake_sync = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "sync"], work_dir)
+    shake_sync.fire()
+    time.sleep(3)
+    ret = requests.get(METRIC_URL)
+    assert ret.json()[0]["FullSyncProgress"] == 100
+    print("sync successful!")
+    shake_sync.stop()
+
+    conf["id"] = "redis-shakerump"
+    conf["log.file"] = "listpack_rump.log"
+    conf["target.address"] = f"127.0.0.1:{r3.port}"
+    save_conf(conf, conf_path)
+    shake_rump = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "rump"], work_dir)
+    shake_rump.fire()
+    time.sleep(3)
+
+    source_cnt = int(r1.client.execute_command("dbsize"))
+    target_cnt = int(r2.client.execute_command("dbsize"))
+    target_cnt2 = int(r3.client.execute_command("dbsize"))
+    print(f"source_cnt: {source_cnt}, sync_target_cnt: {target_cnt}", "rump_target_cnt: {target_cnt2}")
+    assert source_cnt == target_cnt == target_cnt2 == 200
+
+    r1.client.execute_command("FLUSHALL")
+    r2.client.execute_command("FLUSHALL")
+    r3.client.execute_command("FLUSHALL")
+
+    r1.stop()
+    r2.stop()
+    r3.stop()
+    shake_rump.stop()
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux'):

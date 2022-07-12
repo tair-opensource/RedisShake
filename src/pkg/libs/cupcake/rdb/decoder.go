@@ -10,6 +10,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/alibaba/RedisShake/redis-shake/datastruct/listpack"
 	"github.com/cupcake/rdb/crc64"
 )
 
@@ -115,6 +116,9 @@ const (
 	TypeZSetZiplist   ValueType = 12
 	TypeHashZiplist   ValueType = 13
 	TypeListQuicklist ValueType = 14
+
+	TypeHashListpack ValueType = 16
+	TypeZsetListpack ValueType = 17
 )
 
 const (
@@ -298,6 +302,32 @@ func (d *decode) readObject(key []byte, typ ValueType, expiry int64) error {
 			d.event.Zadd(key, score, member)
 		}
 		d.event.EndZSet(key)
+	case TypeZsetListpack:
+		length, _, err := d.readLength()
+		if err != nil {
+			return err
+		}
+		bf := make([]byte, length)
+		_, err = d.r.Read(bf)
+		if err != nil {
+			return err
+		}
+
+		lp := listpack.NewListpack(bf)
+		count := lp.NumElements()
+
+		d.event.StartZSet(key, int64(count/2), expiry)
+		var i uint16
+		for i = 0; i < count/2; i++ {
+			member := lp.Next()
+			score := lp.Next()
+			scorefloat, err := strconv.ParseFloat(score, 64)
+			if err != nil {
+				return err
+			}
+			d.event.Zadd(key, scorefloat, []byte(member))
+		}
+		d.event.EndZSet(key)
 	case TypeHash:
 		length, _, err := d.readLength()
 		if err != nil {
@@ -316,6 +346,28 @@ func (d *decode) readObject(key []byte, typ ValueType, expiry int64) error {
 			d.event.Hset(key, field, value)
 		}
 		d.event.EndHash(key)
+
+	case TypeHashListpack:
+		length, _, err := d.readLength()
+		if err != nil {
+			return err
+		}
+		bf := make([]byte, length)
+		_, err = d.r.Read(bf)
+		if err != nil {
+			return err
+		}
+		lp := listpack.NewListpack(bf)
+		count := lp.NumElements()
+		d.event.StartHash(key, int64(count), expiry)
+		var i uint16
+		for i = 0; i < count/2; i++ {
+			field := lp.Next()
+			value := lp.Next()
+			d.event.Hset(key, []byte(field), []byte(value))
+		}
+		d.event.EndHash(key)
+
 	case TypeHashZipmap:
 		return d.readZipmap(key, expiry)
 	case TypeListZiplist:
