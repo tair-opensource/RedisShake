@@ -25,6 +25,7 @@ BASE_CONF_PATH = "../conf/redis-shake.conf"
 SHAKE_PATH_LINUX = "../bin/redis-shake.linux"
 SHAKE_PATH_MACOS = "../bin/redis-shake.darwin"
 REDIS_PATH = "../bin/redis-server"
+CONF_PATH = "../bin/redis.conf"
 SHAKE_EXE = ""
 REDIS_EXE = ""
 USED_PORT = []
@@ -77,11 +78,12 @@ def save_conf(conf, file_path):
 
 class Redis:
     def __init__(self, port, work_dir, cluster_enable=False):
+        CONF = os.path.abspath(CONF_PATH)
         if cluster_enable:
             self.server = launcher.Launcher(
-                [REDIS_EXE, "--logfile", "redis.log", "--port", str(port), "--cluster-enabled yes"], work_dir)
+                [REDIS_EXE, CONF, "--logfile", "redis.log", "--port", str(port), "--cluster-enabled yes"], work_dir)
         else:
-            self.server = launcher.Launcher([REDIS_EXE, "--logfile", "redis.log", "--port", str(port)], work_dir)
+            self.server = launcher.Launcher([REDIS_EXE, CONF, "--logfile", "redis.log", "--port", str(port)], work_dir)
         self.server.fire()
         self.client = None
         self.port = port
@@ -441,7 +443,7 @@ def test_listpack_sync_standalone2standalone():
     source_cnt = int(r1.client.execute_command("dbsize"))
     target_cnt = int(r2.client.execute_command("dbsize"))
     target_cnt2 = int(r3.client.execute_command("dbsize"))
-    print(f"source_cnt: {source_cnt}, sync_target_cnt: {target_cnt}", "rump_target_cnt: {target_cnt2}")
+    print(f"source_cnt: {source_cnt}, sync_target_cnt: {target_cnt}, rump_target_cnt: {target_cnt2}")
     assert source_cnt == target_cnt == target_cnt2 == 200
 
     r1.client.execute_command("FLUSHALL")
@@ -471,6 +473,9 @@ if __name__ == '__main__':
     test_sync_cluster2cluster()
     green_print("----------- test_sync_standalone2cluster --------")
     test_sync_standalone2cluster()
+    green_print("----------- test_listpack_standalone2standalone()--------")
+    test_listpack_standalone2standalone()
+    test_listpack_sync_standalone2standalone()
 
     # action_sync_standalone2standalone_bigdata()
     # action_sync_standalone2cluster()
