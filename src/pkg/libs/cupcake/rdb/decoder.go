@@ -303,17 +303,11 @@ func (d *decode) readObject(key []byte, typ ValueType, expiry int64) error {
 		}
 		d.event.EndZSet(key)
 	case TypeZsetListpack:
-		length, _, err := d.readLength()
+		value, err := d.readString()
 		if err != nil {
 			return err
 		}
-		bf := make([]byte, length)
-		_, err = d.r.Read(bf)
-		if err != nil {
-			return err
-		}
-
-		lp := listpack.NewListpack(bf)
+		lp := listpack.NewListpack(value)
 		count := lp.NumElements()
 
 		d.event.StartZSet(key, int64(count/2), expiry)
@@ -348,16 +342,11 @@ func (d *decode) readObject(key []byte, typ ValueType, expiry int64) error {
 		d.event.EndHash(key)
 
 	case TypeHashListpack:
-		length, _, err := d.readLength()
+		value, err := d.readString()
 		if err != nil {
 			return err
 		}
-		bf := make([]byte, length)
-		_, err = d.r.Read(bf)
-		if err != nil {
-			return err
-		}
-		lp := listpack.NewListpack(bf)
+		lp := listpack.NewListpack(value)
 		count := lp.NumElements()
 		d.event.StartHash(key, int64(count), expiry)
 		var i uint16
