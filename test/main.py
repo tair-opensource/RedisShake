@@ -37,7 +37,7 @@ def get_port():
     cmd = "netstat -ntl |grep -v Active| grep -v Proto|awk '{print $4}'|awk -F: '{print $NF}'"
     proc = os.popen(cmd).read()
     proc_ports = set(proc.split("\n"))
-    port = 20007
+    port = 20000
     while port in proc_ports or port in USED_PORT:
         port += 1
     USED_PORT.append(port)
@@ -545,7 +545,119 @@ def test_listpack_standalone2standalone_bigdata():
     r3.stop()
     r4.stop()
     shake_rump.stop()
+
+def test_function_restore_standalone2standalone():
+    r1 = get_redis()
+    if version.parse(r1.client.info("server")["redis_version"]) < version.parse("7.0.0"):
+            return
+    r2 = get_redis()
+    r1.client.execute_command('FUNCTION', 'LOAD', "#!lua name=mylib\nredis.register_function('myfunc1',function() return 'hello world' end)")
+    r1.client.execute_command("FUNCTION", "LOAD", "#!lua name=mylib2\nredis.register_function('myfunc2',function() return redis.call('hset', 'funchkey', 'k1','v1') end)")
+    conf = load_conf(BASE_CONF_PATH)
+    conf["id"] = "redis-shakefunctionrestore"
+    conf["log.file"] = "function_dump.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("function_standalone2standalone_restore")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+    shake_dump = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "dump"], work_dir)
+    shake_dump.fire()
+    time.sleep(5)
+
+    shake_dump.stop()
+    conf["id"] = "redis-shakerestore"
+    conf["source.rdb.input"] = conf["target.rdb.output"] + ".0"
+    conf["log.file"] = "function_restore.log"
+    save_conf(conf, conf_path)
+    shake_restore = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "restore"], work_dir)
+    shake_restore.fire()
+    time.sleep(5)
+
+    ret1 = r2.client.execute_command("fcall", "myfunc1", 0)
+    print(ret1)
+
+    r2.client.execute_command("fcall", "myfunc2", 0)
+    ret2 = r2.client.execute_command("hget", "funchkey", "k1")
+    print(ret2)
+
+    assert(ret1.decode() == 'hello world') 
+    assert(ret2.decode() == 'v1')
+    print('function restore successful!')
+
+    r1.client.execute_command("function", "delete", "mylib")
+    r1.client.execute_command("function", "delete", "mylib2")
+    r2.client.execute_command("function", "delete", "mylib")
+    r2.client.execute_command("function", "delete", "mylib2")
+    r1.stop()
+    r2.stop()
+    shake_restore.stop()
+
+def test_function_sync_standalone2standalone():
+    r1 = get_redis()
+    if version.parse(r1.client.info("server")["redis_version"]) < version.parse("7.0.0"):
+            return
+    r2 = get_redis()
+    r3 = get_redis()
+
+    r1.client.execute_command('FUNCTION', 'LOAD', "#!lua name=mylib\nredis.register_function('myfunc1',function() return 'hello world' end)")
+    r1.client.execute_command("FUNCTION", "LOAD", "#!lua name=mylib2\nredis.register_function('myfunc2',function() return redis.call('hset', 'funchkey', 'k1','v1') end)")
+    conf = load_conf(BASE_CONF_PATH)
+    conf["id"] = "redis-shakefunctionsync"
+    conf["metric.print_log"] = "true"
+    conf["log.file"] = "function_standalone2standalone_sync.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("function_standalone2standalone_sync")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+
+    shake_sync = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "sync"], work_dir)
+    shake_sync.fire()
+    time.sleep(3)
+    ret = requests.get(METRIC_URL)
+    assert ret.json()[0]["FullSyncProgress"] == 100
+    print("sync successful!")
+    shake_sync.stop()
     
+    conf["id"] = "redis-shakefunctionrump"
+    conf["target.address"] = f"127.0.0.1:{r3.port}"
+    conf["log.file"] = "function_standalone2standalone_rump.log"
+    save_conf(conf, conf_path)
+    shake_rump = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "rump"], work_dir)
+    shake_rump.fire()
+    time.sleep(10)
+
+    ret1 = r2.client.execute_command("fcall", "myfunc1", 0)
+    print(ret1)
+
+    r3.client.execute_command("fcall", "myfunc2", 0)
+    ret2 = r3.client.execute_command("hget", "funchkey", "k1")
+    print(ret2)
+
+    assert(ret1.decode() == 'hello world')
+    print('function sync successful!')
+    
+    assert(ret2.decode() == 'v1')
+    print('function rump successful!')
+
+    r1.client.execute_command("function", "delete", "mylib")
+    r1.client.execute_command("function", "delete", "mylib2")
+    r2.client.execute_command("function", "delete", "mylib")
+    r2.client.execute_command("function", "delete", "mylib2")
+    r3.client.execute_command("function", "delete", "mylib")
+    r3.client.execute_command("function", "delete", "mylib2")
+    r3.client.execute_command("flushall")
+
+    r1.stop()
+    r2.stop()
+    r3.stop()
+    shake_rump.stop()
+
 if __name__ == '__main__':
     if sys.platform.startswith('linux'):
         SHAKE_EXE = os.path.abspath(SHAKE_PATH_LINUX)
@@ -564,12 +676,16 @@ if __name__ == '__main__':
     test_sync_cluster2cluster()
     green_print("----------- test_sync_standalone2cluster --------")
     test_sync_standalone2cluster()
-    green_print("----------- test_listpack_standalone2standalone()--------")
+    green_print("----------- test_listpack_standalone2standalone--------")
     test_listpack_standalone2standalone()
-    green_print("----------- test_listpack_sync_standalone2standalone()--------")
+    green_print("----------- test_listpack_sync_standalone2standalone--------")
     test_listpack_sync_standalone2standalone()
-    green_print("----------- test_listpack_standalone2standalone_bigdata()--------")
+    green_print("----------- test_listpack_standalone2standalone_bigdata--------")
     test_listpack_standalone2standalone_bigdata()
+    green_print("----------- test_function_restore_standalone2standalone--------")
+    test_function_restore_standalone2standalone()
+    green_print("----------- test_function_sync_standalone2standalone--------")
+    test_function_sync_standalone2standalone()
 
     # action_sync_standalone2standalone_bigdata()
     # action_sync_standalone2cluster()
