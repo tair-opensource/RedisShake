@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 import sys
+from packaging import version
 
 import redis
 import redistrib.command
@@ -36,7 +37,7 @@ def get_port():
     cmd = "netstat -ntl |grep -v Active| grep -v Proto|awk '{print $4}'|awk -F: '{print $NF}'"
     proc = os.popen(cmd).read()
     proc_ports = set(proc.split("\n"))
-    port = 20000
+    port = 20007
     while port in proc_ports or port in USED_PORT:
         port += 1
     USED_PORT.append(port)
@@ -346,12 +347,10 @@ def test_listpack_standalone2standalone():
     
     for i in range(100):
         rt = r1.client.hset(name=f"HKEY_LISTPACK{r1.port}_{i}",key=f"HKEY_LISTPACK{r1.port}", value=f"{i}")
-        print(f"add hash {i}, ret = {rt}")
         assert rt == 1
     for i in range(100):
         r1.client.execute_command(f"ZADD ZKEY_LISTPACK{r1.port}_{i} {i} {i}")
         rt = r1.client.zadd(f"ZKEY_LISTPACK{r1.port}_{i}", {f"HKEY_LISTPACK{r1.port}" : i})
-        print(f"add zset {i}, ret = {rt}")
         assert rt == 1
     conf = load_conf(BASE_CONF_PATH)
     conf["id"] = "redis-shakedump"
@@ -455,6 +454,98 @@ def test_listpack_sync_standalone2standalone():
     r3.stop()
     shake_rump.stop()
 
+def test_listpack_standalone2standalone_bigdata():
+    r1 = get_redis()
+    if version.parse(r1.client.info("server")["redis_version"]) < version.parse("7.0.0"):
+            return
+    
+    r2 = get_redis()        #restore
+    r3 = get_redis()        #sync
+    r4 = get_redis()        #rump
+
+    for i in range(100):
+        rt = r1.client.hset(name=f"HKEY_LISTPACK", key = f"HKEY_LISTPCK{i}", value = f"{i}")
+        assert rt == 1
+    assert r1.client.object("encoding","HKEY_LISTPACK").decode() == 'listpack'
+
+    for i in range(100):
+        rt = r1.client.zadd("ZKEY_LISTPACK",  {f"ZKEY_LISTPACK{i}" : i})
+        assert rt == 1
+    assert r1.client.object("encoding", "ZKEY_LISTPACK").decode() == 'listpack'
+
+    conf = load_conf(BASE_CONF_PATH)
+    conf["log.level"] = "debug"
+    conf["id"] = "redis-shakedump"
+    conf["log.file"] = "listpack_dump_bigdata.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("listpack_standalone2standalone_bigdata")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+
+    shake_dump = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "dump"], work_dir)
+    shake_dump.fire()
+    time.sleep(5)
+    shake_dump.stop()
+
+    conf["id"] = "redis-shakerestore"
+    conf["log.file"] = "listpack_restore_bigdata.log"
+    conf["source.rdb.input"] = conf["target.rdb.output"] + ".0"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["big_key_threshold"] = 1
+    save_conf(conf, conf_path)
+    shake_restore = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "restore"], work_dir)
+    shake_restore.fire()
+    #print(shake_restore.readline())
+    time.sleep(5)
+    shake_restore.stop()
+
+    conf["id"] = "redis-shakesync"
+    conf["log.file"] = "listpack_sync_bigdata.log"
+    conf["target.address"] = f"127.0.0.1:{r3.port}"
+    save_conf(conf, conf_path)
+    shake_sync = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "sync"], work_dir)
+    shake_sync.fire()
+    time.sleep(5)
+    ret = requests.get(METRIC_URL)
+    assert ret.json()[0]["FullSyncProgress"] == 100
+    print("sync successful!")
+    shake_sync.stop()
+    
+
+    conf["id"] = "redis-shakerump"
+    conf["log.file"] = "listpack_rump_bigdata.log"
+    conf["target.address"] = f"127.0.0.1:{r4.port}"
+    save_conf(conf,conf_path)
+    shake_rump = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "rump"], work_dir)
+    shake_rump.fire()
+    time.sleep(5)
+
+    source_cnt = int(r1.client.execute_command("dbsize"))
+    target_cnt = int(r2.client.execute_command("dbsize"))
+    target_cnt2 = int(r3.client.execute_command("dbsize"))
+    target_cnt3 = int(r4.client.execute_command("dbsize"))
+
+    print(f"source_cnt: {source_cnt}, restore_target_cnt: {target_cnt}, sync_target_cnt: {target_cnt2}, rump_target_cnt: {target_cnt3}")
+    assert source_cnt == target_cnt == target_cnt2 == target_cnt3 == 2
+
+    assert r2.client.object("encoding","HKEY_LISTPACK").decode() == 'listpack'
+    assert r2.client.object("encoding","ZKEY_LISTPACK").decode() == 'listpack'
+    
+    assert r3.client.object("encoding","HKEY_LISTPACK").decode() == 'listpack'
+    assert r3.client.object("encoding","ZKEY_LISTPACK").decode() == 'listpack'
+    
+    assert r4.client.object("encoding","HKEY_LISTPACK").decode() == 'listpack'
+    assert r4.client.object("encoding","ZKEY_LISTPACK").decode() == 'listpack'
+
+    print("test listpack bigdata successful!")
+    r1.stop()
+    r2.stop()
+    r3.stop()
+    r4.stop()
+    shake_rump.stop()
+    
 if __name__ == '__main__':
     if sys.platform.startswith('linux'):
         SHAKE_EXE = os.path.abspath(SHAKE_PATH_LINUX)
@@ -475,7 +566,10 @@ if __name__ == '__main__':
     test_sync_standalone2cluster()
     green_print("----------- test_listpack_standalone2standalone()--------")
     test_listpack_standalone2standalone()
+    green_print("----------- test_listpack_sync_standalone2standalone()--------")
     test_listpack_sync_standalone2standalone()
+    green_print("----------- test_listpack_standalone2standalone_bigdata()--------")
+    test_listpack_standalone2standalone_bigdata()
 
     # action_sync_standalone2standalone_bigdata()
     # action_sync_standalone2cluster()

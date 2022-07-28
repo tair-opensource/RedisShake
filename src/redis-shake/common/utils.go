@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/alibaba/RedisShake/redis-shake/bigkey"
+	"github.com/alibaba/RedisShake/redis-shake/datastruct/listpack"
 
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 	"github.com/alibaba/RedisShake/pkg/libs/errors"
@@ -764,6 +765,53 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 		}
 	case rdb.RDBTypeStreamListPacks:
 		bigkey.RestoreBigStreamEntry(c, e)
+
+	case rdb.RdbTypeHashListpack:
+		value, err := r.ReadString()
+		if err != nil {
+			log.PanicError(err, "read rdb")
+		}
+		lp := listpack.NewListpack(value)
+		length := int(lp.NumElements())
+		log.Info("restore big hash key ", string(e.Key), " field count ", length/2)
+		for i := 0; i < (length / 2); i++ {
+			field := lp.Next()
+			value := lp.Next()
+			count++
+			log.Debug("field = ", string(field), " value = ", value)
+			if err = c.Send("HSET", e.Key, field, value); err != nil {
+				break
+			}
+			if (count == 100) || (i == int(length/2)-1) {
+				flushAndCheckReply(c, count)
+				count = 0
+			}
+		}
+
+	case rdb.RdbTypeZSetListpack:
+		value, err := r.ReadString()
+		if err != nil {
+			log.PanicError(err, "read rdb")
+		}
+		lp := listpack.NewListpack(value)
+		length := int(lp.NumElements())
+		log.Info("restore big hash key ", string(e.Key), " fileld count ", length/2)
+		for i := 0; i < (length / 2); i++ {
+			member := lp.Next()
+			scoreStr := lp.Next()
+			count++
+			score, err := strconv.ParseFloat(scoreStr, 64)
+			if err != nil {
+				log.PanicError(err, "read rdb")
+			}
+			if err = c.Send("ZADD", e.Key, score, member); err != nil {
+				break
+			}
+			if (count == 100) || (i == int(length/2)-1) {
+				flushAndCheckReply(c, count)
+				count = 0
+			}
+		}
 	default:
 		log.PanicError(fmt.Errorf("can't deal rdb type:%d", t), "restore big key fail")
 	}
