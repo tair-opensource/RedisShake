@@ -884,6 +884,14 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		return
 	}
 
+	if e.Type == rdb.RdbTypeFunction2 {
+		_, err := c.Do("function", "restore", e.Value)
+		if err != nil {
+			log.Panicf(err.Error())
+		}
+		return
+	}
+
 	// TODO, need to judge big key
 	if e.Type != rdb.RDBTypeStreamListPacks &&
 		(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {

@@ -185,6 +185,15 @@ func (l *Loader) NextBinEntry() (*BinEntry, error) {
 				return nil, err
 			}
 			entry.Freq = freq
+		case RdbTypeFunction2: //function
+			val, err := l.readObjectValue(t, l)
+			if err != nil {
+				return nil, err
+			}
+			entry.Type = t
+			entry.Value = createValueDump(t, val)
+			log.Debug("function content = ", string(val))
+			return entry, nil
 		default:
 			var key []byte
 			if l.remainMember == 0 {

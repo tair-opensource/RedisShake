@@ -40,6 +40,8 @@ const (
 	RdbTypeHashListpack    = 16
 	RdbTypeZSetListpack    = 17
 
+	RdbTypeFunction2 = 0xf5
+	RdbTypeFunction  = 0xf6
 	rdbFlagModuleAux = 0xf7
 	rdbFlagIdle      = 0xf8
 	rdbFlagFreq      = 0xf9
@@ -129,7 +131,7 @@ func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 		fallthrough
 	case RdbTypeHashZiplist:
 		fallthrough
-	case RdbTypeString, RdbTypeHashListpack, RdbTypeZSetListpack:
+	case RdbTypeString, RdbTypeHashListpack, RdbTypeZSetListpack, RdbTypeFunction2:
 		lr.lastReadCount, lr.remainMember, lr.totMemberCount = 0, 0, 0
 		_, err := r.ReadString()
 		if err != nil {

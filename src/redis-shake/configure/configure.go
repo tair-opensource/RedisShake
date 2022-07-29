@@ -36,6 +36,7 @@ type Configuration struct {
 	TargetVersion          string   `config:"target.version"`
 	FakeTime               string   `config:"fake_time"`
 	KeyExists              string   `config:"key_exists"`
+	FunctionExists         string   `config:"function_exists"`
 	FilterDBWhitelist      []string `config:"filter.db.whitelist"`
 	FilterDBBlacklist      []string `config:"filter.db.blacklist"`
 	FilterKeyWhitelist     []string `config:"filter.key.whitelist"`
