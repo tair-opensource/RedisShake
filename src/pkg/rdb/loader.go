@@ -192,7 +192,6 @@ func (l *Loader) NextBinEntry() (*BinEntry, error) {
 			}
 			entry.Type = t
 			entry.Value = createValueDump(t, val)
-			log.Debug("function content = ", string(val))
 			return entry, nil
 		default:
 			var key []byte

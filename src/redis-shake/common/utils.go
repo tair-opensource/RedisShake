@@ -778,7 +778,6 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 			field := lp.Next()
 			value := lp.Next()
 			count++
-			log.Debug("field = ", string(field), " value = ", value)
 			if err = c.Send("HSET", e.Key, field, value); err != nil {
 				break
 			}

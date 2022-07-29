@@ -343,6 +343,10 @@ def test_sync_select_db(target_db=-1):
 
 def test_listpack_standalone2standalone():
     r1 = get_redis()
+    ver = r1.client.info("server")["redis_version"]
+    if version.parse(ver) < version.parse("7.0.0"):
+        print(f"redis {ver} does not support hash/zset listpack")
+        return
     r2 = get_redis()
     
     for i in range(100):
@@ -401,16 +405,18 @@ def test_listpack_standalone2standalone():
 
 def test_listpack_sync_standalone2standalone():
     r1 = get_redis()
+    ver = r1.client.info("server")["redis_version"]
+    if version.parse(ver) < version.parse("7.0.0"):
+        print(f"redis {ver} does not support hash/zset listpack")
+        return
     r2 = get_redis()
     r3 = get_redis()   
     for i in range(100):
         rt = r1.client.hset(name=f"HKEY_LISTPACK{r1.port}_{i}",key=f"HKEY_LISTPACK{r1.port}", value=f"{i}")
-        print(f"add hash {i}, ret = {rt}")
         assert rt == 1
     for i in range(100):
         r1.client.execute_command(f"ZADD ZKEY_LISTPACK{r1.port}_{i} {i} {i}")
         rt = r1.client.zadd(f"ZKEY_LISTPACK{r1.port}_{i}", {f"HKEY_LISTPACK{r1.port}" : i})
-        print(f"add zset {i}, ret = {rt}")
         assert rt == 1
     conf = load_conf(BASE_CONF_PATH)
     conf["id"] = "redis-shakeasync"
@@ -456,8 +462,10 @@ def test_listpack_sync_standalone2standalone():
 
 def test_listpack_standalone2standalone_bigdata():
     r1 = get_redis()
-    if version.parse(r1.client.info("server")["redis_version"]) < version.parse("7.0.0"):
-            return
+    ver = r1.client.info("server")["redis_version"]
+    if version.parse(ver) < version.parse("7.0.0"):
+        print(f"redis {ver} does not support hash/zset listpack")
+        return
     
     r2 = get_redis()        #restore
     r3 = get_redis()        #sync
@@ -548,8 +556,10 @@ def test_listpack_standalone2standalone_bigdata():
 
 def test_function_restore_standalone2standalone():
     r1 = get_redis()
-    if version.parse(r1.client.info("server")["redis_version"]) < version.parse("7.0.0"):
-            return
+    ver = r1.client.info("server")["redis_version"]
+    if version.parse(ver) < version.parse("7.0.0"):
+        print(f"redis {ver} does not support function")
+        return
     r2 = get_redis()
     r1.client.execute_command('FUNCTION', 'LOAD', "#!lua name=mylib\nredis.register_function('myfunc1',function() return 'hello world' end)")
     r1.client.execute_command("FUNCTION", "LOAD", "#!lua name=mylib2\nredis.register_function('myfunc2',function() return redis.call('hset', 'funchkey', 'k1','v1') end)")
@@ -597,8 +607,10 @@ def test_function_restore_standalone2standalone():
 
 def test_function_sync_standalone2standalone():
     r1 = get_redis()
-    if version.parse(r1.client.info("server")["redis_version"]) < version.parse("7.0.0"):
-            return
+    ver = r1.client.info("server")["redis_version"]
+    if version.parse(ver) < version.parse("7.0.0"):
+        print(f"redis {ver} does not support function")
+        return
     r2 = get_redis()
     r3 = get_redis()
 

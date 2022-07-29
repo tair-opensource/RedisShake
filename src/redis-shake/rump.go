@@ -328,16 +328,18 @@ func (dre *dbRumperExecutor) fetcher() {
 	log.Infof("dbRumper[%v] executor[%v] fetch db list: %v", dre.rumperId, dre.executorId, dre.dbList)
 
 	//dump function
-	functions, err := dre.sourceClient.Do("FUNCTION", "DUMP")
-	if err != nil {
-		log.Panic(err)
-	}
-	function_dump, err := redis.String(functions, err)
-	if err != nil && err != redis.ErrNil {
-		log.Panicf("do function dump with failed[%v], reply[%v]", dre.rumperId, dre.executorId)
-	}
-	dre.keyChan <- &KeyNode{
-		value: function_dump,
+	if functions, err := dre.sourceClient.Do("FUNCTION", "DUMP"); err != nil {
+		if err.Error() != "ERR unknown command 'FUNCTION'" {
+			log.Panic(err)
+		}
+	} else {
+		function_dump, err := redis.String(functions, err)
+		if err != nil && err != redis.ErrNil {
+			log.Panicf("do function dump with failed[%v], reply[%v]", dre.rumperId, dre.executorId)
+		}
+		dre.keyChan <- &KeyNode{
+			value: function_dump,
+		}
 	}
 
 	// iterate all db nodes
@@ -388,7 +390,6 @@ func (dre *dbRumperExecutor) writer() {
 
 		//function restore
 		if ele.key == "" {
-			log.Debug("reach function restore")
 			batch = dre.writeSend(batch, &count, &wBytes)
 			if conf.Options.FunctionExists == "flush" {
 				err = dre.targetClient.Send("FUNCTION", "RESTORE", ele.value, "FLUSH")
