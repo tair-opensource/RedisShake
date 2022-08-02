@@ -3,6 +3,7 @@ package writer
 import (
 	"bytes"
 	"github.com/alibaba/RedisShake/internal/client"
+	"github.com/alibaba/RedisShake/internal/client/proto"
 	"github.com/alibaba/RedisShake/internal/config"
 	"github.com/alibaba/RedisShake/internal/entry"
 	"github.com/alibaba/RedisShake/internal/log"
@@ -60,7 +61,9 @@ func (w *redisWriter) flushInterval() {
 		select {
 		case e := <-w.chWaitReply:
 			reply, err := w.client.Receive()
-			if err != nil {
+			if err == proto.Nil {
+				log.Warnf("redisWriter receive nil reply. argv=%v", e.Argv)
+			} else if err != nil {
 				if err.Error() == "BUSYKEY Target key name already exists." {
 					if config.Config.Advanced.RDBRestoreCommandBehavior == "skip" {
 						log.Warnf("redisWriter received BUSYKEY reply. argv=%v", e.Argv)
