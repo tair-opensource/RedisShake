@@ -44,11 +44,11 @@ func (w *redisWriter) Write(e *entry.Entry) {
 	client.EncodeArgv(e.Argv, w.cmdBuffer)
 	e.EncodedSize = uint64(w.cmdBuffer.Len())
 	for e.EncodedSize+atomic.LoadUint64(&w.UpdateUnansweredBytesCount) > config.Config.Advanced.TargetRedisClientMaxQuerybufLen {
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(1 * time.Nanosecond)
 	}
+	w.chWaitReply <- e
 	atomic.AddUint64(&w.UpdateUnansweredBytesCount, e.EncodedSize)
 	w.client.SendBytes(w.cmdBuffer.Bytes())
-	w.chWaitReply <- e
 }
 
 func (w *redisWriter) switchDbTo(newDbId int) {
