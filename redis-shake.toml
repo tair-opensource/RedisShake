@@ -19,7 +19,7 @@ tls = false
 dir = "data"
 
 # runtime.GOMAXPROCS, 0 means use runtime.NumCPU() cpu cores
-ncpu = 3
+ncpu = 4
 
 # pprof port, 0 means disable
 pprof_port = 0
