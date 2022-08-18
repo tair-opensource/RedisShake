@@ -3,6 +3,7 @@
 [![CI](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml/badge.svg?branch=v3)](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml)
 
 - [中文文档](./README_zh.md)
+- [快速开始](./docs/quick_start.md)
 
 redis-shake is a tool for Redis data migration and data filtering.
 
