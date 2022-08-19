@@ -451,21 +451,15 @@ def test_listpack_sync_standalone2standalone():
     print(f"source_cnt: {source_cnt}, sync_target_cnt: {target_cnt}, rump_target_cnt: {target_cnt2}")
     assert source_cnt == target_cnt == target_cnt2 == 200
 
-    r1.client.execute_command("FLUSHALL")
-    r2.client.execute_command("FLUSHALL")
-    r3.client.execute_command("FLUSHALL")
-
     r1.stop()
     r2.stop()
     r3.stop()
     shake_rump.stop()
 
-def test_listpack_standalone2standalone_bigdata():
+def test_standalone2standalone_bigdata():
     r1 = get_redis()
-    ver = r1.client.info("server")["redis_version"]
-    if version.parse(ver) < version.parse("7.0.0"):
-        print(f"redis {ver} does not support hash/zset listpack")
-        return
+    if version.parse(r1.client.info("server")["redis_version"]) < version.parse("7.0.0"):
+            return
     
     r2 = get_redis()        #restore
     r3 = get_redis()        #sync
@@ -481,14 +475,17 @@ def test_listpack_standalone2standalone_bigdata():
         assert rt == 1
     assert r1.client.object("encoding", "ZKEY_LISTPACK").decode() == 'listpack'
 
+    r1.client.execute_command('FUNCTION', 'LOAD', "#!lua name=mylib\nredis.register_function('myfunc1',function() return 'hello world' end)")
+    r1.client.execute_command("FUNCTION", "LOAD", "#!lua name=mylib2\nredis.register_function('myfunc2',function() return redis.call('hset', 'funchkey', 'k1','v1') end)")
+
     conf = load_conf(BASE_CONF_PATH)
     conf["log.level"] = "debug"
     conf["id"] = "redis-shakedump"
-    conf["log.file"] = "listpack_dump_bigdata.log"
+    conf["log.file"] = "dump_bigdata.log"
     conf["source.address"] = f"127.0.0.1:{r1.port}"
     conf["source.password_raw"] = ""
     conf["target.password_raw"] = ""
-    work_dir = get_work_dir("listpack_standalone2standalone_bigdata")
+    work_dir = get_work_dir("standalone2standalone_bigdata")
     conf_path = f"{work_dir}/redis-shake.conf"
     save_conf(conf, conf_path)
 
@@ -498,19 +495,18 @@ def test_listpack_standalone2standalone_bigdata():
     shake_dump.stop()
 
     conf["id"] = "redis-shakerestore"
-    conf["log.file"] = "listpack_restore_bigdata.log"
+    conf["log.file"] = "restore_bigdata.log"
     conf["source.rdb.input"] = conf["target.rdb.output"] + ".0"
     conf["target.address"] = f"127.0.0.1:{r2.port}"
     conf["big_key_threshold"] = 1
     save_conf(conf, conf_path)
     shake_restore = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "restore"], work_dir)
     shake_restore.fire()
-    #print(shake_restore.readline())
     time.sleep(5)
     shake_restore.stop()
 
     conf["id"] = "redis-shakesync"
-    conf["log.file"] = "listpack_sync_bigdata.log"
+    conf["log.file"] = "sync_bigdata.log"
     conf["target.address"] = f"127.0.0.1:{r3.port}"
     save_conf(conf, conf_path)
     shake_sync = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "sync"], work_dir)
@@ -523,7 +519,7 @@ def test_listpack_standalone2standalone_bigdata():
     
 
     conf["id"] = "redis-shakerump"
-    conf["log.file"] = "listpack_rump_bigdata.log"
+    conf["log.file"] = "rump_bigdata.log"
     conf["target.address"] = f"127.0.0.1:{r4.port}"
     save_conf(conf,conf_path)
     shake_rump = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "rump"], work_dir)
@@ -547,7 +543,21 @@ def test_listpack_standalone2standalone_bigdata():
     assert r4.client.object("encoding","HKEY_LISTPACK").decode() == 'listpack'
     assert r4.client.object("encoding","ZKEY_LISTPACK").decode() == 'listpack'
 
-    print("test listpack bigdata successful!")
+    ret1 = r2.client.execute_command("fcall", "myfunc1", 0)
+    print(ret1)
+
+    r3.client.execute_command("fcall", "myfunc2", 0)
+    ret2 = r3.client.execute_command("hget", "funchkey", "k1")
+    print(ret2)
+
+    assert(ret1.decode() == 'hello world')
+    print('function sync successful!')
+    
+    assert(ret2.decode() == 'v1')
+    print('function rump successful!')
+
+    print('big data test successful!')
+
     r1.stop()
     r2.stop()
     r3.stop()
@@ -597,10 +607,6 @@ def test_function_restore_standalone2standalone():
     assert(ret2.decode() == 'v1')
     print('function restore successful!')
 
-    r1.client.execute_command("function", "delete", "mylib")
-    r1.client.execute_command("function", "delete", "mylib2")
-    r2.client.execute_command("function", "delete", "mylib")
-    r2.client.execute_command("function", "delete", "mylib2")
     r1.stop()
     r2.stop()
     shake_restore.stop()
@@ -657,14 +663,6 @@ def test_function_sync_standalone2standalone():
     assert(ret2.decode() == 'v1')
     print('function rump successful!')
 
-    r1.client.execute_command("function", "delete", "mylib")
-    r1.client.execute_command("function", "delete", "mylib2")
-    r2.client.execute_command("function", "delete", "mylib")
-    r2.client.execute_command("function", "delete", "mylib2")
-    r3.client.execute_command("function", "delete", "mylib")
-    r3.client.execute_command("function", "delete", "mylib2")
-    r3.client.execute_command("flushall")
-
     r1.stop()
     r2.stop()
     r3.stop()
@@ -692,8 +690,8 @@ if __name__ == '__main__':
     test_listpack_standalone2standalone()
     green_print("----------- test_listpack_sync_standalone2standalone--------")
     test_listpack_sync_standalone2standalone()
-    green_print("----------- test_listpack_standalone2standalone_bigdata--------")
-    test_listpack_standalone2standalone_bigdata()
+    green_print("----------- test_standalone2standalone_bigdata--------")
+    test_standalone2standalone_bigdata()
     green_print("----------- test_function_restore_standalone2standalone--------")
     test_function_restore_standalone2standalone()
     green_print("----------- test_function_sync_standalone2standalone--------")

@@ -388,6 +388,21 @@ func (dre *dbRumperExecutor) writer() {
 			ele.db = tdb
 		}
 
+		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
+			len(ele.value))
+		if uint64(len(ele.value)) >= conf.Options.BigKeyThreshold {
+			log.Infof("dbRumper[%v] executor[%v] restore big key[%v] with length[%v], pttl[%v], db[%v]",
+				dre.rumperId, dre.executorId, ele.key, len(ele.value), ele.pttl, ele.db)
+			// flush previous cache
+			batch = dre.writeSend(batch, &count, &wBytes)
+
+			// handle big key
+			utils.RestoreBigkey(dre.targetBigKeyClient, ele.key, ele.value, ele.pttl, ele.db, &preBigKeyDb)
+			// all the reply has been handled in RestoreBigkey
+			// dre.resultChan <- ele
+			continue
+		}
+
 		//function restore
 		if ele.key == "" {
 			batch = dre.writeSend(batch, &count, &wBytes)
@@ -403,21 +418,6 @@ func (dre *dbRumperExecutor) writer() {
 			}
 
 			batch = append(batch, ele)
-			continue
-		}
-
-		log.Debugf("dbRumper[%v] executor[%v] restore[%s], length[%v]", dre.rumperId, dre.executorId, ele.key,
-			len(ele.value))
-		if uint64(len(ele.value)) >= conf.Options.BigKeyThreshold {
-			log.Infof("dbRumper[%v] executor[%v] restore big key[%v] with length[%v], pttl[%v], db[%v]",
-				dre.rumperId, dre.executorId, ele.key, len(ele.value), ele.pttl, ele.db)
-			// flush previous cache
-			batch = dre.writeSend(batch, &count, &wBytes)
-
-			// handle big key
-			utils.RestoreBigkey(dre.targetBigKeyClient, ele.key, ele.value, ele.pttl, ele.db, &preBigKeyDb)
-			// all the reply has been handled in RestoreBigkey
-			// dre.resultChan <- ele
 			continue
 		}
 

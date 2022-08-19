@@ -811,6 +811,37 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 				count = 0
 			}
 		}
+
+	case rdb.RdbTypeFunction2:
+		if conf.Options.FunctionExists == "flush" {
+			if _, err := c.Do("FUNCTION", "FLUSH"); err != nil {
+				log.PanicError(err, "function flush error")
+			}
+		}
+		log.Info("restore big function")
+		for {
+			value, err := r.ReadString()
+			if err != nil {
+				log.PanicError(err, "read rdb")
+			}
+			count++
+			if conf.Options.FunctionExists == "replace" {
+				if err = c.Send("FUNCTION", "LOAD", "REPLACE", value); err != nil {
+					break
+				}
+			} else {
+				if err = c.Send("FUNCTION", "LOAD", value); err != nil {
+					break
+				}
+			}
+			t, err := r.ReadByte()
+			if (t != rdb.RdbTypeFunction2) || err != nil {
+				flushAndCheckReply(c, count)
+				log.Info("complete restore big function, count = ", count)
+				count = 0
+				break
+			}
+		}
 	default:
 		log.PanicError(fmt.Errorf("can't deal rdb type:%d", t), "restore big key fail")
 	}
@@ -883,14 +914,6 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 		return
 	}
 
-	if e.Type == rdb.RdbTypeFunction2 {
-		_, err := c.Do("function", "restore", e.Value)
-		if err != nil {
-			log.Panicf(err.Error())
-		}
-		return
-	}
-
 	// TODO, need to judge big key
 	if e.Type != rdb.RDBTypeStreamListPacks &&
 		(uint64(len(e.Value)) > conf.Options.BigKeyThreshold || e.RealMemberCount != 0) {
@@ -915,6 +938,21 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 			if err != nil && r != 1 {
 				log.Panicf("expire %s error (%v)", string(e.Key), err)
 			}
+		}
+		return
+	}
+
+	if e.Type == rdb.RdbTypeFunction2 {
+		var err error
+		if conf.Options.FunctionExists == "flush" {
+			_, err = c.Do("FUNCTION", "RESTORE", e.Value, "FLUSH")
+		} else if conf.Options.FunctionExists == "replace" {
+			_, err = c.Do("FUNCTION", "RESTORE", e.Value, "REPLACE")
+		} else {
+			_, err = c.Do("FUNCTION", "RESTORE", e.Value)
+		}
+		if err != nil {
+			log.Panicf(err.Error())
 		}
 		return
 	}
