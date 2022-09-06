@@ -19,6 +19,7 @@ jobs:
       run: |
        make 
        cp redis/src/redis-server bin/
+       cp redis/redis.conf bin/        
     - name: test
       run: |
         cd test
@@ -40,6 +41,30 @@ jobs:
       run: |
        make 
        cp redis/src/redis-server bin/
+       cp redis/redis.conf bin/
+    - name: test
+      run: |
+        cd test
+        pip3 install -r requirements.txt
+        python3 main.py
+  
+  test-ubuntu-with-redis-7:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: clone and make redis
+      run: |
+       sudo apt-get install git
+       git clone https://github.com/redis/redis
+       cd redis
+       git checkout 7.0
+       make REDIS_CFLAGS='-Werror' BUILD_TLS=no -j
+    - name: make RedisShake
+      run: |
+       make 
+       cp redis/src/redis-server bin/
+       cp redis/redis.conf bin/
+       echo "enable-debug-command local">>bin/redis.conf
     - name: test
       run: |
         cd test

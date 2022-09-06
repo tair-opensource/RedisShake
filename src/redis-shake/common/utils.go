@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/alibaba/RedisShake/redis-shake/bigkey"
+	"github.com/alibaba/RedisShake/redis-shake/datastruct/listpack"
 
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 	"github.com/alibaba/RedisShake/pkg/libs/errors"
@@ -764,6 +765,83 @@ func restoreBigRdbEntry(c redigo.Conn, e *rdb.BinEntry) error {
 		}
 	case rdb.RDBTypeStreamListPacks:
 		bigkey.RestoreBigStreamEntry(c, e)
+
+	case rdb.RdbTypeHashListpack:
+		value, err := r.ReadString()
+		if err != nil {
+			log.PanicError(err, "read rdb")
+		}
+		lp := listpack.NewListpack(value)
+		length := int(lp.NumElements())
+		log.Info("restore big hash key ", string(e.Key), " field count ", length/2)
+		for i := 0; i < (length / 2); i++ {
+			field := lp.Next()
+			value := lp.Next()
+			count++
+			if err = c.Send("HSET", e.Key, field, value); err != nil {
+				break
+			}
+			if (count == 100) || (i == int(length/2)-1) {
+				flushAndCheckReply(c, count)
+				count = 0
+			}
+		}
+
+	case rdb.RdbTypeZSetListpack:
+		value, err := r.ReadString()
+		if err != nil {
+			log.PanicError(err, "read rdb")
+		}
+		lp := listpack.NewListpack(value)
+		length := int(lp.NumElements())
+		log.Info("restore big hash key ", string(e.Key), " fileld count ", length/2)
+		for i := 0; i < (length / 2); i++ {
+			member := lp.Next()
+			scoreStr := lp.Next()
+			count++
+			score, err := strconv.ParseFloat(scoreStr, 64)
+			if err != nil {
+				log.PanicError(err, "read rdb")
+			}
+			if err = c.Send("ZADD", e.Key, score, member); err != nil {
+				break
+			}
+			if (count == 100) || (i == int(length/2)-1) {
+				flushAndCheckReply(c, count)
+				count = 0
+			}
+		}
+
+	case rdb.RdbTypeFunction2:
+		if conf.Options.FunctionExists == "flush" {
+			if _, err := c.Do("FUNCTION", "FLUSH"); err != nil {
+				log.PanicError(err, "function flush error")
+			}
+		}
+		log.Info("restore big function")
+		for {
+			value, err := r.ReadString()
+			if err != nil {
+				log.PanicError(err, "read rdb")
+			}
+			count++
+			if conf.Options.FunctionExists == "replace" {
+				if err = c.Send("FUNCTION", "LOAD", "REPLACE", value); err != nil {
+					break
+				}
+			} else {
+				if err = c.Send("FUNCTION", "LOAD", value); err != nil {
+					break
+				}
+			}
+			t, err := r.ReadByte()
+			if (t != rdb.RdbTypeFunction2) || err != nil {
+				flushAndCheckReply(c, count)
+				log.Info("complete restore big function, count = ", count)
+				count = 0
+				break
+			}
+		}
 	default:
 		log.PanicError(fmt.Errorf("can't deal rdb type:%d", t), "restore big key fail")
 	}
@@ -860,6 +938,21 @@ func RestoreRdbEntry(c redigo.Conn, e *rdb.BinEntry) {
 			if err != nil && r != 1 {
 				log.Panicf("expire %s error (%v)", string(e.Key), err)
 			}
+		}
+		return
+	}
+
+	if e.Type == rdb.RdbTypeFunction2 {
+		var err error
+		if conf.Options.FunctionExists == "flush" {
+			_, err = c.Do("FUNCTION", "RESTORE", e.Value, "FLUSH")
+		} else if conf.Options.FunctionExists == "replace" {
+			_, err = c.Do("FUNCTION", "RESTORE", e.Value, "REPLACE")
+		} else {
+			_, err = c.Do("FUNCTION", "RESTORE", e.Value)
+		}
+		if err != nil {
+			log.Panicf(err.Error())
 		}
 		return
 	}

@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 import sys
+from packaging import version
 
 import redis
 import redistrib.command
@@ -25,6 +26,7 @@ BASE_CONF_PATH = "../conf/redis-shake.conf"
 SHAKE_PATH_LINUX = "../bin/redis-shake.linux"
 SHAKE_PATH_MACOS = "../bin/redis-shake.darwin"
 REDIS_PATH = "../bin/redis-server"
+CONF_PATH = "../bin/redis.conf"
 SHAKE_EXE = ""
 REDIS_EXE = ""
 USED_PORT = []
@@ -77,11 +79,12 @@ def save_conf(conf, file_path):
 
 class Redis:
     def __init__(self, port, work_dir, cluster_enable=False):
+        CONF = os.path.abspath(CONF_PATH)
         if cluster_enable:
             self.server = launcher.Launcher(
-                [REDIS_EXE, "--logfile", "redis.log", "--port", str(port), "--cluster-enabled yes"], work_dir)
+                [REDIS_EXE, CONF, "--logfile", "redis.log", "--port", str(port), "--cluster-enabled yes"], work_dir)
         else:
-            self.server = launcher.Launcher([REDIS_EXE, "--logfile", "redis.log", "--port", str(port)], work_dir)
+            self.server = launcher.Launcher([REDIS_EXE, CONF, "--logfile", "redis.log", "--port", str(port)], work_dir)
         self.server.fire()
         self.client = None
         self.port = port
@@ -338,6 +341,332 @@ def test_sync_select_db(target_db=-1):
     r2.stop()
     shake.stop()
 
+def test_listpack_standalone2standalone():
+    r1 = get_redis()
+    ver = r1.client.info("server")["redis_version"]
+    if version.parse(ver) < version.parse("7.0.0"):
+        print(f"redis {ver} does not support hash/zset listpack")
+        return
+    r2 = get_redis()
+    
+    for i in range(100):
+        rt = r1.client.hset(name=f"HKEY_LISTPACK{r1.port}_{i}",key=f"HKEY_LISTPACK{r1.port}", value=f"{i}")
+        assert rt == 1
+    for i in range(100):
+        r1.client.execute_command(f"ZADD ZKEY_LISTPACK{r1.port}_{i} {i} {i}")
+        rt = r1.client.zadd(f"ZKEY_LISTPACK{r1.port}_{i}", {f"HKEY_LISTPACK{r1.port}" : i})
+        assert rt == 1
+    conf = load_conf(BASE_CONF_PATH)
+    conf["id"] = "redis-shakedump"
+    conf["metric.print_log"] = "true"
+    conf["log.file"] = "listpack_dump.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("listpack_standalone2standalone")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+    shake_dump = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "dump"], work_dir)
+    shake_dump.fire()
+    time.sleep(5)
+    shake_dump.stop()
+    
+    conf["id"] = "redis-shakedecode"
+    conf["log.file"] = "listpack_decode.log"
+    conf["source.rdb.input"] = conf["target.rdb.output"] + ".0"
+    conf["target.rdb.output"] = f"local{r1.port}.json"
+    
+    save_conf(conf, conf_path)
+    shake_decode = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "decode"], work_dir)
+    shake_decode.fire()
+    print(shake_decode.readline())
+    
+    
+    conf["id"] = "redis-shakerestore"
+    conf["log.file"] = "listpack_restore.log"
+    save_conf(conf, conf_path)
+    shake_restore = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "restore"], work_dir)
+    shake_restore.fire()
+    
+    time.sleep(5)
+
+    source_cnt = int(r1.client.execute_command("dbsize"))
+    target_cnt = int(r2.client.execute_command("dbsize"))
+    print(f"source_cnt: {source_cnt}, target_cnt: {target_cnt}")
+    assert source_cnt == target_cnt  == 200
+
+    r1.client.execute_command("FLUSHALL")
+    r2.client.execute_command("FLUSHALL")
+    r1.stop()
+    r2.stop()
+    shake_decode.stop()
+    shake_restore.stop()
+
+def test_listpack_sync_standalone2standalone():
+    r1 = get_redis()
+    ver = r1.client.info("server")["redis_version"]
+    if version.parse(ver) < version.parse("7.0.0"):
+        print(f"redis {ver} does not support hash/zset listpack")
+        return
+    r2 = get_redis()
+    r3 = get_redis()   
+    for i in range(100):
+        rt = r1.client.hset(name=f"HKEY_LISTPACK{r1.port}_{i}",key=f"HKEY_LISTPACK{r1.port}", value=f"{i}")
+        assert rt == 1
+    for i in range(100):
+        r1.client.execute_command(f"ZADD ZKEY_LISTPACK{r1.port}_{i} {i} {i}")
+        rt = r1.client.zadd(f"ZKEY_LISTPACK{r1.port}_{i}", {f"HKEY_LISTPACK{r1.port}" : i})
+        assert rt == 1
+    conf = load_conf(BASE_CONF_PATH)
+    conf["id"] = "redis-shakeasync"
+    conf["metric.print_log"] = "true"
+    conf["log.file"] = "listpack_sync.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("listpack_sync_standalone2standalone")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+    shake_sync = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "sync"], work_dir)
+    shake_sync.fire()
+    time.sleep(3)
+    ret = requests.get(METRIC_URL)
+    assert ret.json()[0]["FullSyncProgress"] == 100
+    print("sync successful!")
+    shake_sync.stop()
+
+    conf["id"] = "redis-shakerump"
+    conf["log.file"] = "listpack_rump.log"
+    conf["target.address"] = f"127.0.0.1:{r3.port}"
+    save_conf(conf, conf_path)
+    shake_rump = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "rump"], work_dir)
+    shake_rump.fire()
+    time.sleep(3)
+
+    source_cnt = int(r1.client.execute_command("dbsize"))
+    target_cnt = int(r2.client.execute_command("dbsize"))
+    target_cnt2 = int(r3.client.execute_command("dbsize"))
+    print(f"source_cnt: {source_cnt}, sync_target_cnt: {target_cnt}, rump_target_cnt: {target_cnt2}")
+    assert source_cnt == target_cnt == target_cnt2 == 200
+
+    r1.stop()
+    r2.stop()
+    r3.stop()
+    shake_rump.stop()
+
+def test_standalone2standalone_bigdata():
+    r1 = get_redis()
+    if version.parse(r1.client.info("server")["redis_version"]) < version.parse("7.0.0"):
+            return
+    
+    r2 = get_redis()        #restore
+    r3 = get_redis()        #sync
+    r4 = get_redis()        #rump
+
+    for i in range(100):
+        rt = r1.client.hset(name=f"HKEY_LISTPACK", key = f"HKEY_LISTPCK{i}", value = f"{i}")
+        assert rt == 1
+    assert r1.client.object("encoding","HKEY_LISTPACK").decode() == 'listpack'
+
+    for i in range(100):
+        rt = r1.client.zadd("ZKEY_LISTPACK",  {f"ZKEY_LISTPACK{i}" : i})
+        assert rt == 1
+    assert r1.client.object("encoding", "ZKEY_LISTPACK").decode() == 'listpack'
+
+    r1.client.execute_command('FUNCTION', 'LOAD', "#!lua name=mylib\nredis.register_function('myfunc1',function() return 'hello world' end)")
+    r1.client.execute_command("FUNCTION", "LOAD", "#!lua name=mylib2\nredis.register_function('myfunc2',function() return redis.call('hset', 'funchkey', 'k1','v1') end)")
+
+    conf = load_conf(BASE_CONF_PATH)
+    conf["log.level"] = "debug"
+    conf["id"] = "redis-shakedump"
+    conf["log.file"] = "dump_bigdata.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("standalone2standalone_bigdata")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+
+    shake_dump = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "dump"], work_dir)
+    shake_dump.fire()
+    time.sleep(5)
+    shake_dump.stop()
+
+    conf["id"] = "redis-shakerestore"
+    conf["log.file"] = "restore_bigdata.log"
+    conf["source.rdb.input"] = conf["target.rdb.output"] + ".0"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["big_key_threshold"] = 1
+    save_conf(conf, conf_path)
+    shake_restore = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "restore"], work_dir)
+    shake_restore.fire()
+    time.sleep(5)
+    shake_restore.stop()
+
+    conf["id"] = "redis-shakesync"
+    conf["log.file"] = "sync_bigdata.log"
+    conf["target.address"] = f"127.0.0.1:{r3.port}"
+    save_conf(conf, conf_path)
+    shake_sync = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "sync"], work_dir)
+    shake_sync.fire()
+    time.sleep(5)
+    ret = requests.get(METRIC_URL)
+    assert ret.json()[0]["FullSyncProgress"] == 100
+    print("sync successful!")
+    shake_sync.stop()
+    
+
+    conf["id"] = "redis-shakerump"
+    conf["log.file"] = "rump_bigdata.log"
+    conf["target.address"] = f"127.0.0.1:{r4.port}"
+    save_conf(conf,conf_path)
+    shake_rump = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "rump"], work_dir)
+    shake_rump.fire()
+    time.sleep(5)
+
+    source_cnt = int(r1.client.execute_command("dbsize"))
+    target_cnt = int(r2.client.execute_command("dbsize"))
+    target_cnt2 = int(r3.client.execute_command("dbsize"))
+    target_cnt3 = int(r4.client.execute_command("dbsize"))
+
+    print(f"source_cnt: {source_cnt}, restore_target_cnt: {target_cnt}, sync_target_cnt: {target_cnt2}, rump_target_cnt: {target_cnt3}")
+    assert source_cnt == target_cnt == target_cnt2 == target_cnt3 == 2
+
+    assert r2.client.object("encoding","HKEY_LISTPACK").decode() == 'listpack'
+    assert r2.client.object("encoding","ZKEY_LISTPACK").decode() == 'listpack'
+    
+    assert r3.client.object("encoding","HKEY_LISTPACK").decode() == 'listpack'
+    assert r3.client.object("encoding","ZKEY_LISTPACK").decode() == 'listpack'
+    
+    assert r4.client.object("encoding","HKEY_LISTPACK").decode() == 'listpack'
+    assert r4.client.object("encoding","ZKEY_LISTPACK").decode() == 'listpack'
+
+    ret1 = r2.client.execute_command("fcall", "myfunc1", 0)
+    print(ret1)
+
+    r3.client.execute_command("fcall", "myfunc2", 0)
+    ret2 = r3.client.execute_command("hget", "funchkey", "k1")
+    print(ret2)
+
+    assert(ret1.decode() == 'hello world')
+    print('function sync successful!')
+    
+    assert(ret2.decode() == 'v1')
+    print('function rump successful!')
+
+    print('big data test successful!')
+
+    r1.stop()
+    r2.stop()
+    r3.stop()
+    r4.stop()
+    shake_rump.stop()
+
+def test_function_restore_standalone2standalone():
+    r1 = get_redis()
+    ver = r1.client.info("server")["redis_version"]
+    if version.parse(ver) < version.parse("7.0.0"):
+        print(f"redis {ver} does not support function")
+        return
+    r2 = get_redis()
+    r1.client.execute_command('FUNCTION', 'LOAD', "#!lua name=mylib\nredis.register_function('myfunc1',function() return 'hello world' end)")
+    r1.client.execute_command("FUNCTION", "LOAD", "#!lua name=mylib2\nredis.register_function('myfunc2',function() return redis.call('hset', 'funchkey', 'k1','v1') end)")
+    conf = load_conf(BASE_CONF_PATH)
+    conf["id"] = "redis-shakefunctionrestore"
+    conf["log.file"] = "function_dump.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("function_standalone2standalone_restore")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+    shake_dump = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "dump"], work_dir)
+    shake_dump.fire()
+    time.sleep(5)
+
+    shake_dump.stop()
+    conf["id"] = "redis-shakerestore"
+    conf["source.rdb.input"] = conf["target.rdb.output"] + ".0"
+    conf["log.file"] = "function_restore.log"
+    save_conf(conf, conf_path)
+    shake_restore = launcher.Launcher([SHAKE_EXE, "-conf", "redis-shake.conf", "-type", "restore"], work_dir)
+    shake_restore.fire()
+    time.sleep(5)
+
+    ret1 = r2.client.execute_command("fcall", "myfunc1", 0)
+    print(ret1)
+
+    r2.client.execute_command("fcall", "myfunc2", 0)
+    ret2 = r2.client.execute_command("hget", "funchkey", "k1")
+    print(ret2)
+
+    assert(ret1.decode() == 'hello world') 
+    assert(ret2.decode() == 'v1')
+    print('function restore successful!')
+
+    r1.stop()
+    r2.stop()
+    shake_restore.stop()
+
+def test_function_sync_standalone2standalone():
+    r1 = get_redis()
+    ver = r1.client.info("server")["redis_version"]
+    if version.parse(ver) < version.parse("7.0.0"):
+        print(f"redis {ver} does not support function")
+        return
+    r2 = get_redis()
+    r3 = get_redis()
+
+    r1.client.execute_command('FUNCTION', 'LOAD', "#!lua name=mylib\nredis.register_function('myfunc1',function() return 'hello world' end)")
+    r1.client.execute_command("FUNCTION", "LOAD", "#!lua name=mylib2\nredis.register_function('myfunc2',function() return redis.call('hset', 'funchkey', 'k1','v1') end)")
+    conf = load_conf(BASE_CONF_PATH)
+    conf["id"] = "redis-shakefunctionsync"
+    conf["metric.print_log"] = "true"
+    conf["log.file"] = "function_standalone2standalone_sync.log"
+    conf["source.address"] = f"127.0.0.1:{r1.port}"
+    conf["target.address"] = f"127.0.0.1:{r2.port}"
+    conf["source.password_raw"] = ""
+    conf["target.password_raw"] = ""
+    work_dir = get_work_dir("function_standalone2standalone_sync")
+    conf_path = f"{work_dir}/redis-shake.conf"
+    save_conf(conf, conf_path)
+
+    shake_sync = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "sync"], work_dir)
+    shake_sync.fire()
+    time.sleep(3)
+    ret = requests.get(METRIC_URL)
+    assert ret.json()[0]["FullSyncProgress"] == 100
+    print("sync successful!")
+    shake_sync.stop()
+    
+    conf["id"] = "redis-shakefunctionrump"
+    conf["target.address"] = f"127.0.0.1:{r3.port}"
+    conf["log.file"] = "function_standalone2standalone_rump.log"
+    save_conf(conf, conf_path)
+    shake_rump = launcher.Launcher([SHAKE_EXE, "--conf", "redis-shake.conf", "--type", "rump"], work_dir)
+    shake_rump.fire()
+    time.sleep(10)
+
+    ret1 = r2.client.execute_command("fcall", "myfunc1", 0)
+    print(ret1)
+
+    r3.client.execute_command("fcall", "myfunc2", 0)
+    ret2 = r3.client.execute_command("hget", "funchkey", "k1")
+    print(ret2)
+
+    assert(ret1.decode() == 'hello world')
+    print('function sync successful!')
+    
+    assert(ret2.decode() == 'v1')
+    print('function rump successful!')
+
+    r1.stop()
+    r2.stop()
+    r3.stop()
+    shake_rump.stop()
 
 if __name__ == '__main__':
     if sys.platform.startswith('linux'):
@@ -357,6 +686,16 @@ if __name__ == '__main__':
     test_sync_cluster2cluster()
     green_print("----------- test_sync_standalone2cluster --------")
     test_sync_standalone2cluster()
+    green_print("----------- test_listpack_standalone2standalone--------")
+    test_listpack_standalone2standalone()
+    green_print("----------- test_listpack_sync_standalone2standalone--------")
+    test_listpack_sync_standalone2standalone()
+    green_print("----------- test_standalone2standalone_bigdata--------")
+    test_standalone2standalone_bigdata()
+    green_print("----------- test_function_restore_standalone2standalone--------")
+    test_function_restore_standalone2standalone()
+    green_print("----------- test_function_sync_standalone2standalone--------")
+    test_function_sync_standalone2standalone()
 
     # action_sync_standalone2standalone_bigdata()
     # action_sync_standalone2cluster()

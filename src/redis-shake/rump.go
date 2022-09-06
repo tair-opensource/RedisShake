@@ -9,15 +9,16 @@ import (
 
 	"github.com/alibaba/RedisShake/pkg/libs/atomic2"
 	"github.com/alibaba/RedisShake/pkg/libs/log"
-	"github.com/alibaba/RedisShake/redis-shake/common"
-	"github.com/alibaba/RedisShake/redis-shake/configure"
+	utils "github.com/alibaba/RedisShake/redis-shake/common"
+	conf "github.com/alibaba/RedisShake/redis-shake/configure"
 	"github.com/alibaba/RedisShake/redis-shake/filter"
 	"github.com/alibaba/RedisShake/redis-shake/metric"
 	"github.com/alibaba/RedisShake/redis-shake/scanner"
 
 	"bytes"
-	"github.com/garyburd/redigo/redis"
 	"time"
+
+	"github.com/garyburd/redigo/redis"
 )
 
 type CmdRump struct {
@@ -308,10 +309,13 @@ func (dre *dbRumperExecutor) exec() {
 		}
 
 		var b bytes.Buffer
-		fmt.Fprintf(&b, "dbRumper[%v] total = %v(keys) - %10v(keys) [%3d%%]  entry=%-12d",
-			dre.rumperId, dre.keyNumber, dre.stat.cCommands.Get(),
-			100*dre.stat.cCommands.Get()/dre.keyNumber, dre.stat.wCommands.Get())
-		log.Info(b.String())
+		if dre.keyNumber != 0 {
+			fmt.Fprintf(&b, "dbRumper[%v] total = %v(keys) - %10v(keys) [%3d%%]  entry=%-12d",
+				dre.rumperId, dre.keyNumber, dre.stat.cCommands.Get(),
+				100*dre.stat.cCommands.Get()/dre.keyNumber, dre.stat.wCommands.Get())
+		} else {
+			fmt.Fprintf(&b, "dbRumper[%v] total key = %v, may transforming functions", dre.rumperId, dre.keyNumber)
+		}
 	}
 
 	log.Infof("dbRumper[%v] executor[%v] finish!", dre.rumperId, dre.executorId)
@@ -322,6 +326,22 @@ func (dre *dbRumperExecutor) fetcher() {
 		conf.Options.ScanSpecialCloud)
 
 	log.Infof("dbRumper[%v] executor[%v] fetch db list: %v", dre.rumperId, dre.executorId, dre.dbList)
+
+	//dump function
+	if functions, err := dre.sourceClient.Do("FUNCTION", "DUMP"); err != nil {
+		if err.Error() != "ERR unknown command 'FUNCTION'" {
+			log.Panic(err)
+		}
+	} else {
+		function_dump, err := redis.String(functions, err)
+		if err != nil && err != redis.ErrNil {
+			log.Panicf("do function dump with failed[%v], reply[%v]", dre.rumperId, dre.executorId)
+		}
+		dre.keyChan <- &KeyNode{
+			value: function_dump,
+		}
+	}
+
 	// iterate all db nodes
 	for _, db := range dre.dbList {
 		if filter.FilterDB(int(db)) {
@@ -380,6 +400,24 @@ func (dre *dbRumperExecutor) writer() {
 			utils.RestoreBigkey(dre.targetBigKeyClient, ele.key, ele.value, ele.pttl, ele.db, &preBigKeyDb)
 			// all the reply has been handled in RestoreBigkey
 			// dre.resultChan <- ele
+			continue
+		}
+
+		//function restore
+		if ele.key == "" {
+			batch = dre.writeSend(batch, &count, &wBytes)
+			if conf.Options.FunctionExists == "flush" {
+				err = dre.targetClient.Send("FUNCTION", "RESTORE", ele.value, "FLUSH")
+			} else if conf.Options.FunctionExists == "replace" {
+				err = dre.targetClient.Send("FUNCTION", "RESTORE", ele.value, "REPLACE")
+			} else {
+				err = dre.targetClient.Send("FUNCTION", "RESTORE", ele.value)
+			}
+			if err != nil {
+				log.Panicf("dbRumper[%v] executor[%v] send function failed", dre.rumperId, dre.executorId)
+			}
+
+			batch = append(batch, ele)
 			continue
 		}
 
