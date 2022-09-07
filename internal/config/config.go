@@ -46,6 +46,7 @@ type tomlAdvanced struct {
 	PipelineCountLimit              uint64 `toml:"pipeline_count_limit"`
 	TargetRedisClientMaxQuerybufLen uint64 `toml:"target_redis_client_max_querybuf_len"`
 	TargetRedisProtoMaxBulkLen      uint64 `toml:"target_redis_proto_max_bulk_len"`
+	RDBRestoreParallelNum           uint64 `toml:"rdb_restore_parallel_num"`
 }
 
 type tomlShakeConfig struct {
@@ -83,6 +84,7 @@ func init() {
 	Config.Advanced.PipelineCountLimit = 1024
 	Config.Advanced.TargetRedisClientMaxQuerybufLen = 1024 * 1000 * 1000
 	Config.Advanced.TargetRedisProtoMaxBulkLen = 512 * 1000 * 1000
+	Config.Advanced.RDBRestoreParallelNum = 1
 }
 
 func LoadFromFile(filename string) {

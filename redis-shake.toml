@@ -48,3 +48,6 @@ target_redis_client_max_querybuf_len = 1024_000_000
 # In the Redis protocol, bulk requests, that are, elements representing single
 # strings, are normally limited to 512 mb.
 target_redis_proto_max_bulk_len = 512_000_000
+
+# writer parallel num for rdb restore command
+rdb_restore_parallel_num = 1

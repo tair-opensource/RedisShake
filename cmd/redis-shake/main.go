@@ -50,13 +50,27 @@ func main() {
 	}
 
 	// create writer
-	var theWriter writer.Writer
+	parallel_num := config.Config.Advanced.RDBRestoreParallelNum
+	if config.Config.Source.Type != "restore" {
+		parallel_num = 1
+	}
+	log.Infof("RDB restore parallel num: %d", parallel_num)
+
+	theWriters := make([]writer.Writer, parallel_num)
+	writer_ch := make(chan writer.Writer, parallel_num)
+
 	target := &config.Config.Target
 	switch config.Config.Target.Type {
 	case "standalone":
-		theWriter = writer.NewRedisWriter(target.Address, target.Username, target.Password, target.IsTLS)
+		for i := uint64(0); i < parallel_num; i++ {
+			theWriters[i] = writer.NewRedisWriter(target.Address, target.Username, target.Password, target.IsTLS)
+			writer_ch <- theWriters[i]
+		}
 	case "cluster":
-		theWriter = writer.NewRedisClusterWriter(target.Address, target.Username, target.Password, target.IsTLS)
+		for i := uint64(0); i < parallel_num; i++ {
+			theWriters[i] = writer.NewRedisClusterWriter(target.Address, target.Username, target.Password, target.IsTLS)
+			writer_ch <- theWriters[i]
+		}
 	default:
 		log.Panicf("unknown target type: %s", target.Type)
 	}
@@ -86,7 +100,11 @@ func main() {
 		// filter
 		code := filter.Filter(e)
 		if code == filter.Allow {
-			theWriter.Write(e)
+			w := <- writer_ch
+			go func() {
+				w.Write(e)
+				writer_ch <- w
+			} ()
 			statistics.AddAllowEntriesCount()
 		} else if code == filter.Disallow {
 			// do something
