@@ -2,7 +2,7 @@
 
 **这是私有化维护的开源项目redis-shake，用于从redis中迁出数据，目前常用于导入SOS。**
 
-**SOS是高性能、低成本、高可用的自研分布式KV存储系统，可以支持Redis中KV型的数据，性能与redis无异，而成本可以降低到1/5或以下。**
+**SOS是高性能、低成本、高可用的自研分布式KV存储系统，可以支持Redis中KV型的数据，性能与redis无异，而成本可以降低到5%以内。**
 
 **有需要的使用的小伙伴欢迎到 [SOS介绍主页](https://git.woa.com/groups/sos/-/homepage) 围观，或直接联系我们。本库新开发的特征也会提交到RedisShake的GitHub原库中。**
 
@@ -65,7 +65,7 @@ sync模式本质上是通过redis原生的sync/psync命令让master进行主从�
 问题2.    
 能不能提高并发？   
 答：   
-可以通过更改配置文件中的并发数来提高：   
+可以通过更改配置文件中的并发数来提高写数据的并发。当前配置是1：   
 ```
 rdb_restore_parallel_num = 1
 ```
@@ -78,3 +78,10 @@ rdb_restore_parallel_num = 1
 能不能使用配置中的pipeline_count_limit ？    
 答：   
 不能！SOS的redis proxy不支持pipeline模式，所以这个配置项在这个私有化项目中配为1。当然这个工具可以进行任意redis到redis的迁移，其他接入层支持pipeline的话是可以用的。   
+
+💭    
+问题4.    
+这个仓库和GitHub里的主项目有什么不同？   
+答：   
+为了跟上SOS集群有益的写入性能，内部的读buffer改大了点、然后默认配置项都按照SOS适合的配置进行了一些调整。    
+此外新增的一些改动（如：增加写入并发）是和GitHub社区开发者沟通的功能，过且会回馈到GitHub主项目中。
