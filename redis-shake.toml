@@ -39,7 +39,7 @@ log_interval = 5 # in seconds
 rdb_restore_command_behavior = "rewrite" # panic, rewrite or skip
 
 # pipeline
-pipeline_count_limit = 1024
+pipeline_count_limit = 1
 
 # Client query buffers accumulate new commands. They are limited to a fixed
 # amount by default. This amount is normally 1gb.

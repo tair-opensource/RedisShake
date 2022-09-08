@@ -25,7 +25,7 @@ func NewRDBReader(path string) Reader {
 }
 
 func (r *rdbReader) StartRead() chan *entry.Entry {
-	r.ch = make(chan *entry.Entry, 1024)
+	r.ch = make(chan *entry.Entry, 2048)
 
 	go func() {
 		// start parse rdb
