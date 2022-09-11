@@ -115,6 +115,12 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 					log.PanicError(err)
 				}
 				log.Infof("RDB repl-stream-db: %d", ld.replStreamDbId)
+			} else if key == "lua" {
+				e := entry.NewEntry()
+				e.Argv = []string{"script", "load", value}
+				e.IsBase = true
+				ld.ch <- e
+				log.Infof("LUA script: [%s]", value)
 			} else {
 				log.Infof("RDB AUX fields. key=[%s], value=[%s]", key, value)
 			}
