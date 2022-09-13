@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"fmt"
 	"github.com/alibaba/RedisShake/internal/client"
 	"github.com/alibaba/RedisShake/internal/entry"
 	"github.com/alibaba/RedisShake/internal/log"
@@ -41,6 +42,17 @@ func (r *RedisClusterWriter) loadClusterNodes(address string, username string, p
 		log.Infof("redisClusterWriter load cluster nodes. line=%v", line)
 		// address
 		address := strings.Split(words[1], "@")[0]
+
+		// handle ipv6 address
+		tok := strings.Split(address, ":")
+		if len(tok) > 2 {
+			// ipv6 address
+			port := tok[len(tok)-1]
+
+			ipv6Addr := strings.Join(tok[:len(tok)-1], ":")
+			address = fmt.Sprintf("[%s]:%s", ipv6Addr, port)
+		}
+
 		r.addresses = append(r.addresses, address)
 		// writers
 		redisWriter := NewRedisWriter(address, username, password, isTls)
