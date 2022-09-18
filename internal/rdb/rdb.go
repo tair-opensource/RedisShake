@@ -44,12 +44,15 @@ type Loader struct {
 
 	ch         chan *entry.Entry
 	dumpBuffer bytes.Buffer
+
+	count    uint64
 }
 
 func NewLoader(filPath string, ch chan *entry.Entry) *Loader {
 	ld := new(Loader)
 	ld.ch = ch
 	ld.filPath = filPath
+	ld.count = 0
 	return ld
 }
 
@@ -132,6 +135,10 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 			return
 		default:
 			key := structure.ReadString(rd)
+			ld.count = ld.count + 1
+			if ld.count % 100 == 0 {
+				log.Infof("Load %d keys.", ld.count)
+			}
 			var value bytes.Buffer
 			anotherReader := io.TeeReader(rd, &value)
 			o := types.ParseObject(anotherReader, typeByte, key)
