@@ -2,17 +2,16 @@
 
 [![CI](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml/badge.svg?branch=v3)](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml)
 
-- [中文文档](./README_zh.md)
-- [快速开始](./docs/quick_start.md)
+- [中文文档](https://github.com/alibaba/RedisShake/wiki)
 
 redis-shake is a tool for Redis data migration and data filtering.
 
 
 ## Feature
 
-* ⚡ High performance
+* 🚄 High performance
 * ✅ Tested on Redis 5.0, Redis 6.0 and Redis 7.0
-* 🤗 Support custom filtering rules using lua
+* 🤗 Support custom filtering rules
 * 💪 Support large instance migration
 * 💖 Support `restore` mode and `sync` mode
 * ☁️ Support Aliyun Redis and ElastiCache
