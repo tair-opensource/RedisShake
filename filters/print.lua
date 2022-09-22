@@ -18,9 +18,6 @@
 --- @db_id number: redirection database id
 
 function filter(id, is_base, group, cmd_name, keys, slots, db_id, timestamp_ms)
-    local keys_size = #keys
-    local slots_size = #slots -- slots_size should be equal to keys_size
-
     print(string.format("lua filter. id=[%d], is_base=[%s], db_id=[%d], group=[%s], cmd_name=[%s], keys=[%s], slots=[%s], timestamp_ms=[%d]",
             id, tostring(is_base), db_id, group, cmd_name, table.concat(keys, ", "), table.concat(slots, ", "), timestamp_ms))
     return 0, db_id
