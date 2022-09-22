@@ -75,8 +75,7 @@ func (w *redisWriter) flushInterval() {
 				}
 			}
 			atomic.AddUint64(&w.UpdateUnansweredBytesCount, ^(e.EncodedSize - 1))
-			statistics.UpdateEntryId(e.Id)
-			statistics.UpdateAOFAppliedOffset(e.Offset)
+			statistics.UpdateAOFAppliedOffset(uint64(e.Offset))
 			statistics.UpdateUnansweredBytesCount(atomic.LoadUint64(&w.UpdateUnansweredBytesCount))
 		}
 	}

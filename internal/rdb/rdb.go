@@ -93,7 +93,7 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 		if err != nil {
 			log.PanicError(err)
 		}
-		statistics.UpdateRDBSentSize(offset)
+		statistics.UpdateRDBSentSize(uint64(offset))
 	}
 	defer UpdateRDBSentSize()
 	// read one entry

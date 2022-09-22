@@ -34,7 +34,8 @@ type tomlAdvanced struct {
 
 	Ncpu int `toml:"ncpu"`
 
-	PprofPort int `toml:"pprof_port"`
+	PprofPort   int `toml:"pprof_port"`
+	MetricsPort int `toml:"metrics_port"`
 
 	// log
 	LogFile     string `toml:"log_file"`
@@ -80,6 +81,7 @@ func init() {
 	Config.Advanced.Dir = "data"
 	Config.Advanced.Ncpu = 4
 	Config.Advanced.PprofPort = 0
+	Config.Advanced.MetricsPort = 0
 	Config.Advanced.LogFile = "redis-shake.log"
 	Config.Advanced.LogLevel = "info"
 	Config.Advanced.LogInterval = 5
