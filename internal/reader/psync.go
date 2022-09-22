@@ -150,7 +150,7 @@ func (r *psyncReader) saveRDB() {
 		log.PanicError(err)
 	}
 	log.Infof("received rdb length. length=[%d]", length)
-	statistics.SetRDBFileSize(length)
+	statistics.SetRDBFileSize(uint64(length))
 
 	// create rdb file
 	rdbFilePath := "dump.rdb"
@@ -174,7 +174,7 @@ func (r *psyncReader) saveRDB() {
 			log.PanicError(err)
 		}
 		remainder -= int64(n)
-		statistics.UpdateRDBReceivedSize(length - remainder)
+		statistics.UpdateRDBReceivedSize(uint64(length - remainder))
 		_, err = rdbFileHandle.Write(buf[:n])
 		if err != nil {
 			log.PanicError(err)
@@ -199,7 +199,7 @@ func (r *psyncReader) saveAOF(rd io.Reader) {
 			log.PanicError(err)
 		}
 		r.receivedOffset += int64(n)
-		statistics.UpdateAOFReceivedOffset(r.receivedOffset)
+		statistics.UpdateAOFReceivedOffset(uint64(r.receivedOffset))
 		aofWriter.Write(buf[:n])
 	}
 }

@@ -25,6 +25,9 @@ ncpu = 4
 # pprof port, 0 means disable
 pprof_port = 0
 
+# metric port, 0 means disable
+metrics_port = 0
+
 # log
 log_file = "redis-shake.log"
 log_level = "info" # debug, info or warn

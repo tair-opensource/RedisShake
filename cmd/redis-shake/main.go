@@ -51,6 +51,19 @@ func main() {
 		}()
 	}
 
+	// start statistics
+	if config.Config.Advanced.MetricsPort != 0 {
+		go func() {
+			log.Infof("metrics url: http://localhost:%d", config.Config.Advanced.MetricsPort)
+			mux := http.NewServeMux()
+			mux.HandleFunc("/", statistics.Handler)
+			err := http.ListenAndServe(fmt.Sprintf("localhost:%d", config.Config.Advanced.MetricsPort), mux)
+			if err != nil {
+				log.PanicError(err)
+			}
+		}()
+	}
+
 	// create writer
 	var theWriter writer.Writer
 	target := &config.Config.Target
@@ -79,6 +92,7 @@ func main() {
 	statistics.Init()
 	id := uint64(0)
 	for e := range ch {
+		statistics.UpdateInQueueEntriesCount(uint64(len(ch)))
 		// calc arguments
 		e.Id = id
 		id++
@@ -87,6 +101,7 @@ func main() {
 
 		// filter
 		code := filter.Filter(e)
+		statistics.UpdateEntryId(e.Id)
 		if code == filter.Allow {
 			theWriter.Write(e)
 			statistics.AddAllowEntriesCount()
