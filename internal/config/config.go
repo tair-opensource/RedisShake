@@ -10,13 +10,15 @@ import (
 )
 
 type tomlSource struct {
-	Type             string `toml:"type"`
+	// sync mode
 	Address          string `toml:"address"`
 	Username         string `toml:"username"`
 	Password         string `toml:"password"`
 	IsTLS            bool   `toml:"tls"`
 	ElastiCachePSync string `toml:"elasticache_psync"`
-	RDBFilePath      string `toml:"rdb_file_path"`
+
+	// restore mode
+	RDBFilePath string `toml:"rdb_file_path"`
 }
 
 type tomlTarget struct {
@@ -49,6 +51,7 @@ type tomlAdvanced struct {
 }
 
 type tomlShakeConfig struct {
+	Type     string
 	Source   tomlSource
 	Target   tomlTarget
 	Advanced tomlAdvanced
@@ -57,8 +60,9 @@ type tomlShakeConfig struct {
 var Config tomlShakeConfig
 
 func init() {
+	Config.Type = "sync"
+
 	// source
-	Config.Source.Type = "sync"
 	Config.Source.Address = ""
 	Config.Source.Username = ""
 	Config.Source.Password = ""

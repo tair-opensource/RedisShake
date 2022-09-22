@@ -17,11 +17,12 @@ import (
 
 func main() {
 	if len(os.Args) < 2 || len(os.Args) > 3 {
-		fmt.Println("Usage: redis-shake <config file> <lua file>")
-		fmt.Println("Example: redis-shake config.toml lua.lua")
+		fmt.Println("Usage: redis-shake <config file> <filter file>")
+		fmt.Println("Example: redis-shake config.toml filter.lua")
 		os.Exit(1)
 	}
 
+	// load filter file
 	if len(os.Args) == 3 {
 		luaFile := os.Args[2]
 		filter.LoadFromFile(luaFile)
@@ -40,6 +41,7 @@ func main() {
 		log.Infof("No lua file specified, will not filter any cmd.")
 	}
 
+	// start pprof
 	if config.Config.Advanced.PprofPort != 0 {
 		go func() {
 			err := http.ListenAndServe(fmt.Sprintf("localhost:%d", config.Config.Advanced.PprofPort), nil)
@@ -64,12 +66,12 @@ func main() {
 	// create reader
 	source := &config.Config.Source
 	var theReader reader.Reader
-	if source.Type == "sync" {
+	if config.Config.Type == "sync" {
 		theReader = reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS, source.ElastiCachePSync)
-	} else if source.Type == "restore" {
+	} else if config.Config.Type == "restore" {
 		theReader = reader.NewRDBReader(source.RDBFilePath)
 	} else {
-		log.Panicf("unknown source type: %s", source.Type)
+		log.Panicf("unknown source type: %s", config.Config.Type)
 	}
 	ch := theReader.StartRead()
 

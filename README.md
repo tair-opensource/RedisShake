@@ -6,7 +6,6 @@
 
 redis-shake is a tool for Redis data migration and data filtering.
 
-
 ## Feature
 
 * 🚄 High performance
@@ -16,7 +15,8 @@ redis-shake is a tool for Redis data migration and data filtering.
 * 💖 Support `restore` mode and `sync` mode
 * ☁️ Support Aliyun Redis and ElastiCache
 
-For older versions of redis-shake (support codis, twemproxy) please visit [here](https://github.com/alibaba/RedisShake/tree/develop). 
+For older versions of redis-shake (support codis, twemproxy) please
+visit [here](https://github.com/alibaba/RedisShake/tree/develop).
 
 ![redis-shake2.PNG](https://s2.loli.net/2022/07/10/OZrSGutknlI8XNp.png)
 
@@ -42,7 +42,7 @@ sh build.sh
 
 ## Usage
 
-1. Edit `redis-shake.toml` or `restore.toml` and modify the source and target configuration items in it.
+1. Edit `sync.toml` or `restore.toml`.
 2. Start redis-shake.
 
 ```shell
@@ -55,7 +55,7 @@ sh build.sh
 
 ## Configure
 
-The redis-shake configuration file refers to `redis-shake.toml` or `restore.toml`. 
+The redis-shake configuration file refers to `sync.toml` or `restore.toml`.
 
 ## Data filtering
 
@@ -63,7 +63,7 @@ redis-shake supports custom filtering rules using lua scripts. redis-shake can b
 the following command:
 
 ```shell
-./bin/redis-shake redis-shake.toml filter/xxx.lua
+./bin/redis-shake sync.toml filter/xxx.lua
 ```
 
 Some following filter templates are provided in `filter` directory:

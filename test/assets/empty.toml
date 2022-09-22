@@ -1,5 +1,6 @@
+type = "sync"
+
 [source]
-type = "sync" # sync or restore
 address = "127.0.0.1:6379"
 username = "" # keep empty if not using ACL
 password = "" # keep empty if no authentication is required

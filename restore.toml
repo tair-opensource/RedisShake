@@ -1,5 +1,6 @@
+type = "restore"
+
 [source]
-type = "restore" # sync, restore
 # Path to the dump.rdb file. Absolute path or relative path. Note
 # that relative paths are relative to the dir directory.
 rdb_file_path = "dump.rdb"
