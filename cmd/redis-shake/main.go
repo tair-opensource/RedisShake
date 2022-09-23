@@ -53,6 +53,7 @@ func main() {
 
 	// start statistics
 	if config.Config.Advanced.MetricsPort != 0 {
+		statistics.Metrics.Address = config.Config.Source.Address
 		go func() {
 			log.Infof("metrics url: http://localhost:%d", config.Config.Advanced.MetricsPort)
 			mux := http.NewServeMux()

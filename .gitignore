@@ -1,7 +1,8 @@
 .idea
-bin/*
+data
+__pycache__
+bin
 .DS_Store
-
 *.log
 *.rdb
 *.aof

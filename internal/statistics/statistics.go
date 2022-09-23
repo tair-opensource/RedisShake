@@ -9,6 +9,9 @@ import (
 )
 
 type metrics struct {
+	// info
+	Address string `json:"address"`
+
 	// entries
 	EntryId              uint64 `json:"entry_id"`
 	AllowEntriesCount    uint64 `json:"allow_entries_count"`
