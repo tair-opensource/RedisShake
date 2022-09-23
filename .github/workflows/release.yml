@@ -1,0 +1,40 @@
+name: Release
+
+# Controls when the workflow will run
+on:
+    push:
+        branches:
+            - master
+    # Allows you to run this workflow manually from the Actions tab
+    workflow_dispatch:
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+
+            -   name: Setup Golang with cache
+                uses: magnetikonline/action-golang-cache@v3
+                with:
+                    go-version-file: go.mod
+
+            -   name: Build
+                run: bash build.sh dist
+
+            -   name: "Draft release"
+                id: "release"
+                uses: release-drafter/release-drafter@v5
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: "Upload release asset"
+                uses: actions/upload-release-asset@v1
+                with:
+                    upload_url: ${{ steps.release.outputs.upload_url }}
+                    asset_path: ./bin/redis-shake.tar.gz
+                    asset_name: redis-shake.tar.gz
+                    asset_content_type: application/gzip
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
