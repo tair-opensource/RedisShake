@@ -26,12 +26,42 @@ jobs:
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            -   name: "Upload release asset"
+            -   name: "Upload release linux-amd64"
                 uses: actions/upload-release-asset@v1
                 with:
                     upload_url: ${{ steps.release.outputs.upload_url }}
-                    asset_path: ./bin/redis-shake.tar.gz
-                    asset_name: redis-shake.tar.gz
+                    asset_path: ./bin/redis-shake-linux-amd64.tar.gz
+                    asset_name: redis-shake-linux-amd64.tar.gz
+                    asset_content_type: application/gzip
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: "Upload release linux-arm64"
+                uses: actions/upload-release-asset@v1
+                with:
+                    upload_url: ${{ steps.release.outputs.upload_url }}
+                    asset_path: ./bin/redis-shake-linux-arm64.tar.gz
+                    asset_name: redis-shake-linux-arm64.tar.gz
+                    asset_content_type: application/gzip
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: "Upload release darwin-amd64"
+                uses: actions/upload-release-asset@v1
+                with:
+                    upload_url: ${{ steps.release.outputs.upload_url }}
+                    asset_path: ./bin/redis-shake-darwin-amd64.tar.gz
+                    asset_name: redis-shake-darwin-amd64.tar.gz
+                    asset_content_type: application/gzip
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: "Upload release darwin-arm64"
+                uses: actions/upload-release-asset@v1
+                with:
+                    upload_url: ${{ steps.release.outputs.upload_url }}
+                    asset_path: ./bin/redis-shake-darwin-arm64.tar.gz
+                    asset_name: redis-shake-darwin-arm64.tar.gz
                     asset_content_type: application/gzip
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
