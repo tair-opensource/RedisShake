@@ -2,7 +2,6 @@ package types
 
 import (
 	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/rdb/structure"
 	"io"
 )
 
@@ -48,6 +47,13 @@ const (
 	rdbTypeStreamListpacks2 = 19 // RDB_TYPE_STREAM_LISTPACKS2
 
 	moduleTypeNameCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+	rdbModuleOpcodeEOF    = 0 // End of module value.
+	rdbModuleOpcodeSINT   = 1 // Signed integer.
+	rdbModuleOpcodeUINT   = 2 // Unsigned integer.
+	rdbModuleOpcodeFLOAT  = 3 // Float.
+	rdbModuleOpcodeDOUBLE = 4 // Double.
+	rdbModuleOpcodeSTRING = 5 // String.
 )
 
 type RedisCmd []string
@@ -55,7 +61,7 @@ type RedisCmd []string
 // RedisObject is interface for a redis object
 type RedisObject interface {
 	LoadFromBuffer(rd io.Reader, key string, typeByte byte)
-	Rewrite() []RedisCmd // TODO big key
+	Rewrite() []RedisCmd
 }
 
 func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
@@ -85,21 +91,9 @@ func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
 	case rdbTypeModule, rdbTypeModule2: // module
-		if typeByte == rdbTypeModule {
-			log.Panicf("module type is not supported")
-		}
-		moduleId := structure.ReadLength(rd)
-		moduleName := moduleTypeNameByID(moduleId)
-		switch moduleName {
-		case "exhash---":
-			log.Panicf("exhash module is not supported")
-		case "exstrtype":
-			log.Panicf("exstrtype module is not supported")
-		case "tair-json":
-			log.Panicf("tair-json module is not supported")
-		default:
-			log.Panicf("unknown module type: %s", moduleName)
-		}
+		o := new(ModuleObject)
+		o.LoadFromBuffer(rd, key, typeByte)
+		return o
 	}
 	log.Panicf("unknown type byte: %d", typeByte)
 	return nil
