@@ -123,6 +123,7 @@ func (r *psyncReader) saveRDB() {
 	r.receivedOffset = int64(masterOffset)
 
 	log.Infof("source db is doing bgsave. address=[%s]", r.address)
+	statistics.Metrics.IsDoingBgsave = true
 	timeStart := time.Now()
 	// format: \n\n\n$<length>\r\n<rdb>
 	for true {
@@ -139,6 +140,7 @@ func (r *psyncReader) saveRDB() {
 		}
 		break
 	}
+	statistics.Metrics.IsDoingBgsave = false
 	log.Infof("source db bgsave finished. timeUsed=[%.2f]s, address=[%s]", time.Since(timeStart).Seconds(), r.address)
 	lengthStr, err := r.rd.ReadString('\n')
 	if err != nil {
