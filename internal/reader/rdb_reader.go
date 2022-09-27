@@ -4,6 +4,8 @@ import (
 	"github.com/alibaba/RedisShake/internal/entry"
 	"github.com/alibaba/RedisShake/internal/log"
 	"github.com/alibaba/RedisShake/internal/rdb"
+	"github.com/alibaba/RedisShake/internal/statistics"
+	"os"
 	"path/filepath"
 )
 
@@ -30,6 +32,12 @@ func (r *rdbReader) StartRead() chan *entry.Entry {
 	go func() {
 		// start parse rdb
 		log.Infof("start send RDB. path=[%s]", r.path)
+		fi, err := os.Stat(r.path)
+		if err != nil {
+			log.Panicf("NewRDBReader: os.Stat error: %s", err.Error())
+		}
+		statistics.Metrics.RdbFileSize = uint64(fi.Size())
+		statistics.Metrics.RdbReceivedSize = uint64(fi.Size())
 		rdbLoader := rdb.NewLoader(r.path, r.ch)
 		_ = rdbLoader.ParseRDB()
 		log.Infof("send RDB finished. path=[%s]", r.path)

@@ -83,6 +83,13 @@ func (ld *Loader) ParseRDB() int {
 
 	// read entries
 	ld.parseRDBEntry(rd)
+
+	// force update rdb_sent_size for issue: https://github.com/alibaba/RedisShake/issues/485
+	fi, err := os.Stat(ld.filPath)
+	if err != nil {
+		log.Panicf("NewRDBReader: os.Stat error: %s", err.Error())
+	}
+	statistics.Metrics.RdbSendSize = uint64(fi.Size())
 	return ld.replStreamDbId
 }
 
