@@ -88,7 +88,10 @@ def loop():
         for metric in sorted(metrics, key=lambda x: x["address"]):
             address = metric['address']
             if metric['rdb_file_size'] == 0:
-                print(f"{metric['address']} shaking...")
+                if metric['is_doing_bgsave']:
+                    print(f"{address} is doing bgsave...")
+                else:
+                    print(f"{metric['address']} handshaking...")
             elif metric['rdb_received_size'] < metric['rdb_file_size']:
                 print(f"{metric['address']} receiving rdb. "
                       f"percent=[{metric['rdb_received_size'] / metric['rdb_file_size'] * 100:.2f}]%, "

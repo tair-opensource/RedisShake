@@ -18,6 +18,7 @@ type metrics struct {
 	DisallowEntriesCount uint64 `json:"disallow_entries_count"`
 
 	// rdb
+	IsDoingBgsave   bool   `json:"is_doing_bgsave"`
 	RdbFileSize     uint64 `json:"rdb_file_size"`
 	RdbReceivedSize uint64 `json:"rdb_received_size"`
 	RdbSendSize     uint64 `json:"rdb_send_size"`
