@@ -12,6 +12,11 @@ jobs:
             -   name: Git checkout
                 uses: actions/checkout@v2
 
+            -   name: Setup Golang with cache
+                uses: magnetikonline/action-golang-cache@v3
+                with:
+                    go-version-file: go.mod
+
             -   name: clone and make redis
                 run: |
                     sudo apt-get install git
