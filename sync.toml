@@ -1,6 +1,7 @@
 type = "sync"
 
 [source]
+version = 5.0 # redis version, such as 2.8, 4.0, 5.0, 6.0, 6.2, 7.0, ...
 address = "127.0.0.1:6379"
 username = "" # keep empty if not using ACL
 password = "" # keep empty if no authentication is required
@@ -9,6 +10,7 @@ elasticache_psync = "" # using when source is ElastiCache. ref: https://github.c
 
 [target]
 type = "standalone" # "standalone" or "cluster"
+version = 5.0 # redis version, such as 2.8, 4.0, 5.0, 6.0, 6.2, 7.0, ...
 # When the target is a cluster, write the address of one of the nodes.
 # redis-shake will obtain other nodes through the `cluster nodes` command.
 address = "127.0.0.1:6380"

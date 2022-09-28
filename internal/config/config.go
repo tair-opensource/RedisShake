@@ -11,22 +11,24 @@ import (
 
 type tomlSource struct {
 	// sync mode
-	Address          string `toml:"address"`
-	Username         string `toml:"username"`
-	Password         string `toml:"password"`
-	IsTLS            bool   `toml:"tls"`
-	ElastiCachePSync string `toml:"elasticache_psync"`
+	Version          float32 `toml:"version"`
+	Address          string  `toml:"address"`
+	Username         string  `toml:"username"`
+	Password         string  `toml:"password"`
+	IsTLS            bool    `toml:"tls"`
+	ElastiCachePSync string  `toml:"elasticache_psync"`
 
 	// restore mode
 	RDBFilePath string `toml:"rdb_file_path"`
 }
 
 type tomlTarget struct {
-	Type     string `toml:"type"`
-	Username string `toml:"username"`
-	Address  string `toml:"address"`
-	Password string `toml:"password"`
-	IsTLS    bool   `toml:"tls"`
+	Type     string  `toml:"type"`
+	Version  float32 `toml:"version"`
+	Username string  `toml:"username"`
+	Address  string  `toml:"address"`
+	Password string  `toml:"password"`
+	IsTLS    bool    `toml:"tls"`
 }
 
 type tomlAdvanced struct {
@@ -64,6 +66,7 @@ func init() {
 	Config.Type = "sync"
 
 	// source
+	Config.Source.Version = 5.0
 	Config.Source.Address = ""
 	Config.Source.Username = ""
 	Config.Source.Password = ""
@@ -72,6 +75,7 @@ func init() {
 
 	// target
 	Config.Target.Type = "standalone"
+	Config.Target.Version = 5.0
 	Config.Target.Address = ""
 	Config.Target.Username = ""
 	Config.Target.Password = ""
@@ -127,4 +131,11 @@ func LoadFromFile(filename string) {
 		ncpu = Config.Advanced.Ncpu
 	}
 	runtime.GOMAXPROCS(ncpu)
+
+	if Config.Source.Version < 2.8 {
+		panic("source redis version must be greater than 2.8")
+	}
+	if Config.Target.Version < 2.8 {
+		panic("target redis version must be greater than 2.8")
+	}
 }
