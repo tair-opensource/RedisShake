@@ -35,7 +35,7 @@ type Loader struct {
 	replStreamDbId int // https://github.com/alibaba/RedisShake/pull/430#issuecomment-1099014464
 
 	nowDBId  int
-	expireAt uint64
+	expireMs int64
 	idle     int64
 	freq     int64
 
@@ -136,9 +136,15 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 			expireSize := structure.ReadLength(rd)
 			log.Infof("RDB resize db. db_size=[%d], expire_size=[%d]", dbSize, expireSize)
 		case kFlagExpireMs:
-			ld.expireAt = structure.ReadUint64(rd)
+			ld.expireMs = int64(structure.ReadUint64(rd)) - time.Now().UnixMilli()
+			if ld.expireMs < 0 {
+				ld.expireMs = 1
+			}
 		case kFlagExpire:
-			ld.expireAt = uint64(structure.ReadUint32(rd)) * 1000
+			ld.expireMs = int64(structure.ReadUint32(rd))*1000 - time.Now().UnixMilli()
+			if ld.expireMs < 0 {
+				ld.expireMs = 1
+			}
 		case kFlagSelect:
 			ld.nowDBId = int(structure.ReadLength(rd))
 		case kEOF:
@@ -157,11 +163,11 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 					e.Argv = cmd
 					ld.ch <- e
 				}
-				if ld.expireAt != 0 {
+				if ld.expireMs != 0 {
 					e := entry.NewEntry()
 					e.IsBase = true
 					e.DbId = ld.nowDBId
-					e.Argv = []string{"PEXPIREAT", key, strconv.FormatUint(ld.expireAt, 10)}
+					e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
 					ld.ch <- e
 				}
 			} else {
@@ -169,22 +175,22 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 				e.IsBase = true
 				e.DbId = ld.nowDBId
 				v := ld.createValueDump(typeByte, value.Bytes())
-				e.Argv = []string{"restore", key, strconv.FormatUint(ld.expireAt, 10), v}
+				e.Argv = []string{"restore", key, strconv.FormatInt(ld.expireMs, 10), v}
 				if config.Config.Advanced.RDBRestoreCommandBehavior == "rewrite" {
+					if config.Config.Target.Version < 3.0 {
+						log.Panicf("RDB restore command behavior is rewrite, but target redis version is %f, not support REPLACE modifier", config.Config.Target.Version)
+					}
 					e.Argv = append(e.Argv, "replace")
 				}
-				if ld.expireAt != 0 {
-					e.Argv = append(e.Argv, "absttl")
-				}
-				if ld.idle != 0 {
+				if ld.idle != 0 && config.Config.Target.Version >= 5.0 {
 					e.Argv = append(e.Argv, "idletime", strconv.FormatInt(ld.idle, 10))
 				}
-				if ld.freq != 0 {
+				if ld.freq != 0 && config.Config.Target.Version >= 5.0 {
 					e.Argv = append(e.Argv, "freq", strconv.FormatInt(ld.freq, 10))
 				}
 				ld.ch <- e
 			}
-			ld.expireAt = 0
+			ld.expireMs = 0
 			ld.idle = 0
 			ld.freq = 0
 		}

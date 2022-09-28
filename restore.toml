@@ -1,6 +1,7 @@
 type = "restore"
 
 [source]
+version = 5.0 # redis version, such as 2.8, 4.0, 5.0, 6.0, 6.2, 7.0, ...
 # Path to the dump.rdb file. Absolute path or relative path. Note
 # that relative paths are relative to the dir directory.
 rdb_file_path = "dump.rdb"
@@ -9,6 +10,7 @@ rdb_file_path = "dump.rdb"
 type = "standalone" # standalone or cluster
 # When the target is a cluster, write the address of one of the nodes.
 # redis-shake will obtain other nodes through the `cluster nodes` command.
+version = 5.0 # redis version, such as 2.8, 4.0, 5.0, 6.0, 6.2, 7.0, ...
 address = "127.0.0.1:6379"
 username = "" # keep empty if not using ACL
 password = "" # keep empty if no authentication is required
