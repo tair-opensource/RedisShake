@@ -17,9 +17,12 @@ cluster_helper is a helper script to start many redis-shake for syncing from clu
 
 Usage:
    $ python3 cluster_helper.py ./bin/redis-shake sync.toml
+   or
+   $ python3 cluster_helper.py ./bin/redis-shake sync.toml ./bin/filters/key_prefix.lua
 """
 
 REDIS_SHAKE_PATH = ""
+LUA_FILTER_PATH = ""
 SLEEP_SECONDS = 5
 stopped = False
 toml_template = {}
@@ -35,10 +38,10 @@ nodes = {}
 
 
 def parse_args():
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 3 and len(sys.argv) != 4:
         print(USAGE)
         exit(1)
-    global REDIS_SHAKE_PATH, toml_template
+    global REDIS_SHAKE_PATH, LUA_FILTER_PATH, toml_template
 
     # 1. check redis-shake path
     REDIS_SHAKE_PATH = sys.argv[1]
@@ -54,13 +57,24 @@ def parse_args():
     toml_template = toml.load(sys.argv[2])
     print(toml_template)
     if "username" not in toml_template["source"]:
-        toml_template["source"]["username"]=""
+        toml_template["source"]["username"] = ""
     if "password" not in toml_template["source"]:
-        toml_template["source"]["password"]=""
+        toml_template["source"]["password"] = ""
     if "tls" not in toml_template["source"]:
-        toml_template["source"]["tls"]=False
+        toml_template["source"]["tls"] = False
     if "advanced" not in toml_template:
         toml_template["advanced"] = {}
+
+    # 3. check filter
+    if len(sys.argv) == 4:
+        LUA_FILTER_PATH = sys.argv[3]
+        if not Path(LUA_FILTER_PATH).is_file():
+            print(f"filter path [{LUA_FILTER_PATH}] is not a file")
+            print(USAGE)
+            exit(1)
+        print(f"filter path: {LUA_FILTER_PATH}")
+        LUA_FILTER_PATH = os.path.abspath(LUA_FILTER_PATH)
+        print(f"filter abs path: {LUA_FILTER_PATH}")
 
 
 def stop():
@@ -163,7 +177,10 @@ def main():
             toml.dump(tmp_toml, f)
 
         # start redis-shake
-        launcher = Launcher(args=[REDIS_SHAKE_PATH, f"sync.toml"], work_dir=workdir)
+        args = [REDIS_SHAKE_PATH, f"sync.toml"]
+        if LUA_FILTER_PATH != "":
+            args.append(LUA_FILTER_PATH)
+        launcher = Launcher(args=args, work_dir=workdir)
         nodes[address].launcher = launcher
         nodes[address].metrics_port = start_port
 
