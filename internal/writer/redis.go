@@ -73,6 +73,8 @@ func (w *redisWriter) flushInterval() {
 				} else {
 					log.Panicf("redisWriter received error. error=[%v], argv=%v, slots=%v, reply=[%v]", err, e.Argv, e.Slots, reply)
 				}
+			} else {
+				log.Infof("redisWriter succesfully write key=%s", e.Argv[1]);
 			}
 			atomic.AddUint64(&w.UpdateUnansweredBytesCount, ^(e.EncodedSize - 1))
 			statistics.UpdateEntryId(e.Id)

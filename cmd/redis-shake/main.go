@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 	"github.com/alibaba/RedisShake/internal/commands"
 	"github.com/alibaba/RedisShake/internal/config"
 	"github.com/alibaba/RedisShake/internal/filter"
@@ -100,9 +101,10 @@ func main() {
 		// filter
 		code := filter.Filter(e)
 		if code == filter.Allow {
+			writer_e := e.CopyEntry()
 			w := <- writer_ch
 			go func() {
-				w.Write(e)
+				w.Write(writer_e)
 				writer_ch <- w
 			} ()
 			statistics.AddAllowEntriesCount()
@@ -114,5 +116,6 @@ func main() {
 		}
 	}
 
+	time.Sleep(1 * time.Second)
 	log.Infof("finished.")
 }
