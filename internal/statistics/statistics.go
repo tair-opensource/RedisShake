@@ -73,8 +73,8 @@ func Init() {
 					float64(Metrics.RdbSendSize)/1024/1024/1024)
 			} else {
 				log.Infof("syncing aof. allowOps=[%.2f], disallowOps=[%.2f], entryId=[%d], InQueueEntriesCount=[%d], unansweredBytesCount=[%d]bytes, diff=[%d], aofReceivedOffset=[%d], aofAppliedOffset=[%d]",
-					float32(Metrics.AllowEntriesCount)/float32(seconds),
-					float32(Metrics.DisallowEntriesCount)/float32(seconds),
+					float32(Metrics.AllowEntriesCount-lastAllowEntriesCount)/float32(seconds),
+					float32(Metrics.DisallowEntriesCount-lastDisallowEntriesCount)/float32(seconds),
 					Metrics.EntryId,
 					Metrics.InQueueEntriesCount,
 					Metrics.UnansweredBytesCount,
