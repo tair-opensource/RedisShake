@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/alibaba/RedisShake/internal/config"
 	"github.com/alibaba/RedisShake/internal/log"
+	"math/bits"
 	"net/http"
 	"time"
 )
@@ -30,6 +31,10 @@ type metrics struct {
 	// for performance debug
 	InQueueEntriesCount  uint64 `json:"in_queue_entries_count"`
 	UnansweredBytesCount uint64 `json:"unanswered_bytes_count"`
+
+	// scan cursor
+	ScanDbId   int    `json:"scan_db_id"`
+	ScanCursor uint64 `json:"scan_cursor"`
 }
 
 var Metrics = &metrics{}
@@ -53,6 +58,21 @@ func Init() {
 		lastDisallowEntriesCount := Metrics.DisallowEntriesCount
 
 		for range time.Tick(time.Duration(seconds) * time.Second) {
+			if config.Config.Type == "scan" {
+				log.Infof("syncing. dbId=[%d], percent=[%.2f]%%, allowOps=[%.2f], disallowOps=[%.2f], entryId=[%d], InQueueEntriesCount=[%d], unansweredBytesCount=[%d]bytes",
+					Metrics.ScanDbId,
+					float64(bits.Reverse64(Metrics.ScanCursor))/float64(^uint(0)),
+					float32(Metrics.AllowEntriesCount-lastAllowEntriesCount)/float32(seconds),
+					float32(Metrics.DisallowEntriesCount-lastDisallowEntriesCount)/float32(seconds),
+					Metrics.EntryId,
+					Metrics.InQueueEntriesCount,
+					Metrics.UnansweredBytesCount)
+				lastAllowEntriesCount = Metrics.AllowEntriesCount
+				lastDisallowEntriesCount = Metrics.DisallowEntriesCount
+
+				continue
+			}
+
 			if Metrics.RdbFileSize == 0 {
 				continue
 			}

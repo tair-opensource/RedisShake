@@ -31,6 +31,12 @@ func PanicError(err error) {
 	Panicf(err.Error())
 }
 
+func PanicIfError(err error) {
+	if err != nil {
+		PanicError(err)
+	}
+}
+
 func logFinally(event *zerolog.Event, format string, args ...interface{}) {
 	str := fmt.Sprintf(format, args...)
 	//inxTrunct := -1
