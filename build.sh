@@ -8,6 +8,7 @@ rm -rf "$BIN_DIR"
 mkdir -p "$BIN_DIR"
 
 cp sync.toml "$BIN_DIR"
+cp scan.toml "$BIN_DIR"
 cp restore.toml "$BIN_DIR"
 cp -r filters "$BIN_DIR"
 cp -r scripts/cluster_helper "$BIN_DIR"
@@ -22,7 +23,7 @@ dist() {
     echo "build success GOOS=$1 GOARCH=$2"
 
     cd "$BIN_DIR"
-    tar -czvf ./redis-shake-"$1"-"$2".tar.gz ./sync.toml ./restore.toml ./redis-shake ./filters ./cluster_helper
+    tar -czvf ./redis-shake-"$1"-"$2".tar.gz ./sync.toml ./scan.toml ./restore.toml ./redis-shake ./filters ./cluster_helper
     cd ..
 }
 

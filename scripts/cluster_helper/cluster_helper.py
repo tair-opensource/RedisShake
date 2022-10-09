@@ -6,10 +6,12 @@ import shutil
 import signal
 import sys
 import time
+from pathlib import Path
+
+import redis
 import requests
 import toml
-from pathlib import Path
-import redis
+
 from launcher import Launcher
 
 USAGE = """
@@ -84,8 +86,6 @@ def stop():
 
 
 def loop():
-    last_allow_entries_count = {address: 0 for address in nodes.keys()}
-    last_disallow_entries_count = {address: 0 for address in nodes.keys()}
     while True:
         if stopped:
             stop()
@@ -100,39 +100,11 @@ def loop():
                 print(f"get metrics from [{address}] failed: {e}")
 
         for metric in sorted(metrics, key=lambda x: x["address"]):
-            address = metric['address']
-            if metric['rdb_file_size'] == 0:
-                if metric['is_doing_bgsave']:
-                    print(f"{address} is doing bgsave...")
-                else:
-                    print(f"{metric['address']} handshaking...")
-            elif metric['rdb_received_size'] < metric['rdb_file_size']:
-                print(f"{metric['address']} receiving rdb. "
-                      f"percent=[{metric['rdb_received_size'] / metric['rdb_file_size'] * 100:.2f}]%, "
-                      f"rdbFileSize=[{metric['rdb_file_size'] / 1024 / 1024 / 1024:.3f}]G, "
-                      f"rdbReceivedSize=[{metric['rdb_received_size'] / 1024 / 1024 / 1024:.3f}]G")
-            elif metric['rdb_send_size'] < metric['rdb_file_size']:
-                print(f"{metric['address']} syncing rdb. "
-                      f"percent=[{metric['rdb_send_size'] / metric['rdb_file_size'] * 100:.2f}]%, "
-                      f"allowOps=[{(metric['allow_entries_count'] - last_allow_entries_count[address]) / SLEEP_SECONDS:.2f}], "
-                      f"disallowOps=[{(metric['disallow_entries_count'] - last_disallow_entries_count[address]) / SLEEP_SECONDS:.2f}], "
-                      f"entryId=[{metric['entry_id']}], "
-                      f"InQueueEntriesCount=[{metric['in_queue_entries_count']}], "
-                      f"unansweredBytesCount=[{metric['unanswered_bytes_count']}]bytes, "
-                      f"rdbFileSize=[{metric['rdb_file_size'] / 1024 / 1024 / 1024:.3f}]G, "
-                      f"rdbSendSize=[{metric['rdb_send_size'] / 1024 / 1024 / 1024:.3f}]G")
-            else:
-                print(f"{metric['address']} syncing aof. "
-                      f"allowOps=[{(metric['allow_entries_count'] - last_allow_entries_count[address]) / SLEEP_SECONDS:.2f}], "
-                      f"disallowOps=[{(metric['disallow_entries_count'] - last_disallow_entries_count[address]) / SLEEP_SECONDS:.2f}], "
-                      f"entryId=[{metric['entry_id']}], "
-                      f"InQueueEntriesCount=[{metric['in_queue_entries_count']}], "
-                      f"unansweredBytesCount=[{metric['unanswered_bytes_count']}]bytes, "
-                      f"diff=[{metric['aof_received_offset'] - metric['aof_applied_offset']}], "
-                      f"aofReceivedOffset=[{metric['aof_received_offset']}], "
-                      f"aofAppliedOffset=[{metric['aof_applied_offset']}]")
-            last_allow_entries_count[address] = metric['allow_entries_count']
-            last_disallow_entries_count[address] = metric['disallow_entries_count']
+            print(f"{metric['address']} {metric['msg']} ")
+
+        if len(metrics) == 0:
+            print("no redis-shake is running")
+            break
 
         time.sleep(SLEEP_SECONDS)
 
@@ -186,7 +158,11 @@ def main():
 
     signal.signal(signal.SIGINT, signal_handler)
     print("start syncing...")
+    print("sleep 3 seconds to wait redis-shake start")
+    time.sleep(3)
     loop()
+    for node in nodes.values():
+        node.launcher.stop()
 
 
 def signal_handler(sig, frame):

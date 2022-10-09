@@ -84,6 +84,8 @@ func main() {
 		theReader = reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS, source.ElastiCachePSync)
 	} else if config.Config.Type == "restore" {
 		theReader = reader.NewRDBReader(source.RDBFilePath)
+	} else if config.Config.Type == "scan" {
+		theReader = reader.NewScanReader(source.Address, source.Username, source.Password, source.IsTLS)
 	} else {
 		log.Panicf("unknown source type: %s", config.Config.Type)
 	}
@@ -113,6 +115,6 @@ func main() {
 			log.Panicf("error when run lua filter. entry: %s", e.ToString())
 		}
 	}
-
+	theWriter.Close()
 	log.Infof("finished.")
 }

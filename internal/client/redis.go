@@ -6,6 +6,7 @@ import (
 	"github.com/alibaba/RedisShake/internal/client/proto"
 	"github.com/alibaba/RedisShake/internal/log"
 	"net"
+	"strconv"
 	"time"
 )
 
@@ -111,4 +112,31 @@ func (r *Redis) BufioReader() *bufio.Reader {
 func (r *Redis) SetBufioReader(rd *bufio.Reader) {
 	r.reader = rd
 	r.protoReader = proto.NewReader(r.reader)
+}
+
+/* Commands */
+
+func (r *Redis) Scan(cursor uint64) (newCursor uint64, keys []string) {
+	r.Send("scan", strconv.FormatUint(cursor, 10), "count", "2048")
+	reply, err := r.Receive()
+	if err != nil {
+		log.PanicError(err)
+	}
+
+	array := reply.([]interface{})
+	if len(array) != 2 {
+		log.Panicf("scan return length error. ret=%v", reply)
+	}
+
+	// cursor
+	newCursor, err = strconv.ParseUint(array[0].(string), 10, 64)
+	if err != nil {
+		log.PanicError(err)
+	}
+	// keys
+	keys = make([]string, 0)
+	for _, item := range array[1].([]interface{}) {
+		keys = append(keys, item.(string))
+	}
+	return
 }

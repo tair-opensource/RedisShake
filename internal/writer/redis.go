@@ -9,6 +9,7 @@ import (
 	"github.com/alibaba/RedisShake/internal/log"
 	"github.com/alibaba/RedisShake/internal/statistics"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -19,6 +20,7 @@ type redisWriter struct {
 
 	cmdBuffer   *bytes.Buffer
 	chWaitReply chan *entry.Entry
+	chWg        sync.WaitGroup
 
 	UpdateUnansweredBytesCount uint64 // have sent in bytes
 }
@@ -57,26 +59,29 @@ func (w *redisWriter) switchDbTo(newDbId int) {
 }
 
 func (w *redisWriter) flushInterval() {
-	for {
-		select {
-		case e := <-w.chWaitReply:
-			reply, err := w.client.Receive()
-			if err == proto.Nil {
-				log.Warnf("redisWriter receive nil reply. argv=%v", e.Argv)
-			} else if err != nil {
-				if err.Error() == "BUSYKEY Target key name already exists." {
-					if config.Config.Advanced.RDBRestoreCommandBehavior == "skip" {
-						log.Warnf("redisWriter received BUSYKEY reply. argv=%v", e.Argv)
-					} else if config.Config.Advanced.RDBRestoreCommandBehavior == "panic" {
-						log.Panicf("redisWriter received BUSYKEY reply. argv=%v", e.Argv)
-					}
-				} else {
-					log.Panicf("redisWriter received error. error=[%v], argv=%v, slots=%v, reply=[%v]", err, e.Argv, e.Slots, reply)
+	for e := range w.chWaitReply {
+		reply, err := w.client.Receive()
+		if err == proto.Nil {
+			log.Warnf("redisWriter receive nil reply. argv=%v", e.Argv)
+		} else if err != nil {
+			if err.Error() == "BUSYKEY Target key name already exists." {
+				if config.Config.Advanced.RDBRestoreCommandBehavior == "skip" {
+					log.Warnf("redisWriter received BUSYKEY reply. argv=%v", e.Argv)
+				} else if config.Config.Advanced.RDBRestoreCommandBehavior == "panic" {
+					log.Panicf("redisWriter received BUSYKEY reply. argv=%v", e.Argv)
 				}
+			} else {
+				log.Panicf("redisWriter received error. error=[%v], argv=%v, slots=%v, reply=[%v]", err, e.Argv, e.Slots, reply)
 			}
-			atomic.AddUint64(&w.UpdateUnansweredBytesCount, ^(e.EncodedSize - 1))
-			statistics.UpdateAOFAppliedOffset(uint64(e.Offset))
-			statistics.UpdateUnansweredBytesCount(atomic.LoadUint64(&w.UpdateUnansweredBytesCount))
 		}
+		atomic.AddUint64(&w.UpdateUnansweredBytesCount, ^(e.EncodedSize - 1))
+		statistics.UpdateAOFAppliedOffset(uint64(e.Offset))
+		statistics.UpdateUnansweredBytesCount(atomic.LoadUint64(&w.UpdateUnansweredBytesCount))
 	}
+	w.chWg.Done()
+}
+
+func (w *redisWriter) Close() {
+	close(w.chWaitReply)
+	w.chWg.Wait()
 }

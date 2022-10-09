@@ -72,6 +72,8 @@ func init() {
 	Config.Source.Password = ""
 	Config.Source.IsTLS = false
 	Config.Source.ElastiCachePSync = ""
+	// restore
+	Config.Source.RDBFilePath = ""
 
 	// target
 	Config.Target.Type = "standalone"
@@ -137,5 +139,9 @@ func LoadFromFile(filename string) {
 	}
 	if Config.Target.Version < 2.8 {
 		panic("target redis version must be greater than 2.8")
+	}
+
+	if Config.Type != "sync" && Config.Type != "restore" && Config.Type != "scan" {
+		panic("type must be sync/restore/scan")
 	}
 }

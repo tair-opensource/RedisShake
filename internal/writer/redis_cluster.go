@@ -113,3 +113,9 @@ func (r *RedisClusterWriter) Write(entry *entry.Entry) {
 	}
 	r.router[lastSlot].Write(entry)
 }
+
+func (r *RedisClusterWriter) Close() {
+	for _, writer := range r.writers {
+		writer.Close()
+	}
+}

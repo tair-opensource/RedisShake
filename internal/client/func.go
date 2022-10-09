@@ -6,18 +6,6 @@ import (
 	"github.com/alibaba/RedisShake/internal/log"
 )
 
-func ArrayString(replyInterface interface{}, err error) []string {
-	if err != nil {
-		log.PanicError(err)
-	}
-	replyArray := replyInterface.([]interface{})
-	replyArrayString := make([]string, len(replyArray))
-	for inx, item := range replyArray {
-		replyArrayString[inx] = item.(string)
-	}
-	return replyArrayString
-}
-
 func EncodeArgv(argv []string, buf *bytes.Buffer) {
 	writer := proto.NewWriter(buf)
 	argvInterface := make([]interface{}, len(argv))
