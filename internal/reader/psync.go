@@ -124,6 +124,7 @@ func (r *psyncReader) saveRDB() {
 
 	log.Infof("source db is doing bgsave. address=[%s]", r.address)
 	statistics.Metrics.IsDoingBgsave = true
+
 	timeStart := time.Now()
 	// format: \n\n\n$<length>\r\n<rdb>
 	for true {

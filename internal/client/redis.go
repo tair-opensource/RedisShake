@@ -117,7 +117,7 @@ func (r *Redis) SetBufioReader(rd *bufio.Reader) {
 /* Commands */
 
 func (r *Redis) Scan(cursor uint64) (newCursor uint64, keys []string) {
-	r.Send("scan", strconv.FormatUint(cursor, 10), "count", "1024")
+	r.Send("scan", strconv.FormatUint(cursor, 10), "count", "2048")
 	reply, err := r.Receive()
 	if err != nil {
 		log.PanicError(err)

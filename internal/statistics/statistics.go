@@ -2,10 +2,12 @@ package statistics
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/alibaba/RedisShake/internal/config"
 	"github.com/alibaba/RedisShake/internal/log"
 	"math/bits"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -35,6 +37,9 @@ type metrics struct {
 	// scan cursor
 	ScanDbId   int    `json:"scan_db_id"`
 	ScanCursor uint64 `json:"scan_cursor"`
+
+	// for log
+	Msg string `json:"msg"`
 }
 
 var Metrics = &metrics{}
@@ -58,31 +63,31 @@ func Init() {
 		lastDisallowEntriesCount := Metrics.DisallowEntriesCount
 
 		for range time.Tick(time.Duration(seconds) * time.Second) {
+			// scan
 			if config.Config.Type == "scan" {
-				log.Infof("syncing. dbId=[%d], percent=[%.2f]%%, allowOps=[%.2f], disallowOps=[%.2f], entryId=[%d], InQueueEntriesCount=[%d], unansweredBytesCount=[%d]bytes",
+				Metrics.Msg = fmt.Sprintf("syncing. dbId=[%d], percent=[%.2f]%%, allowOps=[%.2f], disallowOps=[%.2f], entryId=[%d], InQueueEntriesCount=[%d], unansweredBytesCount=[%d]bytes",
 					Metrics.ScanDbId,
-					float64(bits.Reverse64(Metrics.ScanCursor))/float64(^uint(0)),
+					float64(bits.Reverse64(Metrics.ScanCursor))/float64(^uint(0))*100,
 					float32(Metrics.AllowEntriesCount-lastAllowEntriesCount)/float32(seconds),
 					float32(Metrics.DisallowEntriesCount-lastDisallowEntriesCount)/float32(seconds),
 					Metrics.EntryId,
 					Metrics.InQueueEntriesCount,
 					Metrics.UnansweredBytesCount)
+				log.Infof(strings.Replace(Metrics.Msg, "%", "%%", -1))
 				lastAllowEntriesCount = Metrics.AllowEntriesCount
 				lastDisallowEntriesCount = Metrics.DisallowEntriesCount
-
 				continue
 			}
-
+			// sync or restore
 			if Metrics.RdbFileSize == 0 {
-				continue
-			}
-			if Metrics.RdbSendSize > Metrics.RdbReceivedSize {
-				log.Infof("receiving rdb. percent=[%.2f]%%, rdbFileSize=[%.3f]G, rdbReceivedSize=[%.3f]G",
+				Metrics.Msg = "source db is doing bgsave"
+			} else if Metrics.RdbSendSize > Metrics.RdbReceivedSize {
+				Metrics.Msg = fmt.Sprintf("receiving rdb. percent=[%.2f]%%, rdbFileSize=[%.3f]G, rdbReceivedSize=[%.3f]G",
 					float64(Metrics.RdbReceivedSize)/float64(Metrics.RdbFileSize)*100,
 					float64(Metrics.RdbFileSize)/1024/1024/1024,
 					float64(Metrics.RdbReceivedSize)/1024/1024/1024)
 			} else if Metrics.RdbFileSize > Metrics.RdbSendSize {
-				log.Infof("syncing rdb. percent=[%.2f]%%, allowOps=[%.2f], disallowOps=[%.2f], entryId=[%d], InQueueEntriesCount=[%d], unansweredBytesCount=[%d]bytes, rdbFileSize=[%.3f]G, rdbSendSize=[%.3f]G",
+				Metrics.Msg = fmt.Sprintf("syncing rdb. percent=[%.2f]%%, allowOps=[%.2f], disallowOps=[%.2f], entryId=[%d], InQueueEntriesCount=[%d], unansweredBytesCount=[%d]bytes, rdbFileSize=[%.3f]G, rdbSendSize=[%.3f]G",
 					float64(Metrics.RdbSendSize)*100/float64(Metrics.RdbFileSize),
 					float32(Metrics.AllowEntriesCount-lastAllowEntriesCount)/float32(seconds),
 					float32(Metrics.DisallowEntriesCount-lastDisallowEntriesCount)/float32(seconds),
@@ -92,7 +97,7 @@ func Init() {
 					float64(Metrics.RdbFileSize)/1024/1024/1024,
 					float64(Metrics.RdbSendSize)/1024/1024/1024)
 			} else {
-				log.Infof("syncing aof. allowOps=[%.2f], disallowOps=[%.2f], entryId=[%d], InQueueEntriesCount=[%d], unansweredBytesCount=[%d]bytes, diff=[%d], aofReceivedOffset=[%d], aofAppliedOffset=[%d]",
+				Metrics.Msg = fmt.Sprintf("syncing aof. allowOps=[%.2f], disallowOps=[%.2f], entryId=[%d], InQueueEntriesCount=[%d], unansweredBytesCount=[%d]bytes, diff=[%d], aofReceivedOffset=[%d], aofAppliedOffset=[%d]",
 					float32(Metrics.AllowEntriesCount-lastAllowEntriesCount)/float32(seconds),
 					float32(Metrics.DisallowEntriesCount-lastDisallowEntriesCount)/float32(seconds),
 					Metrics.EntryId,
@@ -102,7 +107,7 @@ func Init() {
 					Metrics.AofReceivedOffset,
 					Metrics.AofAppliedOffset)
 			}
-
+			log.Infof(strings.Replace(Metrics.Msg, "%", "%%", -1))
 			lastAllowEntriesCount = Metrics.AllowEntriesCount
 			lastDisallowEntriesCount = Metrics.DisallowEntriesCount
 		}
