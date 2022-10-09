@@ -115,6 +115,6 @@ func main() {
 			log.Panicf("error when run lua filter. entry: %s", e.ToString())
 		}
 	}
-
+	theWriter.Close()
 	log.Infof("finished.")
 }
