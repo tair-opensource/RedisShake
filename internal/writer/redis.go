@@ -31,6 +31,7 @@ func NewRedisWriter(address string, username string, password string, isTls bool
 	log.Infof("redisWriter connected to redis successful. address=[%s]", address)
 	rw.cmdBuffer = new(bytes.Buffer)
 	rw.chWaitReply = make(chan *entry.Entry, config.Config.Advanced.PipelineCountLimit)
+	rw.chWg.Add(1)
 	go rw.flushInterval()
 	return rw
 }
