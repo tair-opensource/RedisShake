@@ -52,10 +52,7 @@ func main() {
 
 	// create writer
 	parallel_num := config.Config.Advanced.RDBRestoreParallelNum
-	if config.Config.Source.Type != "restore" {
-		parallel_num = 1
-	}
-	log.Infof("RDB restore parallel num: %d", parallel_num)
+	log.Infof("RDB parallel num: %d", parallel_num)
 
 	theWriters := make([]writer.Writer, parallel_num)
 	writer_ch := make(chan writer.Writer, parallel_num)
@@ -116,6 +113,29 @@ func main() {
 		}
 	}
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(1 * time.Second) // for restore waiting for async response
+
+	if config.Config.Source.Type == "sync" {
+		var aof_writer writer.Writer
+		target := &config.Config.Target
+		switch config.Config.Target.Type {
+		case "standalone":
+			aof_writer = writer.NewRedisWriter(target.Address, target.Username,
+											   target.Password, target.IsTLS)
+		case "cluster":
+			aof_writer = writer.NewRedisClusterWriter(target.Address, target.Username,
+													  target.Password, target.IsTLS)
+		}
+		aof_ch := theReader.StartReadAOF()
+
+		id := uint64(0)
+		for e := range aof_ch {
+			e.Id = id
+			id++
+			e.CmdName, e.Group, e.Keys = commands.CalcKeys(e.Argv)
+			e.Slots = commands.CalcSlots(e.Keys)
+			aof_writer.Write(e)
+		}
+	}
 	log.Infof("finished.")
 }

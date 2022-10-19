@@ -38,3 +38,13 @@ func (r *rdbReader) StartRead() chan *entry.Entry {
 
 	return r.ch
 }
+
+func (r *rdbReader) StartReadAOF() chan *entry.Entry {
+	r.ch = make(chan *entry.Entry, 1)
+	go func() {
+		log.Infof("No AOF read for RDB Reader.")
+		close(r.ch)
+	}()
+
+	return r.ch
+}

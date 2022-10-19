@@ -24,6 +24,7 @@ type psyncReader struct {
 
 	rd               *bufio.Reader
 	receivedOffset   int64
+	AOFStartOffset   int64
 	elastiCachePSync string
 }
 
@@ -44,11 +45,21 @@ func (r *psyncReader) StartRead() chan *entry.Entry {
 		r.clearDir()
 		go r.sendReplconfAck()
 		r.saveRDB()
-		startOffset := r.receivedOffset
+		r.AOFStartOffset = r.receivedOffset
 		go r.saveAOF(r.rd)
 		r.sendRDB()
+		close(r.ch)
+	}()
+
+	return r.ch
+}
+
+func (r *psyncReader) StartReadAOF() chan *entry.Entry {
+	r.ch = make(chan *entry.Entry, 1024)
+
+	go func() {
 		time.Sleep(1 * time.Second) // wait for saveAOF create aof file
-		r.sendAOF(startOffset)
+		r.sendAOF(r.AOFStartOffset)
 	}()
 
 	return r.ch
