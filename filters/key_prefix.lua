@@ -4,7 +4,7 @@ function filter(id, is_base, group, cmd_name, keys, slots, db_id, timestamp_ms)
         return 0, db_id -- allow
     end
 
-    if string.sub(keys[1], 0, 10) == "1|default|" then
+    if string.sub(keys[1], 0, 3) == "ABC" then
     return 1, db_id -- disallow
     end
 

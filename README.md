@@ -57,14 +57,15 @@ sh build.sh
 
 The redis-shake configuration file refers to `sync.toml` or `restore.toml`.
 
-## Data filtering
+## Data filtering & converting
 
-redis-shake supports custom filtering rules using lua scripts. redis-shake can be started with
+redis-shake supports custom filtering rules and converting using lua scripts. redis-shake can be started with
 the following command:
 
 ```shell
-./bin/redis-shake sync.toml filter/xxx.lua
+./bin/redis-shake sync.toml filter/xxx.lua converter/yyy.lua
 ```
+Note: converter will be executed before filtering
 
 Some following filter templates are provided in `filter` directory:
 
@@ -93,6 +94,17 @@ The return value is:
     - 1: this command is not allowed to pass
     - 2: this command should not appear, and let redis-shake exit with an error
 - db_id: redirected db_id
+
+### Custom convert key
+
+Refer to `converter/converter_key.lua` to create a new lua script, and implement the converter function in the lua script. The
+arguments of the function are:
+
+- key: key in command
+
+The return value is:
+
+- converted key
 
 # Contribution
 
