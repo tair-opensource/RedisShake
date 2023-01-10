@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 3 || len(os.Args) > 4 {
+	if len(os.Args) < 2 || len(os.Args) > 4 {
 		fmt.Println("Usage: redis-shake <config file> <filter file> <converter file>")
 		fmt.Println("Example: redis-shake config.toml filter.lua converter.lua")
 		os.Exit(1)
