@@ -2,23 +2,25 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"runtime"
+
 	"github.com/alibaba/RedisShake/internal/commands"
 	"github.com/alibaba/RedisShake/internal/config"
+	converter "github.com/alibaba/RedisShake/internal/convert"
 	"github.com/alibaba/RedisShake/internal/filter"
 	"github.com/alibaba/RedisShake/internal/log"
 	"github.com/alibaba/RedisShake/internal/reader"
 	"github.com/alibaba/RedisShake/internal/statistics"
 	"github.com/alibaba/RedisShake/internal/writer"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"runtime"
 )
 
 func main() {
-	if len(os.Args) < 2 || len(os.Args) > 3 {
-		fmt.Println("Usage: redis-shake <config file> <filter file>")
-		fmt.Println("Example: redis-shake config.toml filter.lua")
+	if len(os.Args) < 3 || len(os.Args) > 4 {
+		fmt.Println("Usage: redis-shake <config file> <filter file> <converter file>")
+		fmt.Println("Example: redis-shake config.toml filter.lua converter.lua")
 		os.Exit(1)
 	}
 
@@ -26,6 +28,12 @@ func main() {
 	if len(os.Args) == 3 {
 		luaFile := os.Args[2]
 		filter.LoadFromFile(luaFile)
+	}
+
+	// load converter file
+	if len(os.Args) == 4 {
+		luaFile := os.Args[3]
+		converter.LoadFromFile(luaFile)
 	}
 
 	// load config

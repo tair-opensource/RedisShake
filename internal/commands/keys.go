@@ -2,11 +2,13 @@ package commands
 
 import (
 	"fmt"
-	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/utils"
 	"math"
 	"strconv"
 	"strings"
+
+	converter "github.com/alibaba/RedisShake/internal/convert"
+	"github.com/alibaba/RedisShake/internal/log"
+	"github.com/alibaba/RedisShake/internal/utils"
 )
 
 // CalcKeys https://redis.io/docs/reference/key-specs/
@@ -63,7 +65,9 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string) {
 			}
 			keyStep := spec.findKeysRangeKeyStep
 			for inx := begin; inx <= lastKeyInx && limitCount > 0; inx += keyStep {
-				keys = append(keys, argv[inx])
+				key := converter.Convert(argv[inx])
+				keys = append(keys, key)
+				argv[inx] = key
 				limitCount -= 1
 			}
 		case "keynum":
@@ -78,7 +82,9 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string) {
 			firstKey := spec.findKeysKeynumFirstKey
 			step := spec.findKeysKeynumKeyStep
 			for inx := begin + firstKey; keyCount > 0; inx += step {
-				keys = append(keys, argv[inx])
+				key := converter.Convert(argv[inx])
+				keys = append(keys, key)
+				argv[inx] = key
 				keyCount -= 1
 			}
 		default:
