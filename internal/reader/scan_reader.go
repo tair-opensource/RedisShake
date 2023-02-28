@@ -68,16 +68,17 @@ func (r *scanReader) scan() {
 		scanDbIdUpper = 0
 	}
 	for dbId := 0; dbId <= scanDbIdUpper; dbId++ {
-		var cursor uint64 = 0
+		if !r.isCluster {
+			reply := r.clientScan.DoWithStringReply("SELECT", strconv.Itoa(dbId))
+			if reply != "OK" {
+				log.Panicf("scanReader select db failed. db=[%d]", dbId)
+			}
 
-		reply := r.clientScan.DoWithStringReply("SELECT", strconv.Itoa(dbId))
-		if reply != "OK" {
-			log.Panicf("scanReader select db failed. db=[%d]", dbId)
+			r.clientDump.Send("SELECT", strconv.Itoa(dbId))
+			r.innerChannel <- &dbKey{dbId, "", true}
 		}
 
-		r.clientDump.Send("SELECT", strconv.Itoa(dbId))
-		r.innerChannel <- &dbKey{dbId, "", true}
-
+		var cursor uint64 = 0
 		for {
 			var keys []string
 			cursor, keys = r.clientScan.Scan(cursor)
