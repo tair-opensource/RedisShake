@@ -17,6 +17,7 @@ dist() {
     echo "try build GOOS=$1 GOARCH=$2"
     export GOOS=$g
     export GOARCH=$a
+    export CGO_ENABLED=0
     go build -v -trimpath -o "$BIN_DIR/redis-shake" "./cmd/redis-shake"
     unset GOOS
     unset GOARCH
