@@ -40,6 +40,9 @@ const (
 	RdbTypeHashListpack    = 16
 	RdbTypeZSetListpack    = 17
 
+	RdbTypeQuicklist2       = 18
+	RDBTypeStreamListPacks2 = 19 // stream
+
 	RdbTypeFunction2 = 0xf5
 	RdbTypeFunction  = 0xf6
 	rdbFlagModuleAux = 0xf7
@@ -137,12 +140,17 @@ func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-	case RdbTypeList, RdbTypeSet, RdbTypeQuicklist:
+	case RdbTypeList, RdbTypeSet, RdbTypeQuicklist, RdbTypeQuicklist2:
 		lr.lastReadCount, lr.remainMember, lr.totMemberCount = 0, 0, 0
 		if n, err := r.ReadLength(); err != nil {
 			return nil, err
 		} else {
 			for i := 0; i < int(n); i++ {
+				if t == RdbTypeQuicklist2 {
+					if _, err := r.ReadLength(); err != nil {
+						return nil, err
+					}
+				}
 				if _, err := r.ReadString(); err != nil {
 					return nil, err
 				}
@@ -202,7 +210,7 @@ func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 		if lr.lastReadCount == n {
 			lr.remainMember = 0
 		}
-	case RDBTypeStreamListPacks:
+	case RDBTypeStreamListPacks, RDBTypeStreamListPacks2:
 		// TODO, need to judge big key
 		lr.lastReadCount, lr.remainMember, lr.totMemberCount = 0, 0, 0
 		// list pack length
@@ -232,6 +240,28 @@ func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 		if _, err := r.ReadLength(); err != nil {
 			return nil, err
 		}
+		if t == RDBTypeStreamListPacks2 {
+			// first_id.ms
+			if _, err := r.ReadLength(); err != nil {
+				return nil, err
+			}
+			// first_id.seq
+			if _, err := r.ReadLength(); err != nil {
+				return nil, err
+			}
+			// max_deleted_entry_id.ms
+			if _, err := r.ReadLength(); err != nil {
+				return nil, err
+			}
+			// max_deleted_entry_id.seq
+			if _, err := r.ReadLength(); err != nil {
+				return nil, err
+			}
+			// entries_added
+			if _, err := r.ReadLength(); err != nil {
+				return nil, err
+			}
+		}
 
 		// cgroups length
 		nCgroups, err := r.ReadLength()
@@ -251,6 +281,13 @@ func (r *rdbReader) readObjectValue(t byte, l *Loader) ([]byte, error) {
 			// last_cg_entry_id timestamp millisecond
 			if _, err := r.ReadLength(); err != nil {
 				return nil, err
+			}
+
+			if t == RDBTypeStreamListPacks2 {
+				// cg_offset
+				if _, err := r.ReadLength(); err != nil {
+					return nil, err
+				}
 			}
 
 			// pending number
