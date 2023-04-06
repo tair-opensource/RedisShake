@@ -89,7 +89,9 @@ def loop():
     while True:
         if stopped:
             stop()
-        print(f"================ {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ================")
+        print(
+            f"================ {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ================"
+        )
 
         metrics = []
         for address, shake in nodes.items():
@@ -118,8 +120,12 @@ def main():
     username = toml_template["source"]["username"]
     password = toml_template["source"]["password"]
     tls = toml_template["source"]["tls"]
-    print(f"host: {host}, port: {port}, username: {username}, password: {password}, tls: {tls}")
-    cluster = redis.RedisCluster(host=host, port=port, username=username, password=password, ssl=tls)
+    print(
+        f"host: {host}, port: {port}, username: {username}, password: {password}, tls: {tls}"
+    )
+    cluster = redis.RedisCluster(
+        host=host, port=port, username=username, password=password, ssl=tls
+    )
     print("cluster nodes:", cluster.cluster_nodes())
 
     # parse cluster nodes
@@ -135,7 +141,11 @@ def main():
         shutil.rmtree("data")
     os.mkdir("data")
     os.chdir("data")
-    start_port = 11007
+    start_port = (
+        11007
+        if toml_template.get("advanced").get("metrics_port", 0) == 0
+        else toml_template["advanced"]["metrics_port"]
+    )
     for address in nodes.keys():
         workdir = address.replace(".", "_").replace(":", "_")
 
@@ -171,5 +181,5 @@ def signal_handler(sig, frame):
     stopped = True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
