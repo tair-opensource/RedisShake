@@ -1,22 +1,23 @@
 package entry
 
-import "fmt"
+import (
+	"RedisShake/internal/client/proto"
+	"RedisShake/internal/log"
+	"bytes"
+	"strings"
+)
 
 type Entry struct {
-	Id          uint64
-	IsBase      bool //  whether the command is decoded from dump.rdb file
-	DbId        int
-	Argv        []string
-	TimestampMs uint64
+	DbId int
+	Argv []string
 
 	CmdName string
 	Group   string
 	Keys    []string
 	Slots   []int
 
-	// for statistics
-	Offset      int64
-	EncodedSize uint64 // the size of the entry after encode
+	// for stat
+	SerializedSize int64
 }
 
 func NewEntry() *Entry {
@@ -24,6 +25,26 @@ func NewEntry() *Entry {
 	return e
 }
 
-func (e *Entry) ToString() string {
-	return fmt.Sprintf("%v", e.Argv)
+func (e *Entry) String() string {
+	str := strings.Join(e.Argv, " ")
+	if len(str) > 100 {
+		str = str[:100] + "..."
+	}
+	return str
+}
+
+func (e *Entry) Serialize() []byte {
+	buf := new(bytes.Buffer)
+	writer := proto.NewWriter(buf)
+	argvInterface := make([]interface{}, len(e.Argv))
+
+	for inx, item := range e.Argv {
+		argvInterface[inx] = item
+	}
+	err := writer.WriteArgs(argvInterface)
+	if err != nil {
+		log.Panicf(err.Error())
+	}
+	e.SerializedSize = int64(buf.Len())
+	return buf.Bytes()
 }

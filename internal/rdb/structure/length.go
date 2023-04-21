@@ -1,9 +1,9 @@
 package structure
 
 import (
+	"RedisShake/internal/log"
 	"encoding/binary"
 	"fmt"
-	"github.com/alibaba/RedisShake/internal/log"
 	"io"
 )
 
@@ -22,7 +22,7 @@ func ReadLength(rd io.Reader) uint64 {
 		log.Panicf("illegal length special=true, encoding: %d", length)
 	}
 	if err != nil {
-		log.PanicError(err)
+		log.Panicf(err.Error())
 	}
 	return length
 }

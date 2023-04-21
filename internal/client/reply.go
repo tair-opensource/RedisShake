@@ -1,10 +1,10 @@
 package client
 
-import "github.com/alibaba/RedisShake/internal/log"
+import "RedisShake/internal/log"
 
 func ArrayString(replyInterface interface{}, err error) []string {
 	if err != nil {
-		log.PanicError(err)
+		log.Panicf(err.Error())
 	}
 	replyArray := replyInterface.([]interface{})
 	replyArrayString := make([]string, len(replyArray))

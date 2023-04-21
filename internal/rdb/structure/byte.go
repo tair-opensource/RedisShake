@@ -1,7 +1,7 @@
 package structure
 
 import (
-	"github.com/alibaba/RedisShake/internal/log"
+	"RedisShake/internal/log"
 	"io"
 )
 
@@ -14,7 +14,7 @@ func ReadBytes(rd io.Reader, n int) []byte {
 	buf := make([]byte, n)
 	_, err := io.ReadFull(rd, buf)
 	if err != nil {
-		log.PanicError(err)
+		log.Panicf(err.Error())
 	}
 	return buf
 }

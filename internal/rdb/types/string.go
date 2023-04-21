@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/alibaba/RedisShake/internal/rdb/structure"
+	"RedisShake/internal/rdb/structure"
 	"io"
 )
 

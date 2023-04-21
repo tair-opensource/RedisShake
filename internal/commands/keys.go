@@ -1,9 +1,9 @@
 package commands
 
 import (
+	"RedisShake/internal/log"
+	"RedisShake/internal/utils"
 	"fmt"
-	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/utils"
 	"math"
 	"strconv"
 	"strings"
@@ -73,7 +73,7 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string) {
 			}
 			keyCount, err := strconv.Atoi(argv[keynumIdx])
 			if err != nil {
-				log.PanicError(err)
+				log.Panicf(err.Error())
 			}
 			firstKey := spec.findKeysKeynumFirstKey
 			step := spec.findKeysKeynumKeyStep

@@ -1,147 +1,88 @@
 package config
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/pelletier/go-toml/v2"
-	"io/ioutil"
+	"github.com/mcuadros/go-defaults"
+	"github.com/rs/zerolog"
+	"github.com/spf13/viper"
 	"os"
-	"runtime"
 )
 
-type tomlSource struct {
-	// sync mode
-	Version          float32 `toml:"version"`
-	Address          string  `toml:"address"`
-	Username         string  `toml:"username"`
-	Password         string  `toml:"password"`
-	IsTLS            bool    `toml:"tls"`
-	ElastiCachePSync string  `toml:"elasticache_psync"`
+type AdvancedOptions struct {
+	Dir string `mapstructure:"dir" default:"data"`
 
-	// restore mode
-	RDBFilePath string `toml:"rdb_file_path"`
-}
+	Ncpu int `mapstructure:"ncpu" default:"4"`
 
-type tomlTarget struct {
-	Type     string  `toml:"type"`
-	Version  float32 `toml:"version"`
-	Username string  `toml:"username"`
-	Address  string  `toml:"address"`
-	Password string  `toml:"password"`
-	IsTLS    bool    `toml:"tls"`
-}
-
-type tomlAdvanced struct {
-	Dir string `toml:"dir"`
-
-	Ncpu int `toml:"ncpu"`
-
-	PprofPort   int `toml:"pprof_port"`
-	MetricsPort int `toml:"metrics_port"`
+	PprofPort  int `mapstructure:"pprof_port" default:"0"`
+	StatusPort int `mapstructure:"status_port" default:"6479"`
 
 	// log
-	LogFile     string `toml:"log_file"`
-	LogLevel    string `toml:"log_level"`
-	LogInterval int    `toml:"log_interval"`
+	LogFile     string `mapstructure:"log_file" default:"shake.log"`
+	LogLevel    string `mapstructure:"log_level" default:"info"`
+	LogInterval int    `mapstructure:"log_interval" default:"5"`
 
-	// rdb restore
-	RDBRestoreCommandBehavior string `toml:"rdb_restore_command_behavior"`
+	// redis-shake gets key and value from rdb file, and uses RESTORE command to
+	// create the key in target redis. Redis RESTORE will return a "Target key name
+	// is busy" error when key already exists. You can use this configuration item
+	// to change the default behavior of restore:
+	// panic:   redis-shake will stop when meet "Target key name is busy" error.
+	// rewrite: redis-shake will replace the key with new value.
+	// ignore:  redis-shake will skip restore the key when meet "Target key name is busy" error.
+	RDBRestoreCommandBehavior string `mapstructure:"rdb_restore_command_behavior" default:"panic"`
 
-	// for writer
-	PipelineCountLimit              uint64 `toml:"pipeline_count_limit"`
-	TargetRedisClientMaxQuerybufLen uint64 `toml:"target_redis_client_max_querybuf_len"`
-	TargetRedisProtoMaxBulkLen      uint64 `toml:"target_redis_proto_max_bulk_len"`
+	PipelineCountLimit              uint64 `mapstructure:"pipeline_count_limit" default:"1024"`
+	TargetRedisClientMaxQuerybufLen int64  `mapstructure:"target_redis_client_max_querybuf_len" default:"1024000000"`
+	TargetRedisProtoMaxBulkLen      uint64 `mapstructure:"target_redis_proto_max_bulk_len" default:"512000000"`
+
+	AwsPSync string `mapstructure:"aws_psync" default:""` // "ip:port@xxxpsync;ip:port@xxxpsync"
 }
 
-type tomlShakeConfig struct {
-	Type     string
-	Source   tomlSource
-	Target   tomlTarget
-	Advanced tomlAdvanced
+func (opt *AdvancedOptions) GetPSyncCommand(address string) string {
+	return fmt.Sprintf("psync %s 1 0", address)
 }
 
-var Config tomlShakeConfig
-
-func init() {
-	Config.Type = "sync"
-
-	// source
-	Config.Source.Version = 5.0
-	Config.Source.Address = ""
-	Config.Source.Username = ""
-	Config.Source.Password = ""
-	Config.Source.IsTLS = false
-	Config.Source.ElastiCachePSync = ""
-	// restore
-	Config.Source.RDBFilePath = ""
-
-	// target
-	Config.Target.Type = "standalone"
-	Config.Target.Version = 5.0
-	Config.Target.Address = ""
-	Config.Target.Username = ""
-	Config.Target.Password = ""
-	Config.Target.IsTLS = false
-
-	// advanced
-	Config.Advanced.Dir = "data"
-	Config.Advanced.Ncpu = 4
-	Config.Advanced.PprofPort = 0
-	Config.Advanced.MetricsPort = 0
-	Config.Advanced.LogFile = "redis-shake.log"
-	Config.Advanced.LogLevel = "info"
-	Config.Advanced.LogInterval = 5
-	Config.Advanced.RDBRestoreCommandBehavior = "rewrite"
-	Config.Advanced.PipelineCountLimit = 1024
-	Config.Advanced.TargetRedisClientMaxQuerybufLen = 1024 * 1000 * 1000
-	Config.Advanced.TargetRedisProtoMaxBulkLen = 512 * 1000 * 1000
+type ShakeOptions struct {
+	Transform string `mapstructure:"transform" default:""`
+	Advanced  AdvancedOptions
 }
 
-func LoadFromFile(filename string) {
+var Opt ShakeOptions
 
-	buf, err := ioutil.ReadFile(filename)
-	if err != nil {
-		panic(err.Error())
+func LoadConfig() *viper.Viper {
+	defaults.SetDefaults(&Opt)
+
+	v := viper.New()
+	if len(os.Args) > 2 {
+		fmt.Println("Usage: redis-shake [config file]")
+		fmt.Println("Example: ")
+		fmt.Println(" 		redis-shake sync.toml # load config from sync.toml")
+		fmt.Println("		redis-shake 		  # load config from environment variables")
+		os.Exit(1)
 	}
-
-	decoder := toml.NewDecoder(bytes.NewReader(buf))
-	decoder.SetStrict(true)
-	err = decoder.Decode(&Config)
-	if err != nil {
-		missingError, ok := err.(*toml.StrictMissingError)
-		if ok {
-			panic(fmt.Sprintf("decode config error:\n%s", missingError.String()))
+	consoleWriter := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02 15:04:05"}
+	logger := zerolog.New(consoleWriter).With().Timestamp().Logger()
+	// load config from file
+	if len(os.Args) == 2 {
+		logger.Info().Msgf("load config from file: %s", os.Args[1])
+		configFile := os.Args[1]
+		v.SetConfigFile(configFile)
+		err := v.ReadInConfig()
+		if err != nil {
+			panic(err)
 		}
-		panic(err.Error())
 	}
 
-	// dir
-	err = os.MkdirAll(Config.Advanced.Dir, os.ModePerm)
+	// load config from environment variables
+	if len(os.Args) == 1 {
+		logger.Warn().Msg("load config from environment variables")
+		v.SetConfigType("env")
+		v.AutomaticEnv()
+	}
+
+	// unmarshal config
+	err := v.Unmarshal(&Opt)
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
-	err = os.Chdir(Config.Advanced.Dir)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// cpu core
-	var ncpu int
-	if Config.Advanced.Ncpu == 0 {
-		ncpu = runtime.NumCPU()
-	} else {
-		ncpu = Config.Advanced.Ncpu
-	}
-	runtime.GOMAXPROCS(ncpu)
-
-	if Config.Source.Version < 2.8 {
-		panic("source redis version must be greater than 2.8")
-	}
-	if Config.Target.Version < 2.8 {
-		panic("target redis version must be greater than 2.8")
-	}
-
-	if Config.Type != "sync" && Config.Type != "restore" && Config.Type != "scan" {
-		panic("type must be sync/restore/scan")
-	}
+	return v
 }

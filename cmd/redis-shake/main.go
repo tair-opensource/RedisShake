@@ -1,120 +1,124 @@
 package main
 
 import (
-	"fmt"
-	"github.com/alibaba/RedisShake/internal/commands"
-	"github.com/alibaba/RedisShake/internal/config"
-	"github.com/alibaba/RedisShake/internal/filter"
-	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/reader"
-	"github.com/alibaba/RedisShake/internal/statistics"
-	"github.com/alibaba/RedisShake/internal/writer"
-	"net/http"
+	"RedisShake/internal/commands"
+	"RedisShake/internal/config"
+	"RedisShake/internal/log"
+	"RedisShake/internal/reader"
+	"RedisShake/internal/status"
+	"RedisShake/internal/transform"
+	"RedisShake/internal/utils"
+	"RedisShake/internal/writer"
+	"github.com/mcuadros/go-defaults"
 	_ "net/http/pprof"
-	"os"
-	"runtime"
 )
 
 func main() {
-	if len(os.Args) < 2 || len(os.Args) > 3 {
-		fmt.Println("Usage: redis-shake <config file> <filter file>")
-		fmt.Println("Example: redis-shake config.toml filter.lua")
-		os.Exit(1)
-	}
+	v := config.LoadConfig()
 
-	// load filter file
-	if len(os.Args) == 3 {
-		luaFile := os.Args[2]
-		filter.LoadFromFile(luaFile)
-	}
+	log.Init(config.Opt.Advanced.LogLevel, config.Opt.Advanced.LogFile)
+	utils.ChdirAndAcquireFileLock()
+	utils.SetNcpu()
+	utils.SetPprofPort()
+	transform.Init()
 
-	// load config
-	configFile := os.Args[1]
-	config.LoadFromFile(configFile)
-
-	log.Init()
-	log.Infof("GOOS: %s, GOARCH: %s", runtime.GOOS, runtime.GOARCH)
-	log.Infof("Ncpu: %d, GOMAXPROCS: %d", config.Config.Advanced.Ncpu, runtime.GOMAXPROCS(0))
-	log.Infof("pid: %d", os.Getpid())
-	log.Infof("pprof_port: %d", config.Config.Advanced.PprofPort)
-	if len(os.Args) == 2 {
-		log.Infof("No lua file specified, will not filter any cmd.")
-	}
-
-	// start pprof
-	if config.Config.Advanced.PprofPort != 0 {
-		go func() {
-			err := http.ListenAndServe(fmt.Sprintf("localhost:%d", config.Config.Advanced.PprofPort), nil)
-			if err != nil {
-				log.PanicError(err)
-			}
-		}()
-	}
-
-	// start statistics
-	if config.Config.Advanced.MetricsPort != 0 {
-		statistics.Metrics.Address = config.Config.Source.Address
-		go func() {
-			log.Infof("metrics url: http://localhost:%d", config.Config.Advanced.MetricsPort)
-			mux := http.NewServeMux()
-			mux.HandleFunc("/", statistics.Handler)
-			err := http.ListenAndServe(fmt.Sprintf("localhost:%d", config.Config.Advanced.MetricsPort), mux)
-			if err != nil {
-				log.PanicError(err)
-			}
-		}()
+	// create reader
+	var theReader reader.Reader
+	if v.IsSet("SyncStandaloneReader") {
+		opts := new(reader.SyncStandaloneReaderOptions)
+		defaults.SetDefaults(opts)
+		err := v.UnmarshalKey("SyncStandaloneReader", opts)
+		if err != nil {
+			log.Panicf("failed to read the SyncReader config entry. err: %v", err)
+		}
+		theReader = reader.NewSyncStandaloneReader(opts)
+		log.Infof("create SyncStandaloneReader: %v", opts.Address)
+	} else if v.IsSet("SyncClusterReader") {
+		opts := new(reader.SyncClusterReaderOptions)
+		defaults.SetDefaults(opts)
+		err := v.UnmarshalKey("SyncClusterReader", opts)
+		if err != nil {
+			log.Panicf("failed to read the SyncReader config entry. err: %v", err)
+		}
+		theReader = reader.NewSyncClusterReader(opts)
+		log.Infof("create SyncClusterReader: %v", opts.Address)
+	} else if v.IsSet("ScanStandaloneReader") {
+		opts := new(reader.ScanStandaloneReaderOptions)
+		defaults.SetDefaults(opts)
+		err := v.UnmarshalKey("ScanStandaloneReader", opts)
+		if err != nil {
+			log.Panicf("failed to read the ScanReader config entry. err: %v", err)
+		}
+		theReader = reader.NewScanStandaloneReader(opts)
+		log.Infof("create ScanStandaloneReader: %v", opts.Address)
+	} else if v.IsSet("ScanClusterReader") {
+		opts := new(reader.ScanClusterReaderOptions)
+		defaults.SetDefaults(opts)
+		err := v.UnmarshalKey("ScanClusterReader", opts)
+		if err != nil {
+			log.Panicf("failed to read the ScanReader config entry. err: %v", err)
+		}
+		theReader = reader.NewScanClusterReader(opts)
+		log.Infof("create ScanClusterReader: %v", opts.Address)
+	} else if v.IsSet("RdbReader") {
+		opts := new(reader.RdbReaderOptions)
+		defaults.SetDefaults(opts)
+		err := v.UnmarshalKey("RdbReader", opts)
+		if err != nil {
+			log.Panicf("failed to read the RdbReader config entry. err: %v", err)
+		}
+		theReader = reader.NewRDBReader(opts)
+		log.Infof("create RdbReader: %v", opts.Filepath)
+	} else {
+		log.Panicf("no reader config entry found")
 	}
 
 	// create writer
 	var theWriter writer.Writer
-	target := &config.Config.Target
-	switch config.Config.Target.Type {
-	case "standalone":
-		theWriter = writer.NewRedisWriter(target.Address, target.Username, target.Password, target.IsTLS)
-	case "cluster":
-		theWriter = writer.NewRedisClusterWriter(target.Address, target.Username, target.Password, target.IsTLS)
-	default:
-		log.Panicf("unknown target type: %s", target.Type)
-	}
-
-	// create reader
-	source := &config.Config.Source
-	var theReader reader.Reader
-	if config.Config.Type == "sync" {
-		theReader = reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS, source.ElastiCachePSync)
-	} else if config.Config.Type == "restore" {
-		theReader = reader.NewRDBReader(source.RDBFilePath)
-	} else if config.Config.Type == "scan" {
-		theReader = reader.NewScanReader(source.Address, source.Username, source.Password, source.IsTLS)
+	if v.IsSet("RedisStandaloneWriter") {
+		opts := new(writer.RedisStandaloneWriterOptions)
+		defaults.SetDefaults(opts)
+		err := v.UnmarshalKey("RedisStandaloneWriter", opts)
+		if err != nil {
+			log.Panicf("failed to read the RedisStandaloneWriter config entry. err: %v", err)
+		}
+		theWriter = writer.NewRedisStandaloneWriter(opts)
+		log.Infof("create RedisStandaloneWriter: %v", opts.Address)
+	} else if v.IsSet("RedisClusterWriter") {
+		opts := new(writer.RedisClusterWriterOptions)
+		defaults.SetDefaults(opts)
+		err := v.UnmarshalKey("RedisClusterWriter", opts)
+		if err != nil {
+			log.Panicf("failed to read the RedisClusterWriter config entry. err: %v", err)
+		}
+		theWriter = writer.NewRedisClusterWriter(opts)
+		log.Infof("create RedisClusterWriter: %v", opts.Address)
 	} else {
-		log.Panicf("unknown source type: %s", config.Config.Type)
+		log.Panicf("no writer config entry found")
 	}
-	ch := theReader.StartRead()
 
-	// start sync
-	statistics.Init()
-	id := uint64(0)
+	// create status
+	status.Init(theReader, theWriter)
+
+	ch := theReader.StartRead()
 	for e := range ch {
-		statistics.UpdateInQueueEntriesCount(uint64(len(ch)))
 		// calc arguments
-		e.Id = id
-		id++
 		e.CmdName, e.Group, e.Keys = commands.CalcKeys(e.Argv)
 		e.Slots = commands.CalcSlots(e.Keys)
 
 		// filter
-		code := filter.Filter(e)
-		statistics.UpdateEntryId(e.Id)
-		if code == filter.Allow {
+		code := transform.Transform(e)
+		if code == transform.Allow {
 			theWriter.Write(e)
-			statistics.AddAllowEntriesCount()
-		} else if code == filter.Disallow {
-			// do something
-			statistics.AddDisallowEntriesCount()
+			status.AddEntryCount(e.CmdName, true)
+		} else if code == transform.Disallow {
+			status.AddEntryCount(e.CmdName, false)
 		} else {
-			log.Panicf("error when run lua filter. entry: %s", e.ToString())
+			log.Panicf("error when run lua filter. entry: %s", e.String())
 		}
 	}
-	theWriter.Close()
-	log.Infof("finished.")
+
+	theWriter.Close()       // Wait for all writing operations to complete
+	utils.ReleaseFileLock() // Release file lock
+	log.Infof("all done")
 }

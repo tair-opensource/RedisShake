@@ -1,8 +1,8 @@
 # redis-shake
 
-[![CI](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml/badge.svg?branch=v3)](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml)
+[![CI](https://RedisShake/actions/workflows/ci.yml/badge.svg?branch=v3)](https://RedisShake/actions/workflows/ci.yml)
 
-- [中文文档](https://github.com/alibaba/RedisShake/wiki)
+- [中文文档](https://RedisShake/wiki)
 
 redis-shake is a tool for Redis data migration and data filtering.
 
@@ -16,7 +16,7 @@ redis-shake is a tool for Redis data migration and data filtering.
 * ☁️ Support Aliyun Redis and ElastiCache
 
 For older versions of redis-shake (support codis, twemproxy) please
-visit [here](https://github.com/alibaba/RedisShake/tree/develop).
+visit [here](https://RedisShake/tree/develop).
 
 ![redis-shake2.PNG](https://s2.loli.net/2022/07/10/OZrSGutknlI8XNp.png)
 
@@ -28,14 +28,14 @@ visit [here](https://github.com/alibaba/RedisShake/tree/develop).
 
 ### Binary package
 
-Download from Release: [https://github.com/alibaba/RedisShake/releases](https://github.com/alibaba/RedisShake/releases)
+Download from Release: [https://RedisShake/releases](https://RedisShake/releases)
 
 ### Compile from source
 
 After downloading the source code, run the `sh build.sh` command to compile.
 
 ```shell
-git clone https://github.com/alibaba/RedisShake
+git clone https://RedisShake
 cd RedisShake
 sh build.sh
 ```

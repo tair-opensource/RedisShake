@@ -1,8 +1,8 @@
 package structure
 
 import (
+	"RedisShake/internal/log"
 	"bufio"
-	"github.com/alibaba/RedisShake/internal/log"
 	"io"
 	"math"
 	"strconv"

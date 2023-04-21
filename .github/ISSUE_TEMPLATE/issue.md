@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-- [ ] 请确保已经看过 wiki：https://github.com/alibaba/RedisShake/wiki
+- [ ] 请确保已经看过 wiki：https://RedisShake/wiki
 - [ ] 请确保已经学习过 Markdown 语法，良好的排版有助于维护人员了解你的问题
 - [ ] 请在此提供足够的信息供社区维护人员排查问题
 - [ ] 请在提交 issue 前删除此模板中多余的文字，包括这几句话

@@ -1,13 +1,13 @@
 name: CI
 
-on: [ pull_request ]
+on: [ push, pull_request ]
 
 jobs:
     black-box-test:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                redis-version: [ 5, 6, 7 ]
+                redis-version: [ "2.8", "3.0", "4.0", "5.0", "6.0", "7.0" ]
         steps:
             -   name: Git checkout
                 uses: actions/checkout@v2
@@ -22,7 +22,7 @@ jobs:
                     sudo apt-get install git
                     git clone https://github.com/redis/redis
                     cd redis
-                    git checkout ${{ matrix.redis-version }}.0
+                    git checkout ${{ matrix.redis-version }}
                     make -j
                     mkdir bin
                     cp src/redis-server bin/redis-server
@@ -31,7 +31,7 @@ jobs:
             -   name: Setup Python
                 uses: actions/setup-python@v4
                 with:
-                    python-version: '3.10'
+                    python-version: '3.11'
 
             -   name: make redis-shake
                 run: |
@@ -39,6 +39,5 @@ jobs:
 
             -   name: test
                 run: |
-                    cd test
-                    pip3 install -r requirements.txt
-                    python3 main.py
+                    pip3 install -r tests/requirements.txt
+                    sh test.sh

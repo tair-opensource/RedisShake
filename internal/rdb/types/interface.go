@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/alibaba/RedisShake/internal/log"
+	"RedisShake/internal/log"
 	"io"
 )
 

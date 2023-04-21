@@ -1,7 +1,7 @@
 package structure
 
 import (
-	"github.com/alibaba/RedisShake/internal/log"
+	"RedisShake/internal/log"
 	"io"
 	"strconv"
 )
@@ -16,7 +16,7 @@ const (
 func ReadString(rd io.Reader) string {
 	length, special, err := readEncodedLength(rd)
 	if err != nil {
-		log.PanicError(err)
+		log.Panicf(err.Error())
 	}
 	if special {
 		switch length {

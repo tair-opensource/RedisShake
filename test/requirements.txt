@@ -1,3 +1,0 @@
-jury-test==0.0.3
-redis==4.3.3
-toml==0.10.2

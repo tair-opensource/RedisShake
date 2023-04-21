@@ -1,3 +1,0 @@
-redis==4.3.4
-requests==2.27.1
-toml==0.10.2
