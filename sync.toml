@@ -35,6 +35,9 @@ log_file = "redis-shake.log"
 log_level = "info" # debug, info or warn
 log_interval = 5 # in seconds
 
+# restore
+disable_restore = false
+
 # redis-shake gets key and value from rdb file, and uses RESTORE command to
 # create the key in target redis. Redis RESTORE will return a "Target key name
 # is busy" error when key already exists. You can use this configuration item

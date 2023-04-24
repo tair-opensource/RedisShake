@@ -4,6 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"io"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/alibaba/RedisShake/internal/config"
 	"github.com/alibaba/RedisShake/internal/entry"
 	"github.com/alibaba/RedisShake/internal/log"
@@ -11,10 +16,6 @@ import (
 	"github.com/alibaba/RedisShake/internal/rdb/types"
 	"github.com/alibaba/RedisShake/internal/statistics"
 	"github.com/alibaba/RedisShake/internal/utils"
-	"io"
-	"os"
-	"strconv"
-	"time"
 )
 
 const (
@@ -154,7 +155,7 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 			var value bytes.Buffer
 			anotherReader := io.TeeReader(rd, &value)
 			o := types.ParseObject(anotherReader, typeByte, key)
-			if uint64(value.Len()) > config.Config.Advanced.TargetRedisProtoMaxBulkLen {
+			if config.Config.Advanced.DisableRestore || uint64(value.Len()) > config.Config.Advanced.TargetRedisProtoMaxBulkLen {
 				cmds := o.Rewrite()
 				for _, cmd := range cmds {
 					e := entry.NewEntry()

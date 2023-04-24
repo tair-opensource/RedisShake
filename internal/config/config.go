@@ -3,10 +3,11 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"github.com/pelletier/go-toml/v2"
 	"io/ioutil"
 	"os"
 	"runtime"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 type tomlSource struct {
@@ -43,6 +44,9 @@ type tomlAdvanced struct {
 	LogFile     string `toml:"log_file"`
 	LogLevel    string `toml:"log_level"`
 	LogInterval int    `toml:"log_interval"`
+
+	// disable restore
+	DisableRestore bool `toml:"disable_restore"`
 
 	// rdb restore
 	RDBRestoreCommandBehavior string `toml:"rdb_restore_command_behavior"`
@@ -91,6 +95,7 @@ func init() {
 	Config.Advanced.LogFile = "redis-shake.log"
 	Config.Advanced.LogLevel = "info"
 	Config.Advanced.LogInterval = 5
+	Config.Advanced.DisableRestore = false
 	Config.Advanced.RDBRestoreCommandBehavior = "rewrite"
 	Config.Advanced.PipelineCountLimit = 1024
 	Config.Advanced.TargetRedisClientMaxQuerybufLen = 1024 * 1000 * 1000
