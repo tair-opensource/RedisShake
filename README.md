@@ -1,8 +1,8 @@
-🎉 redis-shake v3 已经发布，欢迎在非生产环境试用。
+⚠️ redis-shake v2 不再维护，请尝试最新版本的 redis-shake。
 
-🎉 redis-shake v3 has been released, welcome to try it in non-production environments.
+⚠️ Please try the latest version of redis-shake instead of redis-shake v2.
 
-🔗: https://github.com/alibaba/RedisShake/tree/v3
+🔗: https://github.com/alibaba/RedisShake
 
 ---
 RedisShake is mainly used to synchronize data from one redis to another.<br>
