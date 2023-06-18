@@ -82,7 +82,7 @@ func main() {
 	var theReader reader.Reader
 	if config.Config.Type == "sync" {
 		theReader = reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS, source.ElastiCachePSync)
-	} else if config.Config.Type == "restore" {
+	} else if config.Config.Type == "restore" { // TODO: new aof reader
 		theReader = reader.NewRDBReader(source.RDBFilePath)
 	} else if config.Config.Type == "scan" {
 		theReader = reader.NewScanReader(source.Address, source.Username, source.Password, source.IsTLS)

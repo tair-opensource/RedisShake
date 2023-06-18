@@ -20,6 +20,7 @@ type tomlSource struct {
 
 	// restore mode
 	RDBFilePath string `toml:"rdb_file_path"`
+	AOFFilePath string `toml:"aof_file_path"` // add the aof path
 }
 
 type tomlTarget struct {
@@ -74,6 +75,7 @@ func init() {
 	Config.Source.ElastiCachePSync = ""
 	// restore
 	Config.Source.RDBFilePath = ""
+	Config.Source.AOFFilePath = ""
 
 	// target
 	Config.Target.Type = "standalone"
