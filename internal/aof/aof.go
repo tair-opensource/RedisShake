@@ -5,19 +5,19 @@ import (
 	"github.com/alibaba/RedisShake/internal/entry"
 )
 
-type AofFileType string
+type AofManifestFileType string
 
 const (
-	AofFileTypeBase AofFileType = "b" /* Base file */
-	AofFileTypeHist AofFileType = "h" /* History file */
-	AofFileTypeIncr AofFileType = "i" /* INCR file */
+	AofManifestFileTypeBase AofManifestFileType = "b" /* Base file */
+	AofManifestTypeHist     AofManifestFileType = "h" /* History file */
+	AofManifestTypeIncr     AofManifestFileType = "i" /* INCR file */
 )
 
 /* AOF manifest definition */
 type aofInfo struct {
 	fileName    string
 	fileSeq     int64
-	aofFileType AofFileType
+	aofFileType AofManifestFileType
 }
 
 type aofManifest struct {
@@ -46,7 +46,7 @@ func NewLoader(filPath string, ch chan *entry.Entry) *Loader {
 func (ld *Loader) ParseRDB() int {
 	// 加载aof目录
 	// 进行check_aof， aof
-	checkAofMain(ld.filPath)
+	CheckAofMain(ld.filPath)
 	// TODO：执行加载
 	return 0
 }

@@ -86,7 +86,7 @@ func main() {
 		if source.RDBFilePath != "" {
 			theReader = reader.NewRDBReader(source.RDBFilePath)
 		} else {
-			theReader = reader.NewAOFReader(source.AOFFilePath)
+			theReader = reader.NewAOFReader(source.AOFFilePath) // 如果是mp-aof 用户传入 manifest文件的地址 ，其他的传递aof的地址
 		}
 
 	} else if config.Config.Type == "scan" {
