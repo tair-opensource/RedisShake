@@ -4,6 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"io"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/alibaba/RedisShake/internal/config"
 	"github.com/alibaba/RedisShake/internal/entry"
 	"github.com/alibaba/RedisShake/internal/log"
@@ -11,10 +16,6 @@ import (
 	"github.com/alibaba/RedisShake/internal/rdb/types"
 	"github.com/alibaba/RedisShake/internal/statistics"
 	"github.com/alibaba/RedisShake/internal/utils"
-	"io"
-	"os"
-	"strconv"
-	"time"
 )
 
 const (

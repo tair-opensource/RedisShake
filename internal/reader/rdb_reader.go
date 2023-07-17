@@ -1,12 +1,13 @@
 package reader
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/alibaba/RedisShake/internal/entry"
 	"github.com/alibaba/RedisShake/internal/log"
 	"github.com/alibaba/RedisShake/internal/rdb"
 	"github.com/alibaba/RedisShake/internal/statistics"
-	"os"
-	"path/filepath"
 )
 
 type rdbReader struct {
