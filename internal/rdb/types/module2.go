@@ -1,40 +1,34 @@
 package types
 
 import (
+	"io"
+
 	"github.com/alibaba/RedisShake/internal/log"
 	"github.com/alibaba/RedisShake/internal/rdb/structure"
-	"io"
 )
 
-type ModuleObject struct {
+type ModuleObject interface {
+	RedisObject
 }
 
-func (o *ModuleObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
+func PareseModuleType(rd io.Reader, key string, typeByte byte) ModuleObject {
 	if typeByte == rdbTypeModule {
 		log.Panicf("module type with version 1 is not supported, key=[%s]", key)
 	}
 	moduleId := structure.ReadLength(rd)
 	moduleName := moduleTypeNameByID(moduleId)
-	opcode := structure.ReadByte(rd)
-	for opcode != rdbModuleOpcodeEOF {
-		switch opcode {
-		case rdbModuleOpcodeSINT:
-		case rdbModuleOpcodeUINT:
-			structure.ReadLength(rd)
-		case rdbModuleOpcodeFLOAT:
-			structure.ReadFloat(rd)
-		case rdbModuleOpcodeDOUBLE:
-			structure.ReadDouble(rd)
-		case rdbModuleOpcodeSTRING:
-			structure.ReadString(rd)
-		default:
-			log.Panicf("unknown module opcode=[%d], module name=[%s]", opcode, moduleName)
-		}
-		opcode = structure.ReadByte(rd)
-	}
-}
+	switch moduleName {
+	case "exstrtype":
 
-func (o *ModuleObject) Rewrite() []RedisCmd {
-	log.Panicf("module Rewrite not implemented")
-	return nil
+		o := new(TairStringObject)
+
+		o.LoadFromBuffer(rd, key, typeByte)
+
+		return o
+	default:
+		log.Panicf("unsupported module type: %s", moduleName)
+		return nil
+
+	}
+
 }
