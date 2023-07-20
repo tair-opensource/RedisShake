@@ -26,10 +26,10 @@ func PareseModuleType(rd io.Reader, key string, typeByte byte) ModuleObject {
 		o := new(TairHashObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
-	// case "tairzset_":
-	// 	o := new(TairZsetObject)
-	// 	o.LoadFromBuffer(rd, key, typeByte)
-	// 	return o
+	case "tairzset_":
+		o := new(TairZsetObject)
+		o.LoadFromBuffer(rd, key, typeByte)
+		return o
 	default:
 		log.Panicf("unsupported module type: %s", moduleName)
 		return nil
