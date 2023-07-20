@@ -1,12 +1,6 @@
 package rdb
 
 import (
-	"RedisShake/internal/config"
-	"RedisShake/internal/entry"
-	"RedisShake/internal/log"
-	"RedisShake/internal/rdb/structure"
-	"RedisShake/internal/rdb/types"
-	"RedisShake/internal/utils"
 	"bufio"
 	"bytes"
 	"encoding/binary"
@@ -14,6 +8,13 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/alibaba/RedisShake/internal/config"
+	"github.com/alibaba/RedisShake/internal/entry"
+	"github.com/alibaba/RedisShake/internal/log"
+	"github.com/alibaba/RedisShake/internal/rdb/structure"
+	"github.com/alibaba/RedisShake/internal/rdb/types"
+	"github.com/alibaba/RedisShake/internal/utils"
 )
 
 const (
