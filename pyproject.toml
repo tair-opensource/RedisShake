@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pybbt"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
     { name = "Tair", email = "tair-opensource@alibabacloud.com" },
     { name = "suxb201", email = "suxb201@gmail.com" },
@@ -17,6 +17,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = ["rich >= 13.5.2"]
 
 [project.scripts]
 pybbt = "pybbt.__main__:main"
@@ -24,4 +25,3 @@ pybbt = "pybbt.__main__:main"
 [project.urls]
 "Homepage" = "https://github.com/tair-opensource/pybbt"
 "Bug Tracker" = "https://github.com/tair-opensource/pybbt/issues"
-
