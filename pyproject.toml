@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pybbt"
+version = "1.0.0"
+authors = [
+    { name = "Tair", email = "tair-opensource@alibabacloud.com" },
+    { name = "suxb201", email = "suxb201@gmail.com" },
+]
+description = "pybbt is a Python-based tool that simplifies black box testing of software. It provides a range of auxiliary functions and the ability to filter test cases, making your testing process more efficient and manageable."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+pybbt = "pybbt.__main__:main"
+
+[project.urls]
+"Homepage" = "https://github.com/tair-opensource/pybbt"
+"Bug Tracker" = "https://github.com/tair-opensource/pybbt/issues"
+
