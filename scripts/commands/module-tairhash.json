@@ -1,0 +1,28 @@
+{
+    "EXHSET": {
+        "summary": "TairHash, Insert a field into the TairHash specified by the key",
+        "complexity": "O(1)",
+        "group": "TairHash",
+        "function": "exhsetCommand",
+        "key_specs": [
+            {
+                "flags": [
+                    "RW",
+                    "UPDATE"
+                ],
+                "begin_search": {
+                    "index": {
+                        "pos": 1
+                    }
+                },
+                "find_keys": {
+                    "range": {
+                        "lastkey": 0,
+                        "step": 1,
+                        "limit": 0
+                    }
+                }
+            }
+        ]
+    }
+}

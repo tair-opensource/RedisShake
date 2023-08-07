@@ -1,5 +1,6 @@
 {
     "table": {
+
         "list": {
             "LLEN": [
                 {
@@ -3582,7 +3583,62 @@
                     }
                 }
             ]
+        },
+        "TairHash": {
+            "EXHSET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ]
+        },
+        "TairString": {
+            "EXSET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ]
+        },
+        "TairZset": {
+            "EXZADD ": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ]
         }
+
     },
     "container": [
         "MODULE",

@@ -1,0 +1,28 @@
+{
+    "EXSET": {
+        "summary": "TairString, Set the value of a key",
+        "complexity": "O(1)",
+        "group": "TairString",
+        "function": "exsetCommand",
+        "key_specs": [
+            {
+                "flags": [
+                    "RW",
+                    "UPDATE"
+                ],
+                "begin_search": {
+                    "index": {
+                        "pos": 1
+                    }
+                },
+                "find_keys": {
+                    "range": {
+                        "lastkey": 0,
+                        "step": 1,
+                        "limit": 0
+                    }
+                }
+            }
+        ]
+    }
+}
