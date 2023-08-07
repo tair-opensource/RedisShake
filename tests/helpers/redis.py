@@ -1,4 +1,5 @@
 import time
+import os
 
 import pybbt
 import redis
@@ -17,13 +18,67 @@ class Redis:
         self.port = get_free_port()
         self.dir = f"{self.case_ctx.dir}/redis_{self.port}"
         args.extend(["--port", str(self.port)])
+        
+
+        # v1
+        # print(os.environ.get("moduleSupported"))
+        # print(os.getenv("moduleSupported"))
+        # env_file = os.getenv('GITHUB_ENV')
+        # with open(env_file, "a") as myfile:
+        #     print(myfile.read())
+        # if os.getenv("modulesupported"):
+        #     args.extend(["--loadmodule", "tairstring_module.so"])
+        #     args.extend(["--loadmodule", "tairhash_module.so"])
+        #     args.extend(["--loadmodule", "tairzset_module.so"])
+        #     self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
+        # else:
+        #     self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
+
+
+        # v2
+        # print(os.environ.get("GITHUB_ENV"))
+        # github_env_path = os.environ.get("GITHUB_ENV")
+        # github_env_vars = read_github_env(github_env_path)
+        # my_variable_value = github_env_vars.get('moduleSupported')
+        # print(my_variable_value)
+
+
+        # v3
+        # print(os.getenv('GITHUB_ENV'))
+        # env_file = os.getenv('GITHUB_ENV')
+        # with open(env_file, 'r') as myfile:
+        #     print(myfile.read())
+
+
+        # v4 完善
+        print(os.getenv('GITHUB_ENV'))
+        env_file = os.getenv('GITHUB_ENV')
+        envs = read_github_env(env_file)
+        moduleSupported = envs['moduleSupported']
+        print(moduleSupported)
+        
+
+        if (moduleSupported == 'true'):
+            args.extend(["--loadmodule", "tairstring_module.so"])
+            args.extend(["--loadmodule", "tairhash_module.so"])
+            args.extend(["--loadmodule", "tairzset_module.so"])
+            self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
+        else:
+            self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
+
+
+
+        args.extend(["--loadmodule", "tairstring_module.so"])
+        args.extend(["--loadmodule", "tairhash_module.so"])
+        args.extend(["--loadmodule", "tairzset_module.so"])
         self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
+
         self._wait_start()
         self.client = redis.Redis(host=self.host, port=self.port)
         self.case_ctx.add_exit_hook(lambda: self.server.stop())
         pybbt.log_yellow(f"redis server started at {self.host}:{self.port}, redis-cli -p {self.port}")
 
-    def _wait_start(self, timeout=5):
+    def _wait_start(self, timeout=10):
         timer = Timer()
         while True:
             try:
@@ -59,3 +114,22 @@ class Redis:
 
     def dbsize(self):
         return self.client.dbsize()
+
+
+
+
+
+def read_github_env(env_path):
+    # env_vars = {}
+    # with open(env_path, 'r') as env_file:
+    #     for line in env_file:
+    #         key, value = line.strip().split('=')
+    #         env_vars[key] = value
+    # return env_vars
+    with open(env_path, 'r') as file:
+        lines = file.readlines()
+        key_value_pairs = {}
+        for line in lines:
+            key, value = line.strip().split('=')
+            key_value_pairs[key.strip()] = value.strip()
+        return key_value_pairs

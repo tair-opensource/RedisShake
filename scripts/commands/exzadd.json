@@ -1,0 +1,29 @@
+{
+    "EXZADD ": {
+        "summary": "TairZset, Adds all the specified members with the specified (multi)scores to the tairzset stored at key",
+        "complexity": "O(N)",
+        "group": "TairZset",
+        "container": "TairZset",
+        "function": "exzaddCommand",
+        "key_specs": [
+            {
+                "flags": [
+                    "RW",
+                    "UPDATE"
+                ],
+                "begin_search": {
+                    "index": {
+                        "pos": 1
+                    }
+                },
+                "find_keys": {
+                    "range": {
+                        "lastkey": 0,
+                        "step": 1,
+                        "limit": 0
+                    }
+                }
+            }
+        ]
+    }
+}
