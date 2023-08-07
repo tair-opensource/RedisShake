@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alibaba/RedisShake/internal/rdb/structure"
+	"RedisShake/internal/rdb/structure"
 )
 
 type TairZsetObject struct {

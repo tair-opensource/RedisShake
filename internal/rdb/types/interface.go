@@ -91,8 +91,10 @@ func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
 	case rdbTypeModule, rdbTypeModule2: // module
-		o := new(ModuleObject)
-		o.LoadFromBuffer(rd, key, typeByte)
+		// var o ModuleObject
+		// o.LoadFromBuffer(rd, key, typeByte)
+		// return o
+		o := PareseModuleType(rd, key, typeByte)
 		return o
 	}
 	log.Panicf("unknown type byte: %d", typeByte)

@@ -3,8 +3,8 @@ package types
 import (
 	"io"
 
-	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/rdb/structure"
+	"RedisShake/internal/log"
+	"RedisShake/internal/rdb/structure"
 )
 
 type ModuleObject interface {

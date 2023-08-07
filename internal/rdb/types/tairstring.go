@@ -3,7 +3,7 @@ package types
 import (
 	"io"
 
-	"github.com/alibaba/RedisShake/internal/rdb/structure"
+	"RedisShake/internal/rdb/structure"
 )
 
 type TairStringValue struct {

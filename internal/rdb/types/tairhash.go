@@ -4,7 +4,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/alibaba/RedisShake/internal/rdb/structure"
+	"RedisShake/internal/rdb/structure"
 )
 
 type TairHashValue struct {
