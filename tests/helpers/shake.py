@@ -29,35 +29,35 @@ class ShakeOpts:
     def create_sync_opts(src: Redis, dst: Redis) -> typing.Dict:
         d = {}
         if src.is_cluster():
-            d["SyncClusterReader"] = {"address": src.get_address()}
+            d["sync_cluster_reader"] = {"address": src.get_address()}
         else:
-            d["SyncStandaloneReader"] = {"address": src.get_address()}
+            d["sync_standalone_reader"] = {"address": src.get_address()}
         if dst.is_cluster():
-            d["RedisClusterWriter"] = {"address": dst.get_address()}
+            d["redis_cluster_writer"] = {"address": dst.get_address()}
         else:
-            d["RedisStandaloneWriter"] = {"address": dst.get_address()}
+            d["redis_standalone_writer"] = {"address": dst.get_address()}
         return d
 
     @staticmethod
     def create_scan_opts(src: Redis, dst: Redis) -> typing.Dict:
         d = {}
         if src.is_cluster():
-            d["ScanClusterReader"] = {"address": src.get_address()}
+            d["scan_cluster_reader"] = {"address": src.get_address()}
         else:
-            d["ScanStandaloneReader"] = {"address": src.get_address()}
+            d["scan_standalone_reader"] = {"address": src.get_address()}
         if dst.is_cluster():
-            d["RedisClusterWriter"] = {"address": dst.get_address()}
+            d["redis_cluster_writer"] = {"address": dst.get_address()}
         else:
-            d["RedisStandaloneWriter"] = {"address": dst.get_address()}
+            d["redis_standalone_writer"] = {"address": dst.get_address()}
         return d
 
     @staticmethod
     def create_rdb_opts(rdb_path: str, dts: Redis) -> typing.Dict:
-        d = {"RdbReader": {"filepath": rdb_path}}
+        d = {"rdb_reader": {"filepath": rdb_path}}
         if dts.is_cluster():
-            d["RedisClusterWriter"] = {"address": dts.get_address()}
+            d["redis_cluster_writer"] = {"address": dts.get_address()}
         else:
-            d["RedisStandaloneWriter"] = {"address": dts.get_address()}
+            d["redis_standalone_writer"] = {"address": dts.get_address()}
         return d
 
 

@@ -24,46 +24,46 @@ func main() {
 
 	// create reader
 	var theReader reader.Reader
-	if v.IsSet("SyncStandaloneReader") {
+	if v.IsSet("sync_standalone_reader") {
 		opts := new(reader.SyncStandaloneReaderOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("SyncStandaloneReader", opts)
+		err := v.UnmarshalKey("sync_standalone_reader", opts)
 		if err != nil {
 			log.Panicf("failed to read the SyncReader config entry. err: %v", err)
 		}
 		theReader = reader.NewSyncStandaloneReader(opts)
 		log.Infof("create SyncStandaloneReader: %v", opts.Address)
-	} else if v.IsSet("SyncClusterReader") {
+	} else if v.IsSet("sync_cluster_reader") {
 		opts := new(reader.SyncClusterReaderOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("SyncClusterReader", opts)
+		err := v.UnmarshalKey("sync_cluster_reader", opts)
 		if err != nil {
 			log.Panicf("failed to read the SyncReader config entry. err: %v", err)
 		}
 		theReader = reader.NewSyncClusterReader(opts)
 		log.Infof("create SyncClusterReader: %v", opts.Address)
-	} else if v.IsSet("ScanStandaloneReader") {
+	} else if v.IsSet("scan_standalone_reader") {
 		opts := new(reader.ScanStandaloneReaderOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("ScanStandaloneReader", opts)
+		err := v.UnmarshalKey("scan_standalone_reader", opts)
 		if err != nil {
 			log.Panicf("failed to read the ScanReader config entry. err: %v", err)
 		}
 		theReader = reader.NewScanStandaloneReader(opts)
 		log.Infof("create ScanStandaloneReader: %v", opts.Address)
-	} else if v.IsSet("ScanClusterReader") {
+	} else if v.IsSet("scan_cluster_reader") {
 		opts := new(reader.ScanClusterReaderOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("ScanClusterReader", opts)
+		err := v.UnmarshalKey("scan_cluster_reader", opts)
 		if err != nil {
 			log.Panicf("failed to read the ScanReader config entry. err: %v", err)
 		}
 		theReader = reader.NewScanClusterReader(opts)
 		log.Infof("create ScanClusterReader: %v", opts.Address)
-	} else if v.IsSet("RdbReader") {
+	} else if v.IsSet("rdb_reader") {
 		opts := new(reader.RdbReaderOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("RdbReader", opts)
+		err := v.UnmarshalKey("rdb_reader", opts)
 		if err != nil {
 			log.Panicf("failed to read the RdbReader config entry. err: %v", err)
 		}
@@ -75,19 +75,19 @@ func main() {
 
 	// create writer
 	var theWriter writer.Writer
-	if v.IsSet("RedisStandaloneWriter") {
+	if v.IsSet("redis_standalone_writer") {
 		opts := new(writer.RedisStandaloneWriterOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("RedisStandaloneWriter", opts)
+		err := v.UnmarshalKey("redis_standalone_writer", opts)
 		if err != nil {
 			log.Panicf("failed to read the RedisStandaloneWriter config entry. err: %v", err)
 		}
 		theWriter = writer.NewRedisStandaloneWriter(opts)
 		log.Infof("create RedisStandaloneWriter: %v", opts.Address)
-	} else if v.IsSet("RedisClusterWriter") {
+	} else if v.IsSet("redis_cluster_writer") {
 		opts := new(writer.RedisClusterWriterOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("RedisClusterWriter", opts)
+		err := v.UnmarshalKey("redis_cluster_writer", opts)
 		if err != nil {
 			log.Panicf("failed to read the RedisClusterWriter config entry. err: %v", err)
 		}

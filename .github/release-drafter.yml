@@ -1,3 +1,4 @@
+# https://github.com/release-drafter/release-drafter#example
 name-template: 'redis-shake-v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 template: |
