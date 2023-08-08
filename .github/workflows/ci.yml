@@ -9,6 +9,7 @@ jobs:
             matrix:
                 redis-version: [ "2.8", "3.0", "4.0", "5.0", "6.0", "7.0" ]
             fail-fast: false
+        container: ubuntu:latest
         steps:
             -   name: Git checkout
                 uses: actions/checkout@v2
@@ -20,7 +21,8 @@ jobs:
 
             -   name: clone and make redis
                 run: |
-                    sudo apt-get install git
+                    apt-get update
+                    apt-get install -y --no-install-recommends git build-essential ca-certificates
                     git clone https://github.com/redis/redis
                     cd redis
                     git checkout ${{ matrix.redis-version }}
@@ -111,9 +113,6 @@ jobs:
             -   name: test withnot moduele supported
                 if:  contains( '2.8, 3.0, 4.0', matrix.redis-version)
                 run: |
-                    echo "${{ env.moduleSupported }}"
-                    echo "moduleSupported=false" >> "$GITHUB_ENV"
-                    echo "${{ env.moduleSupported }}"
-                    pip3 install -r tests/requirements.txt
+                    python -m pip install -r tests/requirements.txt
                     sh test.sh
 
