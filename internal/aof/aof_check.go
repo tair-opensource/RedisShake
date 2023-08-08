@@ -66,7 +66,7 @@ func getInputAofFileType(aofFilepath string) AofFileType {
 		return "AOF_RESP"
 	}
 }
-
+//test ok
 func filelsManifest(aofFilepath string) bool {
 	var is_manifest bool = false
 	fp, err := os.Open(aofFilepath)

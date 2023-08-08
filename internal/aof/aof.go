@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/alibaba/RedisShake/internal/commands"
 	"github.com/alibaba/RedisShake/internal/entry"
 	"github.com/alibaba/RedisShake/internal/writer"
 )
@@ -909,7 +910,7 @@ func loadSingleAppendOnlyFile(filename string) int {
 				}
 			}
 			for _, value := range argv {
-				ok := commands.lookupCommand(value) //包未导出 而且键值对判定问题
+				ok := commands.LookupCommand(value) //包未导出 而且键值对判定问题
 				if ok == 0 {
 					fmt.Println("unknown command. argv=%v", argv)
 					ret = AOF_FAILED
@@ -919,7 +920,7 @@ func loadSingleAppendOnlyFile(filename string) int {
 			for _, value := range argv {
 				e.Argv = append(e.Argv, value)
 			}
-			rw := writer.NewRedisWriter(address, username, password, isTls)
+			rw := theWriter.NewRedisWriter(address, username, password, isTls)
 			rw.Write(e) //是否go携程
 
 		}
@@ -1109,8 +1110,8 @@ func loadAppendOnlyFile(am *aofManifest) int {
 			}
 
 			if ret == AOF_OPEN_ERR || ret == AOF_FAILED {
-				stopLoading(ret == AOF_OK || ret == AOF_TRUNCATED) /*总体而言，这段代码的目的是在加载过程结束时，更新全局状态中的加载相关字段，并触发加载结束事件以通知相关模块。
-				具体这些字段和事件的含义和功能可能需要参考完整代码和相关函数的定义才能理解清楚*/
+				//to do stopLoading(ret == AOF_OK || ret == AOF_TRUNCATED) /*总体而言，这段代码的目的是在加载过程结束时，更新全局状态中的加载相关字段，并触发加载结束事件以通知相关模块。
+				//具体这些字段和事件的含义和功能可能需要参考完整代码和相关函数的定义才能理解清楚*/
 				return ret
 			}
 		}
