@@ -87,28 +87,32 @@ def stop():
 
 def loop():
     while True:
+        time.sleep(SLEEP_SECONDS)
         if stopped:
             stop()
         print(
             f"================ {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ================"
         )
-
         metrics = []
         for address, shake in nodes.items():
+            if shake.metrics_port == 0:
+                break
             try:
                 ret = requests.get(f"http://localhost:{shake.metrics_port}").json()
                 metrics.append(ret)
             except requests.exceptions.RequestException as e:
                 print(f"get metrics from [{address}] failed: {e}")
-
+        if len(metrics) == 0:
+            print("no metric is running for redis-shake")
+            break
         for metric in sorted(metrics, key=lambda x: x["address"]):
             print(f"{metric['address']} {metric['msg']} ")
 
-        if len(metrics) == 0:
-            print("no redis-shake is running")
-            break
 
-        time.sleep(SLEEP_SECONDS)
+def is_incr_port(port: int) -> int:
+    if port == 0:
+        return 0
+    return port + 1
 
 
 def main():
@@ -141,10 +145,15 @@ def main():
         shutil.rmtree("data")
     os.mkdir("data")
     os.chdir("data")
-    start_port = (
-        11007
+    metrics_start_port = (
+        0
         if toml_template.get("advanced").get("metrics_port", 0) == 0
         else toml_template["advanced"]["metrics_port"]
+    )
+    pprof_start_port = (
+        0
+        if toml_template.get("advanced").get("pprof_port", 0) == 0
+        else toml_template["advanced"]["pprof_port"]
     )
     for address in nodes.keys():
         workdir = address.replace(".", "_").replace(":", "_")
@@ -152,8 +161,12 @@ def main():
         os.mkdir(workdir)
         tmp_toml = toml_template
         tmp_toml["source"]["address"] = address
-        start_port += 1
-        tmp_toml["advanced"]["metrics_port"] = start_port
+
+        # port is 0, means value not need increment
+        metrics_start_port = is_incr_port(metrics_start_port)
+        tmp_toml["advanced"]["metrics_port"] = metrics_start_port
+        pprof_start_port = is_incr_port(pprof_start_port)
+        tmp_toml["advanced"]["pprof_port"] = pprof_start_port
 
         with open(f"{workdir}/sync.toml", "w") as f:
             toml.dump(tmp_toml, f)
@@ -164,7 +177,7 @@ def main():
             args.append(LUA_FILTER_PATH)
         launcher = Launcher(args=args, work_dir=workdir)
         nodes[address].launcher = launcher
-        nodes[address].metrics_port = start_port
+        nodes[address].metrics_port = metrics_start_port
 
     signal.signal(signal.SIGINT, signal_handler)
     print("start syncing...")
