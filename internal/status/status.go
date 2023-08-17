@@ -15,7 +15,7 @@ type Statusable interface {
 type Stat struct {
 	Time       string `json:"start_time"`
 	Consistent bool   `json:"consistent"`
-	// transform
+	// function
 	TotalEntriesCount  EntryCount            `json:"total_entries_count"`
 	PerCmdEntriesCount map[string]EntryCount `json:"per_cmd_entries_count"`
 	// reader

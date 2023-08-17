@@ -11,7 +11,7 @@ import (
 type AdvancedOptions struct {
 	Dir string `mapstructure:"dir" default:"data"`
 
-	Ncpu int `mapstructure:"ncpu" default:"4"`
+	Ncpu int `mapstructure:"ncpu" default:"0"`
 
 	PprofPort  int `mapstructure:"pprof_port" default:"0"`
 	StatusPort int `mapstructure:"status_port" default:"6479"`
@@ -42,8 +42,8 @@ func (opt *AdvancedOptions) GetPSyncCommand(address string) string {
 }
 
 type ShakeOptions struct {
-	Transform string `mapstructure:"transform" default:""`
-	Advanced  AdvancedOptions
+	Function string `mapstructure:"function" default:""`
+	Advanced AdvancedOptions
 }
 
 var Opt ShakeOptions
