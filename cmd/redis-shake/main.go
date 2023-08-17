@@ -1,12 +1,11 @@
 package main
 
 import (
-	"RedisShake/internal/commands"
 	"RedisShake/internal/config"
+	"RedisShake/internal/function"
 	"RedisShake/internal/log"
 	"RedisShake/internal/reader"
 	"RedisShake/internal/status"
-	"RedisShake/internal/transform"
 	"RedisShake/internal/utils"
 	"RedisShake/internal/writer"
 	"github.com/mcuadros/go-defaults"
@@ -20,7 +19,7 @@ func main() {
 	utils.ChdirAndAcquireFileLock()
 	utils.SetNcpu()
 	utils.SetPprofPort()
-	transform.Init()
+	function.Init()
 
 	// create reader
 	var theReader reader.Reader
@@ -103,18 +102,19 @@ func main() {
 	ch := theReader.StartRead()
 	for e := range ch {
 		// calc arguments
-		e.CmdName, e.Group, e.Keys = commands.CalcKeys(e.Argv)
-		e.Slots = commands.CalcSlots(e.Keys)
+		e.Preprocess()
 
 		// filter
-		code := transform.Transform(e)
-		if code == transform.Allow {
-			theWriter.Write(e)
-			status.AddEntryCount(e.CmdName, true)
-		} else if code == transform.Disallow {
+		log.Debugf("function before: %v", e)
+		entries := function.RunFunction(e)
+		log.Debugf("function after: %v", entries)
+		if len(entries) == 0 {
 			status.AddEntryCount(e.CmdName, false)
 		} else {
-			log.Panicf("error when run lua filter. entry: %s", e.String())
+			for _, entry := range entries {
+				theWriter.Write(entry)
+				status.AddEntryCount(entry.CmdName, true)
+			}
 		}
 	}
 

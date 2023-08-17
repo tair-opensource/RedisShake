@@ -1,48 +1,27 @@
-#transform = ""
+transform = ""
 
-#[RdbReader]
-#filepath = "/data/dump.rdb"
-
-
-#[SyncStandaloneReader]
-#address = "127.0.0.1:6379"
-#username = "" # keep empty if not using ACL
-#password = "" # keep empty if no authentication is required
-#tls = false
-
-
-[SyncClusterReader]
+[sync_standlone_reader]
 address = "127.0.0.1:6379"
-username = "" # keep empty if not using ACL
-password = "" # keep empty if no authentication is required
+username = ""              # keep empty if not using ACL
+password = ""              # keep empty if no authentication is required
 tls = false
 
-
-[RedisStandaloneWriter]
+[redis_standalone_writer]
 address = "127.0.0.1:6380"
-username = "" # keep empty if not using ACL
-password = "" # keep empty if no authentication is required
+username = ""              # keep empty if not using ACL
+password = ""              # keep empty if no authentication is required
 tls = false
-
-
-#[RedisClusterWriter]
-#address = "127.0.0.1:6380"
-#username = "" # keep empty if not using ACL
-#password = "" # keep empty if no authentication is required
-#tls = false
-
 
 [advanced]
 dir = "data"
-ncpu = 3 # runtime.GOMAXPROCS, 0 means use runtime.NumCPU() cpu cores
-
-pprof_port = 0 # pprof port, 0 means disable
+ncpu = 0        # runtime.GOMAXPROCS, 0 means use runtime.NumCPU() cpu cores
+pprof_port = 0  # pprof port, 0 means disable
 status_port = 0 # status port, 0 means disable
 
 # log
 log_file = "shake.log"
-log_level = "info" # debug, info or warn
-log_interval = 5 # in seconds
+log_level = "info"     # debug, info or warn
+log_interval = 5       # in seconds
 
 # redis-shake gets key and value from rdb file, and uses RESTORE command to
 # create the key in target redis. Redis RESTORE will return a "Target key name
