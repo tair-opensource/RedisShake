@@ -2,14 +2,15 @@ package entry
 
 import (
 	"RedisShake/internal/client/proto"
+	"RedisShake/internal/commands"
 	"RedisShake/internal/log"
 	"bytes"
 	"strings"
 )
 
 type Entry struct {
-	DbId int
-	Argv []string
+	DbId int      // required
+	Argv []string // required
 
 	CmdName string
 	Group   string
@@ -47,4 +48,9 @@ func (e *Entry) Serialize() []byte {
 	}
 	e.SerializedSize = int64(buf.Len())
 	return buf.Bytes()
+}
+
+func (e *Entry) Preprocess() {
+	e.CmdName, e.Group, e.Keys = commands.CalcKeys(e.Argv)
+	e.Slots = commands.CalcSlots(e.Keys)
 }
