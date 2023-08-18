@@ -4,21 +4,16 @@ import (
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 	"RedisShake/internal/utils"
+	"fmt"
 	"sync"
 )
 
-type SyncClusterReaderOptions struct {
-	Address  string `mapstructure:"address" default:""`
-	Username string `mapstructure:"username" default:""`
-	Password string `mapstructure:"password" default:""`
-	Tls      bool   `mapstructure:"tls" default:"false"`
-}
-
 type syncClusterReader struct {
-	readers []Reader
+	readers  []Reader
+	statusId int
 }
 
-func NewSyncClusterReader(opts *SyncClusterReaderOptions) Reader {
+func NewSyncClusterReader(opts *SyncReaderOptions) Reader {
 	addresses, _ := utils.GetRedisClusterNodes(opts.Address, opts.Username, opts.Password, opts.Tls)
 	log.Debugf("get redis cluster nodes:")
 	for _, address := range addresses {
@@ -26,7 +21,7 @@ func NewSyncClusterReader(opts *SyncClusterReaderOptions) Reader {
 	}
 	rd := &syncClusterReader{}
 	for _, address := range addresses {
-		rd.readers = append(rd.readers, NewSyncStandaloneReader(&SyncStandaloneReaderOptions{
+		rd.readers = append(rd.readers, NewSyncStandaloneReader(&SyncReaderOptions{
 			Address:  address,
 			Username: opts.Username,
 			Password: opts.Password,
@@ -64,7 +59,9 @@ func (rd *syncClusterReader) Status() interface{} {
 }
 
 func (rd *syncClusterReader) StatusString() string {
-	return "syncClusterReader"
+	rd.statusId += 1
+	rd.statusId %= len(rd.readers)
+	return fmt.Sprintf("src-%d, %s", rd.statusId, rd.readers[rd.statusId].StatusString())
 }
 
 func (rd *syncClusterReader) StatusConsistent() bool {

@@ -11,13 +11,6 @@ import (
 
 const KeySlots = 16384
 
-type RedisClusterWriterOptions struct {
-	Address  string `mapstructure:"address" default:""`
-	Username string `mapstructure:"username" default:""`
-	Password string `mapstructure:"password" default:""`
-	Tls      bool   `mapstructure:"tls" default:"false"`
-}
-
 type RedisClusterWriter struct {
 	addresses []string
 	writers   []Writer
@@ -26,7 +19,7 @@ type RedisClusterWriter struct {
 	stat []interface{}
 }
 
-func NewRedisClusterWriter(opts *RedisClusterWriterOptions) Writer {
+func NewRedisClusterWriter(opts *RedisWriterOptions) Writer {
 	rw := new(RedisClusterWriter)
 	rw.loadClusterNodes(opts)
 	log.Infof("redisClusterWriter connected to redis cluster successful. addresses=%v", rw.addresses)
@@ -39,7 +32,7 @@ func (r *RedisClusterWriter) Close() {
 	}
 }
 
-func (r *RedisClusterWriter) loadClusterNodes(opts *RedisClusterWriterOptions) {
+func (r *RedisClusterWriter) loadClusterNodes(opts *RedisWriterOptions) {
 	c := client.NewRedisClient(opts.Address, opts.Username, opts.Password, opts.Tls)
 	reply := c.DoWithStringReply("cluster", "nodes")
 	reply = strings.TrimSpace(reply)
@@ -69,7 +62,7 @@ func (r *RedisClusterWriter) loadClusterNodes(opts *RedisClusterWriterOptions) {
 		r.addresses = append(r.addresses, address)
 
 		// writers
-		opts := &RedisStandaloneWriterOptions{
+		opts := &RedisWriterOptions{
 			Address:  address,
 			Username: opts.Username,
 			Password: opts.Password,

@@ -19,12 +19,23 @@ import (
 	"time"
 )
 
-type SyncStandaloneReaderOptions struct {
+type SyncReaderOptions struct {
+	Cluster  bool   `mapstructure:"cluster" default:"false"`
 	Address  string `mapstructure:"address" default:""`
 	Username string `mapstructure:"username" default:""`
 	Password string `mapstructure:"password" default:""`
 	Tls      bool   `mapstructure:"tls" default:"false"`
 }
+
+type State string
+
+const (
+	kHandShake  State = "hand shaking"
+	kWaitBgsave State = "waiting bgsave"
+	kReceiveRdb State = "receiving rdb"
+	kSyncRdb    State = "syncing rdb"
+	kSyncAof    State = "syncing aof"
+)
 
 type syncStandaloneReader struct {
 	client *client.Redis
@@ -40,12 +51,12 @@ type syncStandaloneReader struct {
 		Dir     string `json:"dir"`
 
 		// status
-		Status string `json:"status"`
+		Status State `json:"status"`
 
 		// rdb info
 		RdbFilePath      string `json:"rdb_file_path"`
 		RdbFileSizeBytes int64  `json:"rdb_file_size_bytes"` // bytes of the rdb file
-		RdbFIleSizeHuman string `json:"rdb_file_size_human"`
+		RdbFileSizeHuman string `json:"rdb_file_size_human"`
 		RdbReceivedBytes int64  `json:"rdb_received_bytes"` // bytes of RDB received from master
 		RdbReceivedHuman string `json:"rdb_received_human"`
 		RdbSentBytes     int64  `json:"rdb_sent_bytes"` // bytes of RDB sent to chan
@@ -59,13 +70,13 @@ type syncStandaloneReader struct {
 	}
 }
 
-func NewSyncStandaloneReader(opts *SyncStandaloneReaderOptions) Reader {
+func NewSyncStandaloneReader(opts *SyncReaderOptions) Reader {
 	r := new(syncStandaloneReader)
 	r.client = client.NewRedisClient(opts.Address, opts.Username, opts.Password, opts.Tls)
 	r.rd = r.client.BufioReader()
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
 	r.stat.Address = opts.Address
-	r.stat.Status = "init"
+	r.stat.Status = kHandShake
 	r.stat.Dir = utils.GetAbsPath(r.stat.Name)
 	utils.CreateEmptyDir(r.stat.Dir)
 	return r
@@ -81,6 +92,7 @@ func (r *syncStandaloneReader) StartRead() chan *entry.Entry {
 		startOffset := r.stat.AofReceivedOffset
 		go r.receiveAOF(r.rd)
 		r.sendRDB()
+		r.stat.Status = kSyncAof
 		r.sendAOF(startOffset)
 	}()
 
@@ -109,34 +121,16 @@ func (r *syncStandaloneReader) sendPSync() {
 	r.client.Send(argv...)
 
 	// format: \n\n\n+<reply>\r\n
-	for true { // TODO better way to parse psync reply
-		// \n\n\n+
-		b, err := r.rd.ReadByte()
+	for {
+		bytes, err := r.rd.Peek(1)
 		if err != nil {
 			log.Panicf(err.Error())
 		}
-		if b == '\n' {
-			continue
+		if bytes[0] != '\n' {
+			break
 		}
-		if b == '-' {
-			reply, err := r.rd.ReadString('\n')
-			if err != nil {
-				log.Panicf(err.Error())
-			}
-			reply = strings.TrimSpace(reply)
-			log.Panicf("psync error. name=[%s], reply=[%s]", r.stat.Name, reply)
-		}
-		if b != '+' {
-			log.Panicf("invalid psync reply. name=[%s], b=[%s]", r.stat.Name, string(b))
-		}
-		break
 	}
-	reply, err := r.rd.ReadString('\n')
-	if err != nil {
-		log.Panicf(err.Error())
-	}
-	reply = strings.TrimSpace(reply)
-
+	reply := r.client.ReceiveString()
 	masterOffset, err := strconv.Atoi(strings.Split(reply, " ")[2])
 	if err != nil {
 		log.Panicf(err.Error())
@@ -145,16 +139,16 @@ func (r *syncStandaloneReader) sendPSync() {
 }
 
 func (r *syncStandaloneReader) receiveRDB() {
-	log.Infof("[%s] source db is doing bgsave.", r.stat.Name)
-	r.stat.Status = "source db is doing bgsave"
+	log.Debugf("[%s] source db is doing bgsave.", r.stat.Name)
+	r.stat.Status = kWaitBgsave
 	timeStart := time.Now()
 	// format: \n\n\n$<length>\r\n<rdb>
-	for true {
+	for {
 		b, err := r.rd.ReadByte()
 		if err != nil {
 			log.Panicf(err.Error())
 		}
-		if b == '\n' {
+		if b == '\n' { // heartbeat
 			continue
 		}
 		if b != '$' {
@@ -162,7 +156,7 @@ func (r *syncStandaloneReader) receiveRDB() {
 		}
 		break
 	}
-	log.Infof("[%s] source db bgsave finished. timeUsed=[%.2f]s", r.stat.Name, time.Since(timeStart).Seconds())
+	log.Debugf("[%s] source db bgsave finished. timeUsed=[%.2f]s", r.stat.Name, time.Since(timeStart).Seconds())
 	lengthStr, err := r.rd.ReadString('\n')
 	if err != nil {
 		log.Panicf(err.Error())
@@ -172,23 +166,24 @@ func (r *syncStandaloneReader) receiveRDB() {
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	log.Infof("[%s] rdb length=[%d]", r.stat.Name, length)
+	log.Debugf("[%s] rdb file size: [%v]", r.stat.Name, humanize.IBytes(uint64(length)))
 	r.stat.RdbFileSizeBytes = length
-	r.stat.RdbFIleSizeHuman = humanize.IBytes(uint64(length))
+	r.stat.RdbFileSizeHuman = humanize.IBytes(uint64(length))
 
 	// create rdb file
 	r.stat.RdbFilePath, err = filepath.Abs(r.stat.Name + "/dump.rdb")
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	log.Infof("[%s] start receiving RDB. path=[%s]", r.stat.Name, r.stat.RdbFilePath)
+	timeStart = time.Now()
+	log.Debugf("[%s] start receiving RDB. path=[%s]", r.stat.Name, r.stat.RdbFilePath)
 	rdbFileHandle, err := os.OpenFile(r.stat.RdbFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		log.Panicf(err.Error())
 	}
 
 	// receive rdb
-	r.stat.Status = fmt.Sprintf("[%s]: receiving RDB", r.stat.Name)
+	r.stat.Status = kReceiveRdb
 	remainder := length
 	const bufSize int64 = 32 * 1024 * 1024 // 32MB
 	buf := make([]byte, bufSize)
@@ -214,11 +209,11 @@ func (r *syncStandaloneReader) receiveRDB() {
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	log.Infof("[%s] save RDB finished.", r.stat.Name)
+	log.Debugf("[%s] save RDB finished. timeUsed=[%.2f]s", r.stat.Name, time.Since(timeStart).Seconds())
 }
 
 func (r *syncStandaloneReader) receiveAOF(rd io.Reader) {
-	log.Infof("[%s] start receiving aof data, and save to file", r.stat.Name)
+	log.Debugf("[%s] start receiving aof data, and save to file", r.stat.Name)
 	aofWriter := rotate.NewAOFWriter(r.stat.Name, r.stat.Dir, r.stat.AofReceivedOffset)
 	defer aofWriter.Close()
 	buf := make([]byte, 16*1024) // 16KB is enough for writing file
@@ -236,15 +231,15 @@ func (r *syncStandaloneReader) receiveAOF(rd io.Reader) {
 
 func (r *syncStandaloneReader) sendRDB() {
 	// start parse rdb
-	log.Infof("[%s] start sending RDB to target", r.stat.Name)
-	r.stat.Status = fmt.Sprintf("[%s]: sending RDB to target", r.stat.Name)
+	log.Debugf("[%s] start sending RDB to target", r.stat.Name)
+	r.stat.Status = kSyncRdb
 	updateFunc := func(offset int64) {
 		r.stat.RdbSentBytes = offset
 		r.stat.RdbSentHuman = humanize.IBytes(uint64(offset))
 	}
 	rdbLoader := rdb.NewLoader(r.stat.Name, updateFunc, r.stat.RdbFilePath, r.ch)
 	r.DbId = rdbLoader.ParseRDB()
-	log.Infof("[%s] send RDB finished", r.stat.Name)
+	log.Debugf("[%s] send RDB finished", r.stat.Name)
 }
 
 func (r *syncStandaloneReader) sendAOF(offset int64) {
@@ -264,12 +259,23 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 			r.DbId = DbId
 			continue
 		}
+		// ping
+		if strings.EqualFold(argv[0], "ping") {
+			continue
+		}
+		// replconf @AWS
+		if strings.EqualFold(argv[0], "replconf") {
+			continue
+		}
+		// opinfo @Aliyun
+		if strings.EqualFold(argv[0], "opinfo") {
+			continue
+		}
 
 		e := entry.NewEntry()
 		e.Argv = argv
 		e.DbId = r.DbId
 		r.ch <- e
-		r.stat.Status = fmt.Sprintf("[%s]: sending aof to target", r.stat.Name)
 	}
 }
 
@@ -287,7 +293,13 @@ func (r *syncStandaloneReader) Status() interface{} {
 }
 
 func (r *syncStandaloneReader) StatusString() string {
-	return r.stat.Status
+	if r.stat.Status == kSyncRdb {
+		return fmt.Sprintf("%s, size=[%s/%s]", r.stat.Status, r.stat.RdbSentHuman, r.stat.RdbFileSizeHuman)
+	}
+	if r.stat.Status == kSyncAof {
+		return fmt.Sprintf("%s, diff=[%v]", r.stat.Status, -r.stat.AofSentOffset+r.stat.AofReceivedOffset)
+	}
+	return string(r.stat.Status)
 }
 
 func (r *syncStandaloneReader) StatusConsistent() bool {

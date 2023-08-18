@@ -20,10 +20,10 @@ def acl():
     inserter.add_data(src, cross_slots_cmd=True)
 
     opts = h.ShakeOpts.create_sync_opts(src, dst)
-    opts["sync_standalone_reader"]["username"] = "user0"
-    opts["sync_standalone_reader"]["password"] = "password0"
-    opts["redis_standalone_writer"]["username"] = "user1"
-    opts["redis_standalone_writer"]["password"] = "password1"
+    opts["sync_reader"]["username"] = "user0"
+    opts["sync_reader"]["password"] = "password0"
+    opts["redis_writer"]["username"] = "user1"
+    opts["redis_writer"]["password"] = "password1"
     p.log(f"opts: {opts}")
     shake = h.Shake(opts)
 

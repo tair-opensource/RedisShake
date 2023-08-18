@@ -29,7 +29,7 @@ var stat = new(Stat)
 var theReader Statusable
 var theWriter Statusable
 
-func AddEntryCount(cmd string, allow bool) {
+func AddReadCount(cmd string) {
 	ch <- func() {
 		if stat.PerCmdEntriesCount == nil {
 			stat.PerCmdEntriesCount = make(map[string]EntryCount)
@@ -39,13 +39,24 @@ func AddEntryCount(cmd string, allow bool) {
 			cmdEntryCount = EntryCount{}
 			stat.PerCmdEntriesCount[cmd] = cmdEntryCount
 		}
-		if allow {
-			stat.TotalEntriesCount.Allow += 1
-			cmdEntryCount.Allow += 1
-		} else {
-			stat.TotalEntriesCount.Disallow += 1
-			cmdEntryCount.Disallow += 1
+		stat.TotalEntriesCount.ReadCount += 1
+		cmdEntryCount.ReadCount += 1
+		stat.PerCmdEntriesCount[cmd] = cmdEntryCount
+	}
+}
+
+func AddWriteCount(cmd string) {
+	ch <- func() {
+		if stat.PerCmdEntriesCount == nil {
+			stat.PerCmdEntriesCount = make(map[string]EntryCount)
 		}
+		cmdEntryCount, ok := stat.PerCmdEntriesCount[cmd]
+		if !ok {
+			cmdEntryCount = EntryCount{}
+			stat.PerCmdEntriesCount[cmd] = cmdEntryCount
+		}
+		stat.TotalEntriesCount.WriteCount += 1
+		cmdEntryCount.WriteCount += 1
 		stat.PerCmdEntriesCount[cmd] = cmdEntryCount
 	}
 }
@@ -92,10 +103,7 @@ func Init(r Statusable, w Statusable) {
 			select {
 			case <-ticker.C:
 				ch <- func() {
-					log.Infof("%s, %s, %s",
-						stat.TotalEntriesCount.String(),
-						theReader.StatusString(),
-						theWriter.StatusString())
+					log.Infof("%s, %s", stat.TotalEntriesCount.String(), theReader.StatusString())
 				}
 			}
 		}

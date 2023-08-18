@@ -35,7 +35,7 @@ func (w *AOFWriter) openFile(offset int64) {
 	}
 	w.offset = offset
 	w.filesize = 0
-	log.Infof("[%s] open file for write. filename=[%s]", w.name, w.filepath)
+	log.Debugf("[%s] open file for write. filename=[%s]", w.name, w.filepath)
 }
 
 func (w *AOFWriter) Write(buf []byte) {

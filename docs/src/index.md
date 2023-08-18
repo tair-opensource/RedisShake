@@ -10,9 +10,6 @@ hero:
         -   theme: brand
             text: 快速上手
             link: /zh/guide/getting-started
-        # -   theme: alt
-        #     text: 云原生内存数据库Tair
-        #     link: https://www.aliyun.com/product/apsaradb/kvstore/tair
 
 features:
     -   title: 数据迁移

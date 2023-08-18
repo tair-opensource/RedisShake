@@ -11,7 +11,6 @@ import (
 var logger zerolog.Logger
 
 func Init(level string, file string) {
-
 	// log level
 	switch level {
 	case "debug":

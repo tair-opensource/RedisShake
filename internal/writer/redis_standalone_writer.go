@@ -14,7 +14,8 @@ import (
 	"time"
 )
 
-type RedisStandaloneWriterOptions struct {
+type RedisWriterOptions struct {
+	Cluster  bool   `mapstructure:"cluster" default:"false"`
 	Address  string `mapstructure:"address" default:""`
 	Username string `mapstructure:"username" default:""`
 	Password string `mapstructure:"password" default:""`
@@ -36,7 +37,7 @@ type redisStandaloneWriter struct {
 	}
 }
 
-func NewRedisStandaloneWriter(opts *RedisStandaloneWriterOptions) Writer {
+func NewRedisStandaloneWriter(opts *RedisWriterOptions) Writer {
 	rw := new(redisStandaloneWriter)
 	rw.address = opts.Address
 	rw.stat.Name = "writer_" + strings.Replace(opts.Address, ":", "_", -1)
