@@ -3,26 +3,21 @@ package reader
 import (
 	"RedisShake/internal/entry"
 	"RedisShake/internal/utils"
+	"fmt"
 	"sync"
 )
 
-type ScanClusterReaderOptions struct {
-	Address  string `mapstructure:"address" default:""`
-	Username string `mapstructure:"username" default:""`
-	Password string `mapstructure:"password" default:""`
-	Tls      bool   `mapstructure:"tls" default:"false"`
-}
-
 type scanClusterReader struct {
-	readers []Reader
+	readers  []Reader
+	statusId int
 }
 
-func NewScanClusterReader(opts *ScanClusterReaderOptions) Reader {
+func NewScanClusterReader(opts *ScanReaderOptions) Reader {
 	addresses, _ := utils.GetRedisClusterNodes(opts.Address, opts.Username, opts.Password, opts.Tls)
 
 	rd := &scanClusterReader{}
 	for _, address := range addresses {
-		rd.readers = append(rd.readers, NewScanStandaloneReader(&ScanStandaloneReaderOptions{
+		rd.readers = append(rd.readers, NewScanStandaloneReader(&ScanReaderOptions{
 			Address:  address,
 			Username: opts.Username,
 			Password: opts.Password,
@@ -60,7 +55,9 @@ func (rd *scanClusterReader) Status() interface{} {
 }
 
 func (rd *scanClusterReader) StatusString() string {
-	return "scanClusterReader"
+	rd.statusId += 1
+	rd.statusId %= len(rd.readers)
+	return fmt.Sprintf("src-%d, %s", rd.statusId, rd.readers[rd.statusId].StatusString())
 }
 
 func (rd *scanClusterReader) StatusConsistent() bool {

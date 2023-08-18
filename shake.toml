@@ -1,16 +1,34 @@
-transform = ""
+function = ""
 
-[sync_standlone_reader]
+
+[sync_reader]
+cluster = false
 address = "127.0.0.1:6379"
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
 tls = false
 
-[redis_standalone_writer]
+# [scan_reader]
+# cluster = false
+# address = "127.0.0.1:6379"
+# username = ""              # keep empty if not using ACL
+# password = ""              # keep empty if no authentication is required
+# tls = false
+
+# [rdb_reader]
+# address = "127.0.0.1:6379"
+# username = ""              # keep empty if not using ACL
+# password = ""              # keep empty if no authentication is required
+# tls = false
+
+
+[redis_writer]
+cluster = false
 address = "127.0.0.1:6380"
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
 tls = false
+
 
 [advanced]
 dir = "data"
@@ -30,7 +48,7 @@ log_interval = 5       # in seconds
 # panic:   redis-shake will stop when meet "Target key name is busy" error.
 # rewrite: redis-shake will replace the key with new value.
 # ignore:  redis-shake will skip restore the key when meet "Target key name is busy" error.
-rdb_restore_command_behavior = "rewrite" # panic, rewrite or skip
+rdb_restore_command_behavior = "panic" # panic, rewrite or skip
 
 # redis-shake uses pipeline to improve sending performance.
 # This item limits the maximum number of commands in a pipeline.

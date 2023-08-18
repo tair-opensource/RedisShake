@@ -101,6 +101,14 @@ func (r *Redis) Receive() (interface{}, error) {
 	return r.protoReader.ReadReply()
 }
 
+func (r *Redis) ReceiveString() string {
+	reply, err := r.Receive()
+	if err != nil {
+		log.Panicf(err.Error())
+	}
+	return reply.(string)
+}
+
 func (r *Redis) BufioReader() *bufio.Reader {
 	return r.reader
 }
