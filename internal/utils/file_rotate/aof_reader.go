@@ -35,7 +35,7 @@ func (r *AOFReader) openFile(offset int64) {
 	}
 	r.offset = offset
 	r.pos = 0
-	log.Infof("[%s] open file for read. filename=[%s]", r.name, r.filepath)
+	log.Debugf("[%s] open file for read. filename=[%s]", r.name, r.filepath)
 }
 
 func (r *AOFReader) readNextFile(offset int64) {

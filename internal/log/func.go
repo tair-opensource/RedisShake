@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"github.com/go-stack/stack"
 	"os"
 )
@@ -20,10 +19,9 @@ func Warnf(format string, args ...interface{}) {
 
 func Panicf(format string, args ...interface{}) {
 	frames := stack.Trace().TrimRuntime()
-	msgs := fmt.Sprintf(format, args...)
 	for _, frame := range frames {
-		msgs += fmt.Sprintf("\n%+v -> %n()", frame, frame)
+		logger.Warn().Msgf("%+v -> %n()", frame, frame)
 	}
-	logger.Error().Msg(msgs)
+	logger.Error().Msgf(format, args...)
 	os.Exit(1)
 }

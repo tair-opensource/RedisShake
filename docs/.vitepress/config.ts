@@ -19,21 +19,55 @@ export default defineConfig({
                 ],
                 sidebar: [
                     {
-                        text: '基础教程',
+                        text: '介绍',
                         items: [
-                            { text: 'RedisShake 简介', link: '/zh/guide/getting-started' },
+                            { text: '什么是 RedisShake', link: '/zh/guide/getting-started' },
                             { text: '快速上手', link: '/zh/guide/getting-started' },
-                            { text: '配置文件', link: '/zh/guide/config' }
+                            { text: '配置', link: '/zh/guide/getting-started' },
+                            { text: '迁移模式选择', link: '/zh/guide/getting-started' },
                         ]
                     },
                     {
-                        text: '变换/过滤',
+                        text: 'Reader',
                         items: [
-                            { text: '上手使用', link: '/zh/transform/getting-started' },
-                            { text: '样例', link: '/zh/transform/examples' }
+                            { text: 'Sync Reader', link: '/zh/function/introduction' },
+                            { text: 'Scan Reader', link: '/zh/function/best_practices' },
+                            { text: 'RDB Reader', link: '/zh/function/best_practices' },
+                        ]
+                    },
+                    {
+                        text: 'Writer',
+                        items: [
+                            { text: 'Redis Writer', link: '/zh/function/introduction' },
+                        ]
+                    },
+                    {
+                        text: 'function',
+                        items: [
+                            { text: '什么是 function', link: '/zh/function/introduction' },
+                            {
+                                text: '最佳实践',
+                                items: [
+                                    { text: '监控', link: '/zh/function/best_practices' },
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        text: '进阶用法',
+                        items: [
+                            { text: '监控', link: '/zh/function/best_practices' },
+                            { text: '双向同步', link: '/zh/function/best_practices' },
+                            { text: '容器部署', link: '/zh/function/best_practices' },
+                            { text: '主从实例向集群实例迁移', link: '/zh/function/best_practices' },
+                            { text: '大 key 重写', link: '/zh/function/best_practices' },
                         ]
                     }
                 ],
+                footer: {
+                    message: 'Released under the MIT License.',
+                    copyright: 'Copyright © 2019-present Tair'
+                }
             }
         },
         en: {

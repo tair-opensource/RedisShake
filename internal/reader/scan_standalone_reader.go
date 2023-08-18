@@ -18,24 +18,17 @@ type dbKey struct {
 	isSelect bool
 }
 
-type ScanStandaloneReaderOptions struct {
-	Address  string `mapstructure:"address" default:""`
-	Username string `mapstructure:"username" default:""`
-	Password string `mapstructure:"password" default:""`
-	Tls      bool   `mapstructure:"tls" default:"false"`
-}
-
 type scanStandaloneReader struct {
 	isCluster bool
+	ch        chan *entry.Entry
 
 	// client for scan keys
-	clientScan   *client.Redis
-	innerChannel chan *dbKey
+	clientScan *client.Redis
 
 	// client for dump keys
+	keysNeedFetch  chan *dbKey
 	clientDump     *client.Redis
 	clientDumpDbid int
-	ch             chan *entry.Entry
 
 	stat struct {
 		Name          string `json:"name"`
@@ -46,18 +39,27 @@ type scanStandaloneReader struct {
 	}
 }
 
-func NewScanStandaloneReader(opts *ScanStandaloneReaderOptions) Reader {
+type ScanReaderOptions struct {
+	Cluster  bool   `mapstructure:"cluster" default:"false"`
+	Address  string `mapstructure:"address" default:""`
+	Username string `mapstructure:"username" default:""`
+	Password string `mapstructure:"password" default:""`
+	Tls      bool   `mapstructure:"tls" default:"false"`
+	KSN      bool   `mapstructure:"ksn" default:"false"`
+}
+
+func NewScanStandaloneReader(opts *ScanReaderOptions) Reader {
 	r := new(scanStandaloneReader)
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
 	r.clientScan = client.NewRedisClient(opts.Address, opts.Username, opts.Password, opts.Tls)
 	r.clientDump = client.NewRedisClient(opts.Address, opts.Username, opts.Password, opts.Tls)
-	r.isCluster = r.clientScan.IsCluster()
+	r.isCluster = r.clientScan.IsCluster() // not use opts.Cluster, because user may use standalone mode to scan a cluster node
 	return r
 }
 
 func (r *scanStandaloneReader) StartRead() chan *entry.Entry {
 	r.ch = make(chan *entry.Entry, 1024)
-	r.innerChannel = make(chan *dbKey, 1024)
+	r.keysNeedFetch = make(chan *dbKey, 1024)
 	go r.scan()
 	go r.fetch()
 	return r.ch
@@ -77,7 +79,7 @@ func (r *scanStandaloneReader) scan() {
 			}
 
 			r.clientDump.Send("SELECT", strconv.Itoa(dbId))
-			r.innerChannel <- &dbKey{dbId, "", true}
+			r.keysNeedFetch <- &dbKey{dbId, "", true}
 		}
 
 		var cursor uint64 = 0
@@ -87,7 +89,7 @@ func (r *scanStandaloneReader) scan() {
 			for _, key := range keys {
 				r.clientDump.Send("DUMP", key)
 				r.clientDump.Send("PTTL", key)
-				r.innerChannel <- &dbKey{dbId, key, false}
+				r.keysNeedFetch <- &dbKey{dbId, key, false}
 			}
 
 			// stat
@@ -101,12 +103,12 @@ func (r *scanStandaloneReader) scan() {
 		}
 	}
 	r.stat.Finished = true
-	close(r.innerChannel)
+	close(r.keysNeedFetch)
 }
 
 func (r *scanStandaloneReader) fetch() {
 	var id uint64 = 0
-	for item := range r.innerChannel {
+	for item := range r.keysNeedFetch {
 		if item.isSelect {
 			// select
 			receive, err := client.String(r.clientDump.Receive())
@@ -158,9 +160,9 @@ func (r *scanStandaloneReader) Status() interface{} {
 
 func (r *scanStandaloneReader) StatusString() string {
 	if r.stat.Finished {
-		return fmt.Sprintf("[%s] finished", r.stat.Name)
+		return fmt.Sprintf("finished")
 	}
-	return fmt.Sprintf("[%s] dbid: [%d], percent: [%s]", r.stat.Name, r.stat.DbId, r.stat.PercentByDbId)
+	return fmt.Sprintf("dbid=[%d], percent=[%s]", r.stat.DbId, r.stat.PercentByDbId)
 }
 
 func (r *scanStandaloneReader) StatusConsistent() bool {

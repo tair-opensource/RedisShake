@@ -50,7 +50,7 @@ func (e *Entry) Serialize() []byte {
 	return buf.Bytes()
 }
 
-func (e *Entry) Preprocess() {
+func (e *Entry) Parse() {
 	e.CmdName, e.Group, e.Keys = commands.CalcKeys(e.Argv)
 	e.Slots = commands.CalcSlots(e.Keys)
 }

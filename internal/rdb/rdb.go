@@ -85,7 +85,7 @@ func (ld *Loader) ParseRDB() int {
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	log.Infof("[%s] RDB version: %d", ld.name, version)
+	log.Debugf("[%s] RDB version: %d", ld.name, version)
 
 	// read entries
 	ld.parseRDBEntry(rd)
@@ -125,19 +125,19 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 				if err != nil {
 					log.Panicf(err.Error())
 				}
-				log.Infof("[%s] RDB repl-stream-db: [%s]", ld.name, value)
+				log.Debugf("[%s] RDB repl-stream-db: [%s]", ld.name, value)
 			} else if key == "lua" {
 				e := entry.NewEntry()
 				e.Argv = []string{"script", "load", value}
 				ld.ch <- e
-				log.Infof("[%s] LUA script: [%s]", ld.name, value)
+				log.Debugf("[%s] LUA script: [%s]", ld.name, value)
 			} else {
-				log.Infof("[%s] RDB AUX: key=[%s], value=[%s]", ld.name, key, value)
+				log.Debugf("[%s] RDB AUX: key=[%s], value=[%s]", ld.name, key, value)
 			}
 		case kFlagResizeDB:
 			dbSize := structure.ReadLength(rd)
 			expireSize := structure.ReadLength(rd)
-			log.Infof("[%s] RDB resize db: db_size=[%d], expire_size=[%d]", ld.name, dbSize, expireSize)
+			log.Debugf("[%s] RDB resize db: db_size=[%d], expire_size=[%d]", ld.name, dbSize, expireSize)
 		case kFlagExpireMs:
 			ld.expireMs = int64(structure.ReadUint64(rd)) - time.Now().UnixMilli()
 			if ld.expireMs < 0 {

@@ -1,4 +1,3 @@
-import time
 import typing
 
 import pybbt
@@ -12,52 +11,44 @@ from helpers.utils.network import get_free_port
 from helpers.utils.timer import Timer
 
 
-# [SyncClusterReader]
-# address = "127.0.0.1:6379"
-# username = "" # keep empty if not using ACL
-# password = "" # keep empty if no authentication is required
-# tls = false
-#
-# [RedisClusterWriter]
-# address = "127.0.0.1:6380"
-# username = "" # keep empty if not using ACL
-# password = "" # keep empty if no authentication is required
-# tls = false
-
 class ShakeOpts:
     @staticmethod
     def create_sync_opts(src: Redis, dst: Redis) -> typing.Dict:
-        d = {}
-        if src.is_cluster():
-            d["sync_cluster_reader"] = {"address": src.get_address()}
-        else:
-            d["sync_standalone_reader"] = {"address": src.get_address()}
-        if dst.is_cluster():
-            d["redis_cluster_writer"] = {"address": dst.get_address()}
-        else:
-            d["redis_standalone_writer"] = {"address": dst.get_address()}
+        d = {
+            "sync_reader": {
+                "cluster": src.is_cluster(),
+                "address": src.get_address()
+            },
+            "redis_writer": {
+                "cluster": dst.is_cluster(),
+                "address": dst.get_address()
+            }
+        }
         return d
 
     @staticmethod
     def create_scan_opts(src: Redis, dst: Redis) -> typing.Dict:
-        d = {}
-        if src.is_cluster():
-            d["scan_cluster_reader"] = {"address": src.get_address()}
-        else:
-            d["scan_standalone_reader"] = {"address": src.get_address()}
-        if dst.is_cluster():
-            d["redis_cluster_writer"] = {"address": dst.get_address()}
-        else:
-            d["redis_standalone_writer"] = {"address": dst.get_address()}
+        d = {
+            "scan_reader": {
+                "cluster": src.is_cluster(),
+                "address": src.get_address()
+            },
+            "redis_writer": {
+                "cluster": dst.is_cluster(),
+                "address": dst.get_address()
+            }
+        }
         return d
 
     @staticmethod
     def create_rdb_opts(rdb_path: str, dts: Redis) -> typing.Dict:
-        d = {"rdb_reader": {"filepath": rdb_path}}
-        if dts.is_cluster():
-            d["redis_cluster_writer"] = {"address": dts.get_address()}
-        else:
-            d["redis_standalone_writer"] = {"address": dts.get_address()}
+        d = {
+            "rdb_reader": {"filepath": rdb_path},
+            "redis_writer": {
+                "cluster": dts.is_cluster(),
+                "address": dts.get_address()
+            }
+        }
         return d
 
 

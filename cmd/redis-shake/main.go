@@ -23,42 +23,34 @@ func main() {
 
 	// create reader
 	var theReader reader.Reader
-	if v.IsSet("sync_standalone_reader") {
-		opts := new(reader.SyncStandaloneReaderOptions)
+	if v.IsSet("sync_reader") {
+		opts := new(reader.SyncReaderOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("sync_standalone_reader", opts)
+		err := v.UnmarshalKey("sync_reader", opts)
 		if err != nil {
 			log.Panicf("failed to read the SyncReader config entry. err: %v", err)
 		}
-		theReader = reader.NewSyncStandaloneReader(opts)
-		log.Infof("create SyncStandaloneReader: %v", opts.Address)
-	} else if v.IsSet("sync_cluster_reader") {
-		opts := new(reader.SyncClusterReaderOptions)
-		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("sync_cluster_reader", opts)
-		if err != nil {
-			log.Panicf("failed to read the SyncReader config entry. err: %v", err)
+		if opts.Cluster {
+			theReader = reader.NewSyncClusterReader(opts)
+			log.Infof("create SyncClusterReader: %v", opts.Address)
+		} else {
+			theReader = reader.NewSyncStandaloneReader(opts)
+			log.Infof("create SyncStandaloneReader: %v", opts.Address)
 		}
-		theReader = reader.NewSyncClusterReader(opts)
-		log.Infof("create SyncClusterReader: %v", opts.Address)
-	} else if v.IsSet("scan_standalone_reader") {
-		opts := new(reader.ScanStandaloneReaderOptions)
+	} else if v.IsSet("scan_reader") {
+		opts := new(reader.ScanReaderOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("scan_standalone_reader", opts)
+		err := v.UnmarshalKey("scan_reader", opts)
 		if err != nil {
 			log.Panicf("failed to read the ScanReader config entry. err: %v", err)
 		}
-		theReader = reader.NewScanStandaloneReader(opts)
-		log.Infof("create ScanStandaloneReader: %v", opts.Address)
-	} else if v.IsSet("scan_cluster_reader") {
-		opts := new(reader.ScanClusterReaderOptions)
-		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("scan_cluster_reader", opts)
-		if err != nil {
-			log.Panicf("failed to read the ScanReader config entry. err: %v", err)
+		if opts.Cluster {
+			theReader = reader.NewScanClusterReader(opts)
+			log.Infof("create ScanClusterReader: %v", opts.Address)
+		} else {
+			theReader = reader.NewScanStandaloneReader(opts)
+			log.Infof("create ScanStandaloneReader: %v", opts.Address)
 		}
-		theReader = reader.NewScanClusterReader(opts)
-		log.Infof("create ScanClusterReader: %v", opts.Address)
 	} else if v.IsSet("rdb_reader") {
 		opts := new(reader.RdbReaderOptions)
 		defaults.SetDefaults(opts)
@@ -74,24 +66,20 @@ func main() {
 
 	// create writer
 	var theWriter writer.Writer
-	if v.IsSet("redis_standalone_writer") {
-		opts := new(writer.RedisStandaloneWriterOptions)
+	if v.IsSet("redis_writer") {
+		opts := new(writer.RedisWriterOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("redis_standalone_writer", opts)
+		err := v.UnmarshalKey("redis_writer", opts)
 		if err != nil {
 			log.Panicf("failed to read the RedisStandaloneWriter config entry. err: %v", err)
 		}
-		theWriter = writer.NewRedisStandaloneWriter(opts)
-		log.Infof("create RedisStandaloneWriter: %v", opts.Address)
-	} else if v.IsSet("redis_cluster_writer") {
-		opts := new(writer.RedisClusterWriterOptions)
-		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("redis_cluster_writer", opts)
-		if err != nil {
-			log.Panicf("failed to read the RedisClusterWriter config entry. err: %v", err)
+		if opts.Cluster {
+			theWriter = writer.NewRedisClusterWriter(opts)
+			log.Infof("create RedisClusterWriter: %v", opts.Address)
+		} else {
+			theWriter = writer.NewRedisStandaloneWriter(opts)
+			log.Infof("create RedisStandaloneWriter: %v", opts.Address)
 		}
-		theWriter = writer.NewRedisClusterWriter(opts)
-		log.Infof("create RedisClusterWriter: %v", opts.Address)
 	} else {
 		log.Panicf("no writer config entry found")
 	}
@@ -99,22 +87,23 @@ func main() {
 	// create status
 	status.Init(theReader, theWriter)
 
+	log.Infof("start syncing...")
+
 	ch := theReader.StartRead()
 	for e := range ch {
 		// calc arguments
-		e.Preprocess()
+		e.Parse()
+		status.AddReadCount(e.CmdName)
 
 		// filter
 		log.Debugf("function before: %v", e)
 		entries := function.RunFunction(e)
 		log.Debugf("function after: %v", entries)
-		if len(entries) == 0 {
-			status.AddEntryCount(e.CmdName, false)
-		} else {
-			for _, entry := range entries {
-				theWriter.Write(entry)
-				status.AddEntryCount(entry.CmdName, true)
-			}
+
+		for _, entry := range entries {
+			entry.Parse()
+			theWriter.Write(entry)
+			status.AddWriteCount(entry.CmdName)
 		}
 	}
 

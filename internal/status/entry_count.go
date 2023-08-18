@@ -6,14 +6,14 @@ import (
 )
 
 type EntryCount struct {
-	Allow       uint64  `json:"allow"`
-	Disallow    uint64  `json:"disallow"`
-	AllowOps    float64 `json:"allow_ops"`
-	DisallowOps float64 `json:"disallow_ops"`
+	ReadCount  uint64  `json:"read_count"`
+	ReadOps    float64 `json:"read_ops"`
+	WriteCount uint64  `json:"write_count"`
+	WriteOps   float64 `json:"write_ops"`
 
 	// update ops
-	lastAllow              uint64
-	lastDisallow           uint64
+	lastReadCount          uint64
+	lastWriteCount         uint64
 	lastUpdateTimestampSec float64
 }
 
@@ -22,14 +22,14 @@ func (e *EntryCount) updateOPS() {
 	nowTimestampSec := float64(time.Now().UnixNano()) / 1e9
 	if e.lastUpdateTimestampSec != 0 {
 		timeIntervalSec := nowTimestampSec - e.lastUpdateTimestampSec
-		e.AllowOps = float64(e.Allow-e.lastAllow) / timeIntervalSec
-		e.DisallowOps = float64(e.Disallow-e.lastDisallow) / timeIntervalSec
-		e.lastAllow = e.Allow
-		e.lastDisallow = e.Disallow
+		e.ReadOps = float64(e.ReadCount-e.lastReadCount) / timeIntervalSec
+		e.WriteOps = float64(e.WriteCount-e.lastWriteCount) / timeIntervalSec
+		e.lastReadCount = e.ReadCount
+		e.lastWriteCount = e.WriteCount
 	}
 	e.lastUpdateTimestampSec = nowTimestampSec
 }
 
 func (e *EntryCount) String() string {
-	return fmt.Sprintf("allow: %.2fops/s, disallow: %.2fops/s", e.AllowOps, e.DisallowOps)
+	return fmt.Sprintf("read_count=[%d], read_ops=[%.2f], write_count=[%d], write_ops=[%.2f]", e.ReadCount, e.ReadOps, e.WriteCount, e.WriteOps)
 }
