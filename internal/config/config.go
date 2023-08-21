@@ -3,10 +3,11 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"github.com/pelletier/go-toml/v2"
 	"io/ioutil"
 	"os"
 	"runtime"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 type tomlSource struct {
@@ -19,8 +20,11 @@ type tomlSource struct {
 	ElastiCachePSync string  `toml:"elasticache_psync"`
 
 	// restore mode
-	RDBFilePath string `toml:"rdb_file_path"`
-	AOFFilePath string `toml:"aof_file_path"` // add the aof path
+	RDBFilePath         string `toml:"rdb_file_path"`
+	AofDirName          string `toml:"aof_dirname"`
+	AofFileName         string `toml:"aof_filename"`
+	AOFFilePath         string `toml:"aof_file_path"`         // add the aof path
+	TruncateToTimestamp int64  `toml:"truncate-to-timestamp"` //When reading an AOF file, truncate the file by timestamp.
 }
 
 type tomlTarget struct {
@@ -76,7 +80,9 @@ func init() {
 	// restore
 	Config.Source.RDBFilePath = ""
 	Config.Source.AOFFilePath = ""
-
+	Config.Source.TruncateToTimestamp = 0
+	Config.Source.AofDirName = ""
+	Config.Source.AofFileName = ""
 	// target
 	Config.Target.Type = "standalone"
 	Config.Target.Version = 5.0

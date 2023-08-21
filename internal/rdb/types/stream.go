@@ -3,10 +3,11 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/rdb/structure"
 	"io"
 	"strconv"
+
+	"github.com/alibaba/RedisShake/internal/log"
+	"github.com/alibaba/RedisShake/internal/rdb/structure"
 )
 
 /*
@@ -54,6 +55,22 @@ func (o *StreamObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 	default:
 		log.Panicf("unknown hash type. typeByte=[%d]", typeByte)
 	}
+}
+
+func (o *StreamObject) LoadFromBufferWithOffset(rd io.Reader, key string, typeByte byte) int64 {
+	o.key = key
+	switch typeByte {
+	case rdbTypeStreamListpacks:
+		offset := o.readStreamWithOffset(rd, key, typeByte)
+		return offset
+	case rdbTypeStreamListpacks2:
+		offset := o.readStreamWithOffset(rd, key, typeByte)
+		return offset
+	default:
+		log.Panicf("unknown hash type. typeByte=[%d]", typeByte)
+		return 0
+	}
+
 }
 
 // see redis rewriteStreamObject()
@@ -225,6 +242,192 @@ func (o *StreamObject) readStream(rd io.Reader, masterKey string, typeByte byte)
 			}
 		}
 	}
+}
+
+func (o *StreamObject) readStreamWithOffset(rd io.Reader, masterKey string, typeByte byte) int64 {
+	// 1. length(number of listpack), k1, v1, k2, v2, ..., number, ms, seq
+
+	/* Load the number of Listpack. */
+	nListpack, offset := structure.ReadLengthWithOffset(rd)
+	for i := 0; i < int(nListpack); i++ {
+		/* Load key */
+		key, tempOffsets := structure.ReadStringWithOffset(rd)
+		offset += tempOffsets
+		/* key is streamId, like: 1612181627287-0 */
+		masterMs := int64(binary.BigEndian.Uint64([]byte(key[:8])))
+		masterSeq := int64(binary.BigEndian.Uint64([]byte(key[8:])))
+
+		/* value is a listpack */
+		elements, tempOffsets := structure.ReadListpackWithOffset(rd)
+		offset += tempOffsets
+		inx := 0
+
+		/* The front of stream listpack is master entry */
+		/* Parse the master entry */
+		count := nextInteger(&inx, elements)          // count
+		deleted := nextInteger(&inx, elements)        // deleted
+		numFields := int(nextInteger(&inx, elements)) // num-fields
+
+		fields := elements[3 : 3+numFields] // fields
+		inx = 3 + numFields
+
+		// master entry end by zero
+		lastEntry := nextString(&inx, elements)
+		if lastEntry != "0" {
+			log.Panicf("master entry not ends by zero. lastEntry=[%s]", lastEntry)
+		}
+
+		/* Parse entries */
+		for count != 0 || deleted != 0 {
+			flags := nextInteger(&inx, elements) // [is_same_fields|is_deleted]
+			entryMs := nextInteger(&inx, elements)
+			entrySeq := nextInteger(&inx, elements)
+
+			args := []string{"xadd", masterKey, fmt.Sprintf("%v-%v", entryMs+masterMs, entrySeq+masterSeq)}
+
+			if flags&2 == 2 { // same fields, get field from master entry.
+				for j := 0; j < numFields; j++ {
+					args = append(args, fields[j], nextString(&inx, elements))
+				}
+			} else { // get field by lp.Next()
+				num := int(nextInteger(&inx, elements))
+				args = append(args, elements[inx:inx+num*2]...)
+				inx += num * 2
+			}
+
+			_ = nextString(&inx, elements) // lp_count
+
+			if flags&1 == 1 { // is_deleted
+				deleted -= 1
+			} else {
+				count -= 1
+				o.cmds = append(o.cmds, args)
+			}
+		}
+	}
+
+	/* Load total number of items inside the stream. */
+	_, tempOffsets := structure.ReadLengthWithOffset(rd) // number
+	offset += tempOffsets
+	/* Load the last entry ID. */
+	lastMs, tempOffsets := structure.ReadLengthWithOffset(rd)
+	offset += tempOffsets
+	lastSeq, tempOffsets := structure.ReadLengthWithOffset(rd)
+	offset += tempOffsets
+	lastid := fmt.Sprintf("%v-%v", lastMs, lastSeq)
+	if nListpack == 0 {
+		/* Use the XADD MAXLEN 0 trick to generate an empty stream if
+		 * the key we are serializing is an empty string, which is possible
+		 * for the Stream type. */
+		args := []string{"xadd", masterKey, "MAXLEN", "0", lastid, "x", "y"}
+		o.cmds = append(o.cmds, args)
+	}
+
+	/* Append XSETID after XADD, make sure lastid is correct,
+	 * in case of XDEL lastid. */
+	o.cmds = append(o.cmds, []string{"xsetid", masterKey, lastid})
+
+	if typeByte == rdbTypeStreamListpacks2 {
+		/* Load the first entry ID. */
+		_, tempOffsets = structure.ReadLengthWithOffset(rd) // first_ms
+		offset += tempOffsets
+		_, tempOffsets = structure.ReadLengthWithOffset(rd) // first_seq
+		offset += tempOffsets
+		/* Load the maximal deleted entry ID. */
+		_, tempOffsets = structure.ReadLengthWithOffset(rd) // max_deleted_ms
+		offset += tempOffsets
+		_, tempOffsets = structure.ReadLengthWithOffset(rd) // max_deleted_seq
+		offset += tempOffsets
+
+		/* Load the offset. */
+		_, tempOffsets = structure.ReadLengthWithOffset(rd) // offset
+		offset += tempOffsets
+	}
+
+	/* 2. nConsumerGroup, groupName, ms, seq, PEL, Consumers */
+
+	/* Load the number of groups. */
+	nConsumerGroup, tempOffsets := structure.ReadLengthWithOffset(rd)
+	offset += tempOffsets
+	for i := 0; i < int(nConsumerGroup); i++ {
+		/* Load groupName */
+		groupName, tempOffsets := structure.ReadStringWithOffset(rd)
+		offset += tempOffsets
+		/* Load the last ID */
+		lastMs, tempOffsets := structure.ReadLengthWithOffset(rd)
+		offset += tempOffsets
+		lastSeq, tempOffsets := structure.ReadLengthWithOffset(rd)
+		offset += tempOffsets
+		lastid := fmt.Sprintf("%v-%v", lastMs, lastSeq)
+
+		/* Create Group */
+		o.cmds = append(o.cmds, []string{"CREATE", masterKey, groupName, lastid})
+
+		/* Load group offset. */
+		if typeByte == rdbTypeStreamListpacks2 {
+			_, tempOffsets = structure.ReadLengthWithOffset(rd) // offset
+			offset += tempOffsets
+		}
+
+		/* Load the global PEL */
+		nPel, tempOffsets := structure.ReadLengthWithOffset(rd)
+		mapId2Time := make(map[string]uint64)
+		mapId2Count := make(map[string]uint64)
+
+		for j := 0; j < int(nPel); j++ {
+			/* Load streamId */
+			tmpBytes := structure.ReadBytes(rd, 16)
+			offset += 16
+			ms := binary.BigEndian.Uint64(tmpBytes[:8])
+			seq := binary.BigEndian.Uint64(tmpBytes[8:])
+			streamId := fmt.Sprintf("%v-%v", ms, seq)
+
+			/* Load deliveryTime */
+			deliveryTime := structure.ReadUint64(rd)
+			offset += 8
+			/* Load deliveryCount */
+			deliveryCount, tempOffsets := structure.ReadLengthWithOffset(rd)
+			offset += tempOffsets
+			/* Save deliveryTime and deliveryCount  */
+			mapId2Time[streamId] = deliveryTime
+			mapId2Count[streamId] = deliveryCount
+		}
+
+		/* Generate XCLAIMs for each consumer that happens to
+		 * have pending entries. Empty consumers are discarded. */
+		nConsumer, tempOffsets := structure.ReadLengthWithOffset(rd)
+		offset += tempOffsets
+		for j := 0; j < int(nConsumer); j++ {
+			/* Load consumerName */
+			consumerName, tempOffsets := structure.ReadStringWithOffset(rd)
+			offset += tempOffsets
+
+			/* Load lastSeenTime */
+			_ = structure.ReadUint64(rd)
+			offset += 8
+			/* Consumer PEL */
+			nPEL, tempOffsets := structure.ReadLengthWithOffset(rd)
+			offset += tempOffsets
+			for i := 0; i < int(nPEL); i++ {
+
+				/* Load streamId */
+				tmpBytes := structure.ReadBytes(rd, 16)
+				offset += 16
+				ms := binary.BigEndian.Uint64(tmpBytes[:8])
+				seq := binary.BigEndian.Uint64(tmpBytes[8:])
+				streamId := fmt.Sprintf("%v-%v", ms, seq)
+
+				/* Send */
+				args := []string{
+					"xclaim", masterKey, groupName, consumerName, "0", streamId,
+					"TIME", strconv.FormatUint(mapId2Time[streamId], 10),
+					"RETRYCOUNT", strconv.FormatUint(mapId2Count[streamId], 10),
+					"JUSTID", "FORCE"}
+				o.cmds = append(o.cmds, args)
+			}
+		}
+	}
+	return offset
 }
 
 func nextInteger(inx *int, elements []string) int64 {

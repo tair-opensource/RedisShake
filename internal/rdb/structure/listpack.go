@@ -2,11 +2,12 @@ package structure
 
 import (
 	"bufio"
-	"github.com/alibaba/RedisShake/internal/log"
 	"io"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/alibaba/RedisShake/internal/log"
 )
 
 const (
@@ -53,6 +54,23 @@ func ReadListpack(rd io.Reader) []string {
 		log.Panicf("ReadListpack: last byte is not 0xFF, but [%d]", lastByte)
 	}
 	return elements
+}
+func ReadListpackWithOffset(rd io.Reader) ([]string, int64) {
+	tempstring, offset := ReadStringWithOffset(rd)
+	rd = bufio.NewReader(strings.NewReader(tempstring))
+
+	_ = ReadUint32(rd) // bytes
+	size := int(ReadUint16(rd))
+	var elements []string
+	for i := 0; i < size; i++ {
+		ele := readListpackEntry(rd)
+		elements = append(elements, ele)
+	}
+	lastByte := ReadByte(rd)
+	if lastByte != 0xFF {
+		log.Panicf("ReadListpack: last byte is not 0xFF, but [%d]", lastByte)
+	}
+	return elements, offset
 }
 
 // redis/src/Listpack.c lpGet()

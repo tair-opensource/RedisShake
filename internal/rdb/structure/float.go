@@ -2,10 +2,11 @@ package structure
 
 import (
 	"encoding/binary"
-	"github.com/alibaba/RedisShake/internal/log"
 	"io"
 	"math"
 	"strconv"
+
+	"github.com/alibaba/RedisShake/internal/log"
 )
 
 func ReadFloat(rd io.Reader) float64 {
@@ -30,6 +31,30 @@ func ReadFloat(rd io.Reader) float64 {
 			log.PanicError(err)
 		}
 		return v
+	}
+}
+
+func ReadFloatWithOffset(rd io.Reader) (float64, int64) {
+	u := ReadUint8(rd)
+	switch u {
+	case 253:
+		return math.NaN(), 1
+	case 254:
+		return math.Inf(0), 1
+	case 255:
+		return math.Inf(-1), 1
+	default:
+		buf := make([]byte, u)
+		_, err := io.ReadFull(rd, buf)
+		if err != nil {
+			return 0, 2
+		}
+
+		v, err := strconv.ParseFloat(string(buf), 64)
+		if err != nil {
+			log.PanicError(err)
+		}
+		return v, 2
 	}
 }
 

@@ -3,10 +3,11 @@ package structure
 import (
 	"bufio"
 	"encoding/binary"
-	"github.com/alibaba/RedisShake/internal/log"
 	"io"
 	"strconv"
 	"strings"
+
+	"github.com/alibaba/RedisShake/internal/log"
 )
 
 const (
@@ -24,6 +25,7 @@ const (
 )
 
 func ReadZipList(rd io.Reader) []string {
+
 	rd = bufio.NewReader(strings.NewReader(ReadString(rd)))
 
 	// The general layout of the ziplist is as follows:
@@ -49,6 +51,36 @@ func ReadZipList(rd io.Reader) []string {
 		}
 	}
 	return elements
+}
+
+func ReadZipListWithOffset(rd io.Reader) ([]string, int64) {
+
+	Strings, offset := ReadStringWithOffset(rd)
+	rd = bufio.NewReader(strings.NewReader(Strings))
+
+	// The general layout of the ziplist is as follows:
+	// <zlbytes> <zltail> <zllen> <entry> <entry> ... <entry> <zlend>
+	_ = ReadUint32(rd) // zlbytes
+	_ = ReadUint32(rd) // zltail
+
+	size := int(ReadUint16(rd))
+	var elements []string
+	if size == 65535 { // 2^16-1, we need to traverse the entire list to know how many items it holds.
+		for firstByte := ReadByte(rd); firstByte != 0xFE; firstByte = ReadByte(rd) {
+			ele := readZipListEntry(rd, firstByte)
+			elements = append(elements, ele)
+		}
+	} else {
+		for i := 0; i < size; i++ {
+			firstByte := ReadByte(rd)
+			ele := readZipListEntry(rd, firstByte)
+			elements = append(elements, ele)
+		}
+		if lastByte := ReadByte(rd); lastByte != 0xFF {
+			log.Panicf("invalid zipList lastByte encoding: %d", lastByte)
+		}
+	}
+	return elements, offset
 }
 
 /*

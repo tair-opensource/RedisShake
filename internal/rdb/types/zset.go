@@ -2,9 +2,10 @@ package types
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/alibaba/RedisShake/internal/log"
 	"github.com/alibaba/RedisShake/internal/rdb/structure"
-	"io"
 )
 
 type ZSetEntry struct {
@@ -32,6 +33,26 @@ func (o *ZsetObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 		log.Panicf("unknown zset type. typeByte=[%d]", typeByte)
 	}
 }
+func (o *ZsetObject) LoadFromBufferWithOffset(rd io.Reader, key string, typeByte byte) int64 {
+	o.key = key
+	switch typeByte {
+	case rdbTypeZSet:
+		offset := o.readZsetWithOffset(rd)
+		return offset
+	case rdbTypeZSet2:
+		offset := o.readZset2WithOffset(rd)
+		return offset
+	case rdbTypeZSetZiplist:
+		offset := o.readZsetZiplistWithOffset(rd)
+		return offset
+	case rdbTypeZSetListpack:
+		offset := o.readZsetListpackWithOffset(rd)
+		return offset
+	default:
+		log.Panicf("unknown zset type. typeByte=[%d]", typeByte)
+	}
+	return 0
+}
 
 func (o *ZsetObject) readZset(rd io.Reader) {
 	size := int(structure.ReadLength(rd))
@@ -42,6 +63,19 @@ func (o *ZsetObject) readZset(rd io.Reader) {
 		o.elements[i].Score = fmt.Sprintf("%f", score)
 	}
 }
+func (o *ZsetObject) readZsetWithOffset(rd io.Reader) int64 {
+	size, offset := structure.ReadLengthWithOffset(rd)
+	o.elements = make([]ZSetEntry, size)
+	var tempOffsets int64 = 0
+	for i := 0; i < int(size); i++ {
+		o.elements[i].Member, tempOffsets = structure.ReadStringWithOffset(rd)
+		offset += tempOffsets
+		score, tempOffsets := structure.ReadFloatWithOffset(rd)
+		offset += tempOffsets
+		o.elements[i].Score = fmt.Sprintf("%f", score)
+	}
+	return offset
+}
 
 func (o *ZsetObject) readZset2(rd io.Reader) {
 	size := int(structure.ReadLength(rd))
@@ -51,6 +85,19 @@ func (o *ZsetObject) readZset2(rd io.Reader) {
 		score := structure.ReadDouble(rd)
 		o.elements[i].Score = fmt.Sprintf("%f", score)
 	}
+}
+func (o *ZsetObject) readZset2WithOffset(rd io.Reader) int64 {
+	size, offset := structure.ReadLengthWithOffset(rd)
+	o.elements = make([]ZSetEntry, size)
+	var tempOffsets int64
+	for i := 0; i < int(size); i++ {
+		o.elements[i].Member, tempOffsets = structure.ReadStringWithOffset(rd)
+		offset += tempOffsets
+		score := structure.ReadDouble(rd)
+		offset += 8
+		o.elements[i].Score = fmt.Sprintf("%f", score)
+	}
+	return offset
 }
 
 func (o *ZsetObject) readZsetZiplist(rd io.Reader) {
@@ -66,6 +113,19 @@ func (o *ZsetObject) readZsetZiplist(rd io.Reader) {
 	}
 }
 
+func (o *ZsetObject) readZsetZiplistWithOffset(rd io.Reader) int64 {
+	list, offset := structure.ReadZipListWithOffset(rd)
+	size := len(list)
+	if size%2 != 0 {
+		log.Panicf("zset listpack size is not even. size=[%d]", size)
+	}
+	o.elements = make([]ZSetEntry, size/2)
+	for i := 0; i < size; i += 2 {
+		o.elements[i/2].Member = list[i]
+		o.elements[i/2].Score = list[i+1]
+	}
+	return offset
+}
 func (o *ZsetObject) readZsetListpack(rd io.Reader) {
 	list := structure.ReadListpack(rd)
 	size := len(list)
@@ -77,6 +137,20 @@ func (o *ZsetObject) readZsetListpack(rd io.Reader) {
 		o.elements[i/2].Member = list[i]
 		o.elements[i/2].Score = list[i+1]
 	}
+}
+
+func (o *ZsetObject) readZsetListpackWithOffset(rd io.Reader) int64 {
+	list, offset := structure.ReadListpackWithOffset(rd)
+	size := len(list)
+	if size%2 != 0 {
+		log.Panicf("zset listpack size is not even. size=[%d]", size)
+	}
+	o.elements = make([]ZSetEntry, size/2)
+	for i := 0; i < size; i += 2 {
+		o.elements[i/2].Member = list[i]
+		o.elements[i/2].Score = list[i+1]
+	}
+	return offset
 }
 
 func (o *ZsetObject) Rewrite() []RedisCmd {

@@ -3,7 +3,7 @@ package rdb
 import (
 	"bufio"
 	"bytes"
-	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -14,47 +14,28 @@ import (
 	"github.com/alibaba/RedisShake/internal/log"
 	"github.com/alibaba/RedisShake/internal/rdb/structure"
 	"github.com/alibaba/RedisShake/internal/rdb/types"
-	"github.com/alibaba/RedisShake/internal/statistics"
-	"github.com/alibaba/RedisShake/internal/utils"
 )
 
-const (
-	kFlagFunction2 = 245  // function library data
-	kFlagFunction  = 246  // old function library data for 7.0 rc1 and rc2
-	kFlagModuleAux = 247  // Module auxiliary data.
-	kFlagIdle      = 0xf8 // LRU idle time.
-	kFlagFreq      = 0xf9 // LFU frequency.
-	kFlagAUX       = 0xfa // RDB aux field.
-	kFlagResizeDB  = 0xfb // Hash table resize hint.
-	kFlagExpireMs  = 0xfc // Expire time in milliseconds.
-	kFlagExpire    = 0xfd // Old expire time in seconds.
-	kFlagSelect    = 0xfe // DB number of the following keys.
-	kEOF           = 0xff // End of the RDB file.
-)
+func RedisCheckRDBMain(filepath string, fp *os.File) int64 {
+	if fp == nil {
+		fmt.Fprintf(os.Stderr, "The file: %s fp is nil", filepath)
+		os.Exit(1)
+	}
+	fmt.Printf("Checking RDB file %s", filepath)
+	log.Infof("Checking RDB file %s", filepath)
+	ld := NewLoader(filepath, nil)
 
-type Loader struct {
-	replStreamDbId int // https://github.com/alibaba/RedisShake/pull/430#issuecomment-1099014464
+	RDBPos := ld.CheckParseRDB()
 
-	nowDBId  int
-	expireMs int64
-	idle     int64
-	freq     int64
-
-	filPath string
-	fp      *os.File
-
-	ch         chan *entry.Entry
-	dumpBuffer bytes.Buffer
+	if RDBPos > 0 {
+		fmt.Printf("\\o/ RDB looks OK! \\o/")
+		log.Infof("\\o/ RDB looks OK! \\o/")
+	} else {
+		return -1
+	}
+	return RDBPos
 }
-
-func NewLoader(filPath string, ch chan *entry.Entry) *Loader {
-	ld := new(Loader)
-	ld.ch = ch
-	ld.filPath = filPath
-	return ld
-}
-
-func (ld *Loader) ParseRDB() int {
+func (ld *Loader) CheckParseRDB() int64 {
 	var err error
 	ld.fp, err = os.OpenFile(ld.filPath, os.O_RDONLY, 0666)
 	if err != nil {
@@ -83,78 +64,97 @@ func (ld *Loader) ParseRDB() int {
 	log.Infof("RDB version: %d", version)
 
 	// read entries
-	ld.parseRDBEntry(rd)
+	rdbpos := ld.CheckparseRDBEntry(rd)
 
-	// force update rdb_sent_size for issue: https://github.com/alibaba/RedisShake/issues/485
-	fi, err := os.Stat(ld.filPath)
-	if err != nil {
-		log.Panicf("NewRDBReader: os.Stat error: %s", err.Error())
-	}
-	statistics.Metrics.RdbSendSize = uint64(fi.Size())
-	return ld.replStreamDbId
+	return rdbpos
 }
 
-func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
+func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
 	// for stat
-	UpdateRDBSentSize := func() {
-		offset, err := ld.fp.Seek(0, io.SeekCurrent)
+	var RDBPos int64
+	var rdbsize int64 = 9
+	UpdateRDBSize := func() {
+		var err error
+		RDBPos, err = ld.fp.Seek(0, io.SeekCurrent)
+		//println(RDBPos)
 		if err != nil {
 			log.PanicError(err)
 		}
-		statistics.UpdateRDBSentSize(uint64(offset))
+
 	}
-	defer UpdateRDBSentSize()
+	defer UpdateRDBSize()
+
 	// read one entry
 	tick := time.Tick(time.Second * 1)
 	for true {
 		typeByte := structure.ReadByte(rd)
+		rdbsize += 1
 		switch typeByte {
 		case kFlagIdle:
-			ld.idle = int64(structure.ReadLength(rd))
+			tempidle, tempOffset := structure.ReadLengthWithOffset(rd)
+			ld.idle = int64(tempidle)
+			rdbsize += tempOffset
 		case kFlagFreq:
 			ld.freq = int64(structure.ReadByte(rd))
+			rdbsize += 1
 		case kFlagAUX:
-			key := structure.ReadString(rd)
-			value := structure.ReadString(rd)
+			key, tempOffset := structure.ReadStringWithOffset(rd)
+			rdbsize += tempOffset
+			value, tempOffset := structure.ReadStringWithOffset(rd)
+			rdbsize += tempOffset
+
 			if key == "repl-stream-db" {
 				var err error
 				ld.replStreamDbId, err = strconv.Atoi(value)
 				if err != nil {
 					log.PanicError(err)
 				}
-				log.Infof("RDB repl-stream-db: %d", ld.replStreamDbId)
+				log.Infof("RDB repl-stream-db: %d position: %d", ld.replStreamDbId, RDBPos)
 			} else if key == "lua" {
 				e := entry.NewEntry()
 				e.Argv = []string{"script", "load", value}
 				e.IsBase = true
-				ld.ch <- e
+
 				log.Infof("LUA script: [%s]", value)
 			} else {
 				log.Infof("RDB AUX fields. key=[%s], value=[%s]", key, value)
 			}
 		case kFlagResizeDB:
-			dbSize := structure.ReadLength(rd)
-			expireSize := structure.ReadLength(rd)
+			dbSize, dbsizeoffset := structure.ReadLengthWithOffset(rd)
+			expireSize, expiresizeoffset := structure.ReadLengthWithOffset(rd)
+			rdbsize += dbsizeoffset + expiresizeoffset
 			log.Infof("RDB resize db. db_size=[%d], expire_size=[%d]", dbSize, expireSize)
 		case kFlagExpireMs:
 			ld.expireMs = int64(structure.ReadUint64(rd)) - time.Now().UnixMilli()
+			rdbsize += 8
 			if ld.expireMs < 0 {
 				ld.expireMs = 1
 			}
 		case kFlagExpire:
 			ld.expireMs = int64(structure.ReadUint32(rd))*1000 - time.Now().UnixMilli()
+			rdbsize += 4
 			if ld.expireMs < 0 {
 				ld.expireMs = 1
 			}
 		case kFlagSelect:
-			ld.nowDBId = int(structure.ReadLength(rd))
+			DBId, DBIDoffset := structure.ReadLengthWithOffset(rd)
+			ld.nowDBId = int(DBId)
+			rdbsize += DBIDoffset
 		case kEOF:
-			return
+			UpdateRDBSize()
+			println("rdbsize", rdbsize)
+
+			return rdbsize
 		default:
-			key := structure.ReadString(rd)
+			key, keyoffset := structure.ReadStringWithOffset(rd)
+			rdbsize += keyoffset
 			var value bytes.Buffer
 			anotherReader := io.TeeReader(rd, &value)
-			o := types.ParseObject(anotherReader, typeByte, key)
+			o, tempOffsets := types.ParseObjectWithOffset(anotherReader, typeByte, key)
+
+			rdbsize += tempOffsets
+			//rdbsize -= tempOffsets
+			//rdbsize += int64(value.Len())
 			if uint64(value.Len()) > config.Config.Advanced.TargetRedisProtoMaxBulkLen {
 				cmds := o.Rewrite()
 				for _, cmd := range cmds {
@@ -162,24 +162,26 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 					e.IsBase = true
 					e.DbId = ld.nowDBId
 					e.Argv = cmd
-					ld.ch <- e
+
 				}
 				if ld.expireMs != 0 {
 					e := entry.NewEntry()
 					e.IsBase = true
 					e.DbId = ld.nowDBId
 					e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
-					ld.ch <- e
 				}
 			} else {
 				e := entry.NewEntry()
 				e.IsBase = true
 				e.DbId = ld.nowDBId
+
 				v := ld.createValueDump(typeByte, value.Bytes())
+
+				//value 口口口
 				e.Argv = []string{"restore", key, strconv.FormatInt(ld.expireMs, 10), v}
 				if config.Config.Advanced.RDBRestoreCommandBehavior == "rewrite" {
 					if config.Config.Target.Version < 3.0 {
-						log.Panicf("RDB restore command behavior is rewrite, but target redis version is %f, not support REPLACE modifier", config.Config.Target.Version)
+						log.Panicf("RDB restore command behavior is rewrite, but target redis version is %f, not support REPLACE modifier,position: %d", config.Config.Target.Version, RDBPos)
 					}
 					e.Argv = append(e.Argv, "replace")
 				}
@@ -189,7 +191,7 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 				if ld.freq != 0 && config.Config.Target.Version >= 5.0 {
 					e.Argv = append(e.Argv, "freq", strconv.FormatInt(ld.freq, 10))
 				}
-				ld.ch <- e
+
 			}
 			ld.expireMs = 0
 			ld.idle = 0
@@ -197,19 +199,10 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 		}
 		select {
 		case <-tick:
-			UpdateRDBSentSize()
+			UpdateRDBSize()
 		default:
 		}
+		UpdateRDBSize()
 	}
-}
-
-func (ld *Loader) createValueDump(typeByte byte, val []byte) string {
-	ld.dumpBuffer.Reset()
-	_, _ = ld.dumpBuffer.Write([]byte{typeByte})
-	_, _ = ld.dumpBuffer.Write(val)
-	_ = binary.Write(&ld.dumpBuffer, binary.LittleEndian, uint16(6))
-	// calc crc
-	sum64 := utils.CalcCRC64(ld.dumpBuffer.Bytes())
-	_ = binary.Write(&ld.dumpBuffer, binary.LittleEndian, sum64)
-	return ld.dumpBuffer.String()
+	return RDBPos
 }
