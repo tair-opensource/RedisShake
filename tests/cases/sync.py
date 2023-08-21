@@ -2,6 +2,8 @@ import pybbt as p
 
 import helpers as h
 
+import time
+
 
 def test(src, dst):
     cross_slots_cmd = not (src.is_cluster() or dst.is_cluster())
@@ -20,8 +22,10 @@ def test(src, dst):
     # add data again
     inserter.add_data(src, cross_slots_cmd=cross_slots_cmd)
 
+    # time.sleep(20)
+
     # wait sync done
-    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent())
+    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=20)
     p.log(shake.get_status())
 
     # check data
