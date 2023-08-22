@@ -70,6 +70,16 @@ func (r *Redis) DoWithStringReply(args ...string) string {
 	return reply
 }
 
+func (r *Redis) Do(args ...string) interface{} {
+	r.Send(args...)
+
+	reply, err := r.Receive()
+	if err != nil {
+		log.Panicf(err.Error())
+	}
+	return reply
+}
+
 func (r *Redis) Send(args ...string) {
 	argsInterface := make([]interface{}, len(args))
 	for inx, item := range args {
