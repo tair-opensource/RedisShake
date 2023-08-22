@@ -2,6 +2,7 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+    head: [['link', { rel: 'icon', href: '/RedisShake/favicon.ico' }]],
     base: "/RedisShake/",
     title: "RedisShake",
     description: "RedisShake is a tool for processing and migrating Redis data.",
@@ -21,48 +22,43 @@ export default defineConfig({
                     {
                         text: '介绍',
                         items: [
-                            { text: '什么是 RedisShake', link: '/zh/guide/getting-started' },
+                            { text: '什么是 RedisShake', link: '/zh/guide/introduction' },
                             { text: '快速上手', link: '/zh/guide/getting-started' },
-                            { text: '配置', link: '/zh/guide/getting-started' },
-                            { text: '迁移模式选择', link: '/zh/guide/getting-started' },
+                            { text: '配置', link: '/zh/guide/config' },
+                            { text: '迁移模式选择', link: '/zh/guide/mode' },
                         ]
                     },
                     {
                         text: 'Reader',
                         items: [
-                            { text: 'Sync Reader', link: '/zh/function/introduction' },
-                            { text: 'Scan Reader', link: '/zh/function/best_practices' },
-                            { text: 'RDB Reader', link: '/zh/function/best_practices' },
+                            { text: 'Sync Reader', link: '/zh/reader/sync_reader' },
+                            { text: 'Scan Reader', link: '/zh/reader/scan_reader' },
+                            { text: 'RDB Reader', link: '/zh/reader/rdb_reader' },
                         ]
                     },
                     {
                         text: 'Writer',
                         items: [
-                            { text: 'Redis Writer', link: '/zh/function/introduction' },
+                            { text: 'Redis Writer', link: '/zh/writer/redis_writer' },
                         ]
                     },
                     {
                         text: 'function',
                         items: [
                             { text: '什么是 function', link: '/zh/function/introduction' },
-                            {
-                                text: '最佳实践',
-                                items: [
-                                    { text: '监控', link: '/zh/function/best_practices' },
-                                ]
-                            }
+                            { text: '最佳实践', link: '/zh/function/best_practices' }
                         ]
                     },
-                    {
-                        text: '进阶用法',
-                        items: [
-                            { text: '监控', link: '/zh/function/best_practices' },
-                            { text: '双向同步', link: '/zh/function/best_practices' },
-                            { text: '容器部署', link: '/zh/function/best_practices' },
-                            { text: '主从实例向集群实例迁移', link: '/zh/function/best_practices' },
-                            { text: '大 key 重写', link: '/zh/function/best_practices' },
-                        ]
-                    }
+                    // {
+                    //     text: '进阶用法',
+                    //     items: [
+                    //         { text: '监控', link: '/zh/function/best_practices' },
+                    //         { text: '双向同步', link: '/zh/function/best_practices' },
+                    //         { text: '容器部署', link: '/zh/function/best_practices' },
+                    //         { text: '主从实例向集群实例迁移', link: '/zh/function/best_practices' },
+                    //         { text: '大 key 重写', link: '/zh/function/best_practices' },
+                    //     ]
+                    // }
                 ],
                 footer: {
                     message: 'Released under the MIT License.',

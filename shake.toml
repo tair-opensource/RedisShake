@@ -16,11 +16,7 @@ tls = false
 # tls = false
 
 # [rdb_reader]
-# address = "127.0.0.1:6379"
-# username = ""              # keep empty if not using ACL
-# password = ""              # keep empty if no authentication is required
-# tls = false
-
+# filepath = "/tmp/dump.rdb"
 
 [redis_writer]
 cluster = false
