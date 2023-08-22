@@ -1,6 +1,7 @@
 ---
 outline: deep
 ---
+
 # 配置文件
 
 RedisShake 使用 [TOML](https://toml.io/cn/) 语言书写，所有的配置参数在 all.toml 中均有说明。
@@ -8,7 +9,7 @@ RedisShake 使用 [TOML](https://toml.io/cn/) 语言书写，所有的配置参�
 配置文件的组成如下：
 
 ```toml
-transform = "..."
+function = "..."
 
 [xxx_reader]
 ...
@@ -20,99 +21,25 @@ transform = "..."
 ...
 ```
 
-一般用法下，只需要书写 `xxx_reader`、`xxx_writer` 两个部分即可，`transform` 和 `advanced` 部分为进阶用法，用户可以根据自己的需求进行配置。
+一般用法下，只需要书写 `xxx_reader`、`xxx_writer` 两个部分即可，`function` 和 `advanced` 部分为进阶用法，用户可以根据自己的需求进行配置。
+
+## function 配置
+
+参考 [什么是 function](../function/introduction.md)。
 
 ## reader 配置
 
-根据源端的类型，RedisShake 提供了不同的 Reader 配置，用来对接不同的源端。
+RedisShake 提供了不同的 Reader 用来对接不同的源端，配置详见 Reader 章节：
 
-* 对于支持 [Redis Sync/Psync 协议](https://redis.io/docs/management/replication/)的源端，推荐使用 `sync_xxx_reader`
-* 对于不支持 [Redis Sync/Psync 协议](https://redis.io/docs/management/replication/)的源端，可以使用 `scan_xxx_reader`
-* 对于使用 dump.rdb 文件恢复数据场景，可以使用 `rdb_reader`
-
-### sync_xxx_reader
-
-对于源端为单机 Redis-like 数据库时，使用 `sync_standalone_reader`；对于源端为 Redis Cluster 时，使用 `sync_cluster_reader`。
-
-#### sync_standlone_reader
-
-```toml
-[sync_standlone_reader]
-address = "127.0.0.1:6379"
-username = "" # keep empty if not using ACL
-password = "" # keep empty if no authentication is required
-tls = false
-```
-
-#### sync_cluster_reader
-
-```toml
-[sync_cluster_reader]
-address = "127.0.0.1:6379"
-username = "" # keep empty if not using ACL
-password = "" # keep empty if no authentication is required
-tls = false
-```
-
-### scan_xxx_reader
-
-对于源端为单机 Redis-like 数据库时，使用 `scan_standalone_reader`；对于源端为 Redis Cluster 时，使用 `scan_cluster_reader`。
-
-#### scan_standlone_reader
-
-```toml
-[scan_standlone_reader]
-address = "127.0.0.1:6379"
-username = "" # keep empty if not using ACL
-password = "" # keep empty if no authentication is required
-tls = false
-```
-
-#### scan_cluster_reader
-
-```toml
-[scan_cluster_reader]
-address = "127.0.0.1:6379"
-username = "" # keep empty if not using ACL
-password = "" # keep empty if no authentication is required
-tls = false
-```
-
-### rdb_reader
-
-```toml
-[rdb_reader]
-filepath = "/path/to/dump.rdb"
-```
-
-filepath 为 dump.rdb 文件的路径，最好使用绝对路径。
+* [Sync Reader](../reader/sync_reader.md)
+* [Scan Reader](../reader/scan_reader.md)
+* [RDB Reader](../reader/rdb_reader.md)
 
 ## writer 配置
 
-根据目标端的类型，RedisShake 提供了不同的 Writer 配置，用来对接不同的目标端。
-目前 RedisShake 支持的目标端有：
-* 单机 Redis-like 数据库：redis_standalone_writer
-* Redis Cluster：redis_cluster_writer
+RedisShake 提供了不同的 Writer 用来对接不同的目标端，配置详见 Writer 章节：
 
-### redis_standalone_writer
-
-```toml
-[redis_standalone_writer]
-address = "127.0.0.1:6380"
-username = "" # keep empty if not using ACL
-password = "" # keep empty if no authentication is required
-tls = false
-```
-
-### redis_cluster_writer
-
-```toml
-[redis_cluster_writer]
-address = "127.0.0.1:6380"
-username = "" # keep empty if not using ACL
-password = "" # keep empty if no authentication is required
-tls = false
-```
+* [Redis Writer](../writer/redis_writer.md)
 
 ## advanced 配置
 
