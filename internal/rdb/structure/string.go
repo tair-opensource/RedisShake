@@ -62,10 +62,10 @@ func ReadStringWithOffset(rd io.Reader) (string, int64) {
 			offset += 4
 			return strconv.Itoa(int(b)), offset
 		case RDBEncLZF:
-			inLen, inlenoffset := ReadLengthWithOffset(rd)
-			offset += inlenoffset
-			outLen, outLenoffset := ReadLengthWithOffset(rd)
-			offset += outLenoffset
+			inLen, tempoffset := ReadLengthWithOffset(rd)
+			offset += tempoffset
+			outLen, tempoffset := ReadLengthWithOffset(rd)
+			offset += tempoffset
 			in := ReadBytes(rd, int(inLen))
 			offset += int64(inLen)
 			return lzfDecompress(in, int(outLen)), offset

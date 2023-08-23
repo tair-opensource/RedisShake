@@ -21,14 +21,12 @@ func RedisCheckRDBMain(filepath string, fp *os.File) int64 {
 		fmt.Fprintf(os.Stderr, "The file: %s fp is nil", filepath)
 		os.Exit(1)
 	}
-	fmt.Printf("Checking RDB file %s", filepath)
 	log.Infof("Checking RDB file %s", filepath)
 	ld := NewLoader(filepath, nil)
 
 	RDBPos := ld.CheckParseRDB()
 
 	if RDBPos > 0 {
-		fmt.Printf("\\o/ RDB looks OK! \\o/")
 		log.Infof("\\o/ RDB looks OK! \\o/")
 	} else {
 		return -1
@@ -39,12 +37,12 @@ func (ld *Loader) CheckParseRDB() int64 {
 	var err error
 	ld.fp, err = os.OpenFile(ld.filPath, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Panicf("open file failed. file_path=[%s], error=[%s]", ld.filPath, err)
+		log.Panicf("open file failed. filepath=[%s], error=[%s]", ld.filPath, err)
 	}
 	defer func() {
 		err = ld.fp.Close()
 		if err != nil {
-			log.Panicf("close file failed. file_path=[%s], error=[%s]", ld.filPath, err)
+			log.Panicf("close file failed. filepath=[%s], error=[%s]", ld.filPath, err)
 		}
 	}()
 	rd := bufio.NewReader(ld.fp)
@@ -76,7 +74,6 @@ func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
 	UpdateRDBSize := func() {
 		var err error
 		RDBPos, err = ld.fp.Seek(0, io.SeekCurrent)
-		//println(RDBPos)
 		if err != nil {
 			log.PanicError(err)
 		}
@@ -86,7 +83,7 @@ func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
 
 	// read one entry
 	tick := time.Tick(time.Second * 1)
-	for true {
+	for {
 		typeByte := structure.ReadByte(rd)
 		rdbsize += 1
 		switch typeByte {
@@ -123,7 +120,7 @@ func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
 			dbSize, dbsizeoffset := structure.ReadLengthWithOffset(rd)
 			expireSize, expiresizeoffset := structure.ReadLengthWithOffset(rd)
 			rdbsize += dbsizeoffset + expiresizeoffset
-			log.Infof("RDB resize db. db_size=[%d], expire_size=[%d]", dbSize, expireSize)
+			log.Infof("RDB resize db. dbsize=[%d], expiresize=[%d]", dbSize, expireSize)
 		case kFlagExpireMs:
 			ld.expireMs = int64(structure.ReadUint64(rd)) - time.Now().UnixMilli()
 			rdbsize += 8
@@ -142,19 +139,15 @@ func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
 			rdbsize += DBIDoffset
 		case kEOF:
 			UpdateRDBSize()
-			println("rdbsize", rdbsize)
-
 			return rdbsize
 		default:
-			key, keyoffset := structure.ReadStringWithOffset(rd)
-			rdbsize += keyoffset
+			key, tempoffset := structure.ReadStringWithOffset(rd)
+			rdbsize += tempoffset
 			var value bytes.Buffer
 			anotherReader := io.TeeReader(rd, &value)
 			o, tempOffsets := types.ParseObjectWithOffset(anotherReader, typeByte, key)
 
 			rdbsize += tempOffsets
-			//rdbsize -= tempOffsets
-			//rdbsize += int64(value.Len())
 			if uint64(value.Len()) > config.Config.Advanced.TargetRedisProtoMaxBulkLen {
 				cmds := o.Rewrite()
 				for _, cmd := range cmds {

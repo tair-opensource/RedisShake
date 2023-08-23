@@ -68,7 +68,7 @@ type tomlShakeConfig struct {
 var Config tomlShakeConfig
 
 func init() {
-	Config.Type = "sync"
+	Config.Type = "restore"
 
 	// source
 	Config.Source.Version = 5.0
@@ -79,14 +79,14 @@ func init() {
 	Config.Source.ElastiCachePSync = ""
 	// restore
 	Config.Source.RDBFilePath = ""
-	Config.Source.AOFFilePath = ""
+	Config.Source.AOFFilePath = "/home/hwy/appendonlydir"
 	Config.Source.TruncateToTimestamp = 0
-	Config.Source.AofDirName = ""
-	Config.Source.AofFileName = ""
+	Config.Source.AofDirName = "/home/hwy/appendonlydir"
+	Config.Source.AofFileName = "appendonly.aof"
 	// target
 	Config.Target.Type = "standalone"
 	Config.Target.Version = 5.0
-	Config.Target.Address = ""
+	Config.Target.Address = "localhos:6379"
 	Config.Target.Username = ""
 	Config.Target.Password = ""
 	Config.Target.IsTLS = false

@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"runtime"
+
 	"github.com/alibaba/RedisShake/internal/commands"
 	"github.com/alibaba/RedisShake/internal/config"
 	"github.com/alibaba/RedisShake/internal/filter"
@@ -9,10 +14,6 @@ import (
 	"github.com/alibaba/RedisShake/internal/reader"
 	"github.com/alibaba/RedisShake/internal/statistics"
 	"github.com/alibaba/RedisShake/internal/writer"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"runtime"
 )
 
 func main() {

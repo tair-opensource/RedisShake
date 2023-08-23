@@ -30,9 +30,8 @@ func ReadLength(rd io.Reader) uint64 {
 
 func readEncodedLength(rd io.Reader) (length uint64, special bool, err error) {
 	var lengthBuffer = make([]byte, 8)
-	var offset int64 = 0
 	firstByte := ReadByte(rd)
-	offset = 1
+	var offset int64 = 1
 	first2bits := (firstByte & 0xc0) >> 6 // first 2 bits of encoding
 	switch first2bits {
 	case RDB6ByteLen:
@@ -78,9 +77,8 @@ func ReadLengthWithOffset(rd io.Reader) (uint64, int64) {
 }
 func readEncodedLengthWithOffset(rd io.Reader) (length uint64, special bool, offsets int64, err error) {
 	var lengthBuffer = make([]byte, 8)
-	var offset int64 = 0
 	firstByte := ReadByte(rd)
-	offset = 1
+	var offset int64 = 1
 	first2bits := (firstByte & 0xc0) >> 6 // first 2 bits of encoding
 	switch first2bits {
 	case RDB6ByteLen:

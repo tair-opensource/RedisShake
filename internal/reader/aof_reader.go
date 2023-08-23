@@ -1,7 +1,5 @@
 package reader
 
-// this file  references  rdb_reader.go
-
 import (
 	"os"
 	"path"
@@ -18,7 +16,6 @@ type aofReader struct {
 	ch   chan *entry.Entry
 }
 
-// TODO:待完善参考rdb reader
 func NewAOFReader(path string) Reader {
 	log.Infof("NewAOFReader: path=[%s]", path)
 	absolutePath, err := filepath.Abs(path)
@@ -37,8 +34,6 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 	r.ch = make(chan *entry.Entry, 1024)
 
 	go func() {
-		// 开始解析 AOF 文件
-
 		aof.AofLoadManifestFromDisk()
 		am := aof.AOFINFO.GetAofManifest()
 
@@ -56,6 +51,7 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 			log.Infof("Send AOF finished. path=[%s]", r.path)
 			close(r.ch)
 		} else {
+
 			log.Infof("start send AOF。path=[%s]", r.path)
 			fi, err := os.Stat(r.path)
 			if err != nil {
