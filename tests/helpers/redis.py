@@ -17,7 +17,15 @@ class Redis:
         self.port = get_free_port()
         self.dir = f"{self.case_ctx.dir}/redis_{self.port}"
         args.extend(["--port", str(self.port)])
-        self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
+        
+        if REDIS_SERVER_VERSION > 4.0:
+            args.extend(["--loadmodule", "tairstring_module.so"])
+            args.extend(["--loadmodule", "tairhash_module.so"])
+            args.extend(["--loadmodule", "tairzset_module.so"])
+            self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
+        else:
+            self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
+
         self._wait_start()
         self.client = redis.Redis(host=self.host, port=self.port)
         self.case_ctx.add_exit_hook(lambda: self.server.stop())

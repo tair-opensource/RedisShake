@@ -1,22 +1,22 @@
 package commands
 
 var containers = map[string]bool{
-	"MODULE":   true,
-	"CLUSTER":  true,
-	"XGROUP":   true,
-	"COMMAND":  true,
-	"SLOWLOG":  true,
-	"OBJECT":   true,
-	"MEMORY":   true,
-	"CONFIG":   true,
-	"FUNCTION": true,
-	"LATENCY":  true,
 	"XINFO":    true,
-	"CLIENT":   true,
-	"SENTINEL": true,
-	"PUBSUB":   true,
+	"COMMAND":  true,
+	"FUNCTION": true,
+	"CONFIG":   true,
+	"MODULE":   true,
+	"MEMORY":   true,
+	"LATENCY":  true,
 	"SCRIPT":   true,
 	"ACL":      true,
+	"CLUSTER":  true,
+	"CLIENT":   true,
+	"XGROUP":   true,
+	"PUBSUB":   true,
+	"OBJECT":   true,
+	"SENTINEL": true,
+	"SLOWLOG":  true,
 }
 var redisCommands = map[string]redisCommand{
 	"LLEN": {
