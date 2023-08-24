@@ -4541,7 +4541,7 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"EXZADD ": {
+	"EXZADD": {
 		"TAIRZSET",
 		[]keySpec{
 			{

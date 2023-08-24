@@ -2,6 +2,7 @@ import pybbt
 
 from helpers.commands.checker import Checker
 from helpers.redis import Redis
+from helpers.constant import REDIS_SERVER_VERSION
 
 
 class TairHashChecker(Checker):
@@ -11,8 +12,9 @@ class TairHashChecker(Checker):
         self.cnt = 0
 
     def add_data(self, r: Redis, cross_slots_cmd: bool):
+        if REDIS_SERVER_VERSION < 5.0:
+            return
         p = r.pipeline()
-
         # different parameters type
         p.execute_command("EXHSET",f"{self.PREFIX}_{self.cnt}", "field", "value")
         p.execute_command("EXHSET",f"{self.PREFIX}_{self.cnt}_ABS", "field_abs", "value_abs", "ABS", 2)
@@ -33,6 +35,8 @@ class TairHashChecker(Checker):
         self.cnt += 1
 
     def check_data(self, r: Redis, cross_slots_cmd: bool):
+        if REDIS_SERVER_VERSION < 5.0:
+            return
         for i in range(self.cnt):
             p = r.pipeline()
 

@@ -1,5 +1,5 @@
 {
-    "EXZADD ": {
+    "EXZADD": {
         "summary": "TairZset, Adds all the specified members with the specified (multi)scores to the tairzset stored at key",
         "complexity": "O(N)",
         "group": "TairZset",
