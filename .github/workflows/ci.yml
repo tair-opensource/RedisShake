@@ -8,6 +8,7 @@ jobs:
         strategy:
             matrix:
                 redis-version: [ "2.8", "3.0", "4.0", "5.0", "6.0", "7.0" ]
+            fail-fast: false
         container: ubuntu:latest
         steps:
             -   name: Git checkout
@@ -29,6 +30,45 @@ jobs:
                     mkdir bin
                     cp src/redis-server bin/redis-server
                     echo "$GITHUB_WORKSPACE/redis/bin" >> $GITHUB_PATH
+
+            -   name: clone and make TairString Module
+                if:  contains( '5.0, 6.0, 7.0', matrix.redis-version)
+                run: |
+                    cd $GITHUB_WORKSPACE
+                    apt-get install -y cmake
+                    git clone https://github.com/tair-opensource/TairString.git
+                    cd TairString 
+                    mkdir build 
+                    cd build 
+                    cmake ../ && make -j
+                    cp $GITHUB_WORKSPACE/TairString/lib/tairstring_module.so /lib
+                    
+                    
+
+            -   name: clone and make TairHash Module
+                if:  contains( '5.0, 6.0, 7.0', matrix.redis-version)
+                run: |
+                    cd $GITHUB_WORKSPACE
+                    git clone https://github.com/tair-opensource/TairHash.git
+                    cd TairHash 
+                    mkdir build 
+                    cd build 
+                    cmake ../ && make -j
+                    cp $GITHUB_WORKSPACE/TairHash/lib/tairhash_module.so /lib
+        
+                    
+
+            -   name: clone and make TairZset Module
+                if:  contains( '5.0, 6.0, 7.0', matrix.redis-version)
+                run: |
+                    cd $GITHUB_WORKSPACE
+                    git clone https://github.com/tair-opensource/TairZset.git
+                    cd TairZset 
+                    mkdir build 
+                    cd build 
+                    cmake ../ && make -j
+                    cp $GITHUB_WORKSPACE/TairZset/lib/tairzset_module.so /lib
+
 
             -   name: Setup Python
                 uses: actions/setup-python@v4
