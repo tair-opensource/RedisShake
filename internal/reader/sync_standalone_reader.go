@@ -116,7 +116,7 @@ func (r *syncStandaloneReader) sendPSync() {
 	// send PSync
 	argv := []string{"PSYNC", "?", "-1"}
 	if config.Opt.Advanced.AwsPSync != "" {
-		argv = []string{config.Opt.Advanced.AwsPSync, "?", "-1"} // TODO AWS PSYNC
+		argv = []string{config.Opt.Advanced.GetPSyncCommand(r.stat.Address), "?", "-1"}
 	}
 	r.client.Send(argv...)
 

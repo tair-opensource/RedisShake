@@ -59,4 +59,4 @@ target_redis_client_max_querybuf_len = 1024_000_000
 target_redis_proto_max_bulk_len = 512_000_000
 
 # If the source is Elasticache or MemoryDB, you can set this item.
-aws_psync = ""
+aws_psync = "" # example: aws_psync = "10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync"

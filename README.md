@@ -1,6 +1,6 @@
 # RedisShake: Redis Data Processing & Migration Tool
 
-[![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml/badge.svg?event=push?branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml)
+[![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml/badge.svg?event=push&branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml)
 [![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/pages.yml/badge.svg?branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/pages.yml)
 [![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/release.yml/badge.svg?branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/release.yml)
 

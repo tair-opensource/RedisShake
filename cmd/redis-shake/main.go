@@ -15,7 +15,7 @@ import (
 func main() {
 	v := config.LoadConfig()
 
-	log.Init(config.Opt.Advanced.LogLevel, config.Opt.Advanced.LogFile)
+	log.Init(config.Opt.Advanced.LogLevel, config.Opt.Advanced.LogFile, config.Opt.Advanced.Dir)
 	utils.ChdirAndAcquireFileLock()
 	utils.SetNcpu()
 	utils.SetPprofPort()
