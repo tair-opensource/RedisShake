@@ -1,7 +1,6 @@
 package log
 
 import (
-	"RedisShake/internal/config"
 	"fmt"
 	"github.com/rs/zerolog"
 	"os"
@@ -10,7 +9,7 @@ import (
 
 var logger zerolog.Logger
 
-func Init(level string, file string) {
+func Init(level string, file string, dir string) {
 	// log level
 	switch level {
 	case "debug":
@@ -24,7 +23,7 @@ func Init(level string, file string) {
 	}
 
 	// dir
-	dir, err := filepath.Abs(config.Opt.Advanced.Dir)
+	dir, err := filepath.Abs(dir)
 	if err != nil {
 		panic(fmt.Sprintf("failed to determine current directory: %v", err))
 	}

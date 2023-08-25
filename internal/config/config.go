@@ -1,11 +1,13 @@
 package config
 
 import (
+	"RedisShake/internal/log"
 	"fmt"
 	"github.com/mcuadros/go-defaults"
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 	"os"
+	"strings"
 )
 
 type AdvancedOptions struct {
@@ -34,11 +36,18 @@ type AdvancedOptions struct {
 	TargetRedisClientMaxQuerybufLen int64  `mapstructure:"target_redis_client_max_querybuf_len" default:"1024000000"`
 	TargetRedisProtoMaxBulkLen      uint64 `mapstructure:"target_redis_proto_max_bulk_len" default:"512000000"`
 
-	AwsPSync string `mapstructure:"aws_psync" default:""` // "ip:port@xxxpsync;ip:port@xxxpsync"
+	AwsPSync string `mapstructure:"aws_psync" default:""` // 10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync
 }
 
 func (opt *AdvancedOptions) GetPSyncCommand(address string) string {
-	return fmt.Sprintf("psync %s 1 0", address)
+	items := strings.Split(opt.AwsPSync, ",")
+	for _, item := range items {
+		if strings.HasPrefix(item, address) {
+			return strings.Split(item, "@")[1]
+		}
+	}
+	log.Panicf("can not find aws psync command. address=[%s],aws_psync=[%s]", address, opt.AwsPSync)
+	return ""
 }
 
 type ShakeOptions struct {
