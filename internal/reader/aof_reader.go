@@ -34,10 +34,13 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 	r.ch = make(chan *entry.Entry, 1024)
 
 	go func() {
-		aof.AofLoadManifestFromDisk()
-		am := aof.AOFINFO.GetAofManifest()
+		aof.AOFFileInfo = *(aof.NewAOFFileInfo())
+		aof.AOFLoadManifestFromDisk()
+		am := aof.AOFFileInfo.GetAOFManifest()
 
 		if am == nil {
+			paths := path.Join(aof.AOFFileInfo.GetAOFDirName(), aof.AOFFileInfo.GetAOFFileName())
+			aof.CheckAOFMain(paths)
 			log.Infof("start send AOF。path=[%s]", r.path)
 			fi, err := os.Stat(r.path)
 			if err != nil {
@@ -46,12 +49,13 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 			statistics.Metrics.AofFileSize = uint64(fi.Size())
 			statistics.Metrics.AofReceivedSize = uint64(fi.Size())
 			aofLoader := aof.NewLoader(r.path, r.ch)
-			paths := path.Join(aof.AOFINFO.GetAofdirName(), aof.AOFINFO.GetAofFilename())
+
 			_ = aofLoader.LoadSingleAppendOnlyFile(paths, r.ch)
 			log.Infof("Send AOF finished. path=[%s]", r.path)
 			close(r.ch)
 		} else {
-
+			paths := path.Join(aof.AOFFileInfo.GetAOFDirName(), aof.GetAOFManifestFileName())
+			aof.CheckAOFMain(paths)
 			log.Infof("start send AOF。path=[%s]", r.path)
 			fi, err := os.Stat(r.path)
 			if err != nil {
@@ -60,7 +64,7 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 			statistics.Metrics.AofFileSize = uint64(fi.Size())
 			statistics.Metrics.AofReceivedSize = uint64(fi.Size())
 			aofLoader := aof.NewLoader(r.path, r.ch)
-			_ = aofLoader.LoadAppendOnlyFile(aof.AOFINFO.GetAofManifest(), r.ch)
+			_ = aofLoader.LoadAppendOnlyFile(aof.AOFFileInfo.GetAOFManifest(), r.ch)
 			log.Infof("Send AOF finished. path=[%s]", r.path)
 			close(r.ch)
 		}

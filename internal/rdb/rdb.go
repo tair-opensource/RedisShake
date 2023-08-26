@@ -106,7 +106,7 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 	defer UpdateRDBSentSize()
 	// read one entry
 	tick := time.Tick(time.Second * 1)
-	for {
+	for true {
 		typeByte := structure.ReadByte(rd)
 		switch typeByte {
 		case kFlagIdle:

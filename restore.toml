@@ -5,9 +5,7 @@ version = 5.0 # redis version, such as 2.8, 4.0, 5.0, 6.0, 6.2, 7.0, ...
 # Path to the dump.rdb file. Absolute path or relative path. Note
 # that relative paths are relative to the dir directory.
     rdb_file_path = ""
-    aof_dirname="/home/hwy/appendonlydir"
-    aof_filename="appendonly.aof"
-    aof_file_path="/home/hwy/appendonlydir"
+    aof_file_path="appendonlydir"//Please use an absolute path.
     truncate-to-timestamp=0
 [target]
 type = "standalone" # standalone or cluster

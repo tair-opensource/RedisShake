@@ -3,7 +3,6 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 
@@ -20,11 +19,9 @@ type tomlSource struct {
 	ElastiCachePSync string  `toml:"elasticache_psync"`
 
 	// restore mode
-	RDBFilePath         string `toml:"rdb_file_path"`
-	AofDirName          string `toml:"aof_dirname"`
-	AofFileName         string `toml:"aof_filename"`
-	AOFFilePath         string `toml:"aof_file_path"`         // add the aof path
-	TruncateToTimestamp int64  `toml:"truncate-to-timestamp"` //When reading an AOF file, truncate the file by timestamp.
+	RDBFilePath            string `toml:"rdb_file_path"`
+	AOFFilePath            string `toml:"aof_file_path"`         // add the aof path
+	AOFTruncateToTimestamp int64  `toml:"truncate-to-timestamp"` //When reading an AOF file, truncate the file by timestamp.
 }
 
 type tomlTarget struct {
@@ -79,14 +76,12 @@ func init() {
 	Config.Source.ElastiCachePSync = ""
 	// restore
 	Config.Source.RDBFilePath = ""
-	Config.Source.AOFFilePath = "/home/hwy/appendonlydir"
-	Config.Source.TruncateToTimestamp = 0
-	Config.Source.AofDirName = "/home/hwy/appendonlydir"
-	Config.Source.AofFileName = "appendonly.aof"
+	Config.Source.AOFFilePath = ""
+	Config.Source.AOFTruncateToTimestamp = 0
 	// target
 	Config.Target.Type = "standalone"
 	Config.Target.Version = 5.0
-	Config.Target.Address = "localhos:6379"
+	Config.Target.Address = "localhost:6379"
 	Config.Target.Username = ""
 	Config.Target.Password = ""
 	Config.Target.IsTLS = false
@@ -107,7 +102,7 @@ func init() {
 
 func LoadFromFile(filename string) {
 
-	buf, err := ioutil.ReadFile(filename)
+	buf, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err.Error())
 	}

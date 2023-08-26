@@ -34,7 +34,7 @@ var redisCommands = map[string]redisCommand{
 				0,
 				0,
 				0,
-				0,	
+				0,
 			},
 		},
 	},
