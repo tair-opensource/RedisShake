@@ -20,7 +20,7 @@ dist() {
     echo "build success GOOS=$1 GOARCH=$2"
 
     cd "$BIN_DIR"
-    tar -czvf ./redis-shake-"$1"-"$2".tar.gz ./shake.toml
+    tar -czvf ./redis-shake-"$1"-"$2".tar.gz ./redis-shake ./shake.toml
     cd ..
 }
 
