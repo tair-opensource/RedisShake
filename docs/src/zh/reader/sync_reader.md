@@ -9,15 +9,18 @@
 * ElastiCache 部分兼容
 * MemoryDB 部分兼容
 
-优势：数据一致性最佳，可以实现不停机的切换
+优势：数据一致性最佳，对源库影响小，可以实现不停机的切换
 
 ## 配置
 
 ```toml
 [sync_reader]
-cluster = false
-address = "127.0.0.1:6379" # when cluster is true, address is one of the cluster node
+cluster = false            # set to true if source is a redis cluster
+address = "127.0.0.1:6379" # when cluster is true, set address to one of the cluster node
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
 tls = false
 ```
+
+* 当源端为集群时，配置 `cluster` 为 true，`address` 为集群中的任意一个节点即可。`sync_reader` 会通过 `cluster nodes` 命令获取集群中的所有节点信息，并建立连接获取数据。
+
