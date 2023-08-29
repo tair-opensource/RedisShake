@@ -11,3 +11,4 @@
 filepath = "/tmp/dump.rdb"
 ```
 
+* 应传入绝对路径。

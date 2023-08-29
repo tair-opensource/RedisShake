@@ -4,17 +4,27 @@ outline: deep
 
 # 迁移模式选择
 
+## 概述
+
 目前 RedisShake 有三种迁移模式：`PSync`、`RDB` 和
 `SCAN`，分别对应 [`sync_reader`](../reader/sync_reader.md)、[`rdb_reader`](../reader/rdb_reader.md)
 和 [`scan_reader`](../reader/scan_reader.md)。
 
-对于从备份中恢复数据的场景，可以使用 `rdb_reader`。
-
-对于数据迁移场景，优先选择 `sync_reader`。一些云厂商没有提供 PSync 协议支持，可以选择`scan_reader`。
-
-对于长期的数据同步场景，RedisShake 目前没有能力承接，因为 PSync 协议并不可靠，当复制连接断开时，RedisShake 将无法重新连接至源端数据库。如果对于可用性要求不高，可以使用 `scan_reader`。如果写入量不大，且不存在大 key，也可以考虑 `scan_reader`。
+* 对于从备份中恢复数据的场景，可以使用 `rdb_reader`。
+* 对于数据迁移场景，优先选择 `sync_reader`。一些云厂商没有提供 PSync 协议支持，可以选择`scan_reader`。
+* 对于长期的数据同步场景，RedisShake 目前没有能力承接，因为 PSync 协议并不可靠，当复制连接断开时，RedisShake 将无法重新连接至源端数据库。如果对于可用性要求不高，可以使用 `scan_reader`。如果写入量不大，且不存在大 key，也可以考虑 `scan_reader`。
 
 不同模式各有优缺点，需要查看各 Reader 章节了解更多信息。
+
+## Redis Cluster 架构
+
+当源端 Redis 以 cluster 架构部署时，可以使用 `sync_reader` 或者 `scan_reader`。两者配置项中均有开关支持开启 cluster 模式，会通过 `cluster nodes` 命令自动获取集群中的所有节点，并建立连接。
+
+## Redis Sentinel 架构
+
+当源端 Redis 以 sentinel 架构部署且 RedisShake 使用  `sync_reader` 连接主库时，会被主库当做 slave，从而有可能被 sentinel 选举为新的 master。
+
+为了避免这种情况，应选择备库作为源端。
 
 ## 云 Redis 服务
 
@@ -44,11 +54,6 @@ outline: deep
 
 不方便提交工单时，可以使用 `scan_reader`。需要注意的是，`scan_reader` 会对源库造成较大的压力。
 
-## 自建 Redis 或 Redis-like 数据库
-
-## Redis Sentinel 架构
-
-当 Redis 以 sentinel 架构部署时，RedisShake 通过 PSync 协议连接主库会被认为是 slave，从而有可能被 sentinel 选举为新的 master。为了避免这种情况，应选择备库作为源端。
 
 
 

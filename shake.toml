@@ -2,25 +2,26 @@ function = ""
 
 
 [sync_reader]
-cluster = false
-address = "127.0.0.1:6379"
+cluster = false            # set to true if source is a redis cluster
+address = "127.0.0.1:6379" # when cluster is true, set address to one of the cluster node
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
 tls = false
 
 # [scan_reader]
-# cluster = false
-# address = "127.0.0.1:6379"
+# cluster = false            # set to true if source is a redis cluster
+# address = "127.0.0.1:6379" # when cluster is true, set address to one of the cluster node
 # username = ""              # keep empty if not using ACL
 # password = ""              # keep empty if no authentication is required
+# ksn = false                # set to true to enabled Redis keyspace notifications (KSN) subscription
 # tls = false
 
 # [rdb_reader]
 # filepath = "/tmp/dump.rdb"
 
 [redis_writer]
-cluster = false
-address = "127.0.0.1:6380"
+cluster = false            # set to true if target is a redis cluster
+address = "127.0.0.1:6380" # when cluster is true, set address to one of the cluster node
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
 tls = false
