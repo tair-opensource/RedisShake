@@ -18,7 +18,6 @@ var containers = map[string]bool{
 	"SENTINEL": true,
 	"SLOWLOG":  true,
 }
-
 var redisCommands = map[string]redisCommand{
 	"LLEN": {
 		"LIST",

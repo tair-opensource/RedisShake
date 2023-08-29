@@ -22,7 +22,6 @@ const (
 	AOFResp                    AOFFileType = "AOF_RESP"
 	AOFRdbPreamble             AOFFileType = "AOF_RDB_PREAMBLE"
 	AOFMultiPart               AOFFileType = "AOF_MULTI_PART"
-	rdbCheckMode                           = 1
 	ManifestMaxLine                        = 1024
 	AOFCheckOk                             = 0
 	AOFCheckEmpty                          = 1
@@ -84,6 +83,7 @@ func GetInputAOFFileType(AOFFilePath string) AOFFileType {
 
 func FilelsManifest(AOFFilePath string) bool {
 	var is_manifest bool = false
+	log.Infof("FIleLsMainifest:%v", AOFFilePath)
 	fp, err := os.Open(AOFFilePath)
 	if err != nil {
 		log.Panicf("Cannot open File %v:%v\n", AOFFilePath, err.Error())
@@ -119,27 +119,27 @@ func FilelsManifest(AOFFilePath string) bool {
 
 func FileIsRDB(AOFFilePath string) bool {
 	fp, err := os.Open(AOFFilePath)
+
 	if err != nil {
 		log.Panicf("Cannot open File %v:%v\n", AOFFilePath, err.Error())
 	}
+
+	defer fp.Close()
 	sb, err := os.Stat(AOFFilePath)
 	if err != nil {
 		log.Panicf("cannot stat File: %v\n", AOFFilePath)
 	}
 	size := sb.Size()
 	if size == 0 {
-		fp.Close()
 		return false
 	}
 	if size >= 8 {
 		sig := make([]byte, 5)
 		_, err := fp.Read(sig)
 		if err == nil && string(sig) == "REDIS" {
-			fp.Close()
 			return true
 		}
 	}
-	fp.Close()
 	return false
 }
 
@@ -180,9 +180,8 @@ func ReadString(rd *bufio.Reader, target *string) int {
 		log.Infof("Expected to read string of %d bytes, which is not in the suitable range\n", len)
 		return 0
 	}
-
-	// Increase length to also consume \r\n
 	len += 2
+	// Increase length to also consume \r\n
 	data := make([]byte, len)
 	if ReadBytes(rd, &data, len) == 0 {
 		return 0
@@ -191,20 +190,19 @@ func ReadString(rd *bufio.Reader, target *string) int {
 	if ConsumeNewline(data[len-2:]) == 0 {
 		return 0
 	}
-
-	*target = string(data[:len-2])
+	data = data[:len-2] //\r\n
+	*target = string(data)
 	return 1
 }
 
 func ReadBytes(rd *bufio.Reader, target *[]byte, length int64) int {
-	var real int64
-	n, err := rd.Read(*target)
-	real = int64(n)
-	if err != nil || real != length {
-		log.Infof("Expected to read %d bytes, got %d bytes\n", length, real)
+	var err error
+	*target, err = rd.ReadBytes('\n')
+	if err != nil || (*target)[length-1] != '\n' {
+		log.Infof("Expected to read %d bytes, got %d bytes\n%s", length, 1, *target)
 		return 0
 	}
-	CheckAOFInfof.pos += real
+	CheckAOFInfof.pos += length
 	return 1
 }
 

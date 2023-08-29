@@ -34,14 +34,14 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 	r.ch = make(chan *entry.Entry, 1024)
 
 	go func() {
-		aof.AOFFileInfo = *(aof.NewAOFFileInfo())
+		aof.AOFFileInfo = *(aof.NewAOFFileInfo(r.path))
 		aof.AOFLoadManifestFromDisk()
 		am := aof.AOFFileInfo.GetAOFManifest()
 
 		if am == nil {
 			paths := path.Join(aof.AOFFileInfo.GetAOFDirName(), aof.AOFFileInfo.GetAOFFileName())
-			aof.CheckAOFMain(paths)
-			log.Infof("start send AOF。path=[%s]", r.path)
+			aof.CheckAOFMain(r.path)
+			log.Infof("start send AOF path=[%s]", r.path)
 			fi, err := os.Stat(r.path)
 			if err != nil {
 				log.Panicf("NewAOFReader: os.Stat error：%s", err.Error())

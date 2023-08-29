@@ -27,7 +27,7 @@ type metrics struct {
 	RdbReceivedSize uint64 `json:"rdb_received_size"`
 	RdbSendSize     uint64 `json:"rdb_send_size"`
 
-	//loading aof
+	//loading
 	Loading            bool  `json:"loading"`
 	AsyncLoading       bool  `json:"async_loading"`
 	LoadingStartTime   int64 `json:"loading_start_time"`
@@ -39,6 +39,7 @@ type metrics struct {
 	AofAppliedOffset  uint64 `json:"aof_applied_offset"`
 	AofFileSize       uint64 `json:"aof_file_size"`
 	AofReceivedSize   uint64 `json:"aof_received_size"`
+
 	// for performance debug
 	InQueueEntriesCount  uint64 `json:"in_queue_entries_count"`
 	UnansweredBytesCount uint64 `json:"unanswered_bytes_count"`

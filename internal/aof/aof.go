@@ -12,7 +12,6 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/alibaba/RedisShake/internal/config"
 	"github.com/alibaba/RedisShake/internal/entry"
 	"github.com/alibaba/RedisShake/internal/log"
 	"github.com/alibaba/RedisShake/internal/rdb"
@@ -309,13 +308,13 @@ func AOFInfoDup(orig *AOFInfo) *AOFInfo {
 }
 
 func AOFInfoFormat(buf string, ai *AOFInfo) string {
-	var FileNameRepr string
+	var AOFManifestcreate string
 	if StringNeedsRepr(ai.FileName) == 1 {
-		FileNameRepr = Stringcatrepr("", ai.FileName, len(ai.FileName))
+		AOFManifestcreate = Stringcatrepr("", ai.FileName, len(ai.FileName))
 	}
 	var ret string
-	if FileNameRepr != "" {
-		ret = Stringcatprintf(buf, "%s %s %s %d %s %s\n", AOFManifestKeyFileName, FileNameRepr, AOFManifestKeyFileSeq, ai.FileSeq, AOFManifestKeyFileType, ai.AOFFileType)
+	if AOFManifestcreate != "" {
+		ret = Stringcatprintf(buf, "%s %s %s %d %s %s\n", AOFManifestKeyFileName, AOFManifestcreate, AOFManifestKeyFileSeq, ai.FileSeq, AOFManifestKeyFileType, ai.AOFFileType)
 	} else {
 		ret = Stringcatprintf(buf, "%s %s %s %d %s %s\n", AOFManifestKeyFileName, ai.FileName, AOFManifestKeyFileSeq, ai.FileSeq, AOFManifestKeyFileType, ai.AOFFileType)
 	}
@@ -337,12 +336,12 @@ func (a *INFO) GetAOFDirName() string {
 	return a.AOFDirName
 }
 
-func NewAOFFileInfo() *INFO {
+func NewAOFFileInfo(aofFilePath string) *INFO {
 	return &INFO{
-		AOFDirName:         filepath.Dir(config.Config.Source.AOFFilePath),
+		AOFDirName:         filepath.Dir(aofFilePath),
 		AOFUseRDBPreamble:  0,
 		AOFManifest:        nil,
-		AOFFileName:        filepath.Base(config.Config.Source.AOFFilePath),
+		AOFFileName:        filepath.Base(aofFilePath),
 		AOFCurrentSize:     0,
 		AOFRewriteBaseSize: 0,
 	}
@@ -707,7 +706,6 @@ func GetLastIncrAOFName(am *AOFManifest) string {
 
 	ai, ok := lastnode.value.(AOFInfo)
 	if !ok {
-		fmt.Printf("Failed to convert lastnode.value to AOFInfo")
 		log.Panicf("Failed to convert lastnode.value to AOFInfo")
 	}
 	return ai.FileName
@@ -732,6 +730,7 @@ func StartLoading(size int64, RDBflags int, async int) {
 	statistics.Metrics.LoadingTotalBytes = size
 	log.Infof("The AOF File starts loading.\n")
 }
+
 func StopLoading(ret int) {
 	statistics.Metrics.Loading = false
 	statistics.Metrics.AsyncLoading = false
@@ -900,22 +899,19 @@ func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry
 				}
 				sizes += int64(len(line))
 				len, _ := strconv.ParseInt(string(line[1:len(line)-2]), 10, 64)
-
-				argstring := make([]byte, len)
-				_, err = reader.Read(argstring)
-				if err != nil {
+				argstring := make([]byte, len+2)
+				argstring, err = reader.ReadBytes('\n')
+				if err != nil || argstring[len+1] != '\n' {
 					log.Infof("Unrecoverable error reading the append only File %v: %v", FileName, err)
 					ret = AOFFailed
 					return ret
 				}
+				/*if ConsumeNewline(argstring[len-2:]) == 0 {
+					return 0
+				}*/
+				argstring = argstring[:len]
 				argv = append(argv, string(argstring))
-				CRLF := make([]byte, 2)
-				_, err = reader.Read(CRLF)
-				if err != nil {
-					log.Infof("Unrecoverable error reading the append only File %v: %v", FileName, err)
-					ret = AOFFailed
-					return ret
-				}
+
 				sizes += len + 2
 			}
 			for _, value := range argv {

@@ -2,11 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"runtime"
-
 	"github.com/alibaba/RedisShake/internal/commands"
 	"github.com/alibaba/RedisShake/internal/config"
 	"github.com/alibaba/RedisShake/internal/filter"
@@ -14,6 +9,10 @@ import (
 	"github.com/alibaba/RedisShake/internal/reader"
 	"github.com/alibaba/RedisShake/internal/statistics"
 	"github.com/alibaba/RedisShake/internal/writer"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"runtime"
 )
 
 func main() {
@@ -83,11 +82,11 @@ func main() {
 	var theReader reader.Reader
 	if config.Config.Type == "sync" {
 		theReader = reader.NewPSyncReader(source.Address, source.Username, source.Password, source.IsTLS, source.ElastiCachePSync)
-	} else if config.Config.Type == "restore" { // TODO: new aof reader
+	} else if config.Config.Type == "restore" {
 		if source.RDBFilePath != "" {
 			theReader = reader.NewRDBReader(source.RDBFilePath)
 		} else {
-			theReader = reader.NewAOFReader(source.AOFFilePath) // 如果是mp-aof 用户传入 manifest文件的地址 ，其他的传递aof的地址
+			theReader = reader.NewAOFReader(source.AOFFilePath)
 		}
 
 	} else if config.Config.Type == "scan" {

@@ -42,6 +42,7 @@ func ReadString(rd io.Reader) string {
 	}
 	return string(ReadBytes(rd, int(length)))
 }
+
 func ReadStringWithOffset(rd io.Reader) (string, int64) {
 	length, special, offset, err := readEncodedLengthWithOffset(rd)
 	if err != nil {

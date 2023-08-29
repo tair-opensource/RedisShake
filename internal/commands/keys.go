@@ -2,12 +2,11 @@ package commands
 
 import (
 	"fmt"
+	"github.com/alibaba/RedisShake/internal/log"
+	"github.com/alibaba/RedisShake/internal/utils"
 	"math"
 	"strconv"
 	"strings"
-
-	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/utils"
 )
 
 // CalcKeys https://redis.io/docs/reference/key-specs/
@@ -114,13 +113,4 @@ findHashTag:
 		key = hashtag
 	}
 	return utils.Crc16(key) & 0x3FFF
-}
-
-func LookupCommand(cmd string) int {
-	_, ok := redisCommands[cmd]
-	if !ok {
-		log.Warnf("unknown command. argv=%v", cmd)
-		return 0
-	}
-	return 1
 }

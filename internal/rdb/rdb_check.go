@@ -62,12 +62,12 @@ func (ld *Loader) CheckParseRDB() int64 {
 	log.Infof("RDB version: %d", version)
 
 	// read entries
-	rdbpos := ld.CheckparseRDBEntry(rd)
+	rdbpos := ld.CheckParseRDBEntry(rd)
 
 	return rdbpos
 }
 
-func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
+func (ld *Loader) CheckParseRDBEntry(rd *bufio.Reader) int64 {
 	// for stat
 	var RDBPos int64
 	var rdbsize int64 = 9
@@ -88,8 +88,8 @@ func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
 		rdbsize += 1
 		switch typeByte {
 		case kFlagIdle:
-			tempidle, tempOffset := structure.ReadLengthWithOffset(rd)
-			ld.idle = int64(tempidle)
+			tempIdle, tempOffset := structure.ReadLengthWithOffset(rd)
+			ld.idle = int64(tempIdle)
 			rdbsize += tempOffset
 		case kFlagFreq:
 			ld.freq = int64(structure.ReadByte(rd))
@@ -117,9 +117,9 @@ func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
 				log.Infof("RDB AUX fields. key=[%s], value=[%s]", key, value)
 			}
 		case kFlagResizeDB:
-			dbSize, dbsizeoffset := structure.ReadLengthWithOffset(rd)
-			expireSize, expiresizeoffset := structure.ReadLengthWithOffset(rd)
-			rdbsize += dbsizeoffset + expiresizeoffset
+			dbSize, dbSizeOffset := structure.ReadLengthWithOffset(rd)
+			expireSize, expireSizeOffset := structure.ReadLengthWithOffset(rd)
+			rdbsize += dbSizeOffset + expireSizeOffset
 			log.Infof("RDB resize db. dbsize=[%d], expiresize=[%d]", dbSize, expireSize)
 		case kFlagExpireMs:
 			ld.expireMs = int64(structure.ReadUint64(rd)) - time.Now().UnixMilli()
@@ -134,15 +134,15 @@ func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
 				ld.expireMs = 1
 			}
 		case kFlagSelect:
-			DBId, DBIDoffset := structure.ReadLengthWithOffset(rd)
+			DBId, DBIDOffset := structure.ReadLengthWithOffset(rd)
 			ld.nowDBId = int(DBId)
-			rdbsize += DBIDoffset
+			rdbsize += DBIDOffset
 		case kEOF:
 			UpdateRDBSize()
 			return rdbsize
 		default:
-			key, tempoffset := structure.ReadStringWithOffset(rd)
-			rdbsize += tempoffset
+			key, tempOffset := structure.ReadStringWithOffset(rd)
+			rdbsize += tempOffset
 			var value bytes.Buffer
 			anotherReader := io.TeeReader(rd, &value)
 			o, tempOffsets := types.ParseObjectWithOffset(anotherReader, typeByte, key)
@@ -170,7 +170,7 @@ func (ld *Loader) CheckparseRDBEntry(rd *bufio.Reader) int64 {
 
 				v := ld.createValueDump(typeByte, value.Bytes())
 
-				//value 口口口
+				//value
 				e.Argv = []string{"restore", key, strconv.FormatInt(ld.expireMs, 10), v}
 				if config.Config.Advanced.RDBRestoreCommandBehavior == "rewrite" {
 					if config.Config.Target.Version < 3.0 {
