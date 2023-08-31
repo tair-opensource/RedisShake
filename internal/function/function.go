@@ -23,6 +23,7 @@ func Init() {
 // GROUP
 // CMD
 // KEYS
+// KEY_INDEXES
 // SLOTS
 // ARGV
 
@@ -49,6 +50,11 @@ func RunFunction(e *entry.Entry) []*entry.Entry {
 	for _, slot := range e.Slots {
 		slots.Append(lua.LNumber(slot))
 	}
+	keyIndexes := L.NewTable()
+	for _, keyIndex := range e.KeyIndexes {
+		keyIndexes.Append(lua.LNumber(keyIndex))
+	}
+	L.SetGlobal("KEY_INDEXES", keyIndexes)
 	L.SetGlobal("SLOTS", slots)
 	argv := L.NewTable()
 	for _, arg := range e.Argv {

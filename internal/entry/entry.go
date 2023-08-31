@@ -12,10 +12,11 @@ type Entry struct {
 	DbId int      // required
 	Argv []string // required
 
-	CmdName string
-	Group   string
-	Keys    []string
-	Slots   []int
+	CmdName    string
+	Group      string
+	Keys       []string
+	KeyIndexes []int
+	Slots      []int
 
 	// for stat
 	SerializedSize int64
@@ -51,6 +52,6 @@ func (e *Entry) Serialize() []byte {
 }
 
 func (e *Entry) Parse() {
-	e.CmdName, e.Group, e.Keys = commands.CalcKeys(e.Argv)
+	e.CmdName, e.Group, e.Keys, e.KeyIndexes = commands.CalcKeys(e.Argv)
 	e.Slots = commands.CalcSlots(e.Keys)
 }

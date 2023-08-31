@@ -22,13 +22,20 @@ cluster = false            # set to true if source is a redis cluster
 address = "127.0.0.1:6379" # when cluster is true, set address to one of the cluster node
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
-ksn = false                # set to true to enabled Redis keyspace notifications (KSN) subscription
 tls = false
+ksn = false                # set to true to enabled Redis keyspace notifications (KSN) subscription
 ```
 
-* 当源端为集群时，配置 cluster 为 true，address 为集群中的任意一个节点即可。`scan_reader` 会通过 `cluster nodes` 命令自动获取集群中的所有节点，并建立连接获取数据。
-* 开启 `ksn` 参数后 RedisShake 会在 `SCAN` 之前使用 [Redis keyspace notifications](https://redis.io/docs/manual/keyspace-notifications/)
+* `cluster`：源端是否为集群
+* `address`：源端地址, 当源端为集群时，`address` 为集群中的任意一个节点即可
+* 鉴权：
+    * 当源端使用 ACL 账号时，配置 `username` 和 `password`
+    * 当源端使用传统账号时，仅配置 `password`
+    * 当源端无鉴权时，不配置 `username` 和 `password`
+* `tls`：源端是否开启 TLS/SSL，不需要配置证书因为 RedisShake 没有校验服务器证书
+* `ksn`：开启 `ksn` 参数后 RedisShake 会在 `SCAN` 之前使用 [Redis keyspace notifications](https://redis.io/docs/manual/keyspace-notifications/)
 能力来订阅 Key 的变化。当 Key 发生变化时，RedisShake 会使用 `DUMP` 与 `RESTORE` 命令来从源端读取 Key 的内容，并写入目标端。
+
 ::: warning
 Redis keyspace notifications 不会感知到 `FLUSHALL` 与 `FLUSHDB` 命令，因此在使用 `ksn` 参数时，需要确保源端数据库不会执行这两个命令。
 :::
