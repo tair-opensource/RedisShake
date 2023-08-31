@@ -10,7 +10,7 @@ import (
 )
 
 // CalcKeys https://redis.io/docs/reference/key-specs/
-func CalcKeys(argv []string) (cmaName string, group string, keys []string) {
+func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysIndexes []int) {
 	argc := len(argv)
 	group = "unknown"
 	cmaName = strings.ToUpper(argv[0])
@@ -64,6 +64,7 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string) {
 			keyStep := spec.findKeysRangeKeyStep
 			for inx := begin; inx <= lastKeyInx && limitCount > 0; inx += keyStep {
 				keys = append(keys, argv[inx])
+				keysIndexes = append(keysIndexes, inx+1)
 				limitCount -= 1
 			}
 		case "keynum":
@@ -79,6 +80,7 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string) {
 			step := spec.findKeysKeynumKeyStep
 			for inx := begin + firstKey; keyCount > 0; inx += step {
 				keys = append(keys, argv[inx])
+				keysIndexes = append(keysIndexes, inx+1)
 				keyCount -= 1
 			}
 		default:
