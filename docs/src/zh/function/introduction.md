@@ -4,8 +4,8 @@ outline: deep
 
 # 什么是 function
 
-RedisShake 通过提供 function 功能，实现了全面的 [ETL(提取-转换-加载)](https://en.wikipedia.org/wiki/Extract,_transform,_load) 功能，以便对数据进行处理。通过利用 function 功能，可以实现以下几种操作：
-* 更改数据所属的 db，比如将源端的 `db` 0 写入到目的端的 `db` 1。
+RedisShake 通过提供 function 功能，实现了的 [ETL(提取-转换-加载)](https://en.wikipedia.org/wiki/Extract,_transform,_load) 中的 `transform` 能力。通过利用 function 可以实现类似功能：
+* 更改数据所属的 `db`，比如将源端的 `db 0` 写入到目的端的 `db 1`。
 * 对数据进行筛选，例如，只将 key 以 `user:` 开头的源数据写入到目标端。
 * 改变 Key 的前缀，例如，将源端的 key `prefix_old_key` 写入到目标端的 key `prefix_new_key`。
 * ...
@@ -50,4 +50,4 @@ address = "127.0.0.1:6380"
 
 ### 函数
 * `shake.call(DB, ARGV)`：返回一个 Redis 命令，RedisShake 会将该命令写入目标端。
-* `shake.log(DB, ARGV)`：打印日志。
+* `shake.log(msg)`：打印日志。
