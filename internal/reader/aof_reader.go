@@ -35,6 +35,7 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 
 	go func() {
 		aof.AOFFileInfo = *(aof.NewAOFFileInfo(r.path))
+
 		aof.AOFLoadManifestFromDisk()
 		am := aof.AOFFileInfo.GetAOFManifest()
 
@@ -49,8 +50,7 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 			statistics.Metrics.AofFileSize = uint64(fi.Size())
 			statistics.Metrics.AofReceivedSize = uint64(fi.Size())
 			aofLoader := aof.NewLoader(r.path, r.ch)
-
-			_ = aofLoader.LoadSingleAppendOnlyFile(paths, r.ch)
+			_ = aofLoader.LoadSingleAppendOnlyFile(paths, r.ch, true)
 			log.Infof("Send AOF finished. path=[%s]", r.path)
 			close(r.ch)
 		} else {
@@ -68,6 +68,7 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 			log.Infof("Send AOF finished. path=[%s]", r.path)
 			close(r.ch)
 		}
+
 	}()
 
 	return r.ch

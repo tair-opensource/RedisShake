@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+
 	"math"
 	"os"
 	"path"
@@ -107,7 +108,7 @@ func FilelsManifest(AOFFilePath string) bool {
 				log.Panicf("cannot read File: %v\n", AOFFilePath)
 			}
 		}
-		if lines[0] == '#' {
+		if lines[0] == '#' || len(lines) < 4 {
 			continue
 		} else if lines[:4] == "file" {
 			is_manifest = true
@@ -199,7 +200,7 @@ func ReadBytes(rd *bufio.Reader, target *[]byte, length int64) int {
 	var err error
 	*target, err = rd.ReadBytes('\n')
 	if err != nil || (*target)[length-1] != '\n' {
-		log.Infof("Expected to read %d bytes, got %d bytes\n%s", length, 1, *target)
+		log.Infof("AOF format error:%s", *target)
 		return 0
 	}
 	CheckAOFInfof.pos += length
@@ -265,13 +266,18 @@ func AOFLoadManifestFromFile(am_Filepath string) *AOFManifest {
 		if err != nil {
 			if err == io.EOF {
 				if linenum == 0 {
-					log.Panicf("Found an empty AOF manifest")
+					log.Infof("Found an empty AOF manifest")
+					am = nil
+					return am
 				} else {
 					break
 				}
 
 			} else {
-				log.Panicf("Read AOF manifest failed")
+				log.Infof("Read AOF manifest failed")
+				am = nil
+				return am
+
 			}
 		}
 
@@ -280,17 +286,21 @@ func AOFLoadManifestFromFile(am_Filepath string) *AOFManifest {
 			continue
 		}
 		if !strings.Contains(buf, "\n") {
-			log.Panicf("The AOF manifest File contains too long line")
+			log.Infof("The AOF manifest File contains too long line")
+			return nil
 		}
 		line = strings.Trim(buf, " \t\r\n")
 		if len(line) == 0 {
-			log.Panicf("Invalid AOF manifest File format")
+			log.Infof("Invalid AOF manifest File format")
+			return nil
 		}
 		argc := 0
 		argv, argc = SplitArgs(line)
 
 		if argc < 6 || argc%2 != 0 {
-			log.Panicf("Invalid AOF manifest File format")
+			log.Infof("Invalid AOF manifest File format")
+			am = nil
+			return am
 		}
 		ai = AOFInfoCreate()
 		for i := 0; i < argc; i += 2 {
@@ -370,8 +380,6 @@ func ProcessAnnotations(rd *bufio.Reader, Filename string, lastFile bool) int {
 	if err != nil {
 		log.Panicf("Failed to read annotations from AOF %v, aborting...\n", Filename)
 	}
-	CheckAOFInfof.pos += int64(len(buf)) + 2
-	CheckAOFInfof.toTimestamp = config.Config.Source.AOFTruncateToTimestamp
 	if CheckAOFInfof.toTimestamp != 0 && strings.HasPrefix(string(buf), "TS:") {
 		var ts int64
 		ts, err = strconv.ParseInt(strings.TrimPrefix(string(buf), "TS:"), 10, 64)
@@ -380,6 +388,7 @@ func ProcessAnnotations(rd *bufio.Reader, Filename string, lastFile bool) int {
 		}
 
 		if ts <= CheckAOFInfof.toTimestamp {
+			CheckAOFInfof.pos += int64(len(buf)) + 2
 			return 1
 		}
 
@@ -393,14 +402,14 @@ func ProcessAnnotations(rd *bufio.Reader, Filename string, lastFile bool) int {
 		}
 
 		// Truncate remaining AOF if exceeding 'toTimestamp'
-		if err := CheckAOFInfof.fp.Truncate(CheckAOFInfof.pos); err != nil {
+		/*if err := CheckAOFInfof.fp.Truncate(CheckAOFInfof.pos); err != nil {
 			log.Panicf("Failed to truncate AOF %v to timestamp %d\n", Filename, CheckAOFInfof.toTimestamp)
-		} else {
-
-			return 0
-		}
+		} else {*/
+		//CheckAOFInfof.pos += int64(len(buf)) + 2
+		return 0
+		//}
 	}
-
+	CheckAOFInfof.pos += int64(len(buf)) + 2
 	return 1
 }
 
@@ -418,7 +427,8 @@ func CheckMultipartAOF(DirPath string, ManifestFilePath string, fix int) {
 	if am.BaseAOFInfo != nil {
 		AOFFileName := am.BaseAOFInfo.FileName
 		AOFFilePath := MakePath(DirPath, AOFFileName)
-		lastFile := (AOFNum + 1) == totalNum
+		AOFNum++
+		lastFile := AOFNum == totalNum
 		AOFPreable := FileIsRDB(AOFFilePath)
 		if AOFPreable {
 			log.Infof("Start to check Base AOF (RDB format).\n")
@@ -437,7 +447,8 @@ func CheckMultipartAOF(DirPath string, ManifestFilePath string, fix int) {
 			ai := ln.value.(*AOFInfo)
 			AOFFileName := ai.FileName
 			AOFFilePath := MakePath(DirPath, AOFFileName)
-			lastFile := (AOFNum + 1) == totalNum
+			AOFNum++
+			lastFile := AOFNum == totalNum
 			ret = CheckSingleAOF(AOFFileName, AOFFilePath, lastFile, fix, false)
 			OutPutAOFStyle(ret, AOFFileName, "INCR AOF")
 			ln = ln.next
@@ -455,6 +466,7 @@ func CheckOldStyleAOF(AOFFilePath string, fix int, preamble bool) {
 }
 func CheckSingleAOF(AOFFileName, AOFFilePath string, lastFile bool, fix int, preamble bool) int {
 	var rdbpos int64 = 0
+	CheckAOFInfof.toTimestamp = config.Config.Source.AOFTruncateToTimestamp
 	multi := 0
 	CheckAOFInfof.pos = 0
 	buf := make([]byte, 1)

@@ -2,11 +2,12 @@ package commands
 
 import (
 	"fmt"
-	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/utils"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/alibaba/RedisShake/internal/log"
+	"github.com/alibaba/RedisShake/internal/utils"
 )
 
 // CalcKeys https://redis.io/docs/reference/key-specs/

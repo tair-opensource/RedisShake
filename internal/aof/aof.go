@@ -673,10 +673,9 @@ func AOFLoadManifestFromDisk() {
 	}
 
 	am := AOFLoadManifestFromFile(am_Filepath)
-	if am != nil {
-		AOFFileInfo.AOFManifest = am
-	}
-
+	//if am != nil {
+	AOFFileInfo.AOFManifest = am
+	//}
 }
 
 func GetNewIncrAOFName(am *AOFManifest) string {
@@ -813,7 +812,7 @@ func GetBaseAndIncrAppendOnlyFilesNum(am *AOFManifest) int {
 	return num
 }
 
-func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry) int {
+func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry, LastFile bool) int {
 	ret := AOFOK
 	AOFFilepath := MakePath(AOFFileInfo.AOFDirName, FileName)
 	var sizes int64 = 0
@@ -844,13 +843,13 @@ func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry
 			return ret
 		}
 	} else {
+		sizes += 5
 		log.Infof("Reading RDB Base File on AOF loading...")
 		ldRDB := rdb.NewLoader(AOFFilepath, ch)
 		ldRDB.ParseRDB()
 		return AOFOK
 		//Skipped RDB checksum and has not been processed yet.
 	}
-	sizes += 5
 	reader := bufio.NewReader(fp)
 	for {
 
@@ -918,7 +917,9 @@ func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry
 				e.Argv = append(e.Argv, value)
 			}
 			ld.ch <- e
-
+			if sizes >= CheckAOFInfof.pos && LastFile {
+				break
+			}
 		}
 
 	}
@@ -974,7 +975,7 @@ func (ld *Loader) LoadAppendOnlyFile(am *AOFManifest, ch chan *entry.Entry) int 
 			BaseSize = GetAppendOnlyFileSize(AOFName, nil)
 			lastFile = totalNum
 			start = Ustime()
-			ret = ld.LoadSingleAppendOnlyFile(AOFName, ch)
+			ret = ld.LoadSingleAppendOnlyFile(AOFName, ch, false)
 			if ret == AOFOK || (ret == AOFTruncated && lastFile == 1) {
 				log.Infof("DB loaded from Base File %v: %.3f seconds", AOFName, float64(Ustime()-start)/1000000)
 			}
@@ -1001,6 +1002,7 @@ func (ld *Loader) LoadAppendOnlyFile(am *AOFManifest, ch chan *entry.Entry) int 
 				return ret
 			}
 		}
+		totalNum--
 	}
 
 	if am.incrAOFList.len > 0 {
@@ -1019,7 +1021,11 @@ func (ld *Loader) LoadAppendOnlyFile(am *AOFManifest, ch chan *entry.Entry) int 
 			lastFile = totalNum
 			AOFNum++
 			start = Ustime()
-			ret = ld.LoadSingleAppendOnlyFile(AOFName, ch)
+			if lastFile == 1 {
+				ret = ld.LoadSingleAppendOnlyFile(AOFName, ch, true)
+			} else {
+				ret = ld.LoadSingleAppendOnlyFile(AOFName, ch, false)
+			}
 			if ret == AOFOK || (ret == AOFTruncated && lastFile == 1) {
 				log.Infof("DB loaded from incr File %v: %.3f seconds", AOFName, float64(Ustime()-start)/1000000)
 			}
@@ -1043,7 +1049,7 @@ func (ld *Loader) LoadAppendOnlyFile(am *AOFManifest, ch chan *entry.Entry) int 
 			}
 			ln = ListNext(&li)
 		}
-
+		totalNum--
 	}
 
 	AOFFileInfo.AOFCurrentSize = totalSize
