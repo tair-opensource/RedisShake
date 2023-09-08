@@ -49,6 +49,12 @@ export default defineConfig({
                             { text: '最佳实践', link: '/zh/function/best_practices' }
                         ]
                     },
+                    {
+                        text: 'others',
+                        items: [
+                            { text: 'redis modle 支持', link: '/zh/others/module-supported' },
+                        ]
+                    },
                     // {
                     //     text: '进阶用法',
                     //     items: [
