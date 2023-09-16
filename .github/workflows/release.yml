@@ -66,3 +66,23 @@ jobs:
                     asset_content_type: application/gzip
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: "Upload release windows-amd64"
+                uses: actions/upload-release-asset@v1
+                with:
+                    upload_url: ${{ steps.release.outputs.upload_url }}
+                    asset_path: ./bin/redis-shake-windows-amd64.tar.gz
+                    asset_name: redis-shake-windows-amd64.tar.gz
+                    asset_content_type: application/gzip
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: "Upload release windows-arm64"
+                uses: actions/upload-release-asset@v1
+                with:
+                    upload_url: ${{ steps.release.outputs.upload_url }}
+                    asset_path: ./bin/redis-shake-windows-arm64.tar.gz
+                    asset_name: redis-shake-windows-arm64.tar.gz
+                    asset_content_type: application/gzip
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

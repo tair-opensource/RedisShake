@@ -1,123 +1,105 @@
-# redis-shake
+# RedisShake 4.x: Redis Data Processing & Migration Tool
 
-[![CI](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml/badge.svg?branch=v3)](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml)
+[![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml/badge.svg?event=push&branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml)
+[![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/pages.yml/badge.svg?branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/pages.yml)
+[![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/release.yml/badge.svg?branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/release.yml)
 
-- [中文文档](https://github.com/alibaba/RedisShake/wiki)
+- [中文文档](https://tair-opensource.github.io/RedisShake/)
+- [English Documentation](https://tair-opensource.github.io/RedisShake/en/)
 
-redis-shake is a tool for Redis data migration and data filtering.
+## Overview
 
-## Feature
+RedisShake is a tool designed for processing and migrating Redis data. It offers the following features:
 
-* 🚄 High performance
-* ✅ Tested on Redis 5.0, Redis 6.0 and Redis 7.0
-* 🤗 Support custom filtering rules
-* 💪 Support large instance migration
-* 💖 Support `restore` mode, `sync` mode and `scan` mode
-* ☁️ Support Aliyun Redis and ElastiCache
+1. **Redis Compatibility**: RedisShake is compatible with Redis versions ranging from 2.8 to 7.2, and supports various
+   deployment methods including standalone, master-slave, sentinel, and cluster.
 
-For older versions of redis-shake (support codis, twemproxy) please
-visit [here](https://github.com/alibaba/RedisShake/tree/develop).
+2. **Cloud Service Compatibility**: RedisShake works seamlessly with popular Redis-like databases provided by leading
+   cloud service providers, including but not limited to:
+    - [Alibaba Cloud - ApsaraDB for Redis](https://www.alibabacloud.com/product/apsaradb-for-redis)
+    - [Alibaba Cloud - Tair](https://www.alibabacloud.com/product/tair)
+    - [AWS - ElastiCache](https://aws.amazon.com/elasticache/)
+    - [AWS - MemoryDB](https://aws.amazon.com/memorydb/)
 
-![redis-shake2.PNG](https://s2.loli.net/2022/07/10/OZrSGutknlI8XNp.png)
+3. **Module Compatibility**: RedisShake is compatible
+   with [TairString](https://github.com/tair-opensource/TairString), [TairZSet](https://github.com/tair-opensource/TairZset),
+   and [TairHash](https://github.com/tair-opensource/TairHash) modules.
 
-![image.png](https://s2.loli.net/2022/06/30/vU346lVBrNofKzu.png)
+4. **Multiple Export Modes**: RedisShake supports PSync, RDB, and Scan export modes.
 
-# Document
+5. **Data Processing**: RedisShake enables data filtering and transformation through custom scripts.
 
-## Install
+## Getting Started
 
-### Binary package
+### Installation
 
-Download from Release: [https://github.com/alibaba/RedisShake/releases](https://github.com/alibaba/RedisShake/releases)
+#### Download the Binary Package
 
-### Compile from source
+Download the binary package directly from the [Releases](https://github.com/tair-opensource/RedisShake/releases) page.
 
-After downloading the source code, run the `sh build.sh` command to compile.
+#### Compile from Source
+
+To compile from source, ensure that you have a Golang environment set up on your local machine:
 
 ```shell
-git clone https://github.com/alibaba/RedisShake
+git clone https://RedisShake/
 cd RedisShake
 sh build.sh
 ```
 
-## Usage
+### Usage
 
-1. Edit `sync.toml` or `restore.toml`.
-2. Start redis-shake.
+Assume you have two Redis instances:
 
-```shell
-./bin/redis-shake redis-shake.toml
-# or
-./bin/redis-shake restore.toml
+* Instance A: 127.0.0.1:6379
+* Instance B: 127.0.0.1:6380
+
+Create a new configuration file `shake.toml`:
+
+```toml
+[sync_reader]
+address = "127.0.0.1:6379"
+
+[redis_writer]
+address = "127.0.0.1:6380"
 ```
 
-3. Check data synchronization status.
-
-## Configure
-
-The redis-shake configuration file refers to `sync.toml` or `restore.toml`.
-
-## Data filtering
-
-redis-shake supports custom filtering rules using lua scripts. redis-shake can be started with
-the following command:
+To start RedisShake, run the following command:
 
 ```shell
-./bin/redis-shake sync.toml filter/xxx.lua
+./redis-shake shake.toml
 ```
 
-Some following filter templates are provided in `filter` directory:
+For more detailed information, please refer to the documentation:
 
-1. `filter/print.lua`：print all commands
-2. `filter/swap_db.lua`：swap the data of db0 and db1
+- [中文文档](https://tair-opensource.github.io/RedisShake/)
+- [English Documentation](https://tair-opensource.github.io/RedisShake/en/)
 
-### Custom filter rules
+## Contributing
 
-Refer to `filter/print.lua` to create a new lua script, and implement the filter function in the lua script. The
-arguments of the function are:
+We welcome contributions from the community. For significant changes, please open an issue first to discuss what you
+would like to change. We are particularly interested in:
 
-- id: command id
-- is_base: is the command read from the dump.rdb file
-- group: command group, see the description file
-  under [redis/src/commands](https://github.com/redis/redis/tree/unstable/src/commands)
-- cmd_name: command name
-- keys: keys in command
-- slots: slots in command
-- db_id: database id
-- timestamp_ms: timestamp of the command in milliseconds. The current version does not support it.
+1. Adding support for more modules
+2. Enhancing support for Readers and Writers
+3. Sharing your Lua scripts and best practices
 
-The return value is:
+## History
 
-- code
-    - 0: allow this command to pass
-    - 1: this command is not allowed to pass
-    - 2: this command should not appear, and let redis-shake exit with an error
-- db_id: redirected db_id
+RedisShake is a project actively maintained by the [Tair team](https://github.com/tair-opensource) at Alibaba Cloud. Its
+evolution can be traced back to its initial version, which was forked
+from [redis-port](https://github.com/CodisLabs/redis-port).
 
-# Contribution
+During its evolution:
 
-## Lua script
+- The [RedisShake 2.x](https://github.com/tair-opensource/RedisShake/tree/v2) version brought a series of improvements
+  and updates, enhancing its overall stability and performance.
+- The [RedisShake 3.x](https://github.com/tair-opensource/RedisShake/tree/v3) version represented a significant
+  milestone where the entire codebase was completely rewritten and optimized, leading to better efficiency and
+  usability.
+- The current version, [RedisShake 4.x](https://github.com/tair-opensource/RedisShake/tree/v4), has further enhanced
+  features related to readers, configuration, observability, and functions.
 
-Welcome to share more creative lua scripts.
+## License
 
-1. Add lua scripts under `filters/`.
-2. Add description to `README.md`.
-3. Submit a pull request.
-
-## Redis Module support
-
-1. Add code under `internal/rdb/types`.
-2. Add a command file under `scripts/commands`, and use the script to generate a `table.go` file and move it to
-   the `internal/commands` directory.
-3. Add test cases under `test/cases`.
-4. Submit a pull request.
-
-# 感谢
-
-redis-shake 旧版是阿里云基于豌豆荚开源的 redis-port 进行二次开发的一个支持 Redis 异构集群实时同步的工具。
-redis-shake v3 在 redis-shake 旧版的基础上重新组织代码结构，使其更具可维护性的版本。
-
-redis-shake v3 参考借鉴了以下项目：
-
-- https://github.com/HDT3213/rdb
-- https://github.com/sripathikrishnan/redis-rdb-tools
+RedisShake is open-sourced under the [MIT license](https://github.com/tair-opensource/RedisShake/blob/v2/license.txt).

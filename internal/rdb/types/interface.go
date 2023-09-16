@@ -1,9 +1,8 @@
 package types
 
 import (
+	"RedisShake/internal/log"
 	"io"
-
-	"github.com/alibaba/RedisShake/internal/log"
 )
 
 const (
@@ -92,47 +91,11 @@ func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
 	case rdbTypeModule, rdbTypeModule2: // module
-		o := new(ModuleObject)
-		o.LoadFromBuffer(rd, key, typeByte)
+		o := PareseModuleType(rd, key, typeByte)
 		return o
 	}
 	log.Panicf("unknown type byte: %d", typeByte)
 	return nil
-}
-
-func ParseObjectWithOffset(rd io.Reader, typeByte byte, key string) (RedisObject, int64) {
-	switch typeByte {
-	case rdbTypeString: // string
-		o := new(StringObject)
-		offset := o.LoadFromBufferWithOffset(rd, key, typeByte)
-		return o, offset
-	case rdbTypeList, rdbTypeListZiplist, rdbTypeListQuicklist, rdbTypeListQuicklist2: // list
-		o := new(ListObject)
-		offset := o.LoadFromBufferWithOffset(rd, key, typeByte)
-		return o, offset
-	case rdbTypeSet, rdbTypeSetIntset: // set
-		o := new(SetObject)
-		offset := o.LoadFromBufferWithOffset(rd, key, typeByte)
-		return o, offset
-	case rdbTypeZSet, rdbTypeZSet2, rdbTypeZSetZiplist, rdbTypeZSetListpack: // zset
-		o := new(ZsetObject)
-		offset := o.LoadFromBufferWithOffset(rd, key, typeByte)
-		return o, offset
-	case rdbTypeHash, rdbTypeHashZipmap, rdbTypeHashZiplist, rdbTypeHashListpack: // hash
-		o := new(HashObject)
-		offset := o.LoadFromBufferWithOffset(rd, key, typeByte)
-		return o, offset
-	case rdbTypeStreamListpacks, rdbTypeStreamListpacks2: // stream
-		o := new(StreamObject)
-		offset := o.LoadFromBufferWithOffset(rd, key, typeByte)
-		return o, offset
-	case rdbTypeModule, rdbTypeModule2: // module
-		o := new(ModuleObject)
-		offset := o.LoadFromBufferWithOffset(rd, key, typeByte)
-		return o, offset
-	}
-	log.Panicf("unknown type byte: %d", typeByte)
-	return nil, 0
 }
 
 func moduleTypeNameByID(moduleId uint64) string {

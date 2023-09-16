@@ -5,20 +5,40 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/alibaba/RedisShake/internal/aof"
-	"github.com/alibaba/RedisShake/internal/entry"
-	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/statistics"
+	"RedisShake/internal/aof"
+	"RedisShake/internal/entry"
+	"RedisShake/internal/log"
 )
+
+type AOFReaderOptions struct { // TODO：修改
+	Filepath     string `mapstructure:"filepath" default:""`
+	AOFTimestamp string
+}
 
 type aofReader struct {
 	path string
 	ch   chan *entry.Entry
 }
 
-func NewAOFReader(path string) Reader {
-	log.Infof("NewAOFReader: path=[%s]", path)
-	absolutePath, err := filepath.Abs(path)
+// TODO:需要实现
+func (r *aofReader) Status() interface{} {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *aofReader) StatusString() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *aofReader) StatusConsistent() bool {
+	//TODO implement me
+	panic("implement me")
+}
+
+func NewAOFReader(opts *AOFReaderOptions) Reader {
+	log.Infof("NewAOFReader: path=[%s]", opts.Filepath)
+	absolutePath, err := filepath.Abs(opts.Filepath)
 	if err != nil {
 		log.Panicf("NewAOFReader: filepath.Abs error: %s", err.Error())
 	}
@@ -41,28 +61,23 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 
 		if am == nil {
 			paths := path.Join(aof.AOFFileInfo.GetAOFDirName(), aof.AOFFileInfo.GetAOFFileName())
-			aof.CheckAOFMain(r.path)
 			log.Infof("start send AOF path=[%s]", r.path)
 			fi, err := os.Stat(r.path)
 			if err != nil {
 				log.Panicf("NewAOFReader: os.Stat error：%s", err.Error())
 			}
-			statistics.Metrics.AofFileSize = uint64(fi.Size())
-			statistics.Metrics.AofReceivedSize = uint64(fi.Size())
+			log.Infof("the file stat:%v", fi)
 			aofLoader := aof.NewLoader(r.path, r.ch)
 			_ = aofLoader.LoadSingleAppendOnlyFile(paths, r.ch, true)
 			log.Infof("Send AOF finished. path=[%s]", r.path)
 			close(r.ch)
 		} else {
-			paths := path.Join(aof.AOFFileInfo.GetAOFDirName(), aof.GetAOFManifestFileName())
-			aof.CheckAOFMain(paths)
 			log.Infof("start send AOF。path=[%s]", r.path)
 			fi, err := os.Stat(r.path)
 			if err != nil {
 				log.Panicf("NewAOFReader: os.Stat error：%s", err.Error())
 			}
-			statistics.Metrics.AofFileSize = uint64(fi.Size())
-			statistics.Metrics.AofReceivedSize = uint64(fi.Size())
+			log.Infof("the file stat:%v", fi)
 			aofLoader := aof.NewLoader(r.path, r.ch)
 			_ = aofLoader.LoadAppendOnlyFile(aof.AOFFileInfo.GetAOFManifest(), r.ch)
 			log.Infof("Send AOF finished. path=[%s]", r.path)

@@ -1,13 +1,15 @@
 name: CI
 
-on: [ pull_request ]
+on: [ push, pull_request ]
 
 jobs:
     black-box-test:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                redis-version: [ 5, 6, 7 ]
+                redis-version: [ "2.8", "3.0", "4.0", "5.0", "6.0", "7.0" ]
+            fail-fast: false
+        container: ubuntu:latest
         steps:
             -   name: Git checkout
                 uses: actions/checkout@v2
@@ -19,19 +21,59 @@ jobs:
 
             -   name: clone and make redis
                 run: |
-                    sudo apt-get install git
+                    apt-get update
+                    apt-get install -y --no-install-recommends git build-essential ca-certificates
                     git clone https://github.com/redis/redis
                     cd redis
-                    git checkout ${{ matrix.redis-version }}.0
+                    git checkout ${{ matrix.redis-version }}
                     make -j
                     mkdir bin
                     cp src/redis-server bin/redis-server
                     echo "$GITHUB_WORKSPACE/redis/bin" >> $GITHUB_PATH
 
+            -   name: clone and make TairString Module
+                if:  contains( '5.0, 6.0, 7.0', matrix.redis-version)
+                run: |
+                    cd $GITHUB_WORKSPACE
+                    apt-get install -y cmake
+                    git clone https://github.com/tair-opensource/TairString.git
+                    cd TairString 
+                    mkdir build 
+                    cd build 
+                    cmake ../ && make -j
+                    cp $GITHUB_WORKSPACE/TairString/lib/tairstring_module.so /lib
+                    
+                    
+
+            -   name: clone and make TairHash Module
+                if:  contains( '5.0, 6.0, 7.0', matrix.redis-version)
+                run: |
+                    cd $GITHUB_WORKSPACE
+                    git clone https://github.com/tair-opensource/TairHash.git
+                    cd TairHash 
+                    mkdir build 
+                    cd build 
+                    cmake ../ && make -j
+                    cp $GITHUB_WORKSPACE/TairHash/lib/tairhash_module.so /lib
+        
+                    
+
+            -   name: clone and make TairZset Module
+                if:  contains( '5.0, 6.0, 7.0', matrix.redis-version)
+                run: |
+                    cd $GITHUB_WORKSPACE
+                    git clone https://github.com/tair-opensource/TairZset.git
+                    cd TairZset 
+                    mkdir build 
+                    cd build 
+                    cmake ../ && make -j
+                    cp $GITHUB_WORKSPACE/TairZset/lib/tairzset_module.so /lib
+
+
             -   name: Setup Python
                 uses: actions/setup-python@v4
                 with:
-                    python-version: '3.10'
+                    python-version: '3.11'
 
             -   name: make redis-shake
                 run: |
@@ -39,6 +81,5 @@ jobs:
 
             -   name: test
                 run: |
-                    cd test
-                    pip3 install -r requirements.txt
-                    python3 main.py
+                    python -m pip install -r tests/requirements.txt
+                    sh test.sh

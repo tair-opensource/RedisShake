@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 
+# unit test
 go test ./... -v
 
-cd test
-python main.py
+# black box test
+cd tests/
+pybbt cases

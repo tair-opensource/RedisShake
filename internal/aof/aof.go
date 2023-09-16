@@ -1,21 +1,24 @@
 package aof
 
 import (
+	"RedisShake/internal/entry"
+	"RedisShake/internal/log"
+	"RedisShake/internal/reader"
 	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
 
-	"github.com/alibaba/RedisShake/internal/entry"
-	"github.com/alibaba/RedisShake/internal/log"
-	"github.com/alibaba/RedisShake/internal/rdb"
-	"github.com/alibaba/RedisShake/internal/statistics"
+	"RedisShake/internal/config"
+
+	"github.com/mcuadros/go-defaults"
 )
 
 const (
@@ -37,6 +40,9 @@ const (
 	AOFEmpty                = 2
 	AOFFailed               = 4
 	AOFTruncated            = 5
+	AOFManifestKeyFileName  = "File"
+	AOFManifestKeyFileSeq   = "seq"
+	AOFManifestKeyFileType  = "type"
 	SizeMax                 = 128
 	RDBFlagsAOFPreamble     = 1 << 0
 )
@@ -48,6 +54,10 @@ func Ustime() int64 {
 	ust := int64(tv.UnixNano()) / 1000
 	return ust
 
+}
+
+func PathIsBaseName(Path string) bool {
+	return strings.IndexByte(Path, '/') == -1 && strings.IndexByte(Path, '\\') == -1
 }
 
 func StringNeedsRepr(s string) int {
@@ -328,6 +338,7 @@ type INFO struct {
 	AOFFileName        string
 	AOFCurrentSize     int64
 	AOFRewriteBaseSize int64
+	AOFtoTimestamp     int64
 }
 
 var AOFFileInfo INFO
@@ -344,6 +355,7 @@ func NewAOFFileInfo(aofFilePath string) *INFO {
 		AOFFileName:        filepath.Base(aofFilePath),
 		AOFCurrentSize:     0,
 		AOFRewriteBaseSize: 0,
+		AOFtoTimestamp:     config.Config.Source.AOFTruncateToTimestamp,
 	}
 }
 
@@ -574,6 +586,100 @@ func AOFManifestcreate() *AOFManifest {
 	return am
 }
 
+func AOFLoadManifestFromFile(am_Filepath string) *AOFManifest {
+	var maxseq int64
+	am := AOFManifestcreate()
+	fp, err := os.Open(am_Filepath)
+	if err != nil {
+		log.Panicf("Fatal error:can't open the AOF manifest %v for reading: %v", am_Filepath, err)
+	}
+	var argv []string
+	var ai *AOFInfo
+	var line string
+	linenum := 0
+	reader := bufio.NewReader(fp)
+	for {
+		buf, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				if linenum == 0 {
+					log.Infof("Found an empty AOF manifest")
+					am = nil
+					return am
+				} else {
+					break
+				}
+
+			} else {
+				log.Infof("Read AOF manifest failed")
+				am = nil
+				return am
+
+			}
+		}
+
+		linenum++
+		if buf[0] == '#' {
+			continue
+		}
+		if !strings.Contains(buf, "\n") {
+			log.Infof("The AOF manifest File contains too long line")
+			return nil
+		}
+		line = strings.Trim(buf, " \t\r\n")
+		if len(line) == 0 {
+			log.Infof("Invalid AOF manifest File format")
+			return nil
+		}
+		argc := 0
+		argv, argc = SplitArgs(line)
+
+		if argc < 6 || argc%2 != 0 {
+			log.Infof("Invalid AOF manifest File format")
+			am = nil
+			return am
+		}
+		ai = AOFInfoCreate()
+		for i := 0; i < argc; i += 2 {
+			if strings.EqualFold(argv[i], AOFManifestKeyFileName) {
+				ai.FileName = string(argv[i+1])
+				if !PathIsBaseName(string(ai.FileName)) {
+					log.Panicf("File can't be a path, just a Filename")
+				}
+			} else if strings.EqualFold(argv[i], AOFManifestKeyFileSeq) {
+				ai.FileSeq, _ = strconv.ParseInt(argv[i+1], 10, 64)
+			} else if strings.EqualFold(argv[i], AOFManifestKeyFileType) {
+				ai.AOFFileType = string(argv[i+1][0])
+			}
+		}
+		if ai.FileName == "" || ai.FileSeq == 0 || ai.AOFFileType == "" {
+			log.Panicf("Invalid AOF manifest File format")
+		}
+		if ai.AOFFileType == AOFManifestFileTypeBase {
+			if am.BaseAOFInfo != nil {
+				log.Panicf("Found duplicate Base File information")
+			}
+			am.BaseAOFInfo = ai
+			am.CurrBaseFileSeq = ai.FileSeq
+		} else if ai.AOFFileType == AOFManifestTypeHist {
+			am.HistoryList = ListAddNodeTail(am.HistoryList, ai)
+		} else if ai.AOFFileType == AOFManifestTypeIncr {
+			if ai.FileSeq <= maxseq {
+				log.Panicf("Found a non-monotonic sequence number")
+			}
+			am.incrAOFList = ListAddNodeTail(am.HistoryList, ai)
+			am.CurrIncrFileSeq = ai.FileSeq
+			maxseq = ai.FileSeq
+		} else {
+			log.Panicf("Unknown AOF File type")
+		}
+		line = " "
+		ai = nil
+	}
+	fp.Close()
+	return am
+}
+
 func AOFManifestDup(orig *AOFManifest) *AOFManifest {
 	if orig == nil {
 		panic("orig is nil")
@@ -720,24 +826,20 @@ func GetTempAOFManifestFileName() string {
 
 func StartLoading(size int64, RDBflags int, async int) {
 	/* Load the DB */
-	statistics.Metrics.Loading = true
-	if async == 1 {
-		statistics.Metrics.AsyncLoading = true
-	}
-	statistics.Metrics.LoadingStartTime = time.Now().Unix()
-	statistics.Metrics.LoadingLoadedBytes = 0
-	statistics.Metrics.LoadingTotalBytes = size
 	log.Infof("The AOF File starts loading.\n")
 }
 
 func StopLoading(ret int) {
-	statistics.Metrics.Loading = false
-	statistics.Metrics.AsyncLoading = false
+
 	if ret == AOFOK || ret == AOFTruncated {
 		log.Infof("The AOF File was successfully loaded\n")
 	} else {
 		log.Infof("There was an error opening the AOF File.\n")
 	}
+}
+
+func MakePath(Paths string, FileName string) string {
+	return path.Join(Paths, FileName)
 }
 
 func AOFFileExist(FileName string) int {
@@ -845,8 +947,18 @@ func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry
 	} else {
 		sizes += 5
 		log.Infof("Reading RDB Base File on AOF loading...")
-		ldRDB := rdb.NewLoader(AOFFilepath, ch)
-		ldRDB.ParseRDB()
+		v := config.LoadConfig()
+		opts := new(reader.RdbReaderOptions)
+		defaults.SetDefaults(opts)
+		err := v.UnmarshalKey("rdb_reader", opts)
+		if err != nil {
+			log.Panicf("failed to read the RdbReader config entry. err: %v", err)
+		}
+		theReader := reader.NewRDBReader(opts)
+		log.Infof("create RdbReader: %v", opts.Filepath)
+		//ldRDB := rdb.NewLoader(AOFFilepath, ch)
+		theReader.StartRead()
+		//	ldRDB.ParseRDB()
 		return AOFOK
 		//Skipped RDB checksum and has not been processed yet.
 	}
@@ -870,7 +982,19 @@ func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry
 			sizes += int64(len(line))
 
 			if line[0] == '#' {
+				if AOFFileInfo.AOFtoTimestamp != 0 && strings.HasPrefix(string(line), "#TS:") {
+					var ts int64
+					ts, err = strconv.ParseInt(strings.TrimPrefix(string(line[:len(line)-2]), "#TS:"), 10, 64)
+					if err != nil {
+						log.Panicf("Invalid timestamp annotation")
+					}
+
+					if ts > AOFFileInfo.AOFtoTimestamp && LastFile {
+						break
+					}
+				}
 				continue
+
 			}
 			if line[0] != '*' {
 				log.Infof("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", FileName)
@@ -917,9 +1041,9 @@ func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry
 				e.Argv = append(e.Argv, value)
 			}
 			ld.ch <- e
-			if sizes >= CheckAOFInfof.pos && LastFile {
+			/*if sizes >= CheckAOFInfof.pos && LastFile {
 				break
-			}
+			}*/
 		}
 
 	}

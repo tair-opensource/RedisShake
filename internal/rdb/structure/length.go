@@ -1,11 +1,10 @@
 package structure
 
 import (
+	"RedisShake/internal/log"
 	"encoding/binary"
 	"fmt"
 	"io"
-
-	"github.com/alibaba/RedisShake/internal/log"
 )
 
 const (
@@ -23,15 +22,15 @@ func ReadLength(rd io.Reader) uint64 {
 		log.Panicf("illegal length special=true, encoding: %d", length)
 	}
 	if err != nil {
-		log.PanicError(err)
+		log.Panicf(err.Error())
 	}
 	return length
 }
 
 func readEncodedLength(rd io.Reader) (length uint64, special bool, err error) {
 	var lengthBuffer = make([]byte, 8)
+
 	firstByte := ReadByte(rd)
-	var offset int64 = 1
 	first2bits := (firstByte & 0xc0) >> 6 // first 2 bits of encoding
 	switch first2bits {
 	case RDB6ByteLen:
@@ -39,7 +38,6 @@ func readEncodedLength(rd io.Reader) (length uint64, special bool, err error) {
 	case RDB14ByteLen:
 		nextByte := ReadByte(rd)
 		length = (uint64(firstByte)&0x3f)<<8 | uint64(nextByte)
-		offset += 1
 	case len32or64Bit:
 		if firstByte == RDB32ByteLen {
 			_, err = io.ReadFull(rd, lengthBuffer[0:4])
@@ -47,14 +45,12 @@ func readEncodedLength(rd io.Reader) (length uint64, special bool, err error) {
 				return 0, false, fmt.Errorf("read len32Bit failed: %s", err.Error())
 			}
 			length = uint64(binary.BigEndian.Uint32(lengthBuffer))
-			offset += 4
 		} else if firstByte == RDB64ByteLen {
 			_, err = io.ReadFull(rd, lengthBuffer)
 			if err != nil {
 				return 0, false, fmt.Errorf("read len64Bit failed: %s", err.Error())
 			}
 			length = binary.BigEndian.Uint64(lengthBuffer)
-			offset += 8
 		} else {
 			return 0, false, fmt.Errorf("illegal length encoding: %x", firstByte)
 		}
@@ -63,52 +59,4 @@ func readEncodedLength(rd io.Reader) (length uint64, special bool, err error) {
 		length = uint64(firstByte) & 0x3f
 	}
 	return length, special, nil
-}
-
-func ReadLengthWithOffset(rd io.Reader) (uint64, int64) {
-	length, special, offset, err := readEncodedLengthWithOffset(rd)
-	if special {
-		log.Panicf("illegal length special=true, encoding: %d", length)
-	}
-	if err != nil {
-		log.PanicError(err)
-	}
-	return length, offset
-}
-func readEncodedLengthWithOffset(rd io.Reader) (length uint64, special bool, offsets int64, err error) {
-	var lengthBuffer = make([]byte, 8)
-	firstByte := ReadByte(rd)
-	var offset int64 = 1
-	first2bits := (firstByte & 0xc0) >> 6 // first 2 bits of encoding
-	switch first2bits {
-	case RDB6ByteLen:
-		length = uint64(firstByte) & 0x3f
-	case RDB14ByteLen:
-		nextByte := ReadByte(rd)
-		length = (uint64(firstByte)&0x3f)<<8 | uint64(nextByte)
-		offset += 1
-	case len32or64Bit:
-		if firstByte == RDB32ByteLen {
-			_, err = io.ReadFull(rd, lengthBuffer[0:4])
-			offset += 4
-			if err != nil {
-				return 0, false, offset, fmt.Errorf("read len32Bit failed: %s", err.Error())
-			}
-			length = uint64(binary.BigEndian.Uint32(lengthBuffer))
-
-		} else if firstByte == RDB64ByteLen {
-			_, err = io.ReadFull(rd, lengthBuffer)
-			offset += 8
-			if err != nil {
-				return 0, false, offset, fmt.Errorf("read len64Bit failed: %s", err.Error())
-			}
-			length = binary.BigEndian.Uint64(lengthBuffer)
-		} else {
-			return 0, false, offset, fmt.Errorf("illegal length encoding: %x", firstByte)
-		}
-	case lenSpecial:
-		special = true
-		length = uint64(firstByte) & 0x3f
-	}
-	return length, special, offset, nil
 }

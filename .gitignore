@@ -1,8 +1,13 @@
-.idea
-data
-__pycache__
-bin
-.DS_Store
+# system
+.idea/
+__pycache__/
+.DS_Store/
+
+# compiled output or test output
+bin/
+dist/
+tmp/
+data/
 *.log
 *.rdb
 *.aof

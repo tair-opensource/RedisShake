@@ -1,0 +1,4 @@
+requests>=2.31.0
+toml>=0.10.2
+pybbt>=1.0.1
+redis>=4.5.4

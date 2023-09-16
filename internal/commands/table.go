@@ -4505,4 +4505,58 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
+	"EXHSET": {
+		"TAIRHASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"EXSET": {
+		"TAIRSTRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"EXZADD": {
+		"TAIRZSET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
 }

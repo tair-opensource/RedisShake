@@ -1,40 +1,34 @@
 ---
-name: issue
-about: 大多数问题请使用这个模板
+name: Issue
+about: 使用中遇到问题（Encountering problems while using）
 title: ''
-labels: ''
+labels: 'type: question'
 assignees: ''
 
 ---
 
-- [ ] 请确保已经看过 wiki：https://github.com/alibaba/RedisShake/wiki
-- [ ] 请确保已经学习过 Markdown 语法，良好的排版有助于维护人员了解你的问题
-- [ ] 请在此提供足够的信息供社区维护人员排查问题
-- [ ] 请在提交 issue 前删除此模板中多余的文字，包括这几句话
+### 问题描述（Issue Description）
 
-**问题描述**
+请在这里简要描述你遇到的问题。
 
-这里描述你的问题。
+Please provide a brief description of the issue you encountered.
 
-redis-shake 的日志：
-```
-shake 的日志贴在这里
-```
+### 环境信息（Environment）
 
----
+- RedisShake 版本（RedisShake Version）：
+- Redis 源端版本（Redis Source Version）：
+- Redis 目的端版本（Redis Destination Version）：
+- Redis 部署方式（standalone/cluster/sentinel）：
+- 是否在云服务商实例上部署（Deployed on Cloud Provider）：
 
-**源端 Redis**
-版本：版本号，自建还是云厂商？
-日志：
-```
-日志贴在这里
-```
+### 日志信息（Logs）
 
----
+如果有错误日志或其他相关日志，请在这里提供。
 
-**目的端 Redis**
-版本：版本号，是否是集群？自建还是云厂商？
-日志：
-```
-日志贴在这里
-```
+If there are any error logs or other relevant logs, please provide them here.
+
+### 其他信息（Additional Information）
+
+请提供任何其他相关的信息，如配置文件、错误信息或截图等。
+
+Please provide any additional information, such as configuration files, error messages, or screenshots.
