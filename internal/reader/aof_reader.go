@@ -11,34 +11,48 @@ import (
 )
 
 type AOFReaderOptions struct { // TODO：修改
-	Filepath     string `mapstructure:"filepath" default:""`
-	AOFTimestamp string
+	AOFFilepath  string `mapstructure:"aoffilepath" default:""`
+	AOFTimestamp int64  `mapstructure:"aoftimestamp" default:"0"`
 }
 
 type aofReader struct {
 	path string
 	ch   chan *entry.Entry
+
+	stat struct {
+		AOFName          string `json:"aof_name"`
+		AOFStatus        string `json:"aof_status"`
+		AOFFilepath      string `json:"aof_file_path"`
+		AOFFileSizeBytes int64  `json:"aof_file_size_bytes"`
+		AOFFileSizeHuman string `json:"aof_file_size_human"`
+		AOFFileSentBytes int64  `json:"aof_file_sent_bytes"`
+		AOFFileSentHuman string `json:"aof_file_sent_human"`
+		AOFPercent       string `json:"aof_percent"`
+	}
 }
 
 // TODO:需要实现
 func (r *aofReader) Status() interface{} {
+	return r.stat
 	//TODO implement me
 	panic("implement me")
 }
 
 func (r *aofReader) StatusString() string {
+	return r.stat.AOFStatus
 	//TODO implement me
 	panic("implement me")
 }
 
 func (r *aofReader) StatusConsistent() bool {
+	return r.stat.AOFFileSentBytes == r.stat.AOFFileSizeBytes
 	//TODO implement me
 	panic("implement me")
 }
 
 func NewAOFReader(opts *AOFReaderOptions) Reader {
-	log.Infof("NewAOFReader: path=[%s]", opts.Filepath)
-	absolutePath, err := filepath.Abs(opts.Filepath)
+	log.Infof("NewAOFReader: path=[%s]", opts.AOFFilepath)
+	absolutePath, err := filepath.Abs(opts.AOFFilepath)
 	if err != nil {
 		log.Panicf("NewAOFReader: filepath.Abs error: %s", err.Error())
 	}

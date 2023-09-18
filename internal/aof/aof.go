@@ -16,8 +16,6 @@ import (
 	"time"
 	"unicode"
 
-	"RedisShake/internal/config"
-
 	"github.com/mcuadros/go-defaults"
 )
 
@@ -355,7 +353,6 @@ func NewAOFFileInfo(aofFilePath string) *INFO {
 		AOFFileName:        filepath.Base(aofFilePath),
 		AOFCurrentSize:     0,
 		AOFRewriteBaseSize: 0,
-		AOFtoTimestamp:     config.Config.Source.AOFTruncateToTimestamp,
 	}
 }
 
@@ -947,13 +944,9 @@ func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry
 	} else {
 		sizes += 5
 		log.Infof("Reading RDB Base File on AOF loading...")
-		v := config.LoadConfig()
 		opts := new(reader.RdbReaderOptions)
 		defaults.SetDefaults(opts)
-		err := v.UnmarshalKey("rdb_reader", opts)
-		if err != nil {
-			log.Panicf("failed to read the RdbReader config entry. err: %v", err)
-		}
+		opts.Filepath = AOFFilepath
 		theReader := reader.NewRDBReader(opts)
 		log.Infof("create RdbReader: %v", opts.Filepath)
 		//ldRDB := rdb.NewLoader(AOFFilepath, ch)
@@ -1047,7 +1040,7 @@ func (ld *Loader) LoadSingleAppendOnlyFile(FileName string, ch chan *entry.Entry
 		}
 
 	}
-	statistics.Metrics.LoadingLoadedBytes = sizes
+	//statistics.Metrics.LoadingLoadedBytes = sizes
 	return ret
 }
 

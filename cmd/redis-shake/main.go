@@ -8,8 +8,9 @@ import (
 	"RedisShake/internal/status"
 	"RedisShake/internal/utils"
 	"RedisShake/internal/writer"
-	"github.com/mcuadros/go-defaults"
 	_ "net/http/pprof"
+
+	"github.com/mcuadros/go-defaults"
 )
 
 func main() {
@@ -68,7 +69,7 @@ func main() {
 			log.Panicf("failed to read the AOFReader config entry. err: %v", err)
 		}
 		theReader = reader.NewAOFReader(opts)
-		log.Infof("create AOFReader: %v", opts.Filepath)
+		log.Infof("create AOFReader: %v", opts.AOFFilepath)
 	} else {
 		log.Panicf("no reader config entry found")
 	}
