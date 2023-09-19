@@ -1,38 +1,44 @@
-type = "restore"
+function = ""
 
-[source]
-version = 5.0 # redis version, such as 2.8, 4.0, 5.0, 6.0, 6.2, 7.0, ...
-# Path to the dump.rdb file. Absolute path or relative path. Note
-# that relative paths are relative to the dir directory.
-rdb_file_path = ""
-aof_file_path="/appendonly" #Please use an absolute path.
-aof_truncate_to_timestamp=0
-[target]
-type = "standalone" # standalone or cluster
-# When the target is a cluster, write the address of one of the nodes.
-# redis-shake will obtain other nodes through the `cluster nodes` command.
-version = 5.0 # redis version, such as 2.8, 4.0, 5.0, 6.0, 6.2, 7.0, ...
-address = "127.0.0.1:6379"
-username = "" # keep empty if not using ACL
-password = "" # keep empty if no authentication is required
+
+#[sync_reader]
+#cluster = false            # set to true if source is a redis cluster
+#address = "127.0.0.1:6379" # when cluster is true, set address to one of the cluster node
+#username = ""              # keep empty if not using ACL
+#password = ""              # keep empty if no authentication is required
+#tls = false
+
+# [scan_reader]
+# cluster = false            # set to true if source is a redis cluster
+# address = "127.0.0.1:6379" # when cluster is true, set address to one of the cluster node
+# username = ""              # keep empty if not using ACL
+# password = ""              # keep empty if no authentication is required
+# ksn = false                # set to true to enabled Redis keyspace notifications (KSN) subscription
+# tls = false
+
+# [rdb_reader]
+# filepath = "/tmp/dump.rdb"
+[aof_reader]
+filepath = "/tmp/.aof"
+#timestamp = 1648545951
+[redis_writer]
+cluster = false            # set to true if target is a redis cluster
+address = "127.0.0.1:6379" # when cluster is true, set address to one of the cluster node
+username = ""              # keep empty if not using ACL
+password = ""              # keep empty if no authentication is required
 tls = false
+
 
 [advanced]
 dir = "data"
-
-# runtime.GOMAXPROCS, 0 means use runtime.NumCPU() cpu cores
-ncpu = 3
-
-# pprof port, 0 means disable
-pprof_port = 0
-
-# metric port, 0 means disable
-metrics_port = 0
+ncpu = 0        # runtime.GOMAXPROCS, 0 means use runtime.NumCPU() cpu cores
+pprof_port = 0  # pprof port, 0 means disable
+status_port = 0 # status port, 0 means disable
 
 # log
-log_file = "redis-shake.log"
-log_level = "info" # debug, info or warn
-log_interval = 5 # in seconds
+log_file = "shake.log"
+log_level = "info"     # debug, info or warn
+log_interval = 5       # in seconds
 
 # redis-shake gets key and value from rdb file, and uses RESTORE command to
 # create the key in target redis. Redis RESTORE will return a "Target key name
@@ -41,9 +47,10 @@ log_interval = 5 # in seconds
 # panic:   redis-shake will stop when meet "Target key name is busy" error.
 # rewrite: redis-shake will replace the key with new value.
 # ignore:  redis-shake will skip restore the key when meet "Target key name is busy" error.
-rdb_restore_command_behavior = "rewrite" # panic, rewrite or skip
+rdb_restore_command_behavior = "panic" # panic, rewrite or skip
 
-# pipeline
+# redis-shake uses pipeline to improve sending performance.
+# This item limits the maximum number of commands in a pipeline.
 pipeline_count_limit = 1024
 
 # Client query buffers accumulate new commands. They are limited to a fixed
@@ -53,3 +60,6 @@ target_redis_client_max_querybuf_len = 1024_000_000
 # In the Redis protocol, bulk requests, that are, elements representing single
 # strings, are normally limited to 512 mb.
 target_redis_proto_max_bulk_len = 512_000_000
+
+# If the source is Elasticache or MemoryDB, you can set this item.
+aws_psync = "" # example: aws_psync = "10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync"
