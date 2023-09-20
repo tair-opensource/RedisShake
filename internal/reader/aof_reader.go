@@ -12,7 +12,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-type AOFReaderOptions struct { // TODO：修改
+type AOFReaderOptions struct {
 	Filepath     string `mapstructure:"aoffilepath" default:""`
 	AOFTimestamp int64  `mapstructure:"aoftimestamp" default:"0"`
 }
@@ -34,7 +34,6 @@ type aofReader struct {
 	}
 }
 
-// TODO:需要实现
 func (r *aofReader) Status() interface{} {
 	return r.stat
 }
@@ -73,8 +72,8 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 	go func() {
 		AOFFileInfo = *(NewAOFFileInfo(r.path))
 		AOFLoadManifestFromDisk()
-		am := AOFFileInfo.GetAOFManifest()
-		if am == nil {
+		AM := AOFFileInfo.GetAOFManifest()
+		if AM == nil {
 			paths := path.Join(AOFFileInfo.GetAOFDirName(), AOFFileInfo.GetAOFFileName())
 			log.Infof("start send AOF path=[%s]", r.path)
 			fi, err := os.Stat(r.path)
@@ -94,7 +93,16 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 			}
 			log.Infof("the file stat:%v", fi)
 			aofLoader := NewLoader(r.path, r.ch)
-			_ = aofLoader.LoadAppendOnlyFile(am, r.ch, r.stat.AOFTimestamp)
+			ret := aofLoader.LoadAppendOnlyFile(AM, r.ch, r.stat.AOFTimestamp)
+			if ret == AOFEmpty {
+				log.Panicf("The AOF file is empty.")
+			}
+			if ret == AOFNotExist {
+				log.Panicf("The AOF file does not exist.")
+			}
+			if ret == AOFFailed {
+				log.Panicf("An error occurred while reading the AOF file.")
+			}
 			log.Infof("Send AOF finished. path=[%s]", r.path)
 			close(r.ch)
 		}

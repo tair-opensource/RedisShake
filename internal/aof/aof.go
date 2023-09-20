@@ -128,9 +128,6 @@ func LoadSingleAppendOnlyFile(AOFDirName string, FileName string, ch chan *entry
 					ret = AOFFailed
 					return ret
 				}
-				/*if ConsumeNewline(argstring[len-2:]) == 0 {
-					return 0
-				}*/
 				argstring = argstring[:len]
 				argv = append(argv, string(argstring))
 			}
