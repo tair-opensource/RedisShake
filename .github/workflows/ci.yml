@@ -30,7 +30,7 @@ jobs:
                     mkdir bin
                     cp src/redis-server bin/redis-server
                     echo "$GITHUB_WORKSPACE/redis/bin" >> $GITHUB_PATH
-
+                    ./bin/redis-server --bind 127.0.0.1 --port 6379 &
             -   name: clone and make TairString Module
                 if:  contains( '5.0, 6.0, 7.0', matrix.redis-version)
                 run: |
@@ -42,7 +42,7 @@ jobs:
                     cd build 
                     cmake ../ && make -j
                     cp $GITHUB_WORKSPACE/TairString/lib/tairstring_module.so /lib
-                      ./bin/redis-server --bind 127.0.0.1 --port 6379 &
+             
                     
 
             -   name: clone and make TairHash Module

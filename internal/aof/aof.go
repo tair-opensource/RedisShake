@@ -66,8 +66,18 @@ func LoadSingleAppendOnlyFile(AOFDirName string, FileName string, ch chan *entry
 	reader := bufio.NewReader(fp)
 	for {
 
-		line, err := reader.ReadBytes('\n')
+		line, isPrefix, err := reader.ReadLine()
 		{
+			for isPrefix {
+				var additional []byte
+				additional, isPrefix, err = reader.ReadLine()
+				if err != nil {
+					log.Infof("Unrecoverable error reading the append only File %v: %v", FileName, err)
+					ret = AOFFailed
+					return ret
+				}
+				line = append(line, additional...)
+			}
 			if err != nil {
 				if err == io.EOF {
 					break
@@ -99,7 +109,7 @@ func LoadSingleAppendOnlyFile(AOFDirName string, FileName string, ch chan *entry
 			if line[0] != '*' {
 				log.Infof("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", FileName)
 			}
-			argc, _ := strconv.ParseInt(string(line[1:len(line)-2]), 10, 64)
+			argc, _ := strconv.ParseInt(string(line[1:len(line)]), 10, 64)
 			if argc < 1 {
 				log.Infof("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", FileName)
 			}
@@ -110,7 +120,8 @@ func LoadSingleAppendOnlyFile(AOFDirName string, FileName string, ch chan *entry
 			argv := []string{}
 
 			for j := 0; j < int(argc); j++ {
-				line, err := reader.ReadString('\n')
+				//line, err := reader.ReadString('\n')
+				line, isPrefix, err := reader.ReadLine()
 				if err != nil || line[0] != '$' {
 					if err == io.EOF {
 						log.Infof("Unrecoverable error reading the append only File %v: %v", FileName, err)
@@ -120,17 +131,37 @@ func LoadSingleAppendOnlyFile(AOFDirName string, FileName string, ch chan *entry
 						log.Infof("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", FileName)
 					}
 				}
-				len, _ := strconv.ParseInt(string(line[1:len(line)-2]), 10, 64)
-				argstring := make([]byte, len+2)
-				argstring, err = reader.ReadBytes('\n')
-				if err != nil || argstring[len+1] != '\n' {
-					log.Infof("Unrecoverable error reading the append only File %v: %v", FileName, err)
-					ret = AOFFailed
-					return ret
+				for isPrefix {
+					var additional []byte
+					additional, isPrefix, err = reader.ReadLine()
+					if err != nil {
+						log.Infof("Unrecoverable error reading the append only File %v: %v", FileName, err)
+						ret = AOFFailed
+						return ret
+					}
+					line = append(line, additional...)
 				}
+				len, _ := strconv.ParseInt(string(line[1:len(line)]), 10, 64)
+				argstring := make([]byte, len+2)
+				argstring, isPrefix, err = reader.ReadLine()
+
+				for isPrefix {
+					var additional []byte
+					additional, isPrefix, err = reader.ReadLine()
+					if err != nil {
+						log.Infof("Unrecoverable error reading the append only File %v: %v", FileName, err)
+						ret = AOFFailed
+						return ret
+					}
+					argstring = append(argstring, additional...)
+				}
+				/*if ConsumeNewline(argstring[len-2:]) == 0 {
+					return 0
+				}*/
 				argstring = argstring[:len]
 				argv = append(argv, string(argstring))
 			}
+
 			for _, value := range argv {
 				e.Argv = append(e.Argv, value)
 			}
