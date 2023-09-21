@@ -42,7 +42,7 @@ jobs:
                     cd build 
                     cmake ../ && make -j
                     cp $GITHUB_WORKSPACE/TairString/lib/tairstring_module.so /lib
-                      ./bin/redis-server --bind 127.0.0.1 --port 6739 &
+                      ./bin/redis-server --bind 127.0.0.1 --port 6379 &
                     
 
             -   name: clone and make TairHash Module
