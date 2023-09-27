@@ -43,16 +43,16 @@ export default defineConfig({
                         ]
                     },
                     {
-                        text: 'function',
+                        text: 'Function',
                         items: [
                             { text: '什么是 function', link: '/zh/function/introduction' },
                             { text: '最佳实践', link: '/zh/function/best_practices' }
                         ]
                     },
                     {
-                        text: 'others',
+                        text: 'Others',
                         items: [
-                            { text: 'redis modle 支持', link: '/zh/others/module-supported' },
+                            { text: 'Redis Modules', link: '/zh/others/modules' },
                         ]
                     },
                     // {
