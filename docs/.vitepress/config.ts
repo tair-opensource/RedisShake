@@ -55,16 +55,6 @@ export default defineConfig({
                             { text: 'Redis Modules', link: '/zh/others/modules' },
                         ]
                     },
-                    // {
-                    //     text: '进阶用法',
-                    //     items: [
-                    //         { text: '监控', link: '/zh/function/best_practices' },
-                    //         { text: '双向同步', link: '/zh/function/best_practices' },
-                    //         { text: '容器部署', link: '/zh/function/best_practices' },
-                    //         { text: '主从实例向集群实例迁移', link: '/zh/function/best_practices' },
-                    //         { text: '大 key 重写', link: '/zh/function/best_practices' },
-                    //     ]
-                    // }
                 ],
                 footer: {
                     message: 'Released under the MIT License.',
@@ -74,8 +64,59 @@ export default defineConfig({
         },
         en: {
             label: 'English',
-            lang: 'en',
+            lang: 'en', // optional, will be added as `lang` attribute on `html` tag
+            themeConfig: {
+                // https://vitepress.dev/reference/default-theme-config
+                nav: [
+                    { text: 'Home', link: '/en/' },
+                    { text: 'User Guide', link: '/en/guide/getting-started' },
+                    { text: 'Tair', link: 'https://www.alibabacloud.com/product/tair' }
+                ],
+                sidebar: [
+                    {
+                        text: 'Introduction',
+                        items: [
+                            { text: 'What is RedisShake', link: '/en/guide/introduction' },
+                            { text: 'Getting Started', link: '/en/guide/getting-started' },
+                            { text: 'Configuration', link: '/en/guide/config' },
+                            { text: 'Migration Mode Selection', link: '/en/guide/mode' },
+                        ]
+                    },
+                    {
+                        text: 'Reader',
+                        items: [
+                            { text: 'Sync Reader', link: '/en/reader/sync_reader' },
+                            { text: 'Scan Reader', link: '/en/reader/scan_reader' },
+                            { text: 'RDB Reader', link: '/en/reader/rdb_reader' },
+                        ]
+                    },
+                    {
+                        text: 'Writer',
+                        items: [
+                            { text: 'Redis Writer', link: '/en/writer/redis_writer' },
+                        ]
+                    },
+                    {
+                        text: 'Function',
+                        items: [
+                            { text: 'What is function', link: '/en/function/introduction' },
+                            { text: 'Best Practices', link: '/en/function/best_practices' }
+                        ]
+                    },
+                    {
+                        text: 'Others',
+                        items: [
+                            { text: 'Redis Modules', link: '/en/others/modules' },
+                        ]
+                    },
+                ],
+                footer: {
+                    message: 'Released under the MIT License.',
+                    copyright: 'Copyright © 2019-present Tair'
+                }
+            }
         },
+
     },
     themeConfig: {
         socialLinks: [

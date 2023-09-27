@@ -4,22 +4,21 @@ layout: home
 
 hero:
     name: "RedisShake"
-    text: "Data Transform And Data Migration For Redis-like Database"
-    tagline: RedisShake is a tool for transform and migrating Redis data.
+    # text: "用于 Redis-like 数据库的数据迁移与处理服务"
+    tagline: 用于 Redis-like 数据库的数据迁移与处理服务
     actions:
         -   theme: brand
-            text: Markdown Examples
-            link: /markdown-examples
+            text: Get Started
+            link: /en/guide/getting-started
         -   theme: alt
-            text: API Examples
-            link: /api-examples
-
+            text: What is RedisShake
+            link: /en/guide/introduction
 features:
-    -   title: Feature A
-        details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-    -   title: Feature B
-        details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-    -   title: Feature C
-        details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+    -   title: Data Migration
+        details: Supports sync, scan, and restore modes for data migration
+    -   title: Data Processing
+        details: Supports data filtering and modification using lua scripts
+    -   title: Compatibility
+        details: Compatible with various Redis deployment forms and mainstream cloud vendor's Redis-like databases
 ---
 
