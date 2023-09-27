@@ -1,3 +1,5 @@
+import time
+
 import pybbt as p
 
 import helpers as h
@@ -23,6 +25,7 @@ def test(src, dst):
     # wait sync done
     p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent())
     p.log(shake.get_status())
+    time.sleep(5)
 
     # check data
     inserter.check_data(src, cross_slots_cmd=cross_slots_cmd)
