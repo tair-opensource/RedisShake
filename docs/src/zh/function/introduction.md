@@ -38,6 +38,9 @@ address = "127.0.0.1:6380"
 ## function API
 
 ### 变量
+
+因为有些命令中含有多个 key，比如 `mset` 等命令。所以，`KEYS`、`KEY_INDEXES`、`SLOTS` 这三个变量都是数组类型。如果确认命令只有一个 key，可以直接使用 `KEYS[1]`、`KEY_INDEXES[1]`、`SLOTS[1]`。
+
 | 变量 | 类型 | 示例 | 描述 |
 |-|-|-|-----|
 | DB | number | 1 | 命令所属的 `db` |
