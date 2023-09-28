@@ -19,7 +19,7 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 		if !strings.Contains(words[2], "master") {
 			continue
 		}
-		if len(words) < 9 {
+		if len(words) < 8 {
 			log.Panicf("invalid cluster nodes line: %s", line)
 		}
 		log.Infof("redisClusterWriter load cluster nodes. line=%v", line)
@@ -34,6 +34,10 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 
 			ipv6Addr := strings.Join(tok[:len(tok)-1], ":")
 			address = fmt.Sprintf("[%s]:%s", ipv6Addr, port)
+		}
+		if len(words) < 9 {
+			log.Warnf("the current master node does not hold any slots. address=[%v]", address)
+			continue
 		}
 		addresses = append(addresses, address)
 
