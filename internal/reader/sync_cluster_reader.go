@@ -21,12 +21,9 @@ func NewSyncClusterReader(opts *SyncReaderOptions) Reader {
 	}
 	rd := &syncClusterReader{}
 	for _, address := range addresses {
-		rd.readers = append(rd.readers, NewSyncStandaloneReader(&SyncReaderOptions{
-			Address:  address,
-			Username: opts.Username,
-			Password: opts.Password,
-			Tls:      opts.Tls,
-		}))
+		theOpts := *opts
+		theOpts.Address = address
+		rd.readers = append(rd.readers, NewSyncStandaloneReader(&theOpts))
 	}
 	return rd
 }

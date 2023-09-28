@@ -6,4 +6,4 @@ go test ./... -v
 
 # black box test
 cd tests/
-pybbt cases
+pybbt cases --verbose --flags modules

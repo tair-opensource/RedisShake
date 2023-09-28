@@ -3,7 +3,7 @@ import time
 import pybbt
 import redis
 
-from helpers.constant import PATH_REDIS_SERVER, REDIS_SERVER_VERSION
+from helpers.constant import PATH_REDIS_SERVER, REDIS_SERVER_MODULES_ENABLED, REDIS_SERVER_VERSION
 from helpers.utils.network import get_free_port
 from helpers.utils.timer import Timer
 
@@ -17,14 +17,12 @@ class Redis:
         self.port = get_free_port()
         self.dir = f"{self.case_ctx.dir}/redis_{self.port}"
         args.extend(["--port", str(self.port)])
-        
-        if REDIS_SERVER_VERSION > 4.0:
+
+        if REDIS_SERVER_MODULES_ENABLED:
             args.extend(["--loadmodule", "tairstring_module.so"])
             args.extend(["--loadmodule", "tairhash_module.so"])
             args.extend(["--loadmodule", "tairzset_module.so"])
-            self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
-        else:
-            self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
+        self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
 
         self._wait_start()
         self.client = redis.Redis(host=self.host, port=self.port)

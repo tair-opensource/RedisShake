@@ -17,12 +17,9 @@ func NewScanClusterReader(opts *ScanReaderOptions) Reader {
 
 	rd := &scanClusterReader{}
 	for _, address := range addresses {
-		rd.readers = append(rd.readers, NewScanStandaloneReader(&ScanReaderOptions{
-			Address:  address,
-			Username: opts.Username,
-			Password: opts.Password,
-			Tls:      opts.Tls,
-		}))
+		theOpts := *opts
+		theOpts.Address = address
+		rd.readers = append(rd.readers, NewScanStandaloneReader(&theOpts))
 	}
 	return rd
 }
