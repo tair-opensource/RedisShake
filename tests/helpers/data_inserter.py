@@ -1,6 +1,5 @@
-from helpers.commands import SelectChecker, StringChecker, TairStringChecker, TairHashChecker, TairZsetChecker 
+from helpers.commands import SelectChecker, StringChecker, TairHashChecker, TairStringChecker, TairZsetChecker
 from helpers.redis import Redis
-from helpers.constant import PATH_REDIS_SERVER, REDIS_SERVER_VERSION
 
 
 class DataInserter:
@@ -12,7 +11,6 @@ class DataInserter:
             TairHashChecker(),
             TairZsetChecker(),
         ]
-
 
     def add_data(self, r: Redis, cross_slots_cmd: bool):
         for checker in self.checkers:
