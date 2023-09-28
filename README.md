@@ -1,3 +1,5 @@
+The current branch has been archived. Please proceed to the [current](https://github.com/suxb201/RedisShake) branch.
+
 # redis-shake
 
 [![CI](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml/badge.svg?branch=v3)](https://github.com/alibaba/RedisShake/actions/workflows/ci.yml)
