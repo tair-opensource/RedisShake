@@ -277,6 +277,10 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 		if strings.EqualFold(argv[0], "opinfo") {
 			continue
 		}
+		// sentinel
+		if strings.EqualFold(argv[0], "publish") && strings.EqualFold(argv[1], "__sentinel__:hello") {
+			continue
+		}
 
 		e := entry.NewEntry()
 		e.Argv = argv
