@@ -17,9 +17,14 @@ sync_aof = true # set to false if you don't want to sync aof
 # password = ""              # keep empty if no authentication is required
 # ksn = false                # set to true to enabled Redis keyspace notifications (KSN) subscription
 # tls = false
+# dbs = []                   # set you want to scan dbs such as [1,5,7], if you don't want to scan all
 
 # [rdb_reader]
 # filepath = "/tmp/dump.rdb"
+
+# [aof_reader]
+# filepath = "/tmp/.aof"
+# timestamp = 0              # subsecond
 
 [redis_writer]
 cluster = false            # set to true if target is a redis cluster

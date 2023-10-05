@@ -17,7 +17,6 @@ class Redis:
         self.port = get_free_port()
         self.dir = f"{self.case_ctx.dir}/redis_{self.port}"
         args.extend(["--port", str(self.port)])
-
         if REDIS_SERVER_MODULES_ENABLED:
             args.extend(["--loadmodule", "tairstring_module.so"])
             args.extend(["--loadmodule", "tairhash_module.so"])

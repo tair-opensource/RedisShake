@@ -34,6 +34,7 @@ RedisShake 提供了不同的 Reader 用来对接不同的源端，配置详见 
 * [Sync Reader](../reader/sync_reader.md)
 * [Scan Reader](../reader/scan_reader.md)
 * [RDB Reader](../reader/rdb_reader.md)
+* [AOF Reader](../reader/aof_reader.md)
 
 ## writer 配置
 
