@@ -39,6 +39,10 @@ type AdvancedOptions struct {
 	AwsPSync string `mapstructure:"aws_psync" default:""` // 10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync
 }
 
+type ModuleOptions struct {
+	MBbloomVersion int `mapstructure:"mbbloom_version" default:"10000"` // v1.0.0
+}
+
 func (opt *AdvancedOptions) GetPSyncCommand(address string) string {
 	items := strings.Split(opt.AwsPSync, ",")
 	for _, item := range items {
@@ -53,6 +57,7 @@ func (opt *AdvancedOptions) GetPSyncCommand(address string) string {
 type ShakeOptions struct {
 	Function string `mapstructure:"function" default:""`
 	Advanced AdvancedOptions
+	Module   ModuleOptions
 }
 
 var Opt ShakeOptions
