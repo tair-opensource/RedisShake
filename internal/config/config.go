@@ -40,7 +40,7 @@ type AdvancedOptions struct {
 }
 
 type ModuleOptions struct {
-	MBbloomVersion int `mapstructure:"mbbloom_version" default:"10000"` // v1.0.0
+	TargetMBbloomVersion int `mapstructure:"target_mbbloom_version" default:"0"` // v1.0.0 <=> 10000
 }
 
 func (opt *AdvancedOptions) GetPSyncCommand(address string) string {
