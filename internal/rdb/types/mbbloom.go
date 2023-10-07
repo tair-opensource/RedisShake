@@ -1,13 +1,14 @@
 package types
 
 import (
+	"RedisShake/internal/config"
 	"RedisShake/internal/rdb/structure"
 	"io"
 	"strconv"
 	"unsafe"
 )
 
-// BloomObject for MBbloom--
+// BloomObject for MBbloom-- at https://github.com/RedisBloom/RedisBloom
 type BloomObject struct {
 	encver int
 	key    string
@@ -53,23 +54,6 @@ type dumpedChainLink struct {
 	hashes  uint32
 	entries uint32
 	enthigh uint32
-	n2      uint8
-}
-
-type dumpedChainHeaderV3 struct {
-	size     uint64
-	nfilters uint32
-	options  uint32
-}
-
-type dumpedChainLinkV3 struct {
-	bytes   uint64
-	bits    uint64
-	size    uint64
-	err     float64
-	bpe     float64
-	hashes  uint32
-	entries uint32
 	n2      uint8
 }
 
@@ -143,10 +127,16 @@ func readDouble(rd io.Reader) float64 {
 func (o *BloomObject) Rewrite() []RedisCmd {
 	var cs []RedisCmd
 	var h string
-	if o.encver < BF_MIN_GROWTH_ENC {
-		h = getEncodedHeaderV3(&o.sb)
+	if ver := config.Opt.Module.TargetMBbloomVersion; ver > 20200 {
+		h = getEncodedHeader(&o.sb, true, true)
+	} else if ver == 20200 {
+		h = getEncodedHeader(&o.sb, true, false)
+	} else if ver >= 10000 {
+		h = getEncodedHeader(&o.sb, false, false)
+	} else if o.encver < BF_MIN_GROWTH_ENC {
+		h = getEncodedHeader(&o.sb, false, false)
 	} else {
-		h = getEncodedHeader(&o.sb)
+		h = getEncodedHeader(&o.sb, true, true)
 	}
 	cmd := RedisCmd{"BF.LOADCHUNK", o.key, "1", h}
 	cs = append(cs, cmd)
@@ -162,36 +152,25 @@ func (o *BloomObject) Rewrite() []RedisCmd {
 	return cs
 }
 
-func getEncodedHeader(sb *chain) string {
-	h := make([]byte, DUMPED_CHAIN_LINK_SIZE*sb.nfilters+DUMPED_CHAIN_HEADER_SIZE)
+func getEncodedHeader(sb *chain, withGrowth, bigEntries bool) string {
+	var hs uint64 = DUMPED_CHAIN_HEADER_SIZE_V3
+	if withGrowth {
+		hs = DUMPED_CHAIN_HEADER_SIZE
+	}
+	var ls uint64 = DUMPED_CHAIN_LINK_SIZE_V3
+	if bigEntries {
+		ls = DUMPED_CHAIN_LINK_SIZE
+	}
+	h := make([]byte, hs+ls*sb.nfilters)
 	ph := (*dumpedChainHeader)(unsafe.Pointer(&h[0]))
 	ph.size = sb.size
 	ph.nfilters = uint32(sb.nfilters)
 	ph.options = uint32(sb.options)
-	ph.growth = uint32(sb.growth)
-	for i := uint64(0); i < sb.nfilters; i++ {
-		pl := (*dumpedChainLink)(unsafe.Add(unsafe.Pointer(&h[0]), DUMPED_CHAIN_HEADER_SIZE+DUMPED_CHAIN_LINK_SIZE*i))
-		sl := sb.filters[i]
-		pl.bytes = uint64(len(sl.inner.bf))
-		pl.bits = sl.inner.bits
-		pl.size = sl.size
-		pl.err = sl.inner.err
-		pl.hashes = uint32(sl.inner.hashes)
-		pl.bpe = sl.inner.bpe
-		*(*uint64)(unsafe.Pointer(&pl.entries)) = sl.inner.entries
-		pl.n2 = uint8(sl.inner.n2)
+	if withGrowth {
+		ph.growth = uint32(sb.growth)
 	}
-	return *(*string)(unsafe.Pointer(&h))
-}
-
-func getEncodedHeaderV3(sb *chain) string {
-	h := make([]byte, DUMPED_CHAIN_LINK_SIZE_V3*sb.nfilters+DUMPED_CHAIN_HEADER_SIZE_V3)
-	ph := (*dumpedChainHeaderV3)(unsafe.Pointer(&h[0]))
-	ph.size = sb.size
-	ph.nfilters = uint32(sb.nfilters)
-	ph.options = uint32(sb.options)
 	for i := uint64(0); i < sb.nfilters; i++ {
-		pl := (*dumpedChainLinkV3)(unsafe.Add(unsafe.Pointer(&h[0]), DUMPED_CHAIN_HEADER_SIZE_V3+DUMPED_CHAIN_LINK_SIZE_V3*i))
+		pl := (*dumpedChainLink)(unsafe.Add(unsafe.Pointer(&h[0]), hs+ls*i))
 		sl := sb.filters[i]
 		pl.bytes = uint64(len(sl.inner.bf))
 		pl.bits = sl.inner.bits
@@ -199,8 +178,13 @@ func getEncodedHeaderV3(sb *chain) string {
 		pl.err = sl.inner.err
 		pl.hashes = uint32(sl.inner.hashes)
 		pl.bpe = sl.inner.bpe
-		pl.entries = uint32(sl.inner.entries)
-		pl.n2 = uint8(sl.inner.n2)
+		if bigEntries {
+			*(*uint64)(unsafe.Pointer(&pl.entries)) = sl.inner.entries
+			pl.n2 = uint8(sl.inner.n2)
+		} else {
+			pl.entries = uint32(sl.inner.entries)
+			*(*uint8)(unsafe.Pointer(&pl.enthigh)) = uint8(sl.inner.n2)
+		}
 	}
 	return *(*string)(unsafe.Pointer(&h))
 }
