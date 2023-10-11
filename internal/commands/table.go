@@ -1,24 +1,1263 @@
 package commands
 
 var containers = map[string]bool{
-	"XINFO":    true,
-	"COMMAND":  true,
-	"FUNCTION": true,
-	"CONFIG":   true,
-	"MODULE":   true,
-	"MEMORY":   true,
-	"LATENCY":  true,
-	"SCRIPT":   true,
 	"ACL":      true,
-	"CLUSTER":  true,
 	"CLIENT":   true,
-	"XGROUP":   true,
-	"PUBSUB":   true,
+	"CLUSTER":  true,
+	"COMMAND":  true,
+	"CONFIG":   true,
+	"FUNCTION": true,
+	"LATENCY":  true,
+	"MEMORY":   true,
+	"MODULE":   true,
 	"OBJECT":   true,
+	"PUBSUB":   true,
+	"SCRIPT":   true,
 	"SENTINEL": true,
 	"SLOWLOG":  true,
+	"XGROUP":   true,
+	"XINFO":    true,
 }
 var redisCommands = map[string]redisCommand{
+	"ACL-CAT": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-DELUSER": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-DRYRUN": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-GENPASS": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-GETUSER": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-HELP": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-LIST": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-LOAD": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-LOG": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-SAVE": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-SETUSER": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-USERS": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL-WHOAMI": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"ACL": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"BGREWRITEAOF": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"BGSAVE": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMAND-COUNT": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMAND-DOCS": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMAND-GETKEYS": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMAND-GETKEYSANDFLAGS": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMAND-HELP": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMAND-INFO": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMAND-LIST": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMAND": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"CONFIG-GET": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"CONFIG-HELP": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"CONFIG-RESETSTAT": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"CONFIG-REWRITE": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"CONFIG-SET": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"CONFIG": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"DBSIZE": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"DEBUG": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"FAILOVER": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"FLUSHALL": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"FLUSHDB": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"INFO": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LASTSAVE": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LATENCY-DOCTOR": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LATENCY-GRAPH": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LATENCY-HELP": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LATENCY-HISTOGRAM": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LATENCY-HISTORY": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LATENCY-LATEST": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LATENCY-RESET": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LATENCY": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"LOLWUT": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MEMORY-DOCTOR": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MEMORY-HELP": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MEMORY-MALLOC-STATS": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MEMORY-PURGE": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MEMORY-STATS": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MEMORY-USAGE": {
+		"SERVER",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"MEMORY": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MODULE-HELP": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MODULE-LIST": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MODULE-LOAD": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MODULE-LOADEX": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MODULE-UNLOAD": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MODULE": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"MONITOR": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"PSYNC": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"REPLCONF": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"REPLICAOF": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"RESTORE-ASKING": {
+		"SERVER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ROLE": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SAVE": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SHUTDOWN": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SLAVEOF": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SLOWLOG-GET": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SLOWLOG-HELP": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SLOWLOG-LEN": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SLOWLOG-RESET": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SLOWLOG": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SWAPDB": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"SYNC": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"TIME": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"APPEND": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"DECR": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"DECRBY": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GET": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GETDEL": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GETEX": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GETRANGE": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GETSET": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"INCR": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"INCRBY": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"INCRBYFLOAT": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"LCS": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"MGET": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"MSET": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				2,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"MSETNX": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				2,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"PSETEX": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SET": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SETEX": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SETNX": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SETRANGE": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"STRLEN": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SUBSTR": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ASKING": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-ADDSLOTS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-ADDSLOTSRANGE": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-BUMPEPOCH": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-COUNT-FAILURE-REPORTS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-COUNTKEYSINSLOT": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-DELSLOTS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-DELSLOTSRANGE": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-FAILOVER": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-FLUSHSLOTS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-FORGET": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-GETKEYSINSLOT": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-HELP": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-INFO": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-KEYSLOT": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-LINKS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-MEET": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-MYID": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-NODES": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-REPLICAS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-REPLICATE": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-RESET": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-SAVECONFIG": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-SET-CONFIG-EPOCH": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-SETSLOT": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-SHARDS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-SLAVES": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-SLOTS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"READONLY": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"READWRITE": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"AUTH": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-CACHING": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-GETNAME": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-GETREDIR": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-HELP": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-ID": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-INFO": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-KILL": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-LIST": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-NO-EVICT": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-PAUSE": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-REPLY": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-SETNAME": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-TRACKING": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-TRACKINGINFO": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-UNBLOCK": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-UNPAUSE": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"ECHO": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"HELLO": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"PING": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"QUIT": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"RESET": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"SELECT": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"BITCOUNT": {
+		"BITMAP",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BITFIELD": {
+		"BITMAP",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BITFIELD_RO": {
+		"BITMAP",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BITOP": {
+		"BITMAP",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+			{
+				"index",
+				3,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BITPOS": {
+		"BITMAP",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GETBIT": {
+		"BITMAP",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SETBIT": {
+		"BITMAP",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BLMOVE": {
+		"LIST",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BLMPOP": {
+		"LIST",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"BLPOP": {
+		"LIST",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-2,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BRPOP": {
+		"LIST",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-2,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BRPOPLPUSH": {
+		"LIST",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"LINDEX": {
+		"LIST",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"LINSERT": {
+		"LIST",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
 	"LLEN": {
 		"LIST",
 		[]keySpec{
@@ -37,7 +1276,7 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"BRPOPLPUSH": {
+	"LMOVE": {
 		"LIST",
 		[]keySpec{
 			{
@@ -86,43 +1325,7 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"LSET": {
-		"LIST",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"BLMPOP": {
-		"LIST",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"LINDEX": {
+	"LPOP": {
 		"LIST",
 		[]keySpec{
 			{
@@ -158,55 +1361,6 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"RPOPLPUSH": {
-		"LIST",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"LTRIM": {
-		"LIST",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
 	"LPUSH": {
 		"LIST",
 		[]keySpec{
@@ -225,25 +1379,7 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"BRPOP": {
-		"LIST",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-2,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"LINSERT": {
+	"LPUSHX": {
 		"LIST",
 		[]keySpec{
 			{
@@ -297,7 +1433,25 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"RPUSH": {
+	"LSET": {
+		"LIST",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"LTRIM": {
 		"LIST",
 		[]keySpec{
 			{
@@ -333,25 +1487,7 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"LPOP": {
-		"LIST",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"LMOVE": {
+	"RPOPLPUSH": {
 		"LIST",
 		[]keySpec{
 			{
@@ -370,6 +1506,24 @@ var redisCommands = map[string]redisCommand{
 			{
 				"index",
 				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"RPUSH": {
+		"LIST",
+		[]keySpec{
+			{
+				"index",
+				1,
 				"",
 				0,
 				"range",
@@ -400,57 +1554,26 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"BLMOVE": {
-		"LIST",
+	"BZMPOP": {
+		"SORTED_SET",
 		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
 			{
 				"index",
 				2,
 				"",
 				0,
-				"range",
+				"keynum",
+				0,
+				0,
+				0,
 				0,
 				1,
-				0,
-				0,
-				0,
-				0,
+				1,
 			},
 		},
 	},
-	"LPUSHX": {
-		"LIST",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"BLPOP": {
-		"LIST",
+	"BZPOPMAX": {
+		"SORTED_SET",
 		[]keySpec{
 			{
 				"index",
@@ -467,249 +1590,390 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"MODULE-UNLOAD": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"PSYNC": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-WHOAMI": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-GETUSER": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MEMORY-STATS": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LATENCY-HELP": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MONITOR": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"BGREWRITEAOF": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LATENCY-GRAPH": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"REPLCONF": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LATENCY-HISTORY": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"FLUSHDB": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SHUTDOWN": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ROLE": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-SAVE": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LATENCY-LATEST": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LATENCY-HISTOGRAM": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"DEBUG": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"COMMAND-GETKEYSANDFLAGS": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"CONFIG": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-LOG": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"CONFIG-HELP": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MEMORY": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-CAT": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SAVE": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LOLWUT": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LATENCY-RESET": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MEMORY-PURGE": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"COMMAND-DOCS": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-DRYRUN": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SWAPDB": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SYNC": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-USERS": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-SETUSER": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MODULE-HELP": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-LOAD": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"COMMAND-COUNT": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"COMMAND-HELP": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-HELP": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MODULE-LOAD": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SLOWLOG": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"TIME": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"CONFIG-REWRITE": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"COMMAND": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SLOWLOG-RESET": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SLAVEOF": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-DELUSER": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"FLUSHALL": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"CONFIG-RESETSTAT": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LATENCY-DOCTOR": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MEMORY-DOCTOR": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"INFO": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MODULE": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"BGSAVE": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MODULE-LOADEX": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MEMORY-HELP": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-GENPASS": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"DBSIZE": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SLOWLOG-GET": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MEMORY-USAGE": {
-		"SERVER",
+	"BZPOPMIN": {
+		"SORTED_SET",
 		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-2,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZADD": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZCARD": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZCOUNT": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZDIFF": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"ZDIFFSTORE": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+			{
+				"index",
+				2,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"ZINCRBY": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZINTER": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"ZINTERCARD": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"ZINTERSTORE": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+			{
+				"index",
+				2,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"ZLEXCOUNT": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZMPOP": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"ZMSCORE": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZPOPMAX": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZPOPMIN": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZRANDMEMBER": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZRANGE": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZRANGEBYLEX": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZRANGEBYSCORE": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZRANGESTORE": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
 			{
 				"index",
 				2,
@@ -725,52 +1989,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"COMMAND-GETKEYS": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LATENCY": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"COMMAND-INFO": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"ACL-LIST": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"LASTSAVE": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MODULE-LIST": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SLOWLOG-HELP": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"COMMAND-LIST": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"CONFIG-GET": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"MEMORY-MALLOC-STATS": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"SLOWLOG-LEN": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"RESTORE-ASKING": {
-		"SERVER",
+	"ZRANK": {
+		"SORTED_SET",
 		[]keySpec{
 			{
 				"index",
@@ -787,148 +2007,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"CONFIG-SET": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"REPLICAOF": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"FAILOVER": {
-		"SERVER",
-		[]keySpec{},
-	},
-	"READONLY": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-MYID": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-ADDSLOTS": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-KEYSLOT": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-FORGET": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-MEET": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"READWRITE": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-SLOTS": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-REPLICATE": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-LINKS": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-DELSLOTS": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"ASKING": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-COUNTKEYSINSLOT": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-SHARDS": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-BUMPEPOCH": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-COUNT-FAILURE-REPORTS": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-SLAVES": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-ADDSLOTSRANGE": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-INFO": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-GETKEYSINSLOT": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-SETSLOT": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-DELSLOTSRANGE": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-HELP": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-FAILOVER": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-SAVECONFIG": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-FLUSHSLOTS": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-SET-CONFIG-EPOCH": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-REPLICAS": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-RESET": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"CLUSTER-NODES": {
-		"CLUSTER",
-		[]keySpec{},
-	},
-	"WAIT": {
-		"GENERIC",
-		[]keySpec{},
-	},
-	"DUMP": {
-		"GENERIC",
+	"ZREM": {
+		"SORTED_SET",
 		[]keySpec{
 			{
 				"index",
@@ -945,8 +2025,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"PTTL": {
-		"GENERIC",
+	"ZREMRANGEBYLEX": {
+		"SORTED_SET",
 		[]keySpec{
 			{
 				"index",
@@ -963,26 +2043,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"TOUCH": {
-		"GENERIC",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"RESTORE": {
-		"GENERIC",
+	"ZREMRANGEBYRANK": {
+		"SORTED_SET",
 		[]keySpec{
 			{
 				"index",
@@ -999,26 +2061,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"UNLINK": {
-		"GENERIC",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"TTL": {
-		"GENERIC",
+	"ZREMRANGEBYSCORE": {
+		"SORTED_SET",
 		[]keySpec{
 			{
 				"index",
@@ -1035,8 +2079,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"MOVE": {
-		"GENERIC",
+	"ZREVRANGE": {
+		"SORTED_SET",
 		[]keySpec{
 			{
 				"index",
@@ -1053,21 +2097,142 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"OBJECT-FREQ": {
-		"GENERIC",
+	"ZREVRANGEBYLEX": {
+		"SORTED_SET",
 		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZREVRANGEBYSCORE": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZREVRANK": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZSCAN": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZSCORE": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"ZUNION": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"ZUNIONSTORE": {
+		"SORTED_SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
 			{
 				"index",
 				2,
 				"",
 				0,
-				"range",
+				"keynum",
+				0,
+				0,
+				0,
 				0,
 				1,
-				0,
-				0,
-				0,
-				0,
+				1,
 			},
 		},
 	},
@@ -1102,7 +2267,25 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"PERSIST": {
+	"DEL": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"DUMP": {
 		"GENERIC",
 		[]keySpec{
 			{
@@ -1120,12 +2303,30 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"OBJECT-REFCOUNT": {
+	"EXISTS": {
 		"GENERIC",
 		[]keySpec{
 			{
 				"index",
-				2,
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"EXPIRE": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				1,
 				"",
 				0,
 				"range",
@@ -1138,12 +2339,12 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"OBJECT-IDLETIME": {
+	"EXPIREAT": {
 		"GENERIC",
 		[]keySpec{
 			{
 				"index",
-				2,
+				1,
 				"",
 				0,
 				"range",
@@ -1174,15 +2375,11 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"OBJECT": {
-		"GENERIC",
-		[]keySpec{},
-	},
 	"KEYS": {
 		"GENERIC",
 		[]keySpec{},
 	},
-	"DEL": {
+	"MOVE": {
 		"GENERIC",
 		[]keySpec{
 			{
@@ -1191,7 +2388,123 @@ var redisCommands = map[string]redisCommand{
 				"",
 				0,
 				"range",
-				-1,
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"OBJECT-ENCODING": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"OBJECT-FREQ": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"OBJECT-HELP": {
+		"GENERIC",
+		[]keySpec{},
+	},
+	"OBJECT-IDLETIME": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"OBJECT-REFCOUNT": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"OBJECT": {
+		"GENERIC",
+		[]keySpec{},
+	},
+	"PERSIST": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"PEXPIRE": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
 				1,
 				0,
 				0,
@@ -1218,11 +2531,25 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"OBJECT-HELP": {
-		"GENERIC",
-		[]keySpec{},
-	},
 	"PEXPIRETIME": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"PTTL": {
 		"GENERIC",
 		[]keySpec{
 			{
@@ -1306,7 +2633,7 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"PEXPIRE": {
+	"RESTORE": {
 		"GENERIC",
 		[]keySpec{
 			{
@@ -1328,6 +2655,42 @@ var redisCommands = map[string]redisCommand{
 		"GENERIC",
 		[]keySpec{},
 	},
+	"TOUCH": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"TTL": {
+		"GENERIC",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
 	"TYPE": {
 		"GENERIC",
 		[]keySpec{
@@ -1346,25 +2709,7 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"OBJECT-ENCODING": {
-		"GENERIC",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"EXISTS": {
+	"UNLINK": {
 		"GENERIC",
 		[]keySpec{
 			{
@@ -1382,134 +2727,28 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"EXPIRE": {
+	"WAIT": {
 		"GENERIC",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
+		[]keySpec{},
 	},
-	"EXPIREAT": {
-		"GENERIC",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
+	"DISCARD": {
+		"TRANSACTIONS",
+		[]keySpec{},
 	},
-	"MSETNX": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				2,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
+	"EXEC": {
+		"TRANSACTIONS",
+		[]keySpec{},
 	},
-	"GETEX": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
+	"MULTI": {
+		"TRANSACTIONS",
+		[]keySpec{},
 	},
-	"GET": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
+	"UNWATCH": {
+		"TRANSACTIONS",
+		[]keySpec{},
 	},
-	"INCRBYFLOAT": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"MSET": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				2,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"MGET": {
-		"STRING",
+	"WATCH": {
+		"TRANSACTIONS",
 		[]keySpec{
 			{
 				"index",
@@ -1526,483 +2765,12 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"SET": {
-		"STRING",
+	"EVAL": {
+		"SCRIPTING",
 		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SUBSTR": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"DECRBY": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"INCRBY": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SETEX": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"GETRANGE": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"DECR": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"STRLEN": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"INCR": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"PSETEX": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"GETSET": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SETRANGE": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"LCS": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"APPEND": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SETNX": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"GETDEL": {
-		"STRING",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SDIFFSTORE": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
 			{
 				"index",
 				2,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SSCAN": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SINTERSTORE": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SCARD": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SINTER": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SUNIONSTORE": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SUNION": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SPOP": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SINTERCARD": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
 				"",
 				0,
 				"keynum",
@@ -2015,135 +2783,172 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"SMISMEMBER": {
-		"SET",
+	"EVAL_RO": {
+		"SCRIPTING",
 		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SMEMBERS": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SADD": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SDIFF": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SREM": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SISMEMBER": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SMOVE": {
-		"SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
 			{
 				"index",
 				2,
 				"",
 				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"EVALSHA": {
+		"SCRIPTING",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"EVALSHA_RO": {
+		"SCRIPTING",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"FCALL": {
+		"SCRIPTING",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"FCALL_RO": {
+		"SCRIPTING",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"FUNCTION-DELETE": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"FUNCTION-DUMP": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"FUNCTION-FLUSH": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"FUNCTION-HELP": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"FUNCTION-KILL": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"FUNCTION-LIST": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"FUNCTION-LOAD": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"FUNCTION-RESTORE": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"FUNCTION-STATS": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"FUNCTION": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"SCRIPT-DEBUG": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"SCRIPT-EXISTS": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"SCRIPT-FLUSH": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"SCRIPT-HELP": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"SCRIPT-KILL": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"SCRIPT-LOAD": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"SCRIPT": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"EXHSET": {
+		"TAIRHASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
 				"range",
 				0,
 				1,
@@ -2154,8 +2959,98 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"SRANDMEMBER": {
-		"SET",
+	"EXSET": {
+		"TAIRSTRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"EXZADD": {
+		"TAIRZSET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GEOADD": {
+		"GEO",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GEODIST": {
+		"GEO",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GEOHASH": {
+		"GEO",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"GEOPOS": {
+		"GEO",
 		[]keySpec{
 			{
 				"index",
@@ -2216,97 +3111,12 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"GEOHASH": {
-		"GEO",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"GEODIST": {
-		"GEO",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
 	"GEORADIUS_RO": {
 		"GEO",
 		[]keySpec{
 			{
 				"index",
 				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"GEOADD": {
-		"GEO",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"GEOSEARCHSTORE": {
-		"GEO",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-			{
-				"index",
-				2,
 				"",
 				0,
 				"range",
@@ -2363,42 +3173,6 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"GEOSEARCH": {
-		"GEO",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"GEOPOS": {
-		"GEO",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
 	"GEORADIUSBYMEMBER_RO": {
 		"GEO",
 		[]keySpec{
@@ -2417,26 +3191,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"BZPOPMIN": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-2,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZPOPMAX": {
-		"SORTED_SET",
+	"GEOSEARCH": {
+		"GEO",
 		[]keySpec{
 			{
 				"index",
@@ -2453,26 +3209,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"ZREMRANGEBYSCORE": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZRANGESTORE": {
-		"SORTED_SET",
+	"GEOSEARCHSTORE": {
+		"GEO",
 		[]keySpec{
 			{
 				"index",
@@ -2502,39 +3240,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"ZINTERSTORE": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"ZREVRANGEBYSCORE": {
-		"SORTED_SET",
+	"HDEL": {
+		"HASH",
 		[]keySpec{
 			{
 				"index",
@@ -2550,1246 +3257,6 @@ var redisCommands = map[string]redisCommand{
 				0,
 			},
 		},
-	},
-	"BZPOPMAX": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-2,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZLEXCOUNT": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZREVRANK": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZPOPMIN": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZINCRBY": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZDIFFSTORE": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"ZUNIONSTORE": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"ZRANGE": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZRANGEBYSCORE": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZDIFF": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"ZSCORE": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZREMRANGEBYLEX": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZREVRANGE": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZREVRANGEBYLEX": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZMPOP": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"ZRANK": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZMSCORE": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"BZMPOP": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"ZCOUNT": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZSCAN": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZUNION": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"ZRANDMEMBER": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZINTER": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"ZADD": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZREMRANGEBYRANK": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZINTERCARD": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"ZRANGEBYLEX": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZREM": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"ZCARD": {
-		"SORTED_SET",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"SENTINEL-MASTER": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-SIMULATE-FAILURE": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-FAILOVER": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-REPLICAS": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-MASTERS": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-MYID": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-PENDING-SCRIPTS": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-DEBUG": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-INFO-CACHE": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-REMOVE": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-IS-MASTER-DOWN-BY-ADDR": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-FLUSHCONFIG": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-GET-MASTER-ADDR-BY-NAME": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-CONFIG": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-SENTINELS": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-CKQUORUM": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-MONITOR": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-SLAVES": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-RESET": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-HELP": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"SENTINEL-SET": {
-		"SENTINEL",
-		[]keySpec{},
-	},
-	"FUNCTION-FLUSH": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"FUNCTION-LIST": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"FUNCTION": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"SCRIPT": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"EVALSHA_RO": {
-		"SCRIPTING",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"FUNCTION-DELETE": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"FUNCTION-STATS": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"FUNCTION-RESTORE": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"FUNCTION-LOAD": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"FUNCTION-HELP": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"SCRIPT-KILL": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"SCRIPT-FLUSH": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"EVAL_RO": {
-		"SCRIPTING",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"FUNCTION-KILL": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"EVALSHA": {
-		"SCRIPTING",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"FCALL": {
-		"SCRIPTING",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"SCRIPT-LOAD": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"SCRIPT-HELP": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"FUNCTION-DUMP": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"SCRIPT-DEBUG": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"SCRIPT-EXISTS": {
-		"SCRIPTING",
-		[]keySpec{},
-	},
-	"EVAL": {
-		"SCRIPTING",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"FCALL_RO": {
-		"SCRIPTING",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"keynum",
-				0,
-				0,
-				0,
-				0,
-				1,
-				1,
-			},
-		},
-	},
-	"XGROUP-HELP": {
-		"STREAM",
-		[]keySpec{},
-	},
-	"XCLAIM": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XINFO-GROUPS": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XREADGROUP": {
-		"STREAM",
-		[]keySpec{
-			{
-				"keyword",
-				0,
-				"STREAMS",
-				4,
-				"range",
-				-1,
-				1,
-				2,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XINFO-CONSUMERS": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XGROUP-DELCONSUMER": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XACK": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XREAD": {
-		"STREAM",
-		[]keySpec{
-			{
-				"keyword",
-				0,
-				"STREAMS",
-				1,
-				"range",
-				-1,
-				1,
-				2,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XLEN": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XTRIM": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XREVRANGE": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XGROUP": {
-		"STREAM",
-		[]keySpec{},
-	},
-	"XINFO": {
-		"STREAM",
-		[]keySpec{},
-	},
-	"XGROUP-CREATE": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XDEL": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XAUTOCLAIM": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XINFO-HELP": {
-		"STREAM",
-		[]keySpec{},
-	},
-	"XGROUP-DESTROY": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XADD": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XSETID": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XPENDING": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XGROUP-SETID": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XINFO-STREAM": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XGROUP-CREATECONSUMER": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"XRANGE": {
-		"STREAM",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"DISCARD": {
-		"TRANSACTIONS",
-		[]keySpec{},
-	},
-	"EXEC": {
-		"TRANSACTIONS",
-		[]keySpec{},
-	},
-	"MULTI": {
-		"TRANSACTIONS",
-		[]keySpec{},
-	},
-	"WATCH": {
-		"TRANSACTIONS",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"UNWATCH": {
-		"TRANSACTIONS",
-		[]keySpec{},
 	},
 	"HEXISTS": {
 		"HASH",
@@ -3809,7 +3276,97 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"HVALS": {
+	"HGET": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HGETALL": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HINCRBY": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HINCRBYFLOAT": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HKEYS": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HLEN": {
 		"HASH",
 		[]keySpec{
 			{
@@ -3863,187 +3420,7 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"HINCRBYFLOAT": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HDEL": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HGETALL": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HSTRLEN": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HKEYS": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
 	"HRANDFIELD": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HLEN": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HGET": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HSETNX": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HSET": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HINCRBY": {
 		"HASH",
 		[]keySpec{
 			{
@@ -4079,8 +3456,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"BITCOUNT": {
-		"BITMAP",
+	"HSET": {
+		"HASH",
 		[]keySpec{
 			{
 				"index",
@@ -4097,8 +3474,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"SETBIT": {
-		"BITMAP",
+	"HSETNX": {
+		"HASH",
 		[]keySpec{
 			{
 				"index",
@@ -4115,39 +3492,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"BITOP": {
-		"BITMAP",
-		[]keySpec{
-			{
-				"index",
-				2,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-			{
-				"index",
-				3,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"GETBIT": {
-		"BITMAP",
+	"HSTRLEN": {
+		"HASH",
 		[]keySpec{
 			{
 				"index",
@@ -4164,8 +3510,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"BITFIELD_RO": {
-		"BITMAP",
+	"HVALS": {
+		"HASH",
 		[]keySpec{
 			{
 				"index",
@@ -4182,8 +3528,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"BITFIELD": {
-		"BITMAP",
+	"PFADD": {
+		"HYPERLOGLOG",
 		[]keySpec{
 			{
 				"index",
@@ -4199,222 +3545,6 @@ var redisCommands = map[string]redisCommand{
 				0,
 			},
 		},
-	},
-	"BITPOS": {
-		"BITMAP",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"PUBSUB-NUMSUB": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"PUBSUB": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"PUNSUBSCRIBE": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"SPUBLISH": {
-		"PUBSUB",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"PUBSUB-SHARDNUMSUB": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"PUBSUB-SHARDCHANNELS": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"SUBSCRIBE": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"PUBSUB-HELP": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"PUBLISH": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"PUBSUB-NUMPAT": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"UNSUBSCRIBE": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"PSUBSCRIBE": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"SSUBSCRIBE": {
-		"PUBSUB",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"PUBSUB-CHANNELS": {
-		"PUBSUB",
-		[]keySpec{},
-	},
-	"SUNSUBSCRIBE": {
-		"PUBSUB",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				-1,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"CLIENT-UNBLOCK": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"ECHO": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-ID": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-SETNAME": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-LIST": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-INFO": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-GETNAME": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-HELP": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-TRACKINGINFO": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-NO-EVICT": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-PAUSE": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-REPLY": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"HELLO": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"QUIT": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-KILL": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-CACHING": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-GETREDIR": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"AUTH": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"PING": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-UNPAUSE": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"RESET": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"CLIENT-TRACKING": {
-		"CONNECTION",
-		[]keySpec{},
-	},
-	"SELECT": {
-		"CONNECTION",
-		[]keySpec{},
 	},
 	"PFCOUNT": {
 		"HYPERLOGLOG",
@@ -4426,6 +3556,24 @@ var redisCommands = map[string]redisCommand{
 				0,
 				"range",
 				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"PFDEBUG": {
+		"HYPERLOGLOG",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
 				1,
 				0,
 				0,
@@ -4465,8 +3613,52 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"PFADD": {
+	"PFSELFTEST": {
 		"HYPERLOGLOG",
+		[]keySpec{},
+	},
+	"PSUBSCRIBE": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"PUBLISH": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"PUBSUB-CHANNELS": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"PUBSUB-HELP": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"PUBSUB-NUMPAT": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"PUBSUB-NUMSUB": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"PUBSUB-SHARDCHANNELS": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"PUBSUB-SHARDNUMSUB": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"PUBSUB": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"PUNSUBSCRIBE": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"SPUBLISH": {
+		"PUBSUB",
 		[]keySpec{
 			{
 				"index",
@@ -4483,12 +3675,588 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"PFSELFTEST": {
-		"HYPERLOGLOG",
+	"SSUBSCRIBE": {
+		"PUBSUB",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SUBSCRIBE": {
+		"PUBSUB",
 		[]keySpec{},
 	},
-	"PFDEBUG": {
-		"HYPERLOGLOG",
+	"SUNSUBSCRIBE": {
+		"PUBSUB",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"UNSUBSCRIBE": {
+		"PUBSUB",
+		[]keySpec{},
+	},
+	"SADD": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SCARD": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SDIFF": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SDIFFSTORE": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SINTER": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SINTERCARD": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				1,
+			},
+		},
+	},
+	"SINTERSTORE": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SISMEMBER": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SMEMBERS": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SMISMEMBER": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SMOVE": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SPOP": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SRANDMEMBER": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SREM": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SSCAN": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SUNION": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SUNIONSTORE": {
+		"SET",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				-1,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"SENTINEL-CKQUORUM": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-CONFIG": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-DEBUG": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-FAILOVER": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-FLUSHCONFIG": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-GET-MASTER-ADDR-BY-NAME": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-HELP": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-INFO-CACHE": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-IS-MASTER-DOWN-BY-ADDR": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-MASTER": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-MASTERS": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-MONITOR": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-MYID": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-PENDING-SCRIPTS": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-REMOVE": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-REPLICAS": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-RESET": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-SENTINELS": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-SET": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-SIMULATE-FAILURE": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-SLAVES": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"XACK": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XADD": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XAUTOCLAIM": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XCLAIM": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XDEL": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XGROUP-CREATE": {
+		"STREAM",
 		[]keySpec{
 			{
 				"index",
@@ -4505,8 +4273,150 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"EXHSET": {
-		"TAIRHASH",
+	"XGROUP-CREATECONSUMER": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XGROUP-DELCONSUMER": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XGROUP-DESTROY": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XGROUP-HELP": {
+		"STREAM",
+		[]keySpec{},
+	},
+	"XGROUP-SETID": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XGROUP": {
+		"STREAM",
+		[]keySpec{},
+	},
+	"XINFO-CONSUMERS": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XINFO-GROUPS": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XINFO-HELP": {
+		"STREAM",
+		[]keySpec{},
+	},
+	"XINFO-STREAM": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				2,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XINFO": {
+		"STREAM",
+		[]keySpec{},
+	},
+	"XLEN": {
+		"STREAM",
 		[]keySpec{
 			{
 				"index",
@@ -4523,8 +4433,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"EXSET": {
-		"TAIRSTRING",
+	"XPENDING": {
+		"STREAM",
 		[]keySpec{
 			{
 				"index",
@@ -4541,8 +4451,8 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
-	"EXZADD": {
-		"TAIRZSET",
+	"XRANGE": {
+		"STREAM",
 		[]keySpec{
 			{
 				"index",
@@ -4559,6 +4469,97 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
+	"XREAD": {
+		"STREAM",
+		[]keySpec{
+			{
+				"keyword",
+				0,
+				"STREAMS",
+				1,
+				"range",
+				-1,
+				1,
+				2,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XREADGROUP": {
+		"STREAM",
+		[]keySpec{
+			{
+				"keyword",
+				0,
+				"STREAMS",
+				4,
+				"range",
+				-1,
+				1,
+				2,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XREVRANGE": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XSETID": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XTRIM": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+
 	"BF.ADD": {
 		"BLOOM FILTER",
 		[]keySpec{

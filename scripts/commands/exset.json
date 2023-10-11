@@ -3,7 +3,6 @@
         "summary": "TairString, Set the value of a key",
         "complexity": "O(1)",
         "group": "TairString",
-        "container": "TairString",
         "function": "exsetCommand",
         "key_specs": [
             {
