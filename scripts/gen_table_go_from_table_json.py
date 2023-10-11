@@ -51,6 +51,188 @@ for group, cmds in j["table"].items():
             fp.write('},\n')
         fp.write('},\n')
         fp.write('},\n')
+fp.write("""
+	"BF.ADD": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BF.CARD": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BF.EXISTS": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BF.INFO": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BF.INSERT": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BF.LOADCHUNK": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BF.MADD": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BF.MEXISTS": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BF.RESERVE": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"BF.SCANDUMP": {
+		"BLOOM FILTER",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+""")
 fp.write('}\n')
 fp.close()
 os.system("go fmt table.go")

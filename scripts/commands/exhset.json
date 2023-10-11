@@ -3,7 +3,6 @@
         "summary": "TairHash, Insert a field into the TairHash specified by the key",
         "complexity": "O(1)",
         "group": "TairHash",
-        "container": "TairHash",
         "function": "exhsetCommand",
         "key_specs": [
             {
