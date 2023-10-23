@@ -22,6 +22,7 @@ type ScanReaderOptions struct {
 	Password string `mapstructure:"password" default:""`
 	Tls      bool   `mapstructure:"tls" default:"false"`
 	KSN      bool   `mapstructure:"ksn" default:"false"`
+	DBS      []int  `mapstructure:"dbs"`
 }
 
 type dbKey struct {
@@ -52,7 +53,11 @@ func NewScanStandaloneReader(opts *ScanReaderOptions) Reader {
 	if c.IsCluster() { // not use opts.Cluster, because user may use standalone mode to scan a cluster node
 		r.dbs = []int{0}
 	} else {
-		r.dbs = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+		if len(opts.DBS) == 0 {
+			r.dbs = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+		} else {
+			r.dbs = opts.DBS
+		}
 	}
 	r.opts = opts
 	r.ch = make(chan *entry.Entry, 1024)
@@ -99,7 +104,7 @@ func (r *scanStandaloneReader) subscript() {
 
 func (r *scanStandaloneReader) scan() {
 	c := client.NewRedisClient(r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
-	for dbId := range r.dbs {
+	for _, dbId := range r.dbs {
 		if dbId != 0 {
 			reply := c.DoWithStringReply("SELECT", strconv.Itoa(dbId))
 			if reply != "OK" {
