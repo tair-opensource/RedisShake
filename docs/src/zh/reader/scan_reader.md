@@ -36,7 +36,7 @@ dbs = []                   # set you want to scan dbs, if you don't want to scan
 * `tls`：源端是否开启 TLS/SSL，不需要配置证书因为 RedisShake 没有校验服务器证书
 * `ksn`：开启 `ksn` 参数后 RedisShake 会在 `SCAN` 之前使用 [Redis keyspace notifications](https://redis.io/docs/manual/keyspace-notifications/)
 能力来订阅 Key 的变化。当 Key 发生变化时，RedisShake 会使用 `DUMP` 与 `RESTORE` 命令来从源端读取 Key 的内容，并写入目标端。
-* `dbs`: 源端为非集群模式时，支持指定DB库
+* `dbs`：源端为非集群模式时，支持指定DB库
 
 ::: warning
 Redis keyspace notifications 不会感知到 `FLUSHALL` 与 `FLUSHDB` 命令，因此在使用 `ksn` 参数时，需要确保源端数据库不会执行这两个命令。
