@@ -7,8 +7,6 @@ import pybbt
 BASE_PATH = f"{Path(__file__).parent.parent.parent.absolute()}"  # project path
 PATH_REDIS_SHAKE = f"{BASE_PATH}/bin/redis-shake"
 PATH_REDIS_SERVER = shutil.which('redis-server')
-
-# REDIS_SERVER_VERSION
 output = subprocess.check_output(f"{PATH_REDIS_SERVER} --version", shell=True)
 output_str = output.decode("utf-8")
 REDIS_SERVER_VERSION = float(output_str.split("=")[1].split(" ")[0][:3])

@@ -22,6 +22,10 @@ sync_aof = true # set to false if you don't want to sync aof
 # [rdb_reader]
 # filepath = "/tmp/dump.rdb"
 
+# [aof_reader]
+# filepath = "/tmp/.aof"
+# timestamp = 0              # subsecond
+
 [redis_writer]
 cluster = false            # set to true if target is a redis cluster
 address = "127.0.0.1:6380" # when cluster is true, set address to one of the cluster node
