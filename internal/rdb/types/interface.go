@@ -45,6 +45,8 @@ const (
 	rdbTypeZSetListpack     = 17 // RDB_TYPE_ZSET_LISTPACK
 	rdbTypeListQuicklist2   = 18 // RDB_TYPE_LIST_QUICKLIST_2 https://github.com/redis/redis/pull/9357
 	rdbTypeStreamListpacks2 = 19 // RDB_TYPE_STREAM_LISTPACKS2
+	rdbTypeSetListpack      = 20 // RDB_TYPE_SET_LISTPACK
+	rdbTypeStreamListpacks3 = 21 // RDB_TYPE_STREAM_LISTPACKS_3
 
 	moduleTypeNameCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
@@ -74,7 +76,7 @@ func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
 		o := new(ListObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
-	case rdbTypeSet, rdbTypeSetIntset: // set
+	case rdbTypeSet, rdbTypeSetIntset, rdbTypeSetListpack: // set
 		o := new(SetObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
@@ -86,7 +88,7 @@ func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
 		o := new(HashObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
-	case rdbTypeStreamListpacks, rdbTypeStreamListpacks2: // stream
+	case rdbTypeStreamListpacks, rdbTypeStreamListpacks2, rdbTypeStreamListpacks3: // stream
 		o := new(StreamObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
@@ -94,7 +96,7 @@ func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
 		o := PareseModuleType(rd, key, typeByte)
 		return o
 	}
-	log.Panicf("unknown type byte: %d", typeByte)
+	log.Panicf("unknown rdb value type byte. key=[%s], type=[%d]", key, typeByte)
 	return nil
 }
 

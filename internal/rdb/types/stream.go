@@ -51,6 +51,8 @@ func (o *StreamObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 		o.readStream(rd, key, typeByte)
 	case rdbTypeStreamListpacks2:
 		o.readStream(rd, key, typeByte)
+	case rdbTypeStreamListpacks3:
+		o.readStream(rd, key, typeByte)
 	default:
 		log.Panicf("unknown hash type. typeByte=[%d]", typeByte)
 	}
@@ -204,6 +206,10 @@ func (o *StreamObject) readStream(rd io.Reader, masterKey string, typeByte byte)
 
 			/* Load lastSeenTime */
 			_ = structure.ReadUint64(rd)
+
+			if typeByte >= rdbTypeStreamListpacks3 {
+				_ = structure.ReadUint64(rd) // consumer->active_time = rdbLoadMillisecondTime(rdb,RDB_VERSION);
+			}
 
 			/* Consumer PEL */
 			nPEL := int(structure.ReadLength(rd))

@@ -18,6 +18,8 @@ func (o *SetObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 		o.readSet(rd)
 	case rdbTypeSetIntset:
 		o.elements = structure.ReadIntset(rd)
+	case rdbTypeSetListpack:
+		o.elements = structure.ReadListpack(rd)
 	default:
 		log.Panicf("unknown set type. typeByte=[%d]", typeByte)
 	}
