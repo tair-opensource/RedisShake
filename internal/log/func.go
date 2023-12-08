@@ -1,7 +1,9 @@
 package log
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/go-stack/stack"
 )
@@ -20,9 +22,17 @@ func Warnf(format string, args ...interface{}) {
 
 func Panicf(format string, args ...interface{}) {
 	frames := stack.Trace().TrimRuntime()
+	errMsg := fmt.Sprintf(format, args...)
 	for _, frame := range frames {
-		logger.Warn().Msgf("%+v -> %n()", frame, frame)
+		frameStr := fmt.Sprintf("%+v", frame)
+		if strings.HasPrefix(frameStr, "redis-shake/main.go") {
+			frameStr = "RedisShake/cmd/" + frameStr
+		}
+		if strings.HasPrefix(frameStr, "RedisShake/internal/log/func") {
+			continue
+		}
+		errMsg += fmt.Sprintf("\n\t\t\t%v -> %n()", frameStr, frame)
 	}
-	logger.Error().Msgf(format, args...)
+	logger.Error().Msgf(errMsg)
 	os.Exit(1)
 }

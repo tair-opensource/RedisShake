@@ -28,13 +28,11 @@ func Init(level string, file string, dir string) {
 	if err != nil {
 		panic(fmt.Sprintf("failed to determine current directory: %v", err))
 	}
-	err = os.RemoveAll(dir)
-	if err != nil {
-		panic(fmt.Sprintf("remove dir failed. dir=[%s], error=[%v]", dir, err))
-	}
-	err = os.MkdirAll(dir, 0777)
-	if err != nil {
-		panic(fmt.Sprintf("mkdir failed. dir=[%s], error=[%v]", dir, err))
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0777)
+		if err != nil {
+			panic(fmt.Sprintf("mkdir failed. dir=[%s], error=[%v]", dir, err))
+		}
 	}
 	path := filepath.Join(dir, file)
 

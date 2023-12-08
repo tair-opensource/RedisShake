@@ -5,16 +5,15 @@ go 1.20
 require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-stack/stack v1.8.1
+	github.com/gofrs/flock v0.8.1
 	github.com/mcuadros/go-defaults v1.2.0
 	github.com/rs/zerolog v1.28.0
 	github.com/spf13/viper v1.15.0
-	github.com/theckman/go-flock v0.8.1
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64
 )
 
 require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
