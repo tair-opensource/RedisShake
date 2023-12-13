@@ -98,6 +98,10 @@ func main() {
 	// create status
 	status.Init(theReader, theWriter)
 
+	if config.Opt.Advanced.EmptyDBBeforeSync {
+		theWriter.Flush()
+	}
+
 	log.Infof("start syncing...")
 
 	ch := theReader.StartRead()
