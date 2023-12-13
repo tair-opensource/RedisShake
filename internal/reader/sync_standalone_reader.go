@@ -23,13 +23,14 @@ import (
 )
 
 type SyncReaderOptions struct {
-	Cluster  bool   `mapstructure:"cluster" default:"false"`
-	Address  string `mapstructure:"address" default:""`
-	Username string `mapstructure:"username" default:""`
-	Password string `mapstructure:"password" default:""`
-	Tls      bool   `mapstructure:"tls" default:"false"`
-	SyncRdb  bool   `mapstructure:"sync_rdb" default:"true"`
-	SyncAof  bool   `mapstructure:"sync_aof" default:"true"`
+	Cluster       bool   `mapstructure:"cluster" default:"false"`
+	Address       string `mapstructure:"address" default:""`
+	Username      string `mapstructure:"username" default:""`
+	Password      string `mapstructure:"password" default:""`
+	Tls           bool   `mapstructure:"tls" default:"false"`
+	SyncRdb       bool   `mapstructure:"sync_rdb" default:"true"`
+	SyncAof       bool   `mapstructure:"sync_aof" default:"true"`
+	PerferReplica bool   `mapstructure:"perfer_replica" default:"true"`
 }
 
 type State string

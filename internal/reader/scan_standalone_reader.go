@@ -18,13 +18,14 @@ import (
 )
 
 type ScanReaderOptions struct {
-	Cluster  bool   `mapstructure:"cluster" default:"false"`
-	Address  string `mapstructure:"address" default:""`
-	Username string `mapstructure:"username" default:""`
-	Password string `mapstructure:"password" default:""`
-	Tls      bool   `mapstructure:"tls" default:"false"`
-	KSN      bool   `mapstructure:"ksn" default:"false"`
-	DBS      []int  `mapstructure:"dbs"`
+	Cluster       bool   `mapstructure:"cluster" default:"false"`
+	Address       string `mapstructure:"address" default:""`
+	Username      string `mapstructure:"username" default:""`
+	Password      string `mapstructure:"password" default:""`
+	Tls           bool   `mapstructure:"tls" default:"false"`
+	KSN           bool   `mapstructure:"ksn" default:"false"`
+	DBS           []int  `mapstructure:"dbs"`
+	PerferReplica bool   `mapstructure:"perfer_replica" default:"true"`
 }
 
 type dbKey struct {
