@@ -23,23 +23,23 @@ func NewAOFReader(name string, dir string, offset int64) *AOFReader {
 	r := new(AOFReader)
 	r.name = name
 	r.dir = dir
-	r.openFile(offset)
+	r.offset = offset
+	r.openFile()
 	return r
 }
 
-func (r *AOFReader) openFile(offset int64) {
+func (r *AOFReader) openFile() {
 	r.filepath = fmt.Sprintf("%s/%d.aof", r.dir, r.offset)
 	var err error
 	r.file, err = os.OpenFile(r.filepath, os.O_RDONLY, 0644)
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	r.offset = offset
 	r.pos = 0
 	log.Debugf("[%s] open file for read. filename=[%s]", r.name, r.filepath)
 }
 
-func (r *AOFReader) readNextFile(offset int64) {
+func (r *AOFReader) readNextFile() {
 	filepath := fmt.Sprintf("%s/%d.aof", r.dir, r.offset)
 	if utils.IsExist(filepath) {
 		r.Close()
@@ -47,7 +47,7 @@ func (r *AOFReader) readNextFile(offset int64) {
 		if err != nil {
 			return
 		}
-		r.openFile(offset)
+		r.openFile()
 	}
 }
 
@@ -55,7 +55,7 @@ func (r *AOFReader) Read(buf []byte) (n int, err error) {
 	n, err = r.file.Read(buf)
 	for err == io.EOF {
 		if r.filepath != fmt.Sprintf("%s/%d.aof", r.dir, r.offset) {
-			r.readNextFile(r.offset)
+			r.readNextFile()
 		}
 		time.Sleep(time.Millisecond * 10)
 		_, err = r.file.Seek(0, 1)

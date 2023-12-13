@@ -23,18 +23,18 @@ func NewAOFWriter(name string, dir string, offset int64) *AOFWriter {
 	w := new(AOFWriter)
 	w.name = name
 	w.dir = dir
-	w.openFile(offset)
+	w.offset = offset
+	w.openFile()
 	return w
 }
 
-func (w *AOFWriter) openFile(offset int64) {
+func (w *AOFWriter) openFile() {
 	w.filepath = fmt.Sprintf("%s/%d.aof", w.dir, w.offset)
 	var err error
 	w.file, err = os.OpenFile(w.filepath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	w.offset = offset
 	w.filesize = 0
 	log.Debugf("[%s] open file for write. filename=[%s]", w.name, w.filepath)
 }
@@ -48,7 +48,7 @@ func (w *AOFWriter) Write(buf []byte) {
 	w.filesize += int64(len(buf))
 	if w.filesize > MaxFileSize {
 		w.Close()
-		w.openFile(w.offset)
+		w.openFile()
 	}
 	err = w.file.Sync()
 	if err != nil {

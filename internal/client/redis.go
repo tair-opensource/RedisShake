@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"RedisShake/internal/client/proto"
@@ -17,6 +18,8 @@ type Redis struct {
 	writer      *bufio.Writer
 	protoReader *proto.Reader
 	protoWriter *proto.Writer
+
+	ReplId string
 }
 
 func NewRedisClient(address string, username string, password string, Tls bool) *Redis {
@@ -52,6 +55,21 @@ func NewRedisClient(address string, username string, password string, Tls bool) 
 			log.Panicf("auth failed with reply: %s", reply)
 		}
 	}
+
+	// replId
+	r.ReplId = func() string {
+		reply := r.DoWithStringReply("info", "replication")
+		replyIdField := "master_replid"
+		idx1 := strings.Index(reply, replyIdField)
+		if idx1 < 0 {
+			log.Panicf("can not found replid with reply: %s", reply)
+		}
+		idx2 := strings.IndexByte(reply[idx1:], '\r')
+		if idx2 < 0 {
+			log.Panicf("can not found replid with reply: %s", reply)
+		}
+		return reply[idx1 + len(replyIdField) + 1 : idx1 + idx2]
+	}()
 
 	// ping to test connection
 	reply := r.DoWithStringReply("ping")

@@ -1,10 +1,11 @@
 package reader
 
 import (
-	"context"
 	"bufio"
+	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -82,11 +83,11 @@ func NewSyncStandaloneReader(opts *SyncReaderOptions) Reader {
 	r.opts = opts
 	r.client = client.NewRedisClient(opts.Address, opts.Username, opts.Password, opts.Tls)
 	r.rd = r.client.BufioReader()
-	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
+	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1) + "_" + r.client.ReplId
 	r.stat.Address = opts.Address
 	r.stat.Status = kHandShake
 	r.stat.Dir = utils.GetAbsPath(r.stat.Name)
-	utils.CreateEmptyDir(r.stat.Dir)
+	r.stat.AofReceivedOffset = readLastReplOffset(r.stat.Dir)
 	return r
 }
 
@@ -95,20 +96,26 @@ func (r *syncStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry 
 	r.ch = make(chan *entry.Entry, 1024)
 	go func() {
 		r.sendReplconfListenPort()
-		r.sendPSync()
+		fullReSync := r.sendPSync()
 		go r.sendReplconfAck() // start sent replconf ack
-		rdbFilePath := r.receiveRDB()
-		startOffset := r.stat.AofReceivedOffset
-		go r.receiveAOF(r.rd)
-		if r.opts.SyncRdb {
+		if fullReSync {
+			// empty out of date file before full sync
+			utils.CreateEmptyDir(r.stat.Dir)
+			rdbFilePath := r.receiveRDB()
 			r.sendRDB(rdbFilePath)
 		}
+
+		// create aof file first
+		aofWriter := rotate.NewAOFWriter(r.stat.Name, r.stat.Dir, r.stat.AofReceivedOffset)
+		go r.receiveAOF(r.rd, aofWriter)
 		if r.opts.SyncAof {
 			r.stat.Status = kSyncAof
-			r.sendAOF(startOffset)
+			r.sendAOF(r.stat.AofReceivedOffset)
 		}
-		close(r.ch)
 		r.client.Close()
+		aofWriter.Close()
+		// must be closed last so that other resources can be released
+		close(r.ch)
 	}()
 
 	return r.ch
@@ -124,9 +131,15 @@ func (r *syncStandaloneReader) sendReplconfListenPort() {
 	}
 }
 
-func (r *syncStandaloneReader) sendPSync() {
+// the return indicate whether full sync
+func (r *syncStandaloneReader) sendPSync() bool {
 	// send PSync
-	argv := []string{"PSYNC", "?", "-1"}
+	var argv []string
+	if r.opts.SyncRdb || r.stat.AofReceivedOffset <= 0 {
+		argv = []string{"PSYNC", "?", "-1"}
+	} else {
+		argv = []string{"PSYNC", r.client.ReplId, strconv.FormatInt(r.stat.AofReceivedOffset, 10)}
+	}
 	if config.Opt.Advanced.AwsPSync != "" {
 		argv = []string{config.Opt.Advanced.GetPSyncCommand(r.stat.Address), "?", "-1"}
 	}
@@ -142,12 +155,27 @@ func (r *syncStandaloneReader) sendPSync() {
 			break
 		}
 	}
+
 	reply := r.client.ReceiveString()
+	if reply == "CONTINUE" {
+		log.Infof("increment sync start at last offset: %d", r.stat.AofReceivedOffset)
+		b, err := r.rd.ReadByte()
+		if err != nil {
+			log.Panicf(err.Error())
+		}
+		if b != '\n' {
+			log.Panicf("unexpected data:%s", string(b))
+		}
+		return false
+	}
+
+	// FULLRESYNC <replID> <offset>
 	masterOffset, err := strconv.Atoi(strings.Split(reply, " ")[2])
 	if err != nil {
 		log.Panicf(err.Error())
 	}
 	r.stat.AofReceivedOffset = int64(masterOffset)
+	return true
 }
 
 func (r *syncStandaloneReader) receiveRDB() string {
@@ -225,10 +253,8 @@ func (r *syncStandaloneReader) receiveRDB() string {
 	return rdbFilePath
 }
 
-func (r *syncStandaloneReader) receiveAOF(rd io.Reader) {
+func (r *syncStandaloneReader) receiveAOF(rd io.Reader, aofWriter *rotate.AOFWriter) {
 	log.Debugf("[%s] start receiving aof data, and save to file", r.stat.Name)
-	aofWriter := rotate.NewAOFWriter(r.stat.Name, r.stat.Dir, r.stat.AofReceivedOffset)
-	defer aofWriter.Close()
 	buf := make([]byte, 16*1024) // 16KB is enough for writing file
 	for {
 		select {
@@ -343,4 +369,33 @@ func (r *syncStandaloneReader) StatusConsistent() bool {
 	return r.stat.AofReceivedOffset != 0 &&
 		r.stat.AofReceivedOffset == r.stat.AofSentOffset &&
 		len(r.ch) == 0
+}
+
+func readLastReplOffset(dir string) int64 {
+	var offset int64 = 0
+	if !utils.IsExist(dir) {
+		return 0
+	}
+	if err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		ext := filepath.Ext(path)
+		if !info.IsDir() && (ext == ".aof") {
+			baseOffset, err := strconv.ParseInt(strings.TrimSuffix(info.Name(), ext), 10, 64)
+			if err != nil {
+				log.Warnf("illegal file name of aof: %s", info.Name())
+				return nil
+			}
+			if baseOffset + info.Size() > offset {
+				offset = baseOffset + info.Size()
+			}
+		}
+		return nil
+	}); err != nil {
+		log.Warnf("parse repl offset from aof file err: %s", err.Error())
+		return 0
+	}
+	log.Infof("read repl offset:%d for increment sync", offset)
+	return offset
 }
