@@ -9,6 +9,7 @@ password = ""              # keep empty if no authentication is required
 tls = false
 sync_rdb = true # set to false if you don't want to sync rdb
 sync_aof = true # set to false if you don't want to sync aof
+prefer_replica = true # set to true if you want to sync from replica node
 
 # [scan_reader]
 # cluster = false            # set to true if source is a redis cluster
@@ -18,6 +19,7 @@ sync_aof = true # set to false if you don't want to sync aof
 # ksn = false                # set to true to enabled Redis keyspace notifications (KSN) subscription
 # tls = false
 # dbs = []                   # set you want to scan dbs such as [1,5,7], if you don't want to scan all
+# prefer_replica = true      # set to true if you want to sync from replica node
 
 # [rdb_reader]
 # filepath = "/tmp/dump.rdb"

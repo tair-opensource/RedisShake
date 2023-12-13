@@ -9,18 +9,18 @@ import (
 	"RedisShake/internal/log"
 )
 
-func GetRedisClusterNodes(address string, username string, password string, Tls bool) (addresses []string, slots [][]int) {
+func GetRedisClusterNodes(address string, username string, password string, Tls bool, perferReplica bool) (addresses []string, slots [][]int) {
 	c := client.NewRedisClient(address, username, password, Tls)
 	reply := c.DoWithStringReply("cluster", "nodes")
 	reply = strings.TrimSpace(reply)
 	slotsCount := 0
 	log.Infof("address=%v, reply=%v", address, reply)
+	masters := make(map[string]string)
+	replicas := make(map[string][]string)
 	for _, line := range strings.Split(reply, "\n") {
 		line = strings.TrimSpace(line)
 		words := strings.Split(line, " ")
-		if !strings.Contains(words[2], "master") {
-			continue
-		}
+		isMaster := strings.Contains(words[2], "master")
 		if len(words) < 8 {
 			log.Panicf("invalid cluster nodes line: %s", line)
 		}
@@ -36,11 +36,22 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 			ipv6Addr := strings.Join(tok[:len(tok)-1], ":")
 			address = fmt.Sprintf("[%s]:%s", ipv6Addr, port)
 		}
-		if len(words) < 9 {
+		if isMaster && len(words) < 9 {
 			log.Warnf("the current master node does not hold any slots. address=[%v]", address)
 			continue
 		}
-		addresses = append(addresses, address)
+
+		nodeId := words[0]
+		if isMaster {
+			masters[nodeId] = address
+		} else {
+			if strings.Contains(words[2], "fail") || strings.Contains(words[2], "noaddr") {
+				continue
+			}
+			masterId := words[3]
+			replicas[masterId] = append(replicas[masterId], address)
+			continue
+		}
 
 		// parse slots
 		slot := make([]int, 0)
@@ -81,5 +92,20 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 	if slotsCount != 16384 {
 		log.Panicf("invalid cluster nodes slots. slots_count=%v, address=%v", slotsCount, address)
 	}
+
+	if perferReplica && len(replicas) > 0 {
+		for masterId, replicaAddr := range replicas {
+			if len(replicaAddr) > 0 {
+				addresses = append(addresses, replicaAddr[0])
+			} else {
+				addresses = append(addresses, masters[masterId])
+			}
+		}
+	} else {
+		for _, v := range masters {
+			addresses = append(addresses, v)
+		}
+	}
+
 	return addresses, slots
 }

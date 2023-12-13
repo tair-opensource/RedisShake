@@ -30,7 +30,7 @@ func (r *RedisClusterWriter) Close() {
 }
 
 func (r *RedisClusterWriter) loadClusterNodes(opts *RedisWriterOptions) {
-	addresses, slots := utils.GetRedisClusterNodes(opts.Address, opts.Username, opts.Password, opts.Tls)
+	addresses, slots := utils.GetRedisClusterNodes(opts.Address, opts.Username, opts.Password, opts.Tls, false)
 	r.addresses = addresses
 	for i, address := range addresses {
 		theOpts := *opts
