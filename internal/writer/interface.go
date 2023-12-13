@@ -8,5 +8,6 @@ import (
 type Writer interface {
 	status.Statusable
 	Write(entry *entry.Entry)
+	Flush()
 	Close()
 }

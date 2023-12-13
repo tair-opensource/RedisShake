@@ -37,6 +37,8 @@ type AdvancedOptions struct {
 	TargetRedisProtoMaxBulkLen      uint64 `mapstructure:"target_redis_proto_max_bulk_len" default:"512000000"`
 
 	AwsPSync string `mapstructure:"aws_psync" default:""` // 10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync
+
+	EmptyDBBeforeSync bool `mapstructure:"empty_db_before_sync" default:"false"`
 }
 
 type ModuleOptions struct {

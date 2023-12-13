@@ -69,6 +69,12 @@ target_redis_proto_max_bulk_len = 512_000_000
 # If the source is Elasticache or MemoryDB, you can set this item.
 aws_psync = "" # example: aws_psync = "10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync"
 
+# destination will delete itself entire database before fetching files
+# from source during full synchronization.
+# This option is similar redis replicas RDB diskless load option:
+#   repl-diskless-load on-empty-db
+empty_db_before_sync = false
+
 [module]
 # The data format for BF.LOADCHUNK is not compatible in different versions. v2.6.3 <=> 20603
 target_mbbloom_version = 20603

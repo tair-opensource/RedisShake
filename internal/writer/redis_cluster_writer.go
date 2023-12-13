@@ -23,6 +23,12 @@ func NewRedisClusterWriter(opts *RedisWriterOptions) Writer {
 	return rw
 }
 
+func (r *RedisClusterWriter) Flush() {
+	for _, writer := range r.writers {
+		writer.Flush()
+	}
+}
+
 func (r *RedisClusterWriter) Close() {
 	for _, writer := range r.writers {
 		writer.Close()
