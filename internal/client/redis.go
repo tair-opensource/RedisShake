@@ -12,6 +12,7 @@ import (
 )
 
 type Redis struct {
+	conn        net.Conn
 	reader      *bufio.Reader
 	writer      *bufio.Writer
 	protoReader *proto.Reader
@@ -33,6 +34,7 @@ func NewRedisClient(address string, username string, password string, Tls bool) 
 		log.Panicf("dial failed. address=[%s], tls=[%v], err=[%v]", address, Tls, err)
 	}
 
+	r.conn = conn
 	r.reader = bufio.NewReader(conn)
 	r.writer = bufio.NewWriter(conn)
 	r.protoReader = proto.NewReader(r.reader)
@@ -127,6 +129,12 @@ func (r *Redis) BufioReader() *bufio.Reader {
 func (r *Redis) SetBufioReader(rd *bufio.Reader) {
 	r.reader = rd
 	r.protoReader = proto.NewReader(r.reader)
+}
+
+func (r *Redis) Close() {
+	if err := r.conn.Close(); err != nil {
+		log.Infof("close redis conn err: %s\n", err.Error())
+	}
 }
 
 /* Commands */

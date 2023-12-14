@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+	"context"
 	_ "net/http/pprof"
 
 	"RedisShake/internal/config"
@@ -107,7 +111,10 @@ func main() {
 
 	log.Infof("start syncing...")
 
-	ch := theReader.StartRead()
+	ctx, cancel := context.WithCancel(context.Background())
+	ch := theReader.StartRead(ctx)
+	go waitShutdown(cancel)
+
 	for e := range ch {
 		// calc arguments
 		e.Parse()
@@ -128,4 +135,12 @@ func main() {
 	theWriter.Close()       // Wait for all writing operations to complete
 	utils.ReleaseFileLock() // Release file lock
 	log.Infof("all done")
+}
+
+func waitShutdown(cancel context.CancelFunc) {
+	quitCh := make(chan os.Signal, 1)
+	signal.Notify(quitCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	sig := <-quitCh
+	log.Infof("Got signal: %s to exit.", sig)
+	cancel()
 }

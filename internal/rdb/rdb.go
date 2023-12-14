@@ -3,6 +3,7 @@ package rdb
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/binary"
 	"io"
 	"os"
@@ -60,7 +61,7 @@ func NewLoader(name string, updateFunc func(int64), filPath string, ch chan *ent
 
 // ParseRDB parse rdb file
 // return repl stream db id
-func (ld *Loader) ParseRDB() int {
+func (ld *Loader) ParseRDB(ctx context.Context) int {
 	var err error
 	ld.fp, err = os.OpenFile(ld.filPath, os.O_RDONLY, 0666)
 	if err != nil {
@@ -89,12 +90,12 @@ func (ld *Loader) ParseRDB() int {
 	log.Debugf("[%s] RDB version: %d", ld.name, version)
 
 	// read entries
-	ld.parseRDBEntry(rd)
+	ld.parseRDBEntry(ctx, rd)
 
 	return ld.replStreamDbId
 }
 
-func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
+func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 	// for stat
 	updateProcessSize := func() {
 		if ld.updateFunc == nil {
@@ -198,6 +199,8 @@ func (ld *Loader) parseRDBEntry(rd *bufio.Reader) {
 		select {
 		case <-tick:
 			updateProcessSize()
+		case <- ctx.Done():
+			return
 		default:
 		}
 	}

@@ -2,6 +2,7 @@ package aof
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"os"
 	"strconv"
@@ -51,7 +52,7 @@ func ReadCompleteLine(reader *bufio.Reader) ([]byte, error) {
 	return line, err
 }
 
-func (ld *Loader) LoadSingleAppendOnlyFile(timestamp int64) int {
+func (ld *Loader) LoadSingleAppendOnlyFile(ctx context.Context, timestamp int64) int {
 	ret := OK
 	filePath := ld.filePath
 	fp, err := os.Open(filePath)
@@ -80,12 +81,14 @@ func (ld *Loader) LoadSingleAppendOnlyFile(timestamp int64) int {
 	}
 	reader := bufio.NewReader(fp)
 	for {
-
-		line, err := ReadCompleteLine(reader)
-		{
+		select {
+		case <-ctx.Done():
+			return ret
+		default:
+			line, err := ReadCompleteLine(reader)
 			if err != nil {
 				if err == io.EOF {
-					break
+					return ret
 				} else {
 					log.Infof("Unrecoverable error reading the append only File %v: %v", filePath, err)
 					ret = Failed
@@ -152,9 +155,6 @@ func (ld *Loader) LoadSingleAppendOnlyFile(timestamp int64) int {
 				e.Argv = append(e.Argv, value)
 			}
 			ld.ch <- e
-
 		}
-
 	}
-	return ret
 }

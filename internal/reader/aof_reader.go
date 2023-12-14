@@ -1,10 +1,10 @@
 package reader
 
 import (
+	"context"
 	"path/filepath"
 
 	"RedisShake/internal/aof"
-
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 	"RedisShake/internal/utils"
@@ -66,7 +66,7 @@ func NewAOFReader(opts *AOFReaderOptions) Reader {
 	return r
 }
 
-func (r *aofReader) StartRead() chan *entry.Entry {
+func (r *aofReader) StartRead(ctx context.Context) chan *entry.Entry {
 	//init entry
 	r.ch = make(chan *entry.Entry, 1024)
 
@@ -79,7 +79,7 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 		if manifestInfo == nil { // load single aof file
 			log.Infof("start send single AOF path=[%s]", r.path)
 			aofLoader := aof.NewLoader(r.path, r.ch)
-			ret := aofLoader.LoadSingleAppendOnlyFile(r.stat.AOFTimestamp)
+			ret := aofLoader.LoadSingleAppendOnlyFile(ctx, r.stat.AOFTimestamp)
 			if ret == AOFOk || ret == AOFTruncated {
 				log.Infof("The AOF File was successfully loaded")
 			} else {
@@ -89,7 +89,7 @@ func (r *aofReader) StartRead() chan *entry.Entry {
 			close(r.ch)
 		} else {
 			aofLoader := NewAOFFileInfo(r.path, r.ch)
-			ret := aofLoader.LoadAppendOnlyFile(manifestInfo, r.stat.AOFTimestamp)
+			ret := aofLoader.LoadAppendOnlyFile(ctx, manifestInfo, r.stat.AOFTimestamp)
 			if ret == AOFOk || ret == AOFTruncated {
 				log.Infof("The AOF File was successfully loaded")
 			} else {
