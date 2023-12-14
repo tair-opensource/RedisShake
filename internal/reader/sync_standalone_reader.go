@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"context"
 	"bufio"
 	"fmt"
 	"io"
@@ -16,7 +17,7 @@ import (
 	"RedisShake/internal/log"
 	"RedisShake/internal/rdb"
 	"RedisShake/internal/utils"
-	"RedisShake/internal/utils/file_rotate"
+	rotate "RedisShake/internal/utils/file_rotate"
 
 	"github.com/dustin/go-humanize"
 )
@@ -42,6 +43,7 @@ const (
 )
 
 type syncStandaloneReader struct {
+	ctx    context.Context
 	opts   *SyncReaderOptions
 	client *client.Redis
 
@@ -87,7 +89,8 @@ func NewSyncStandaloneReader(opts *SyncReaderOptions) Reader {
 	return r
 }
 
-func (r *syncStandaloneReader) StartRead() chan *entry.Entry {
+func (r *syncStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry {
+	r.ctx = ctx
 	r.ch = make(chan *entry.Entry, 1024)
 	go func() {
 		r.sendReplconfListenPort()
@@ -104,6 +107,7 @@ func (r *syncStandaloneReader) StartRead() chan *entry.Entry {
 			r.sendAOF(startOffset)
 		}
 		close(r.ch)
+		r.client.Close()
 	}()
 
 	return r.ch
@@ -226,14 +230,19 @@ func (r *syncStandaloneReader) receiveAOF(rd io.Reader) {
 	defer aofWriter.Close()
 	buf := make([]byte, 16*1024) // 16KB is enough for writing file
 	for {
-		n, err := rd.Read(buf)
-		if err != nil {
-			log.Panicf(err.Error())
+		select {
+		case <-r.ctx.Done():
+			return
+		default:
+			n, err := rd.Read(buf)
+			if err != nil {
+				log.Panicf(err.Error())
+			}
+			r.stat.AofReceivedBytes += int64(n)
+			r.stat.AofReceivedHuman = humanize.IBytes(uint64(r.stat.AofReceivedBytes))
+			aofWriter.Write(buf[:n])
+			r.stat.AofReceivedOffset += int64(n)
 		}
-		r.stat.AofReceivedBytes += int64(n)
-		r.stat.AofReceivedHuman = humanize.IBytes(uint64(r.stat.AofReceivedBytes))
-		aofWriter.Write(buf[:n])
-		r.stat.AofReceivedOffset += int64(n)
 	}
 }
 
@@ -246,7 +255,7 @@ func (r *syncStandaloneReader) sendRDB(rdbFilePath string) {
 		r.stat.RdbSentHuman = humanize.IBytes(uint64(offset))
 	}
 	rdbLoader := rdb.NewLoader(r.stat.Name, updateFunc, rdbFilePath, r.ch)
-	r.DbId = rdbLoader.ParseRDB()
+	r.DbId = rdbLoader.ParseRDB(r.ctx)
 	log.Debugf("[%s] send RDB finished", r.stat.Name)
 	// delete file
 	_ = os.Remove(rdbFilePath)
@@ -259,46 +268,56 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 	defer aofReader.Close()
 	r.client.SetBufioReader(bufio.NewReader(aofReader))
 	for {
-		argv := client.ArrayString(r.client.Receive())
-		r.stat.AofSentOffset = aofReader.Offset()
-		// select
-		if strings.EqualFold(argv[0], "select") {
-			DbId, err := strconv.Atoi(argv[1])
-			if err != nil {
-				log.Panicf(err.Error())
+		select {
+		case <-r.ctx.Done():
+			return
+		default:
+			argv := client.ArrayString(r.client.Receive())
+			r.stat.AofSentOffset = aofReader.Offset()
+			// select
+			if strings.EqualFold(argv[0], "select") {
+				DbId, err := strconv.Atoi(argv[1])
+				if err != nil {
+					log.Panicf(err.Error())
+				}
+				r.DbId = DbId
+				continue
 			}
-			r.DbId = DbId
-			continue
-		}
-		// ping
-		if strings.EqualFold(argv[0], "ping") {
-			continue
-		}
-		// replconf @AWS
-		if strings.EqualFold(argv[0], "replconf") {
-			continue
-		}
-		// opinfo @Aliyun
-		if strings.EqualFold(argv[0], "opinfo") {
-			continue
-		}
-		// sentinel
-		if strings.EqualFold(argv[0], "publish") && strings.EqualFold(argv[1], "__sentinel__:hello") {
-			continue
-		}
+			// ping
+			if strings.EqualFold(argv[0], "ping") {
+				continue
+			}
+			// replconf @AWS
+			if strings.EqualFold(argv[0], "replconf") {
+				continue
+			}
+			// opinfo @Aliyun
+			if strings.EqualFold(argv[0], "opinfo") {
+				continue
+			}
+			// sentinel
+			if strings.EqualFold(argv[0], "publish") && strings.EqualFold(argv[1], "__sentinel__:hello") {
+				continue
+			}
 
-		e := entry.NewEntry()
-		e.Argv = argv
-		e.DbId = r.DbId
-		r.ch <- e
+			e := entry.NewEntry()
+			e.Argv = argv
+			e.DbId = r.DbId
+			r.ch <- e
+		}
 	}
 }
 
 // sendReplconfAck send replconf ack to master to keep heartbeat between redis-shake and source redis.
 func (r *syncStandaloneReader) sendReplconfAck() {
 	for range time.Tick(time.Millisecond * 100) {
-		if r.stat.AofReceivedOffset != 0 {
-			r.client.Send("replconf", "ack", strconv.FormatInt(r.stat.AofReceivedOffset, 10))
+		select {
+		case <-r.ctx.Done():
+			return
+		default:
+			if r.stat.AofReceivedOffset != 0 {
+				r.client.Send("replconf", "ack", strconv.FormatInt(r.stat.AofReceivedOffset, 10))
+			}
 		}
 	}
 }

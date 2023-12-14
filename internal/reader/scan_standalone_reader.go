@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"context"
 	"fmt"
 	"math/bits"
 	"regexp"
@@ -32,6 +33,7 @@ type dbKey struct {
 }
 
 type scanStandaloneReader struct {
+	ctx      context.Context
 	dbs      []int
 	opts     *ScanReaderOptions
 	ch       chan *entry.Entry
@@ -67,7 +69,8 @@ func NewScanStandaloneReader(opts *ScanReaderOptions) Reader {
 	return r
 }
 
-func (r *scanStandaloneReader) StartRead() chan *entry.Entry {
+func (r *scanStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry {
+	r.ctx = ctx
 	r.subscript()
 	go r.scan()
 	go r.fetch()
@@ -88,23 +91,30 @@ func (r *scanStandaloneReader) subscript() {
 		}
 		regex := regexp.MustCompile(`\d+`)
 		for {
-			resp, err := c.Receive()
-			if err != nil {
-				log.Panicf(err.Error())
+			select {
+			case <-r.ctx.Done():
+				close(r.keyQueue.Ch)
+				return
+			default:
+				resp, err := c.Receive()
+				if err != nil {
+					log.Panicf(err.Error())
+				}
+				key := resp.([]interface{})[3].(string)
+				dbId := regex.FindString(resp.([]interface{})[2].(string))
+				dbIdInt, err := strconv.Atoi(dbId)
+				if err != nil {
+					log.Panicf(err.Error())
+				}
+				r.keyQueue.Put(dbKey{db: dbIdInt, key: key})
 			}
-			key := resp.([]interface{})[3].(string)
-			dbId := regex.FindString(resp.([]interface{})[2].(string))
-			dbIdInt, err := strconv.Atoi(dbId)
-			if err != nil {
-				log.Panicf(err.Error())
-			}
-			r.keyQueue.Put(dbKey{db: dbIdInt, key: key})
 		}
 	}()
 }
 
 func (r *scanStandaloneReader) scan() {
 	c := client.NewRedisClient(r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
+	defer c.Close()
 	for _, dbId := range r.dbs {
 		if dbId != 0 {
 			reply := c.DoWithStringReply("SELECT", strconv.Itoa(dbId))
@@ -140,6 +150,7 @@ func (r *scanStandaloneReader) scan() {
 func (r *scanStandaloneReader) fetch() {
 	nowDbId := 0
 	c := client.NewRedisClient(r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
+	defer c.Close()
 	for item := range r.keyQueue.Ch {
 		r.stat.NeedUpdateCount = int64(r.keyQueue.Len())
 		dbId := item.(dbKey).db

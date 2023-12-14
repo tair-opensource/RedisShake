@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"container/list"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -555,7 +556,7 @@ func GetHistoryAndIncrAppendOnlyFilesNum(am *AOFManifest) int {
 	return num
 }
 
-func (aofInfo *INFO) LoadAppendOnlyFile(am *AOFManifest, AOFTimeStamp int64) int {
+func (aofInfo *INFO) LoadAppendOnlyFile(ctx context.Context, am *AOFManifest, AOFTimeStamp int64) int {
 	if am == nil {
 		log.Panicf("AOFManifest is null")
 	}
@@ -593,7 +594,7 @@ func (aofInfo *INFO) LoadAppendOnlyFile(am *AOFManifest, AOFTimeStamp int64) int
 			aofInfo.UpdateLoadingFileName(AOFName)
 			BaseSize = aofInfo.GetAppendOnlyFileSize(AOFName, nil)
 			start = Ustime()
-			ret = aofInfo.ParsingSingleAppendOnlyFile(AOFName, 0) //Currently, RDB files cannot be restored at a point in time.
+			ret = aofInfo.ParsingSingleAppendOnlyFile(ctx, AOFName, 0) //Currently, RDB files cannot be restored at a point in time.
 			if ret == AOFOk || (ret == AOFTruncated) {
 				log.Infof("DB loaded from Base File %v: %.3f seconds", AOFName, float64(Ustime()-start)/1000000)
 			}
@@ -627,7 +628,7 @@ func (aofInfo *INFO) LoadAppendOnlyFile(am *AOFManifest, AOFTimeStamp int64) int
 				aofInfo.UpdateLoadingFileName(AOFName)
 				AOFNum++
 				start = Ustime()
-				ret = aofInfo.ParsingSingleAppendOnlyFile(AOFName, AOFTimeStamp)
+				ret = aofInfo.ParsingSingleAppendOnlyFile(ctx, AOFName, AOFTimeStamp)
 				if ret == AOFOk || (ret == AOFTruncated) {
 					log.Infof("DB loaded from History File %v: %.3f seconds", AOFName, float64(Ustime()-start)/1000000)
 					return ret
@@ -659,7 +660,7 @@ func (aofInfo *INFO) LoadAppendOnlyFile(am *AOFManifest, AOFTimeStamp int64) int
 			aofInfo.UpdateLoadingFileName(AOFName)
 			AOFNum++
 			start = Ustime()
-			ret = aofInfo.ParsingSingleAppendOnlyFile(AOFName, AOFTimeStamp)
+			ret = aofInfo.ParsingSingleAppendOnlyFile(ctx, AOFName, AOFTimeStamp)
 			if ret == AOFOk || (ret == AOFTruncated) {
 				log.Infof("DB loaded from incr File %v: %.3f seconds", AOFName, float64(Ustime()-start)/1000000)
 				return ret
@@ -691,7 +692,7 @@ func (aofInfo *INFO) LoadAppendOnlyFile(am *AOFManifest, AOFTimeStamp int64) int
 
 }
 
-func (aofInfo *INFO) ParsingSingleAppendOnlyFile(FileName string, AOFTimeStamp int64) int {
+func (aofInfo *INFO) ParsingSingleAppendOnlyFile(ctx context.Context, FileName string, AOFTimeStamp int64) int {
 	ret := AOFOk
 	AOFFilepath := path.Join(aofInfo.AOFDirName, FileName)
 	println(AOFFilepath)
@@ -725,12 +726,12 @@ func (aofInfo *INFO) ParsingSingleAppendOnlyFile(FileName string, AOFTimeStamp i
 		log.Infof("Reading RDB Base File on AOF loading...")
 		rdbOpt := RdbReaderOptions{Filepath: AOFFilepath}
 		ldRDB := NewRDBReader(&rdbOpt)
-		ldRDB.StartRead()
+		ldRDB.StartRead(ctx)
 		return AOFOk
 	}
 	// load single aof file
 	aofSingleReader := aof.NewLoader(MakePath(aofInfo.AOFDirName, FileName), aofInfo.ch)
-	ret = aofSingleReader.LoadSingleAppendOnlyFile(AOFTimeStamp)
+	ret = aofSingleReader.LoadSingleAppendOnlyFile(ctx, AOFTimeStamp)
 	return ret
 
 }

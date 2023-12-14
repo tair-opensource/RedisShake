@@ -1,13 +1,13 @@
 package reader
 
 import (
+	"context"
 	"fmt"
 
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 	"RedisShake/internal/rdb"
 	"RedisShake/internal/utils"
-
 	"github.com/dustin/go-humanize"
 )
 
@@ -41,7 +41,7 @@ func NewRDBReader(opts *RdbReaderOptions) Reader {
 	return r
 }
 
-func (r *rdbReader) StartRead() chan *entry.Entry {
+func (r *rdbReader) StartRead(ctx context.Context) chan *entry.Entry {
 	log.Infof("[%s] start read", r.stat.Name)
 	r.ch = make(chan *entry.Entry, 1024)
 	updateFunc := func(offset int64) {
@@ -53,7 +53,7 @@ func (r *rdbReader) StartRead() chan *entry.Entry {
 	rdbLoader := rdb.NewLoader(r.stat.Name, updateFunc, r.stat.Filepath, r.ch)
 
 	go func() {
-		_ = rdbLoader.ParseRDB()
+		_ = rdbLoader.ParseRDB(ctx)
 		log.Infof("[%s] rdb file parse done", r.stat.Name)
 		close(r.ch)
 	}()

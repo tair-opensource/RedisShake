@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -29,14 +30,14 @@ func NewSyncClusterReader(opts *SyncReaderOptions) Reader {
 	return rd
 }
 
-func (rd *syncClusterReader) StartRead() chan *entry.Entry {
+func (rd *syncClusterReader) StartRead(ctx context.Context) chan *entry.Entry {
 	ch := make(chan *entry.Entry, 1024)
 	var wg sync.WaitGroup
 	for _, r := range rd.readers {
 		wg.Add(1)
 		go func(r Reader) {
 			defer wg.Done()
-			for e := range r.StartRead() {
+			for e := range r.StartRead(ctx) {
 				ch <- e
 			}
 		}(r)
