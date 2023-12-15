@@ -82,6 +82,9 @@ func main() {
 		if err != nil {
 			log.Panicf("failed to read the RedisStandaloneWriter config entry. err: %v", err)
 		}
+		if opts.OffReply && config.Opt.Advanced.RDBRestoreCommandBehavior == "panic" {
+			log.Panicf("the RDBRestoreCommandBehavior can't be 'panic' when the server not reply to commands")
+		}
 		if opts.Cluster {
 			theWriter = writer.NewRedisClusterWriter(opts)
 			log.Infof("create RedisClusterWriter: %v", opts.Address)

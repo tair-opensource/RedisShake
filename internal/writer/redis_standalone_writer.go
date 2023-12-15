@@ -20,6 +20,7 @@ type RedisWriterOptions struct {
 	Username string `mapstructure:"username" default:""`
 	Password string `mapstructure:"password" default:""`
 	Tls      bool   `mapstructure:"tls" default:"false"`
+	OffReply bool   `mapstructure:"off_reply" default:"false"`
 }
 
 type redisStandaloneWriter struct {
@@ -29,6 +30,7 @@ type redisStandaloneWriter struct {
 
 	chWaitReply chan *entry.Entry
 	chWg        sync.WaitGroup
+	offReply    bool
 
 	stat struct {
 		Name              string `json:"name"`
@@ -42,15 +44,23 @@ func NewRedisStandaloneWriter(opts *RedisWriterOptions) Writer {
 	rw.address = opts.Address
 	rw.stat.Name = "writer_" + strings.Replace(opts.Address, ":", "_", -1)
 	rw.client = client.NewRedisClient(opts.Address, opts.Username, opts.Password, opts.Tls)
-	rw.chWaitReply = make(chan *entry.Entry, config.Opt.Advanced.PipelineCountLimit)
-	rw.chWg.Add(1)
-	go rw.processReply()
+	if opts.OffReply {
+		log.Infof("turn off the reply of write")
+		rw.offReply = true
+		rw.client.Send("CLIENT", "REPLY", "OFF")
+	} else {
+		rw.chWaitReply = make(chan *entry.Entry, config.Opt.Advanced.PipelineCountLimit)
+		rw.chWg.Add(1)
+		go rw.processReply()
+	}
 	return rw
 }
 
 func (w *redisStandaloneWriter) Close() {
-	close(w.chWaitReply)
-	w.chWg.Wait()
+	if !w.offReply {
+		close(w.chWaitReply)
+		w.chWg.Wait()
+	}
 }
 
 func (w *redisStandaloneWriter) Write(e *entry.Entry) {
@@ -65,9 +75,11 @@ func (w *redisStandaloneWriter) Write(e *entry.Entry) {
 		time.Sleep(1 * time.Nanosecond)
 	}
 	log.Debugf("[%s] send cmd. cmd=[%s]", w.stat.Name, e.String())
-	w.chWaitReply <- e
-	atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
-	atomic.AddInt64(&w.stat.UnansweredEntries, 1)
+	if !w.offReply {
+		w.chWaitReply <- e
+		atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
+		atomic.AddInt64(&w.stat.UnansweredEntries, 1)
+	}
 	w.client.SendBytes(bytes)
 }
 
