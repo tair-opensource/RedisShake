@@ -1,6 +1,15 @@
 package reader
 
 import (
+	"bufio"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+
 	"RedisShake/internal/client"
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
@@ -8,15 +17,8 @@ import (
 	"RedisShake/internal/rdb"
 	"RedisShake/internal/utils"
 	"RedisShake/internal/utils/file_rotate"
-	"bufio"
-	"fmt"
+
 	"github.com/dustin/go-humanize"
-	"io"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type SyncReaderOptions struct {

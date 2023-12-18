@@ -1,8 +1,9 @@
 package log
 
 import (
-	"github.com/go-stack/stack"
 	"os"
+
+	"github.com/go-stack/stack"
 )
 
 func Debugf(format string, args ...interface{}) {

@@ -1,12 +1,13 @@
 package types
 
 import (
-	"RedisShake/internal/log"
-	"RedisShake/internal/rdb/structure"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"strconv"
+
+	"RedisShake/internal/log"
+	"RedisShake/internal/rdb/structure"
 )
 
 /*

@@ -1,6 +1,8 @@
 package main
 
 import (
+	_ "net/http/pprof"
+
 	"RedisShake/internal/config"
 	"RedisShake/internal/function"
 	"RedisShake/internal/log"
@@ -8,8 +10,8 @@ import (
 	"RedisShake/internal/status"
 	"RedisShake/internal/utils"
 	"RedisShake/internal/writer"
+
 	"github.com/mcuadros/go-defaults"
-	_ "net/http/pprof"
 )
 
 func main() {

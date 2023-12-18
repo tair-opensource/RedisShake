@@ -1,9 +1,6 @@
 package reader
 
 import (
-	"RedisShake/internal/aof"
-	"RedisShake/internal/entry"
-	"RedisShake/internal/log"
 	"bufio"
 	"bytes"
 	"container/list"
@@ -16,6 +13,10 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"RedisShake/internal/aof"
+	"RedisShake/internal/entry"
+	"RedisShake/internal/log"
 )
 
 const (

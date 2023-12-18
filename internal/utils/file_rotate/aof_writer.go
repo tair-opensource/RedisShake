@@ -1,9 +1,10 @@
 package rotate
 
 import (
-	"RedisShake/internal/log"
 	"fmt"
 	"os"
+
+	"RedisShake/internal/log"
 )
 
 const MaxFileSize = 1024 * 1024 * 1024 // 1G

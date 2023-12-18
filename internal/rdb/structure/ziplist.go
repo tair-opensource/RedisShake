@@ -1,12 +1,13 @@
 package structure
 
 import (
-	"RedisShake/internal/log"
 	"bufio"
 	"encoding/binary"
 	"io"
 	"strconv"
 	"strings"
+
+	"RedisShake/internal/log"
 )
 
 const (

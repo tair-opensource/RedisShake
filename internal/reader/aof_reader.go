@@ -1,8 +1,9 @@
 package reader
 
 import (
-	"RedisShake/internal/aof"
 	"path/filepath"
+
+	"RedisShake/internal/aof"
 
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"

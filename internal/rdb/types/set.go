@@ -1,9 +1,10 @@
 package types
 
 import (
+	"io"
+
 	"RedisShake/internal/log"
 	"RedisShake/internal/rdb/structure"
-	"io"
 )
 
 type SetObject struct {

@@ -1,11 +1,12 @@
 package structure
 
 import (
-	"RedisShake/internal/log"
 	"encoding/binary"
 	"io"
 	"math"
 	"strconv"
+
+	"RedisShake/internal/log"
 )
 
 func ReadFloat(rd io.Reader) float64 {

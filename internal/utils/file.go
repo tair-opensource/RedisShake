@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"RedisShake/internal/log"
 	"os"
 	"path/filepath"
+
+	"RedisShake/internal/log"
 )
 
 func CreateEmptyDir(dir string) {

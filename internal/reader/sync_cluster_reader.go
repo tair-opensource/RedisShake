@@ -1,11 +1,12 @@
 package reader
 
 import (
+	"fmt"
+	"sync"
+
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 	"RedisShake/internal/utils"
-	"fmt"
-	"sync"
 )
 
 type syncClusterReader struct {

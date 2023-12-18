@@ -1,13 +1,14 @@
 package client
 
 import (
-	"RedisShake/internal/client/proto"
-	"RedisShake/internal/log"
 	"bufio"
 	"crypto/tls"
 	"net"
 	"strconv"
 	"time"
+
+	"RedisShake/internal/client/proto"
+	"RedisShake/internal/log"
 )
 
 type Redis struct {

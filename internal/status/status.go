@@ -1,9 +1,10 @@
 package status
 
 import (
+	"time"
+
 	"RedisShake/internal/config"
 	"RedisShake/internal/log"
-	"time"
 )
 
 type Statusable interface {

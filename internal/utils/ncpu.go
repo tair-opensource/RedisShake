@@ -1,9 +1,10 @@
 package utils
 
 import (
+	"runtime"
+
 	"RedisShake/internal/config"
 	"RedisShake/internal/log"
-	"runtime"
 )
 
 func SetNcpu() {

@@ -1,11 +1,12 @@
 package utils
 
 import (
-	"RedisShake/internal/client"
-	"RedisShake/internal/log"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"RedisShake/internal/client"
+	"RedisShake/internal/log"
 )
 
 func GetRedisClusterNodes(address string, username string, password string, Tls bool) (addresses []string, slots [][]int) {
