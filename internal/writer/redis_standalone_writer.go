@@ -1,17 +1,18 @@
 package writer
 
 import (
-	"RedisShake/internal/client"
-	"RedisShake/internal/client/proto"
-	"RedisShake/internal/config"
-	"RedisShake/internal/entry"
-	"RedisShake/internal/log"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"RedisShake/internal/client"
+	"RedisShake/internal/client/proto"
+	"RedisShake/internal/config"
+	"RedisShake/internal/entry"
+	"RedisShake/internal/log"
 )
 
 type RedisWriterOptions struct {

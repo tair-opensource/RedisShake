@@ -1,11 +1,13 @@
 package function
 
 import (
+	"strings"
+
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
+
 	lua "github.com/yuin/gopher-lua"
-	"strings"
 )
 
 var luaString string

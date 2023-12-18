@@ -1,10 +1,11 @@
 package types
 
 import (
-	"RedisShake/internal/log"
-	"RedisShake/internal/rdb/structure"
 	"fmt"
 	"io"
+
+	"RedisShake/internal/log"
+	"RedisShake/internal/rdb/structure"
 )
 
 type ZSetEntry struct {

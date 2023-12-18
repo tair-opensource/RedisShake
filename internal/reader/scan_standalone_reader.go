@@ -1,6 +1,12 @@
 package reader
 
 import (
+	"fmt"
+	"math/bits"
+	"regexp"
+	"strconv"
+	"strings"
+
 	"RedisShake/internal/client"
 	"RedisShake/internal/client/proto"
 	"RedisShake/internal/config"
@@ -8,11 +14,6 @@ import (
 	"RedisShake/internal/log"
 	"RedisShake/internal/rdb/types"
 	"RedisShake/internal/utils"
-	"fmt"
-	"math/bits"
-	"regexp"
-	"strconv"
-	"strings"
 )
 
 type ScanReaderOptions struct {

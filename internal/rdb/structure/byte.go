@@ -1,8 +1,9 @@
 package structure
 
 import (
-	"RedisShake/internal/log"
 	"io"
+
+	"RedisShake/internal/log"
 )
 
 func ReadByte(rd io.Reader) byte {

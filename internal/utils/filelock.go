@@ -1,11 +1,13 @@
 package utils
 
 import (
-	"RedisShake/internal/config"
-	"RedisShake/internal/log"
-	"github.com/theckman/go-flock"
 	"os"
 	"path/filepath"
+
+	"RedisShake/internal/config"
+	"RedisShake/internal/log"
+
+	"github.com/theckman/go-flock"
 )
 
 var filelock *flock.Flock

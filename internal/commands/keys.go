@@ -1,12 +1,13 @@
 package commands
 
 import (
-	"RedisShake/internal/log"
-	"RedisShake/internal/utils"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
+
+	"RedisShake/internal/log"
+	"RedisShake/internal/utils"
 )
 
 // CalcKeys https://redis.io/docs/reference/key-specs/

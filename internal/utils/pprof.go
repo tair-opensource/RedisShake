@@ -1,10 +1,11 @@
 package utils
 
 import (
-	"RedisShake/internal/config"
-	"RedisShake/internal/log"
 	"fmt"
 	"net/http"
+
+	"RedisShake/internal/config"
+	"RedisShake/internal/log"
 )
 
 func SetPprofPort() {

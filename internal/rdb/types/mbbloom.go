@@ -1,11 +1,12 @@
 package types
 
 import (
-	"RedisShake/internal/config"
-	"RedisShake/internal/rdb/structure"
 	"io"
 	"strconv"
 	"unsafe"
+
+	"RedisShake/internal/config"
+	"RedisShake/internal/rdb/structure"
 )
 
 // BloomObject for MBbloom-- at https://github.com/RedisBloom/RedisBloom

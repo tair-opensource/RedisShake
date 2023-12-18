@@ -1,8 +1,9 @@
 package types
 
 import (
-	"RedisShake/internal/rdb/structure"
 	"io"
+
+	"RedisShake/internal/rdb/structure"
 )
 
 type StringObject struct {

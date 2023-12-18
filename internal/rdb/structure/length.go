@@ -1,10 +1,11 @@
 package structure
 
 import (
-	"RedisShake/internal/log"
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"RedisShake/internal/log"
 )
 
 const (

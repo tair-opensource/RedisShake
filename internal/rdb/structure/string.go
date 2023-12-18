@@ -1,9 +1,10 @@
 package structure
 
 import (
-	"RedisShake/internal/log"
 	"io"
 	"strconv"
+
+	"RedisShake/internal/log"
 )
 
 const (

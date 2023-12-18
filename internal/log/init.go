@@ -2,9 +2,10 @@ package log
 
 import (
 	"fmt"
-	"github.com/rs/zerolog"
 	"os"
 	"path/filepath"
+
+	"github.com/rs/zerolog"
 )
 
 var logger zerolog.Logger

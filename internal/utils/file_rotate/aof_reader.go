@@ -1,12 +1,13 @@
 package rotate
 
 import (
-	"RedisShake/internal/log"
-	"RedisShake/internal/utils"
 	"fmt"
 	"io"
 	"os"
 	"time"
+
+	"RedisShake/internal/log"
+	"RedisShake/internal/utils"
 )
 
 type AOFReader struct {

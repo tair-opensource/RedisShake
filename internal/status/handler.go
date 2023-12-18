@@ -1,12 +1,13 @@
 package status
 
 import (
-	"RedisShake/internal/config"
-	"RedisShake/internal/log"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
+
+	"RedisShake/internal/config"
+	"RedisShake/internal/log"
 )
 
 func Handler(w http.ResponseWriter, _ *http.Request) {

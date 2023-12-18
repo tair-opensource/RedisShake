@@ -1,8 +1,9 @@
 package types
 
 import (
-	"RedisShake/internal/log"
 	"io"
+
+	"RedisShake/internal/log"
 )
 
 const (
