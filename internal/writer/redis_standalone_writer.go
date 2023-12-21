@@ -38,6 +38,9 @@ type redisStandaloneWriter struct {
 		UnansweredBytes   int64  `json:"unanswered_bytes"`
 		UnansweredEntries int64  `json:"unanswered_entries"`
 	}
+
+	// the number of commands cached in the pipeline
+	bufCnt atomic.Uint32
 }
 
 func NewRedisStandaloneWriter(opts *RedisWriterOptions) Writer {
@@ -58,6 +61,9 @@ func NewRedisStandaloneWriter(opts *RedisWriterOptions) Writer {
 }
 
 func (w *redisStandaloneWriter) Close() {
+	if w.bufCnt.Load() > 0 {
+		w.client.Flush()
+	}
 	if !w.offReply {
 		close(w.chWaitReply)
 		w.chWg.Wait()
@@ -81,7 +87,13 @@ func (w *redisStandaloneWriter) Write(e *entry.Entry) {
 		atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
 		atomic.AddInt64(&w.stat.UnansweredEntries, 1)
 	}
-	w.client.SendBytes(bytes)
+
+	limit := config.Opt.Advanced.PipelineCountLimit
+	w.client.SendBytesToBuffer(bytes)
+	if w.bufCnt.Add(1) >= limit {
+		w.bufCnt.CompareAndSwap(limit, 0)
+		w.client.Flush()
+	}
 }
 
 func (w *redisStandaloneWriter) switchDbTo(newDbId int) {

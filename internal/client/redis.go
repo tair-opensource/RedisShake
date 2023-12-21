@@ -92,7 +92,18 @@ func (r *Redis) Send(args ...string) {
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	r.flush()
+	r.Flush()
+}
+
+func (r *Redis) SendToBuffer(args ...string) {
+	argsInterface := make([]interface{}, len(args))
+	for inx, item := range args {
+		argsInterface[inx] = item
+	}
+	err := r.protoWriter.WriteArgs(argsInterface)
+	if err != nil {
+		log.Panicf(err.Error())
+	}
 }
 
 func (r *Redis) SendBytes(buf []byte) {
@@ -100,10 +111,17 @@ func (r *Redis) SendBytes(buf []byte) {
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	r.flush()
+	r.Flush()
 }
 
-func (r *Redis) flush() {
+func (r *Redis) SendBytesToBuffer(buf []byte) {
+	_, err := r.writer.Write(buf)
+	if err != nil {
+		log.Panicf(err.Error())
+	}
+}
+
+func (r *Redis) Flush() {
 	err := r.writer.Flush()
 	if err != nil {
 		log.Panicf(err.Error())
