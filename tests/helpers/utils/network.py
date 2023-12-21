@@ -16,7 +16,7 @@ def is_port_available(port: int) -> bool:
 MIN_PORT = 20000
 MAX_PORT = 40000
 
-port_cursor = random.choice(range(MIN_PORT, MAX_PORT, 10))
+port_cursor = random.choice(range(MIN_PORT, MAX_PORT, 1000))
 
 g_lock = threading.Lock()
 
