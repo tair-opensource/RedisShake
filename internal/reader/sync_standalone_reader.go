@@ -59,7 +59,6 @@ type syncStandaloneReader struct {
 		Status State `json:"status"`
 
 		// rdb info
-		RdbFilePath      string `json:"rdb_file_path"`
 		RdbFileSizeBytes int64  `json:"rdb_file_size_bytes"` // bytes of the rdb file
 		RdbFileSizeHuman string `json:"rdb_file_size_human"`
 		RdbReceivedBytes int64  `json:"rdb_received_bytes"` // bytes of RDB received from master
@@ -94,11 +93,11 @@ func (r *syncStandaloneReader) StartRead() chan *entry.Entry {
 		r.sendReplconfListenPort()
 		r.sendPSync()
 		go r.sendReplconfAck() // start sent replconf ack
-		r.receiveRDB()
+		rdbFilePath := r.receiveRDB()
 		startOffset := r.stat.AofReceivedOffset
 		go r.receiveAOF(r.rd)
 		if r.opts.SyncRdb {
-			r.sendRDB()
+			r.sendRDB(rdbFilePath)
 		}
 		if r.opts.SyncAof {
 			r.stat.Status = kSyncAof
@@ -146,7 +145,7 @@ func (r *syncStandaloneReader) sendPSync() {
 	r.stat.AofReceivedOffset = int64(masterOffset)
 }
 
-func (r *syncStandaloneReader) receiveRDB() {
+func (r *syncStandaloneReader) receiveRDB() string {
 	log.Debugf("[%s] source db is doing bgsave.", r.stat.Name)
 	r.stat.Status = kWaitBgsave
 	timeStart := time.Now()
@@ -179,13 +178,13 @@ func (r *syncStandaloneReader) receiveRDB() {
 	r.stat.RdbFileSizeHuman = humanize.IBytes(uint64(length))
 
 	// create rdb file
-	r.stat.RdbFilePath, err = filepath.Abs(r.stat.Name + "/dump.rdb")
+	rdbFilePath, err := filepath.Abs(r.stat.Name + "/dump.rdb")
 	if err != nil {
 		log.Panicf(err.Error())
 	}
 	timeStart = time.Now()
-	log.Debugf("[%s] start receiving RDB. path=[%s]", r.stat.Name, r.stat.RdbFilePath)
-	rdbFileHandle, err := os.OpenFile(r.stat.RdbFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	log.Debugf("[%s] start receiving RDB. path=[%s]", r.stat.Name, rdbFilePath)
+	rdbFileHandle, err := os.OpenFile(rdbFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		log.Panicf(err.Error())
 	}
@@ -218,6 +217,7 @@ func (r *syncStandaloneReader) receiveRDB() {
 		log.Panicf(err.Error())
 	}
 	log.Debugf("[%s] save RDB finished. timeUsed=[%.2f]s", r.stat.Name, time.Since(timeStart).Seconds())
+	return rdbFilePath
 }
 
 func (r *syncStandaloneReader) receiveAOF(rd io.Reader) {
@@ -237,7 +237,7 @@ func (r *syncStandaloneReader) receiveAOF(rd io.Reader) {
 	}
 }
 
-func (r *syncStandaloneReader) sendRDB() {
+func (r *syncStandaloneReader) sendRDB(rdbFilePath string) {
 	// start parse rdb
 	log.Debugf("[%s] start sending RDB to target", r.stat.Name)
 	r.stat.Status = kSyncRdb
@@ -245,9 +245,12 @@ func (r *syncStandaloneReader) sendRDB() {
 		r.stat.RdbSentBytes = offset
 		r.stat.RdbSentHuman = humanize.IBytes(uint64(offset))
 	}
-	rdbLoader := rdb.NewLoader(r.stat.Name, updateFunc, r.stat.RdbFilePath, r.ch)
+	rdbLoader := rdb.NewLoader(r.stat.Name, updateFunc, rdbFilePath, r.ch)
 	r.DbId = rdbLoader.ParseRDB()
 	log.Debugf("[%s] send RDB finished", r.stat.Name)
+	// delete file
+	_ = os.Remove(rdbFilePath)
+	log.Debugf("[%s] delete RDB file", r.stat.Name)
 }
 
 func (r *syncStandaloneReader) sendAOF(offset int64) {

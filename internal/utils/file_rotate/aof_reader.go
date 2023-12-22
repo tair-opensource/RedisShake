@@ -85,5 +85,5 @@ func (r *AOFReader) Close() {
 		log.Panicf(err.Error())
 	}
 	r.file = nil
-	log.Infof("[%s] close file. filename=[%s]", r.name, r.filepath)
+	log.Debugf("[%s] close file. filename=[%s]", r.name, r.filepath)
 }
