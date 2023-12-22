@@ -75,8 +75,8 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 				slot = append(slot, j)
 				slotsCount++
 			}
-			slots = append(slots, slot)
 		}
+		slots = append(slots, slot)
 	}
 	if slotsCount != 16384 {
 		log.Panicf("invalid cluster nodes slots. slots_count=%v, address=%v", slotsCount, address)
