@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "net/http/pprof"
+	"sync"
 
 	"RedisShake/internal/config"
 	"RedisShake/internal/function"
@@ -102,28 +103,43 @@ func main() {
 	status.Init(theReader, theWriter)
 
 	if config.Opt.Advanced.EmptyDBBeforeSync {
+		log.Warnf("empty db before sync...")
 		theWriter.Flush()
 	}
 
 	log.Infof("start syncing...")
 
-	ch := theReader.StartRead()
-	for e := range ch {
-		// calc arguments
-		e.Parse()
-		status.AddReadCount(e.CmdName)
+	channels := theReader.StartRead()
+	wg := sync.WaitGroup{}
+	for _, ch := range channels {
+		ch := ch
+		wg.Add(1)
+		go func() {
+			for e := range ch {
+				// calc arguments
+				e.Parse()
+				status.AddReadCount(e.CmdName)
 
-		// filter
-		log.Debugf("function before: %v", e)
-		entries := function.RunFunction(e)
-		log.Debugf("function after: %v", entries)
+				// filter
+				if function.IsFunctionEnabled() {
+					log.Debugf("function before: %v", e)
+					entries := function.RunFunction(e)
+					log.Debugf("function after: %v", entries)
 
-		for _, entry := range entries {
-			entry.Parse()
-			theWriter.Write(entry)
-			status.AddWriteCount(entry.CmdName)
-		}
+					for _, entry := range entries {
+						entry.Parse()
+						theWriter.Write(entry)
+						status.AddWriteCount(entry.CmdName)
+					}
+				} else {
+					theWriter.Write(e)
+					status.AddWriteCount(e.CmdName)
+				}
+			}
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 
 	theWriter.Close()       // Wait for all writing operations to complete
 	utils.ReleaseFileLock() // Release file lock

@@ -41,7 +41,7 @@ func NewRDBReader(opts *RdbReaderOptions) Reader {
 	return r
 }
 
-func (r *rdbReader) StartRead() chan *entry.Entry {
+func (r *rdbReader) StartRead() []chan *entry.Entry {
 	log.Infof("[%s] start read", r.stat.Name)
 	r.ch = make(chan *entry.Entry, 1024)
 	updateFunc := func(offset int64) {
@@ -58,7 +58,7 @@ func (r *rdbReader) StartRead() chan *entry.Entry {
 		close(r.ch)
 	}()
 
-	return r.ch
+	return []chan *entry.Entry{r.ch}
 }
 
 func (r *rdbReader) Status() interface{} {

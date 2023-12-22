@@ -21,6 +21,10 @@ func Init() {
 	}
 }
 
+func IsFunctionEnabled() bool {
+	return len(luaString) != 0
+}
+
 // DB
 // GROUP
 // CMD

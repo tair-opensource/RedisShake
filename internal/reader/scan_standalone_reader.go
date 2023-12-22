@@ -67,11 +67,11 @@ func NewScanStandaloneReader(opts *ScanReaderOptions) Reader {
 	return r
 }
 
-func (r *scanStandaloneReader) StartRead() chan *entry.Entry {
+func (r *scanStandaloneReader) StartRead() []chan *entry.Entry {
 	r.subscript()
 	go r.scan()
 	go r.fetch()
-	return r.ch
+	return []chan *entry.Entry{r.ch}
 }
 
 func (r *scanStandaloneReader) subscript() {

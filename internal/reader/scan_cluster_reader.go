@@ -1,11 +1,9 @@
 package reader
 
 import (
-	"fmt"
-	"sync"
-
 	"RedisShake/internal/entry"
 	"RedisShake/internal/utils"
+	"fmt"
 )
 
 type scanClusterReader struct {
@@ -25,23 +23,12 @@ func NewScanClusterReader(opts *ScanReaderOptions) Reader {
 	return rd
 }
 
-func (rd *scanClusterReader) StartRead() chan *entry.Entry {
-	ch := make(chan *entry.Entry, 1024)
-	var wg sync.WaitGroup
+func (rd *scanClusterReader) StartRead() []chan *entry.Entry {
+	channels := make([]chan *entry.Entry, 0)
 	for _, r := range rd.readers {
-		wg.Add(1)
-		go func(r Reader) {
-			for e := range r.StartRead() {
-				ch <- e
-			}
-			wg.Done()
-		}(r)
+		channels = append(channels, r.StartRead()...)
 	}
-	go func() {
-		wg.Wait()
-		close(ch)
-	}()
-	return ch
+	return channels
 }
 
 func (rd *scanClusterReader) Status() interface{} {

@@ -7,5 +7,5 @@ import (
 
 type Reader interface {
 	status.Statusable
-	StartRead() chan *entry.Entry
+	StartRead() []chan *entry.Entry
 }
