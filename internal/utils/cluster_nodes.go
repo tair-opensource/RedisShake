@@ -46,6 +46,12 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 		slot := make([]int, 0)
 		for i := 8; i < len(words); i++ {
 			words[i] = strings.TrimSpace(words[i])
+			if strings.HasPrefix(words[i], "[") {
+				// issue: https://github.com/tair-opensource/RedisShake/issues/730
+				// [****] appear at the end of each line of "cluster nodes",
+				// indicating data migration between nodes is in progress.
+				break
+			}
 			var start, end int
 			var err error
 			if strings.Contains(words[i], "-") {
