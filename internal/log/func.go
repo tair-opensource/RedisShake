@@ -21,7 +21,7 @@ func Warnf(format string, args ...interface{}) {
 }
 
 func Panicf(format string, args ...interface{}) {
-	frames := stack.Trace().TrimRuntime()
+	frames := stack.Trace()
 	errMsg := fmt.Sprintf(format, args...)
 	for _, frame := range frames {
 		frameStr := fmt.Sprintf("%+v", frame)
