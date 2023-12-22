@@ -14,6 +14,7 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 	reply := c.DoWithStringReply("cluster", "nodes")
 	reply = strings.TrimSpace(reply)
 	slotsCount := 0
+	log.Infof("address=%v, reply=%v", address, reply)
 	for _, line := range strings.Split(reply, "\n") {
 		line = strings.TrimSpace(line)
 		words := strings.Split(line, " ")
@@ -23,7 +24,6 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 		if len(words) < 8 {
 			log.Panicf("invalid cluster nodes line: %s", line)
 		}
-		log.Infof("redisClusterWriter load cluster nodes. line=%v", line)
 
 		// address
 		address := strings.Split(words[1], "@")[0]
