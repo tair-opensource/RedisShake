@@ -87,7 +87,7 @@ func NewSyncStandaloneReader(opts *SyncReaderOptions) Reader {
 	return r
 }
 
-func (r *syncStandaloneReader) StartRead() chan *entry.Entry {
+func (r *syncStandaloneReader) StartRead() []chan *entry.Entry {
 	r.ch = make(chan *entry.Entry, 1024)
 	go func() {
 		r.sendReplconfListenPort()
@@ -106,7 +106,7 @@ func (r *syncStandaloneReader) StartRead() chan *entry.Entry {
 		close(r.ch)
 	}()
 
-	return r.ch
+	return []chan *entry.Entry{r.ch}
 }
 
 func (r *syncStandaloneReader) sendReplconfListenPort() {

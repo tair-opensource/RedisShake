@@ -29,6 +29,7 @@ type redisStandaloneWriter struct {
 	client  *client.Redis
 	DbId    int
 
+	chWaitSend  chan *entry.Entry
 	chWaitReply chan *entry.Entry
 	chWg        sync.WaitGroup
 	offReply    bool
@@ -54,6 +55,9 @@ func NewRedisStandaloneWriter(opts *RedisWriterOptions) Writer {
 		rw.chWg.Add(1)
 		go rw.processReply()
 	}
+	rw.chWaitSend = make(chan *entry.Entry, 1024)
+	rw.chWg.Add(1)
+	go rw.doWrite()
 	return rw
 }
 
@@ -65,30 +69,36 @@ func (w *redisStandaloneWriter) Flush() {
 }
 
 func (w *redisStandaloneWriter) Close() {
-	if !w.offReply {
-		close(w.chWaitReply)
-		w.chWg.Wait()
-	}
+	close(w.chWaitSend)
+	close(w.chWaitReply)
+	w.chWg.Wait()
 }
 
 func (w *redisStandaloneWriter) Write(e *entry.Entry) {
-	// switch db if we need
-	if w.DbId != e.DbId {
-		w.switchDbTo(e.DbId)
-	}
+	w.chWaitSend <- e
+}
 
-	// send
-	bytes := e.Serialize()
-	for e.SerializedSize+atomic.LoadInt64(&w.stat.UnansweredBytes) > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen {
-		time.Sleep(1 * time.Nanosecond)
+func (w *redisStandaloneWriter) doWrite() {
+	for e := range w.chWaitSend {
+		// switch db if we need
+		if w.DbId != e.DbId {
+			w.switchDbTo(e.DbId)
+		}
+
+		// send
+		bytes := e.Serialize()
+		for e.SerializedSize+atomic.LoadInt64(&w.stat.UnansweredBytes) > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen {
+			time.Sleep(1 * time.Nanosecond)
+		}
+		log.Debugf("[%s] send cmd. cmd=[%s]", w.stat.Name, e.String())
+		if !w.offReply {
+			w.chWaitReply <- e
+			atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
+			atomic.AddInt64(&w.stat.UnansweredEntries, 1)
+		}
+		w.client.SendBytes(bytes)
 	}
-	log.Debugf("[%s] send cmd. cmd=[%s]", w.stat.Name, e.String())
-	if !w.offReply {
-		w.chWaitReply <- e
-		atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
-		atomic.AddInt64(&w.stat.UnansweredEntries, 1)
-	}
-	w.client.SendBytes(bytes)
+	w.chWg.Done()
 }
 
 func (w *redisStandaloneWriter) switchDbTo(newDbId int) {
