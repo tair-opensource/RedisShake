@@ -12,24 +12,24 @@ import (
 )
 
 const (
-	AOFNotExist  = 1
-	AOFOpenErr   = 3
-	AOFOK        = 0
-	AOFEmpty     = 2
-	AOFFailed    = 4
-	AOFTruncated = 5
-	SizeMax      = 128
+	NotExist  = 1
+	OpenErr   = 3
+	OK        = 0
+	Empty     = 2
+	Failed    = 4
+	Truncated = 5
+	SizeMax   = 128
 )
 
 type Loader struct {
-	filPath string
-	ch      chan *entry.Entry
+	filePath string
+	ch       chan *entry.Entry
 }
 
-func NewLoader(filPath string, ch chan *entry.Entry) *Loader {
+func NewLoader(filePath string, ch chan *entry.Entry) *Loader {
 	ld := new(Loader)
 	ld.ch = ch
-	ld.filPath = filPath
+	ld.filePath = filePath
 	return ld
 }
 
@@ -51,26 +51,31 @@ func ReadCompleteLine(reader *bufio.Reader) ([]byte, error) {
 	return line, err
 }
 
-func (ld *Loader) LoadSingleAppendOnlyFile(AOFTimeStamp int64) int {
-	ret := AOFOK
-	AOFFilepath := ld.filPath
-	fp, err := os.Open(AOFFilepath)
+func (ld *Loader) LoadSingleAppendOnlyFile(timestamp int64) int {
+	ret := OK
+	filePath := ld.filePath
+	fp, err := os.Open(filePath)
+	defer func(fp *os.File) {
+		err := fp.Close()
+		if err != nil {
+			log.Infof("Unrecoverable error reading the append only File %v: %v", filePath, err)
+			ret = Failed
+		}
+	}(fp)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if _, err := os.Stat(AOFFilepath); err == nil || !os.IsNotExist(err) {
-				log.Infof("Fatal error: can't open the append log File %v for reading: %v", AOFFilepath, err.Error())
-				return AOFOpenErr
+			if _, err := os.Stat(filePath); err == nil || !os.IsNotExist(err) {
+				log.Infof("Fatal error: can't open the append log File %v for reading: %v", filePath, err.Error())
+				return OpenErr
 			} else {
-				log.Infof("The append log File %v doesn't exist: %v", AOFFilepath, err.Error())
-				return AOFNotExist
+				log.Infof("The append log File %v doesn't exist: %v", filePath, err.Error())
+				return NotExist
 			}
 
 		}
-		defer fp.Close()
-
 		stat, _ := fp.Stat()
 		if stat.Size() == 0 {
-			return AOFEmpty
+			return Empty
 		}
 	}
 	reader := bufio.NewReader(fp)
@@ -82,29 +87,29 @@ func (ld *Loader) LoadSingleAppendOnlyFile(AOFTimeStamp int64) int {
 				if err == io.EOF {
 					break
 				} else {
-					log.Infof("Unrecoverable error reading the append only File %v: %v", AOFFilepath, err)
-					ret = AOFFailed
+					log.Infof("Unrecoverable error reading the append only File %v: %v", filePath, err)
+					ret = Failed
 					return ret
 				}
 			} else {
 				_, errs := fp.Seek(0, io.SeekCurrent)
 				if errs != nil {
-					log.Infof("Unrecoverable error reading the append only File %v: %v", AOFFilepath, errs)
-					ret = AOFFailed
+					log.Infof("Unrecoverable error reading the append only File %v: %v", filePath, errs)
+					ret = Failed
 					return ret
 				}
 			}
 
 			if line[0] == '#' {
-				if AOFTimeStamp != 0 && strings.HasPrefix(string(line), "#TS:") {
+				if timestamp != 0 && strings.HasPrefix(string(line), "#TS:") {
 					var ts int64
 					ts, err = strconv.ParseInt(strings.TrimPrefix(string(line), "#TS:"), 10, 64)
 					if err != nil {
 						log.Panicf("Invalid timestamp annotation")
 					}
 
-					if ts > AOFTimeStamp {
-						ret = AOFTruncated
+					if ts > timestamp {
+						ret = Truncated
 						log.Infof("Reached recovery timestamp: %s, subsequent data will no longer be read.", line)
 						return ret
 					}
@@ -112,14 +117,14 @@ func (ld *Loader) LoadSingleAppendOnlyFile(AOFTimeStamp int64) int {
 				continue
 			}
 			if line[0] != '*' {
-				log.Panicf("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", AOFFilepath)
+				log.Panicf("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", filePath)
 			}
 			argc, _ := strconv.ParseInt(string(line[1:]), 10, 64)
 			if argc < 1 {
-				log.Panicf("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", AOFFilepath)
+				log.Panicf("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", filePath)
 			}
 			if argc > int64(SizeMax) {
-				log.Panicf("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", AOFFilepath)
+				log.Panicf("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", filePath)
 			}
 			e := entry.NewEntry()
 			var argv []string
@@ -127,16 +132,16 @@ func (ld *Loader) LoadSingleAppendOnlyFile(AOFTimeStamp int64) int {
 			for j := 0; j < int(argc); j++ {
 				line, err := ReadCompleteLine(reader)
 				if err != nil || line[0] != '$' {
-					log.Infof("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", AOFFilepath)
-					ret = AOFFailed
+					log.Infof("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", filePath)
+					ret = Failed
 					return ret
 				}
 				v64, _ := strconv.ParseInt(string(line[1:]), 10, 64)
-				argString := make([]byte, v64+2)
+				var argString []byte
 				argString, err = ReadCompleteLine(reader)
 				if err != nil {
-					log.Infof("Unrecoverable error reading the append only File %v: %v", AOFFilepath, err)
-					ret = AOFFailed
+					log.Infof("Unrecoverable error reading the append only File %v: %v", filePath, err)
+					ret = Failed
 					return ret
 				}
 				argString = argString[:v64]
