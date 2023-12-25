@@ -4,6 +4,7 @@ import (
 	_ "net/http/pprof"
 
 	"RedisShake/internal/config"
+	"RedisShake/internal/entry"
 	"RedisShake/internal/function"
 	"RedisShake/internal/log"
 	"RedisShake/internal/reader"
@@ -94,16 +95,21 @@ func main() {
 			theWriter = writer.NewRedisStandaloneWriter(opts)
 			log.Infof("create RedisStandaloneWriter: %v", opts.Address)
 		}
+		if config.Opt.Advanced.EmptyDBBeforeSync {
+			if opts.OffReply {
+				entry := entry.NewEntry()
+				entry.Argv = []string{"FLUSHALL"}
+				theWriter.Write(entry)
+			} else {
+				theWriter.Flush()
+			}
+		}
 	} else {
 		log.Panicf("no writer config entry found")
 	}
 
 	// create status
 	status.Init(theReader, theWriter)
-
-	if config.Opt.Advanced.EmptyDBBeforeSync {
-		theWriter.Flush()
-	}
 
 	log.Infof("start syncing...")
 
