@@ -19,7 +19,7 @@ def create_aof_dir(dir_path):
     os.makedirs(dir_path, exist_ok=True)
 
 def get_aof_file_relative_path():
-    if h.REDIS_SERVER_VERSION  == 7.0:
+    if h.REDIS_SERVER_VERSION  >= 7.0:
         aof_file = "/appendonlydir/appendonly.aof.manifest"
     else:
         aof_file = "/appendonly.aof"

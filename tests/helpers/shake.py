@@ -3,7 +3,6 @@ import typing
 import pybbt
 import requests
 import toml
-
 from helpers.constant import PATH_REDIS_SHAKE
 from helpers.redis import Redis
 from helpers.utils.filesystem import create_empty_dir
@@ -50,7 +49,7 @@ class ShakeOpts:
             }
         }
         return d
-    
+
     @staticmethod
     def create_aof_opts(aof_path: str, dts: Redis, timestamp: int = 0) -> typing.Dict:
         d = {
@@ -61,6 +60,7 @@ class ShakeOpts:
             }
         }
         return d
+
 
 class Shake:
     def __init__(self, opts: typing.Dict):
@@ -97,7 +97,7 @@ class Shake:
             try:
                 self.get_status()
                 return
-            except requests.exceptions.ConnectionError:
+            except (requests.exceptions.ConnectionError, requests.exceptions.JSONDecodeError):
                 pass
             if timer.elapsed() > timeout:
                 raise Exception(f"Shake server not started in {timeout} seconds")
