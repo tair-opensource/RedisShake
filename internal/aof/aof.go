@@ -150,10 +150,7 @@ func (ld *Loader) LoadSingleAppendOnlyFile(ctx context.Context, timestamp int64)
 				argString = argString[:v64]
 				argv = append(argv, string(argString))
 			}
-
-			for _, value := range argv {
-				e.Argv = append(e.Argv, value)
-			}
+			e.Argv = append(e.Argv, argv...)
 			ld.ch <- e
 		}
 	}
