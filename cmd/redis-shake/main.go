@@ -96,13 +96,10 @@ func main() {
 			log.Infof("create RedisStandaloneWriter: %v", opts.Address)
 		}
 		if config.Opt.Advanced.EmptyDBBeforeSync {
-			if opts.OffReply {
-				entry := entry.NewEntry()
-				entry.Argv = []string{"FLUSHALL"}
-				theWriter.Write(entry)
-			} else {
-				theWriter.Flush()
-			}
+			// exec FLUSHALL command to flush db
+			entry := entry.NewEntry()
+			entry.Argv = []string{"FLUSHALL"}
+			theWriter.Write(entry)
 		}
 	} else {
 		log.Panicf("no writer config entry found")

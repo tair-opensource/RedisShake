@@ -57,13 +57,6 @@ func NewRedisStandaloneWriter(opts *RedisWriterOptions) Writer {
 	return rw
 }
 
-func (w *redisStandaloneWriter) Flush() {
-	reply := w.client.DoWithStringReply("FLUSHALL")
-	if reply != "OK" {
-		log.Panicf("flush failed with reply: %s", reply)
-	}
-}
-
 func (w *redisStandaloneWriter) Close() {
 	if !w.offReply {
 		close(w.chWaitReply)
