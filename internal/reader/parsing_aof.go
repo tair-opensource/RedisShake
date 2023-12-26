@@ -563,7 +563,7 @@ func (aofInfo *INFO) LoadAppendOnlyFile(ctx context.Context, am *AOFManifest, AO
 	status := AOFOk
 	ret := AOFOk
 	var start int64
-	var totalSize int64 = 0
+	var totalSize int64
 	var BaseSize int64 = 0
 	var AOFName string
 	var totalNum, AOFNum int
@@ -693,7 +693,6 @@ func (aofInfo *INFO) LoadAppendOnlyFile(ctx context.Context, am *AOFManifest, AO
 }
 
 func (aofInfo *INFO) ParsingSingleAppendOnlyFile(ctx context.Context, FileName string, AOFTimeStamp int64) int {
-	ret := AOFOk
 	AOFFilepath := path.Join(aofInfo.AOFDirName, FileName)
 	println(AOFFilepath)
 	fp, err := os.Open(AOFFilepath)
@@ -719,8 +718,7 @@ func (aofInfo *INFO) ParsingSingleAppendOnlyFile(ctx context.Context, FileName s
 	if n, err := fp.Read(sig); err != nil || n != 5 || !bytes.Equal(sig, []byte("REDIS")) {
 		if _, err := fp.Seek(0, 0); err != nil {
 			log.Infof("Unrecoverable error reading the append only File %v: %v", FileName, err)
-			ret = AOFFailed
-			return ret
+			return AOFFailed
 		}
 	} else { //Skipped RDB checksum and has not been processed yet.
 		log.Infof("Reading RDB Base File on AOF loading...")
@@ -731,7 +729,5 @@ func (aofInfo *INFO) ParsingSingleAppendOnlyFile(ctx context.Context, FileName s
 	}
 	// load single aof file
 	aofSingleReader := aof.NewLoader(MakePath(aofInfo.AOFDirName, FileName), aofInfo.ch)
-	ret = aofSingleReader.LoadSingleAppendOnlyFile(ctx, AOFTimeStamp)
-	return ret
-
+	return aofSingleReader.LoadSingleAppendOnlyFile(ctx, AOFTimeStamp)
 }

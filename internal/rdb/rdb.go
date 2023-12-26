@@ -110,8 +110,9 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 	defer updateProcessSize()
 
 	// read one entry
-	tick := time.Tick(time.Second * 1)
-	for true {
+	ticker := time.NewTicker(time.Second * 1)
+	defer ticker.Stop()
+	for {
 		typeByte := structure.ReadByte(rd)
 		switch typeByte {
 		case kFlagIdle:
@@ -197,9 +198,9 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			ld.freq = 0
 		}
 		select {
-		case <-tick:
+		case <-ticker.C:
 			updateProcessSize()
-		case <- ctx.Done():
+		case <-ctx.Done():
 			return
 		default:
 		}

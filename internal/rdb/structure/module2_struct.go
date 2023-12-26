@@ -61,11 +61,9 @@ func ReadModuleString(rd io.Reader) string {
 	return ReadString(rd)
 }
 
-func ReadModuleEof(rd io.Reader) error {
+func ReadModuleEof(rd io.Reader) {
 	eof := ReadLength(rd)
 	if eof != rdbModuleOpcodeEOF {
 		log.Panicf("The RDB file is not teminated by the proper module value EOF marker")
 	}
-	return nil
-
 }

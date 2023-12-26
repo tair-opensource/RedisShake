@@ -73,20 +73,17 @@ func Init(r Statusable, w Statusable) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		lastConsistent := false
-		for {
-			select {
-			case <-ticker.C:
-				ch <- func() {
-					// update reader/writer stat
-					stat.Reader = theReader.Status()
-					stat.Writer = theWriter.Status()
-					stat.Consistent = lastConsistent && theReader.StatusConsistent() && theWriter.StatusConsistent()
-					lastConsistent = stat.Consistent
-					// update OPS
-					stat.TotalEntriesCount.updateOPS()
-					for _, cmdEntryCount := range stat.PerCmdEntriesCount {
-						cmdEntryCount.updateOPS()
-					}
+		for range ticker.C {
+			ch <- func() {
+				// update reader/writer stat
+				stat.Reader = theReader.Status()
+				stat.Writer = theWriter.Status()
+				stat.Consistent = lastConsistent && theReader.StatusConsistent() && theWriter.StatusConsistent()
+				lastConsistent = stat.Consistent
+				// update OPS
+				stat.TotalEntriesCount.updateOPS()
+				for _, cmdEntryCount := range stat.PerCmdEntriesCount {
+					cmdEntryCount.updateOPS()
 				}
 			}
 		}
@@ -100,12 +97,9 @@ func Init(r Statusable, w Statusable) {
 		}
 		ticker := time.NewTicker(time.Duration(config.Opt.Advanced.LogInterval) * time.Second)
 		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				ch <- func() {
-					log.Infof("%s, %s", stat.TotalEntriesCount.String(), theReader.StatusString())
-				}
+		for range ticker.C {
+			ch <- func() {
+				log.Infof("%s, %s", stat.TotalEntriesCount.String(), theReader.StatusString())
 			}
 		}
 	}()

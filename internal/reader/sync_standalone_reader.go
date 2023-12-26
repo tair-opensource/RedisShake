@@ -310,7 +310,9 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 
 // sendReplconfAck send replconf ack to master to keep heartbeat between redis-shake and source redis.
 func (r *syncStandaloneReader) sendReplconfAck() {
-	for range time.Tick(time.Millisecond * 100) {
+	ticker := time.NewTicker(time.Millisecond * 100)
+	defer ticker.Stop()
+	for range ticker.C {
 		select {
 		case <-r.ctx.Done():
 			return
