@@ -14,9 +14,13 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 	reply := c.DoWithStringReply("cluster", "nodes")
 	reply = strings.TrimSpace(reply)
 	slotsCount := 0
-	log.Infof("address=%v, reply=%v", address, reply)
+	// map of master's nodeId to address
 	masters := make(map[string]string)
+	// map of master's nodeId to replica addresses
 	replicas := make(map[string][]string)
+	// keep nodeID sort by slots
+	nodeIds := make([]string, 0)
+	log.Infof("address=%v, reply=%v", address, reply)
 	for _, line := range strings.Split(reply, "\n") {
 		line = strings.TrimSpace(line)
 		words := strings.Split(line, " ")
@@ -45,6 +49,7 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 		if isMaster {
 			masters[nodeId] = address
 		} else {
+			// execlude invalid replicas node
 			if strings.Contains(words[2], "fail") || strings.Contains(words[2], "noaddr") {
 				continue
 			}
@@ -88,22 +93,19 @@ func GetRedisClusterNodes(address string, username string, password string, Tls 
 			}
 		}
 		slots = append(slots, slot)
+		nodeIds = append(nodeIds, nodeId)
 	}
 	if slotsCount != 16384 {
 		log.Panicf("invalid cluster nodes slots. slots_count=%v, address=%v", slotsCount, address)
 	}
 
-	if perferReplica && len(replicas) > 0 {
-		for masterId, replicaAddr := range replicas {
-			if len(replicaAddr) > 0 {
-				addresses = append(addresses, replicaAddr[0])
-			} else {
-				addresses = append(addresses, masters[masterId])
-			}
-		}
-	} else {
-		for _, v := range masters {
-			addresses = append(addresses, v)
+	for _, id := range nodeIds {
+		if replicaAddr, exist := replicas[id]; exist && perferReplica {
+			addresses = append(addresses, replicaAddr[0])
+		} else if masterAddr, exist := masters[id]; exist {
+			addresses = append(addresses, masterAddr)
+		} else {
+			log.Panicf("unknown id=%s", id)
 		}
 	}
 

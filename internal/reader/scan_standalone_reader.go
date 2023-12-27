@@ -25,7 +25,7 @@ type ScanReaderOptions struct {
 	Tls           bool   `mapstructure:"tls" default:"false"`
 	KSN           bool   `mapstructure:"ksn" default:"false"`
 	DBS           []int  `mapstructure:"dbs"`
-	PerferReplica bool   `mapstructure:"perfer_replica" default:"true"`
+	PreferReplica bool   `mapstructure:"prefer_replica" default:"false"`
 }
 
 type dbKey struct {

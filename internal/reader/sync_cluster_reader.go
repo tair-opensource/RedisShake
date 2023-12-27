@@ -16,7 +16,7 @@ type syncClusterReader struct {
 }
 
 func NewSyncClusterReader(opts *SyncReaderOptions) Reader {
-	addresses, _ := utils.GetRedisClusterNodes(opts.Address, opts.Username, opts.Password, opts.Tls, opts.PerferReplica)
+	addresses, _ := utils.GetRedisClusterNodes(opts.Address, opts.Username, opts.Password, opts.Tls, opts.PreferReplica)
 	log.Debugf("get redis cluster nodes:")
 	for _, address := range addresses {
 		log.Debugf("%s", address)
