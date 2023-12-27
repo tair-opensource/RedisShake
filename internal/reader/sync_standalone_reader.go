@@ -30,7 +30,7 @@ type SyncReaderOptions struct {
 	Tls           bool   `mapstructure:"tls" default:"false"`
 	SyncRdb       bool   `mapstructure:"sync_rdb" default:"true"`
 	SyncAof       bool   `mapstructure:"sync_aof" default:"true"`
-	PerferReplica bool   `mapstructure:"perfer_replica" default:"true"`
+	PreferReplica bool   `mapstructure:"prefer_replica" default:"false"`
 }
 
 type State string
