@@ -3,7 +3,6 @@ package reader
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -207,10 +206,6 @@ func (r *syncStandaloneReader) receiveRDB() string {
 		}
 		n, err := r.rd.Read(buf[:readOnce])
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				log.Warnf("[%s] receive RDB EOF. error=[%v]", r.stat.Name, err)
-				continue
-			}
 			log.Panicf(err.Error())
 		}
 		remainder -= int64(n)
