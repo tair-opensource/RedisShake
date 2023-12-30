@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
-	"context"
-	_ "net/http/pprof"
 
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
@@ -27,7 +27,8 @@ func main() {
 	utils.SetNcpu()
 	utils.SetPprofPort()
 	function.Init()
-
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	// create reader
 	var theReader reader.Reader
 	if v.IsSet("sync_reader") {
@@ -38,10 +39,10 @@ func main() {
 			log.Panicf("failed to read the SyncReader config entry. err: %v", err)
 		}
 		if opts.Cluster {
-			theReader = reader.NewSyncClusterReader(opts)
+			theReader = reader.NewSyncClusterReader(ctx, opts)
 			log.Infof("create SyncClusterReader: %v", opts.Address)
 		} else {
-			theReader = reader.NewSyncStandaloneReader(opts)
+			theReader = reader.NewSyncStandaloneReader(ctx, opts)
 			log.Infof("create SyncStandaloneReader: %v", opts.Address)
 		}
 	} else if v.IsSet("scan_reader") {
@@ -52,10 +53,10 @@ func main() {
 			log.Panicf("failed to read the ScanReader config entry. err: %v", err)
 		}
 		if opts.Cluster {
-			theReader = reader.NewScanClusterReader(opts)
+			theReader = reader.NewScanClusterReader(ctx, opts)
 			log.Infof("create ScanClusterReader: %v", opts.Address)
 		} else {
-			theReader = reader.NewScanStandaloneReader(opts)
+			theReader = reader.NewScanStandaloneReader(ctx, opts)
 			log.Infof("create ScanStandaloneReader: %v", opts.Address)
 		}
 	} else if v.IsSet("rdb_reader") {
@@ -93,10 +94,10 @@ func main() {
 			log.Panicf("the RDBRestoreCommandBehavior can't be 'panic' when the server not reply to commands")
 		}
 		if opts.Cluster {
-			theWriter = writer.NewRedisClusterWriter(opts)
+			theWriter = writer.NewRedisClusterWriter(ctx, opts)
 			log.Infof("create RedisClusterWriter: %v", opts.Address)
 		} else {
-			theWriter = writer.NewRedisStandaloneWriter(opts)
+			theWriter = writer.NewRedisStandaloneWriter(ctx, opts)
 			log.Infof("create RedisStandaloneWriter: %v", opts.Address)
 		}
 		if config.Opt.Advanced.EmptyDBBeforeSync {
@@ -114,7 +115,6 @@ func main() {
 
 	log.Infof("start syncing...")
 
-	ctx, cancel := context.WithCancel(context.Background())
 	ch := theReader.StartRead(ctx)
 	go waitShutdown(cancel)
 

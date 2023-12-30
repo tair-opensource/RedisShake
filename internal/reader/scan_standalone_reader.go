@@ -50,10 +50,10 @@ type scanStandaloneReader struct {
 	}
 }
 
-func NewScanStandaloneReader(opts *ScanReaderOptions) Reader {
+func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reader {
 	r := new(scanStandaloneReader)
 	// dbs
-	c := client.NewRedisClient(opts.Address, opts.Username, opts.Password, opts.Tls)
+	c := client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls)
 	if c.IsCluster() { // not use opts.Cluster, because user may use standalone mode to scan a cluster node
 		r.dbs = []int{0}
 	} else {
@@ -82,7 +82,7 @@ func (r *scanStandaloneReader) subscript() {
 	if !r.opts.KSN {
 		return
 	}
-	c := client.NewRedisClient(r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
+	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
 	c.Send("psubscribe", "__keyevent@*__:*")
 
 	go func() {
@@ -114,7 +114,7 @@ func (r *scanStandaloneReader) subscript() {
 }
 
 func (r *scanStandaloneReader) scan() {
-	c := client.NewRedisClient(r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
+	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
 	defer c.Close()
 	for _, dbId := range r.dbs {
 		if dbId != 0 {
@@ -150,7 +150,7 @@ func (r *scanStandaloneReader) scan() {
 
 func (r *scanStandaloneReader) fetch() {
 	nowDbId := 0
-	c := client.NewRedisClient(r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
+	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
 	defer c.Close()
 	for item := range r.keyQueue.Ch {
 		r.stat.NeedUpdateCount = int64(r.keyQueue.Len())

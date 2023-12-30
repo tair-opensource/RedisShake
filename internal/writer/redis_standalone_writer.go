@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -40,11 +41,11 @@ type redisStandaloneWriter struct {
 	}
 }
 
-func NewRedisStandaloneWriter(opts *RedisWriterOptions) Writer {
+func NewRedisStandaloneWriter(ctx context.Context, opts *RedisWriterOptions) Writer {
 	rw := new(redisStandaloneWriter)
 	rw.address = opts.Address
 	rw.stat.Name = "writer_" + strings.Replace(opts.Address, ":", "_", -1)
-	rw.client = client.NewRedisClient(opts.Address, opts.Username, opts.Password, opts.Tls)
+	rw.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls)
 	if opts.OffReply {
 		log.Infof("turn off the reply of write")
 		rw.offReply = true

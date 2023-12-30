@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,8 +10,8 @@ import (
 	"RedisShake/internal/log"
 )
 
-func GetRedisClusterNodes(address string, username string, password string, Tls bool, perferReplica bool) (addresses []string, slots [][]int) {
-	c := client.NewRedisClient(address, username, password, Tls)
+func GetRedisClusterNodes(ctx context.Context, address string, username string, password string, Tls bool, perferReplica bool) (addresses []string, slots [][]int) {
+	c := client.NewRedisClient(ctx, address, username, password, Tls)
 	reply := c.DoWithStringReply("cluster", "nodes")
 	reply = strings.TrimSpace(reply)
 	slotsCount := 0
