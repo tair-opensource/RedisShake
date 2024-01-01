@@ -2,6 +2,8 @@ package rdb
 
 import (
 	"context"
+	"io"
+	"os"
 	"testing"
 
 	"RedisShake/internal/entry"
@@ -10,6 +12,25 @@ import (
 // BenchmarkParseRDB is a benchmark for ParseRDB
 // The baseline is "20	 350030327 ns/op	213804114 B/op	 1900715 allocs/op"
 func BenchmarkParseRDB(b *testing.B) {
+	sourcePath := "./dump.rdb"
+	sourceFile, err := os.Open(sourcePath)
+	if err != nil {
+		panic(err)
+	}
+	defer sourceFile.Close()
+
+	destPath := "/tmp/dump.rdb"
+	destFile, err := os.Create(destPath)
+	if err != nil {
+		panic(err)
+	}
+	defer destFile.Close()
+
+	// 复制文件内容
+	_, err = io.Copy(destFile, sourceFile)
+	if err != nil {
+		panic(err)
+	}
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.ResetTimer()
