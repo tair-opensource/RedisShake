@@ -37,11 +37,12 @@ var BytesPoolWithCap8 = sync.Pool{
 
 func ReadByte(rd io.Reader) byte {
 	data := BytesPoolWithCap1.Get().([]byte)
-	defer BytesPoolWithCap1.Put(data)
 	if _, err := io.ReadFull(rd, data); err != nil {
 		log.Panicf(err.Error())
 	}
-	return data[0]
+	result := data[0]
+	BytesPoolWithCap1.Put(data)
+	return result
 }
 
 func ReadBytes(rd io.Reader, n int) []byte {
