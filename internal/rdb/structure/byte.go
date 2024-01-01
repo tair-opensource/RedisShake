@@ -10,37 +10,37 @@ import (
 var BytesPoolWithCap1 = sync.Pool{
 	New: func() interface{} {
 		tmp := make([]byte, 1)
-		return tmp
+		return &tmp
 	},
 }
 
 var BytesPoolWithCap2 = sync.Pool{
 	New: func() interface{} {
 		tmp := make([]byte, 2)
-		return tmp
+		return &tmp
 	},
 }
 
 var BytesPoolWithCap4 = sync.Pool{
 	New: func() interface{} {
 		tmp := make([]byte, 4)
-		return tmp
+		return &tmp
 	},
 }
 
 var BytesPoolWithCap8 = sync.Pool{
 	New: func() interface{} {
 		tmp := make([]byte, 8)
-		return tmp
+		return &tmp
 	},
 }
 
 func ReadByte(rd io.Reader) byte {
-	data := BytesPoolWithCap1.Get().([]byte)
-	if _, err := io.ReadFull(rd, data); err != nil {
+	data := BytesPoolWithCap1.Get().(*[]byte)
+	if _, err := io.ReadFull(rd, *data); err != nil {
 		log.Panicf(err.Error())
 	}
-	result := data[0]
+	result := (*data)[0]
 	BytesPoolWithCap1.Put(data)
 	return result
 }
