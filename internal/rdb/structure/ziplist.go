@@ -80,8 +80,12 @@ func readZipListEntry(rd io.Reader, firstByte byte) string {
 		length := (int(firstByte&0x3f) << 8) | int(secondByte)
 		return string(ReadBytes(rd, length))
 	case zipStr32B:
-		lenBytes := ReadBytes(rd, 4)
+		lenBytes := BytesPoolWithCap4.Get().([]byte)
+		if _, err := io.ReadFull(rd, lenBytes); err != nil {
+			log.Panicf(err.Error())
+		}
 		length := binary.BigEndian.Uint32(lenBytes)
+		BytesPoolWithCap4.Put(lenBytes)
 		return string(ReadBytes(rd, int(length)))
 	}
 	switch firstByte {

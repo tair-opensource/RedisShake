@@ -2,13 +2,46 @@ package structure
 
 import (
 	"io"
+	"sync"
 
 	"RedisShake/internal/log"
 )
 
+var BytesPoolWithCap1 = sync.Pool{
+	New: func() interface{} {
+		tmp := make([]byte, 1)
+		return tmp
+	},
+}
+
+var BytesPoolWithCap2 = sync.Pool{
+	New: func() interface{} {
+		tmp := make([]byte, 2)
+		return tmp
+	},
+}
+
+var BytesPoolWithCap4 = sync.Pool{
+	New: func() interface{} {
+		tmp := make([]byte, 4)
+		return tmp
+	},
+}
+
+var BytesPoolWithCap8 = sync.Pool{
+	New: func() interface{} {
+		tmp := make([]byte, 8)
+		return tmp
+	},
+}
+
 func ReadByte(rd io.Reader) byte {
-	b := ReadBytes(rd, 1)[0]
-	return b
+	data := BytesPoolWithCap1.Get().([]byte)
+	defer BytesPoolWithCap1.Put(data)
+	if _, err := io.ReadFull(rd, data); err != nil {
+		log.Panicf(err.Error())
+	}
+	return data[0]
 }
 
 func ReadBytes(rd io.Reader, n int) []byte {
