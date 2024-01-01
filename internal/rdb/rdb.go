@@ -33,7 +33,7 @@ const (
 )
 
 type Loader struct {
-	replStreamDbId int // https://RedisShake/pull/430#issuecomment-1099014464
+	replStreamDbId int // https://github.com/tair-opensource/RedisShake/pull/430#issuecomment-1099014464
 
 	nowDBId  int
 	expireMs int64
