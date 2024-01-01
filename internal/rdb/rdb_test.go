@@ -12,24 +12,23 @@ import (
 // BenchmarkParseRDB is a benchmark for ParseRDB
 // The baseline is "20	 350030327 ns/op	213804114 B/op	 1900715 allocs/op"
 func BenchmarkParseRDB(b *testing.B) {
-	sourcePath := "./dump.rdb"
-	sourceFile, err := os.Open(sourcePath)
-	if err != nil {
-		panic(err)
-	}
-	defer sourceFile.Close()
-
-	destPath := "/tmp/dump.rdb"
-	destFile, err := os.Create(destPath)
-	if err != nil {
-		panic(err)
-	}
-	defer destFile.Close()
-
-	// 复制文件内容
-	_, err = io.Copy(destFile, sourceFile)
-	if err != nil {
-		panic(err)
+	if _, err := os.Stat("/tmp/dump.rdb"); err != nil && os.IsNotExist(err) {
+		sourcePath := "./dump.rdb"
+		sourceFile, err := os.Open(sourcePath)
+		if err != nil {
+			panic(err)
+		}
+		destPath := "/tmp/dump.rdb"
+		destFile, err := os.Create(destPath)
+		if err != nil {
+			panic(err)
+		}
+		_, err = io.Copy(destFile, sourceFile)
+		if err != nil {
+			panic(err)
+		}
+		destFile.Close()
+		sourceFile.Close()
 	}
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -40,7 +39,7 @@ func BenchmarkParseRDB(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		loader := NewLoader("rdb", updateFunc, "./dump.rdb", tempChan)
+		loader := NewLoader("rdb", updateFunc, "/tmp/dump.rdb", tempChan)
 		go func() {
 			for _ = range tempChan {
 
