@@ -2,22 +2,40 @@ package function
 
 import (
 	"strings"
+	"sync"
 
-	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 
 	lua "github.com/yuin/gopher-lua"
+	"github.com/yuin/gopher-lua/parse"
 )
 
-var luaString string
+type Runtime struct {
+	luaVMPool        *sync.Pool
+	compiledFunction *lua.FunctionProto
+}
 
-func Init() {
-	luaString = config.Opt.Function
-	luaString = strings.TrimSpace(luaString)
-	if len(luaString) == 0 {
-		log.Infof("no function script")
-		return
+func New(luaCode string) *Runtime {
+	if len(luaCode) == 0 {
+		return nil
+	}
+	luaCode = strings.TrimSpace(luaCode)
+	chunk, err := parse.Parse(strings.NewReader(luaCode), "<string>")
+	if err != nil {
+		log.Panicf("parse lua code failed: %v", err)
+	}
+	codeObject, err := lua.Compile(chunk, "<string>")
+	if err != nil {
+		log.Panicf("compile lua code failed: %v", err)
+	}
+	return &Runtime{
+		luaVMPool: &sync.Pool{
+			New: func() interface{} {
+				return lua.NewState()
+			},
+		},
+		compiledFunction: codeObject,
 	}
 }
 
@@ -32,41 +50,40 @@ func Init() {
 // shake.call(DB, ARGV)
 // shake.log()
 
-func RunFunction(e *entry.Entry) []*entry.Entry {
-	entries := make([]*entry.Entry, 0)
-	if len(luaString) == 0 {
-		entries = append(entries, e)
-		return entries
+func (runtime *Runtime) RunFunction(e *entry.Entry) []*entry.Entry {
+	if runtime == nil {
+		return []*entry.Entry{e}
 	}
-
-	L := lua.NewState()
-	L.SetGlobal("DB", lua.LNumber(e.DbId))
-	L.SetGlobal("GROUP", lua.LString(e.Group))
-	L.SetGlobal("CMD", lua.LString(e.CmdName))
-	keys := L.NewTable()
+	entries := make([]*entry.Entry, 0)
+	luaState := runtime.luaVMPool.Get().(*lua.LState)
+	defer runtime.luaVMPool.Put(luaState)
+	luaState.SetGlobal("DB", lua.LNumber(e.DbId))
+	luaState.SetGlobal("GROUP", lua.LString(e.Group))
+	luaState.SetGlobal("CMD", lua.LString(e.CmdName))
+	keys := luaState.NewTable()
 	for _, key := range e.Keys {
 		keys.Append(lua.LString(key))
 	}
-	L.SetGlobal("KEYS", keys)
-	slots := L.NewTable()
+	luaState.SetGlobal("KEYS", keys)
+	slots := luaState.NewTable()
 	for _, slot := range e.Slots {
 		slots.Append(lua.LNumber(slot))
 	}
-	keyIndexes := L.NewTable()
+	keyIndexes := luaState.NewTable()
 	for _, keyIndex := range e.KeyIndexes {
 		keyIndexes.Append(lua.LNumber(keyIndex))
 	}
-	L.SetGlobal("KEY_INDEXES", keyIndexes)
-	L.SetGlobal("SLOTS", slots)
-	argv := L.NewTable()
+	luaState.SetGlobal("KEY_INDEXES", keyIndexes)
+	luaState.SetGlobal("SLOTS", slots)
+	argv := luaState.NewTable()
 	for _, arg := range e.Argv {
 		argv.Append(lua.LString(arg))
 	}
-	L.SetGlobal("ARGV", argv)
-	shake := L.NewTypeMetatable("shake")
-	L.SetGlobal("shake", shake)
+	luaState.SetGlobal("ARGV", argv)
+	shake := luaState.NewTypeMetatable("shake")
+	luaState.SetGlobal("shake", shake)
 
-	L.SetField(shake, "call", L.NewFunction(func(ls *lua.LState) int {
+	luaState.SetField(shake, "call", luaState.NewFunction(func(ls *lua.LState) int {
 		db := ls.ToInt(1)
 		argv := ls.ToTable(2)
 		var argvStrings []string
@@ -79,12 +96,12 @@ func RunFunction(e *entry.Entry) []*entry.Entry {
 		})
 		return 0
 	}))
-	L.SetField(shake, "log", L.NewFunction(func(ls *lua.LState) int {
+	luaState.SetField(shake, "log", luaState.NewFunction(func(ls *lua.LState) int {
 		log.Infof("lua log: %v", ls.ToString(1))
 		return 0
 	}))
-	err := L.DoString(luaString)
-	if err != nil {
+	luaState.Push(luaState.NewFunctionFromProto(runtime.compiledFunction))
+	if err := luaState.PCall(0, lua.MultRet, nil); err != nil {
 		log.Panicf("load function script failed: %v", err)
 	}
 

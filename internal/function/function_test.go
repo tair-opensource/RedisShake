@@ -11,11 +11,12 @@ import (
 // Command is `go test -benchmem -bench="RunFunction$" -count=5 RedisShake/internal/function`
 // Output is:
 //
-// BenchmarkRunFunction-16             6741            182470 ns/op          234715 B/op       1079 allocs/op
-// BenchmarkRunFunction-16             7443            174567 ns/op          234710 B/op       1079 allocs/op
-// BenchmarkRunFunction-16             7101            178651 ns/op          234711 B/op       1079 allocs/op
-// BenchmarkRunFunction-16             6856            164739 ns/op          234722 B/op       1079 allocs/op
-// BenchmarkRunFunction-16             6804            174768 ns/op          234713 B/op       1079 allocs/op
+// cpu: Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz
+// BenchmarkRunFunction-16           152046              8494 ns/op           15283 B/op         42 allocs/op
+// BenchmarkRunFunction-16           150916              7630 ns/op           15274 B/op         42 allocs/op
+// BenchmarkRunFunction-16           149980              8467 ns/op           15292 B/op         42 allocs/op
+// BenchmarkRunFunction-16           158834              7722 ns/op           15278 B/op         42 allocs/op
+// BenchmarkRunFunction-16           118228              8482 ns/op           15292 B/op         42 allocs/op
 func BenchmarkRunFunction(b *testing.B) {
 	config.Opt = config.ShakeOptions{
 		Function: `
@@ -33,7 +34,7 @@ end
 shake.call(DB, ARGV)
 `,
 	}
-	Init()
+	luaRuntime := New(config.Opt.Function)
 	e := &entry.Entry{
 		DbId:           0,
 		Argv:           []string{"set", "mlpSummary:1", "1"},
@@ -47,6 +48,6 @@ shake.call(DB, ARGV)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		RunFunction(e)
+		luaRuntime.RunFunction(e)
 	}
 }
