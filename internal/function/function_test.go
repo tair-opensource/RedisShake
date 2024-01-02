@@ -33,7 +33,7 @@ end
 shake.call(DB, ARGV)
 `,
 	}
-	Init()
+	luaRuntime := New(config.Opt.Function)
 	e := &entry.Entry{
 		DbId:           0,
 		Argv:           []string{"set", "mlpSummary:1", "1"},
@@ -47,6 +47,6 @@ shake.call(DB, ARGV)
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		RunFunction(e)
+		luaRuntime.RunFunction(e)
 	}
 }
