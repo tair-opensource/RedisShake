@@ -1,11 +1,11 @@
 package main
 
 import (
+	"context"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
-	"context"
-	_ "net/http/pprof"
 
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
@@ -26,7 +26,7 @@ func main() {
 	utils.ChdirAndAcquireFileLock()
 	utils.SetNcpu()
 	utils.SetPprofPort()
-	function.Init()
+	luaRuntime := function.New(config.Opt.Function)
 
 	// create reader
 	var theReader reader.Reader
@@ -125,7 +125,7 @@ func main() {
 
 		// filter
 		log.Debugf("function before: %v", e)
-		entries := function.RunFunction(e)
+		entries := luaRuntime.RunFunction(e)
 		log.Debugf("function after: %v", entries)
 
 		for _, entry := range entries {
