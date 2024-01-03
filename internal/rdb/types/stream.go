@@ -141,7 +141,7 @@ func (o *StreamObject) readStream(rd io.Reader, masterKey string, typeByte byte)
 	 * in case of XDEL lastid. */
 	o.cmds = append(o.cmds, []string{"xsetid", masterKey, lastid})
 
-	if typeByte == rdbTypeStreamListpacks2 {
+	if typeByte >= rdbTypeStreamListpacks2 {
 		/* Load the first entry ID. */
 		_ = structure.ReadLength(rd) // first_ms
 		_ = structure.ReadLength(rd) // first_seq
