@@ -26,9 +26,11 @@ func main() {
 	utils.ChdirAndAcquireFileLock()
 	utils.SetNcpu()
 	utils.SetPprofPort()
-	function.Init()
-	ctx, cancel := context.WithCancel(context.Background())
+	luaRuntime := function.New(config.Opt.Function)
+
+  ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	// create reader
 	var theReader reader.Reader
 	if v.IsSet("sync_reader") {
@@ -125,7 +127,7 @@ func main() {
 
 		// filter
 		log.Debugf("function before: %v", e)
-		entries := function.RunFunction(e)
+		entries := luaRuntime.RunFunction(e)
 		log.Debugf("function after: %v", entries)
 
 		for _, entry := range entries {
