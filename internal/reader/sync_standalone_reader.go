@@ -1,8 +1,8 @@
 package reader
 
 import (
-	"context"
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -77,10 +77,10 @@ type syncStandaloneReader struct {
 	}
 }
 
-func NewSyncStandaloneReader(opts *SyncReaderOptions) Reader {
+func NewSyncStandaloneReader(ctx context.Context, opts *SyncReaderOptions) Reader {
 	r := new(syncStandaloneReader)
 	r.opts = opts
-	r.client = client.NewRedisClient(opts.Address, opts.Username, opts.Password, opts.Tls)
+	r.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls)
 	r.rd = r.client.BufioReader()
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
 	r.stat.Address = opts.Address

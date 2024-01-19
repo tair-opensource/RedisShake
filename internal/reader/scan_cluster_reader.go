@@ -14,14 +14,14 @@ type scanClusterReader struct {
 	statusId int
 }
 
-func NewScanClusterReader(opts *ScanReaderOptions) Reader {
-	addresses, _ := utils.GetRedisClusterNodes(opts.Address, opts.Username, opts.Password, opts.Tls, opts.PreferReplica)
+func NewScanClusterReader(ctx context.Context, opts *ScanReaderOptions) Reader {
+	addresses, _ := utils.GetRedisClusterNodes(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.PreferReplica)
 
 	rd := &scanClusterReader{}
 	for _, address := range addresses {
 		theOpts := *opts
 		theOpts.Address = address
-		rd.readers = append(rd.readers, NewScanStandaloneReader(&theOpts))
+		rd.readers = append(rd.readers, NewScanStandaloneReader(ctx, &theOpts))
 	}
 	return rd
 }

@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"net"
 	"strconv"
@@ -19,16 +20,22 @@ type Redis struct {
 	protoWriter *proto.Writer
 }
 
-func NewRedisClient(address string, username string, password string, Tls bool) *Redis {
+func NewRedisClient(ctx context.Context, address string, username string, password string, Tls bool) *Redis {
 	r := new(Redis)
 	var conn net.Conn
-	var dialer net.Dialer
+	var dialer = &net.Dialer{
+		Timeout:   5 * time.Minute,
+		KeepAlive: 5 * time.Minute,
+	}
 	var err error
-	dialer.Timeout = 3 * time.Second
 	if Tls {
-		conn, err = tls.DialWithDialer(&dialer, "tcp", address, &tls.Config{InsecureSkipVerify: true})
+		tlsDialer := &tls.Dialer{
+			NetDialer: dialer,
+			Config:    &tls.Config{InsecureSkipVerify: true},
+		}
+		conn, err = tlsDialer.DialContext(ctx, "tcp", address)
 	} else {
-		conn, err = dialer.Dial("tcp", address)
+		conn, err = dialer.DialContext(ctx, "tcp", address)
 	}
 	if err != nil {
 		log.Panicf("dial failed. address=[%s], tls=[%v], err=[%v]", address, Tls, err)

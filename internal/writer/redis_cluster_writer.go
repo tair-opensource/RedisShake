@@ -1,6 +1,8 @@
 package writer
 
 import (
+	"context"
+
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 	"RedisShake/internal/utils"
@@ -16,9 +18,9 @@ type RedisClusterWriter struct {
 	stat []interface{}
 }
 
-func NewRedisClusterWriter(opts *RedisWriterOptions) Writer {
+func NewRedisClusterWriter(ctx context.Context, opts *RedisWriterOptions) Writer {
 	rw := new(RedisClusterWriter)
-	rw.loadClusterNodes(opts)
+	rw.loadClusterNodes(ctx, opts)
 	log.Infof("redisClusterWriter connected to redis cluster successful. addresses=%v", rw.addresses)
 	return rw
 }
@@ -29,13 +31,13 @@ func (r *RedisClusterWriter) Close() {
 	}
 }
 
-func (r *RedisClusterWriter) loadClusterNodes(opts *RedisWriterOptions) {
-	addresses, slots := utils.GetRedisClusterNodes(opts.Address, opts.Username, opts.Password, opts.Tls, false)
+func (r *RedisClusterWriter) loadClusterNodes(ctx context.Context, opts *RedisWriterOptions) {
+	addresses, slots := utils.GetRedisClusterNodes(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, false)
 	r.addresses = addresses
 	for i, address := range addresses {
 		theOpts := *opts
 		theOpts.Address = address
-		redisWriter := NewRedisStandaloneWriter(&theOpts)
+		redisWriter := NewRedisStandaloneWriter(ctx, &theOpts)
 		r.writers = append(r.writers, redisWriter)
 		for _, s := range slots[i] {
 			if r.router[s] != nil {
