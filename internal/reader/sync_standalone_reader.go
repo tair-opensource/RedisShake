@@ -108,7 +108,6 @@ func (r *syncStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry 
 			r.sendAOF(startOffset)
 		}
 		close(r.ch)
-		r.client.Close()
 	}()
 
 	return r.ch
