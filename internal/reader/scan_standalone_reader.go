@@ -188,8 +188,8 @@ func (r *scanStandaloneReader) fetch() {
 			typeByte := dump[0]
 			anotherReader := strings.NewReader(dump[1 : len(dump)-10])
 			o := types.ParseObject(anotherReader, typeByte, key)
-			cmds := o.Rewrite()
-			for _, cmd := range cmds {
+			cmdC := o.Rewrite()
+			for cmd := range cmdC {
 				e := entry.NewEntry()
 				e.DbId = dbId
 				e.Argv = cmd

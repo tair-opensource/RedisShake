@@ -64,7 +64,7 @@ type RedisCmd []string
 // RedisObject is interface for a redis object
 type RedisObject interface {
 	LoadFromBuffer(rd io.Reader, key string, typeByte byte)
-	Rewrite() []RedisCmd
+	Rewrite() <-chan RedisCmd
 }
 
 func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {

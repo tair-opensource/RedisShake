@@ -41,27 +41,44 @@ import (
  * the stream full entry. */
 
 type StreamObject struct {
-	key  string
-	cmds []RedisCmd
+	key      string
+	typeByte byte
+	rd       io.Reader
+	cmdC     chan RedisCmd
 }
 
 func (o *StreamObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 	o.key = key
-	switch typeByte {
-	case rdbTypeStreamListpacks:
-		o.readStream(rd, key, typeByte)
-	case rdbTypeStreamListpacks2:
-		o.readStream(rd, key, typeByte)
-	case rdbTypeStreamListpacks3:
-		o.readStream(rd, key, typeByte)
-	default:
-		log.Panicf("unknown hash type. typeByte=[%d]", typeByte)
-	}
+	o.typeByte = typeByte
+	o.rd = rd
+	o.cmdC = make(chan RedisCmd)
+}
+
+func (o *StreamObject) Rewrite() <-chan RedisCmd {
+	go func() {
+		defer close(o.cmdC)
+		switch o.typeByte {
+		case rdbTypeStreamListpacks:
+			o.readStream()
+		case rdbTypeStreamListpacks2:
+			o.readStream()
+		case rdbTypeStreamListpacks3:
+			o.readStream()
+		default:
+			log.Panicf("unknown hash type. typeByte=[%d]", o.typeByte)
+		}
+	}()
+	return o.cmdC
 }
 
 // see redis rewriteStreamObject()
 
-func (o *StreamObject) readStream(rd io.Reader, masterKey string, typeByte byte) {
+func (o *StreamObject) readStream() {
+	rd := o.rd
+	masterKey := o.key
+	typeByte := o.typeByte
+	cmdC := o.cmdC
+
 	// 1. length(number of listpack), k1, v1, k2, v2, ..., number, ms, seq
 
 	/* Load the number of Listpack. */
@@ -117,7 +134,7 @@ func (o *StreamObject) readStream(rd io.Reader, masterKey string, typeByte byte)
 				deleted -= 1
 			} else {
 				count -= 1
-				o.cmds = append(o.cmds, args)
+				cmdC <- args
 			}
 		}
 	}
@@ -134,12 +151,12 @@ func (o *StreamObject) readStream(rd io.Reader, masterKey string, typeByte byte)
 		 * the key we are serializing is an empty string, which is possible
 		 * for the Stream type. */
 		args := []string{"xadd", masterKey, "MAXLEN", "0", lastid, "x", "y"}
-		o.cmds = append(o.cmds, args)
+		cmdC <- args
 	}
 
 	/* Append XSETID after XADD, make sure lastid is correct,
 	 * in case of XDEL lastid. */
-	o.cmds = append(o.cmds, []string{"xsetid", masterKey, lastid})
+	cmdC <- []string{"xsetid", masterKey, lastid}
 
 	if typeByte >= rdbTypeStreamListpacks2 {
 		/* Load the first entry ID. */
@@ -168,7 +185,7 @@ func (o *StreamObject) readStream(rd io.Reader, masterKey string, typeByte byte)
 		lastid := fmt.Sprintf("%v-%v", lastMs, lastSeq)
 
 		/* Create Group */
-		o.cmds = append(o.cmds, []string{"CREATE", masterKey, groupName, lastid})
+		cmdC <- []string{"XGROUP", "CREATE", masterKey, groupName, lastid}
 
 		/* Load group offset. */
 		if typeByte == rdbTypeStreamListpacks2 {
@@ -228,7 +245,7 @@ func (o *StreamObject) readStream(rd io.Reader, masterKey string, typeByte byte)
 					"TIME", strconv.FormatUint(mapId2Time[streamId], 10),
 					"RETRYCOUNT", strconv.FormatUint(mapId2Count[streamId], 10),
 					"JUSTID", "FORCE"}
-				o.cmds = append(o.cmds, args)
+				cmdC <- args
 			}
 		}
 	}
@@ -248,8 +265,4 @@ func nextString(inx *int, elements []string) string {
 	ele := elements[*inx]
 	*inx++
 	return ele
-}
-
-func (o *StreamObject) Rewrite() []RedisCmd {
-	return o.cmds
 }

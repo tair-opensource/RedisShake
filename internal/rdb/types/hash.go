@@ -8,65 +8,70 @@ import (
 )
 
 type HashObject struct {
-	key   string
-	value map[string]string
+	key      string
+	typeByte byte
+	rd       io.Reader
+	cmdC     chan RedisCmd
 }
 
 func (o *HashObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 	o.key = key
-	o.value = make(map[string]string)
-	switch typeByte {
-	case rdbTypeHash:
-		o.readHash(rd)
-	case rdbTypeHashZipmap:
-		o.readHashZipmap(rd)
-	case rdbTypeHashZiplist:
-		o.readHashZiplist(rd)
-	case rdbTypeHashListpack:
-		o.readHashListpack(rd)
-	default:
-		log.Panicf("unknown hash type. typeByte=[%d]", typeByte)
-	}
+	o.typeByte = typeByte
+	o.rd = rd
+	o.cmdC = make(chan RedisCmd)
 }
 
-func (o *HashObject) readHash(rd io.Reader) {
+func (o *HashObject) Rewrite() <-chan RedisCmd {
+	go func() {
+		defer close(o.cmdC)
+		switch o.typeByte {
+		case rdbTypeHash:
+			o.readHash()
+		case rdbTypeHashZipmap:
+			o.readHashZipmap()
+		case rdbTypeHashZiplist:
+			o.readHashZiplist()
+		case rdbTypeHashListpack:
+			o.readHashListpack()
+		default:
+			log.Panicf("unknown hash type. typeByte=[%d]", o.typeByte)
+		}
+	}()
+	return o.cmdC
+}
+
+func (o *HashObject) readHash() {
+	rd := o.rd
 	size := int(structure.ReadLength(rd))
 	for i := 0; i < size; i++ {
 		key := structure.ReadString(rd)
 		value := structure.ReadString(rd)
-		o.value[key] = value
+		o.cmdC <- RedisCmd{"hset", o.key, key, value}
 	}
 }
 
-func (o *HashObject) readHashZipmap(rd io.Reader) {
+func (o *HashObject) readHashZipmap() {
 	log.Panicf("not implemented rdbTypeZipmap")
 }
 
-func (o *HashObject) readHashZiplist(rd io.Reader) {
+func (o *HashObject) readHashZiplist() {
+	rd := o.rd
 	list := structure.ReadZipList(rd)
 	size := len(list)
 	for i := 0; i < size; i += 2 {
 		key := list[i]
 		value := list[i+1]
-		o.value[key] = value
+		o.cmdC <- RedisCmd{"hset", o.key, key, value}
 	}
 }
 
-func (o *HashObject) readHashListpack(rd io.Reader) {
+func (o *HashObject) readHashListpack() {
+	rd := o.rd
 	list := structure.ReadListpack(rd)
 	size := len(list)
 	for i := 0; i < size; i += 2 {
 		key := list[i]
 		value := list[i+1]
-		o.value[key] = value
+		o.cmdC <- RedisCmd{"hset", o.key, key, value}
 	}
-}
-
-func (o *HashObject) Rewrite() []RedisCmd {
-	var cmds []RedisCmd
-	for k, v := range o.value {
-		cmd := RedisCmd{"hset", o.key, k, v}
-		cmds = append(cmds, cmd)
-	}
-	return cmds
 }
