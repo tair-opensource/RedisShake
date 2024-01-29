@@ -20,6 +20,7 @@ func (o *TairZsetObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte)
 	o.key = key
 	o.length = structure.ReadModuleUnsigned(rd)
 	o.scoreNum = structure.ReadModuleUnsigned(rd)
+	o.rd = rd
 	o.cmdC = make(chan RedisCmd)
 }
 

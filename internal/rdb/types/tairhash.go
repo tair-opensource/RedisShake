@@ -17,6 +17,7 @@ type TairHashObject struct {
 func (o *TairHashObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 	o.dictSize = structure.ReadModuleUnsigned(rd)
 	o.key = structure.ReadModuleString(rd)
+	o.rd = rd
 	o.cmdC = make(chan RedisCmd)
 }
 
