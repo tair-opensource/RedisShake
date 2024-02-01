@@ -8,15 +8,12 @@ import (
 )
 
 type TairHashObject struct {
-	dictSize string
-	key      string
-	rd       io.Reader
-	cmdC     chan RedisCmd
+	rd   io.Reader
+	cmdC chan RedisCmd
 }
 
 func (o *TairHashObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
-	o.dictSize = structure.ReadModuleUnsigned(rd)
-	o.key = structure.ReadModuleString(rd)
+	// `key` and `typeByte` are not used
 	o.rd = rd
 	o.cmdC = make(chan RedisCmd)
 }
@@ -26,7 +23,9 @@ func (o *TairHashObject) Rewrite() <-chan RedisCmd {
 	cmdC := o.cmdC
 	go func() {
 		defer close(o.cmdC)
-		size, _ := strconv.Atoi(o.dictSize)
+		dictSizeStr := structure.ReadModuleUnsigned(rd)
+		key := structure.ReadModuleString(rd)
+		size, _ := strconv.Atoi(dictSizeStr)
 		for i := 0; i < size; i++ {
 			skey := structure.ReadModuleString(rd)
 			version := structure.ReadModuleUnsigned(rd)
@@ -34,9 +33,9 @@ func (o *TairHashObject) Rewrite() <-chan RedisCmd {
 			fieldValue := structure.ReadModuleString(rd)
 			expire, _ := strconv.Atoi(expireText)
 			if expire == 0 {
-				cmdC <- RedisCmd{"EXHSET", o.key, skey, fieldValue}
+				cmdC <- RedisCmd{"EXHSET", key, skey, fieldValue}
 			} else {
-				cmdC <- RedisCmd{"EXHSET", o.key, skey, fieldValue,
+				cmdC <- RedisCmd{"EXHSET", key, skey, fieldValue,
 					"ABS", version,
 					"PXAT", expireText}
 			}

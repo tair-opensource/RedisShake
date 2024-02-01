@@ -9,17 +9,13 @@ import (
 )
 
 type TairZsetObject struct {
-	key      string
-	length   string
-	scoreNum string
-	rd       io.Reader
-	cmdC     chan RedisCmd
+	key  string
+	rd   io.Reader
+	cmdC chan RedisCmd
 }
 
 func (o *TairZsetObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 	o.key = key
-	o.length = structure.ReadModuleUnsigned(rd)
-	o.scoreNum = structure.ReadModuleUnsigned(rd)
 	o.rd = rd
 	o.cmdC = make(chan RedisCmd)
 }
@@ -29,8 +25,8 @@ func (o *TairZsetObject) Rewrite() <-chan RedisCmd {
 	cmdC := o.cmdC
 	go func() {
 		defer close(cmdC)
-		length, _ := strconv.Atoi(o.length)
-		scoreNum, _ := strconv.Atoi(o.scoreNum)
+		length, _ := strconv.Atoi(structure.ReadModuleUnsigned(rd))
+		scoreNum, _ := strconv.Atoi(structure.ReadModuleUnsigned(rd))
 		for i := 0; i < length; i++ {
 			key := structure.ReadModuleString(rd)
 			var values []string
