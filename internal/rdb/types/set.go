@@ -1,45 +1,62 @@
 package types
 
 import (
+	"RedisShake/internal/log"
 	"io"
 
-	"RedisShake/internal/log"
 	"RedisShake/internal/rdb/structure"
 )
 
 type SetObject struct {
 	key      string
-	elements []string
+	typeByte byte
+	rd       io.Reader
+	cmdC     chan RedisCmd
 }
 
 func (o *SetObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 	o.key = key
-	switch typeByte {
-	case rdbTypeSet:
-		o.readSet(rd)
-	case rdbTypeSetIntset:
-		o.elements = structure.ReadIntset(rd)
-	case rdbTypeSetListpack:
-		o.elements = structure.ReadListpack(rd)
-	default:
-		log.Panicf("unknown set type. typeByte=[%d]", typeByte)
-	}
+	o.typeByte = typeByte
+	o.rd = rd
+	o.cmdC = make(chan RedisCmd)
 }
 
-func (o *SetObject) readSet(rd io.Reader) {
+func (o *SetObject) Rewrite() <-chan RedisCmd {
+	go func() {
+		defer close(o.cmdC)
+		switch o.typeByte {
+		case rdbTypeSet:
+			o.readSet()
+		case rdbTypeSetIntset:
+			o.readIntset()
+		case rdbTypeSetListpack:
+			o.readListpack()
+		default:
+			log.Panicf("unknown set type. typeByte=[%d]", o.typeByte)
+		}
+	}()
+	return o.cmdC
+}
+
+func (o *SetObject) readSet() {
+	rd := o.rd
 	size := int(structure.ReadLength(rd))
-	o.elements = make([]string, size)
 	for i := 0; i < size; i++ {
 		val := structure.ReadString(rd)
-		o.elements[i] = val
+		o.cmdC <- RedisCmd{"sadd", o.key, val}
 	}
 }
 
-func (o *SetObject) Rewrite() []RedisCmd {
-	cmds := make([]RedisCmd, len(o.elements))
-	for inx, ele := range o.elements {
-		cmd := RedisCmd{"sadd", o.key, ele}
-		cmds[inx] = cmd
+func (o *SetObject) readIntset() {
+	elements := structure.ReadIntset(o.rd)
+	for _, ele := range elements {
+		o.cmdC <- RedisCmd{"sadd", o.key, ele}
 	}
-	return cmds
+}
+
+func (o *SetObject) readListpack() {
+	elements := structure.ReadListpack(o.rd)
+	for _, ele := range elements {
+		o.cmdC <- RedisCmd{"sadd", o.key, ele}
+	}
 }

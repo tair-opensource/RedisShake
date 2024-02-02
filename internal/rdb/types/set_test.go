@@ -16,16 +16,21 @@ func testOne(t *testing.T, typeByte byte, setData string, values []string) {
 	}
 	o := new(SetObject)
 	o.LoadFromBuffer(bytes.NewReader([]byte(setData[1:])), "key", typeByte)
-	if len(o.elements) != len(values) {
-		t.Errorf("elements not match. len(o.elements)=[%d], len(values)=[%d]", len(o.elements), len(values))
+	cmdC := o.Rewrite()
+	var elements []string
+	for cmd := range cmdC {
+		elements = append(elements, cmd[2])
 	}
-	count := len(o.elements)
-	sort.Strings(o.elements)
+	if len(elements) != len(values) {
+		t.Errorf("elements not match. len(o.elements)=[%d], len(values)=[%d]", len(elements), len(values))
+	}
+	count := len(elements)
+	sort.Strings(elements)
 	sort.Strings(values)
 	// check set
 	for i := 0; i < count; i++ {
-		if o.elements[i] != values[i] {
-			t.Errorf("elements not match. o.elements[i]=[%s], values[i]=[%s]", o.elements[i], values[i])
+		if elements[i] != values[i] {
+			t.Errorf("elements not match. o.elements[i]=[%s], values[i]=[%s]", elements[i], values[i])
 		}
 	}
 }

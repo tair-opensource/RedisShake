@@ -28,7 +28,7 @@ func main() {
 	utils.SetPprofPort()
 	luaRuntime := function.New(config.Opt.Function)
 
-  ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// create reader

@@ -14,62 +14,80 @@ const (
 )
 
 type ListObject struct {
-	key string
-
-	elements []string
+	key      string
+	typeByte byte
+	rd       io.Reader
+	cmdC     chan RedisCmd
 }
 
 func (o *ListObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 	o.key = key
-	switch typeByte {
-	case rdbTypeList:
-		o.readList(rd)
-	case rdbTypeListZiplist:
-		o.elements = structure.ReadZipList(rd)
-	case rdbTypeListQuicklist:
-		o.readQuickList(rd)
-	case rdbTypeListQuicklist2:
-		o.readQuickList2(rd)
-	default:
-		log.Panicf("unknown list type %d", typeByte)
-	}
+	o.typeByte = typeByte
+	o.rd = rd
+	o.cmdC = make(chan RedisCmd)
 }
 
-func (o *ListObject) Rewrite() []RedisCmd {
-	cmds := make([]RedisCmd, len(o.elements))
-	for inx, ele := range o.elements {
-		cmd := RedisCmd{"rpush", o.key, ele}
-		cmds[inx] = cmd
-	}
-	return cmds
+func (o *ListObject) Rewrite() <-chan RedisCmd {
+	go func() {
+		defer close(o.cmdC)
+		switch o.typeByte {
+		case rdbTypeList:
+			o.readList()
+		case rdbTypeListZiplist:
+			o.readZipList()
+		case rdbTypeListQuicklist:
+			o.readQuickList()
+		case rdbTypeListQuicklist2:
+			o.readQuickList2()
+		default:
+			log.Panicf("unknown list type %d", o.typeByte)
+		}
+	}()
+	return o.cmdC
 }
 
-func (o *ListObject) readList(rd io.Reader) {
+func (o *ListObject) readList() {
+	rd := o.rd
 	size := int(structure.ReadLength(rd))
 	for i := 0; i < size; i++ {
 		ele := structure.ReadString(rd)
-		o.elements = append(o.elements, ele)
+		o.cmdC <- RedisCmd{"rpush", o.key, ele}
 	}
 }
 
-func (o *ListObject) readQuickList(rd io.Reader) {
+func (o *ListObject) readZipList() {
+	rd := o.rd
+	elements := structure.ReadZipList(rd)
+	for _, ele := range elements {
+		o.cmdC <- RedisCmd{"rpush", o.key, ele}
+	}
+}
+
+func (o *ListObject) readQuickList() {
+	rd := o.rd
 	size := int(structure.ReadLength(rd))
 	for i := 0; i < size; i++ {
 		ziplistElements := structure.ReadZipList(rd)
-		o.elements = append(o.elements, ziplistElements...)
+		for _, ele := range ziplistElements {
+			o.cmdC <- RedisCmd{"rpush", o.key, ele}
+		}
 	}
 }
 
-func (o *ListObject) readQuickList2(rd io.Reader) {
+func (o *ListObject) readQuickList2() {
+	rd := o.rd
+	cmdC := o.cmdC
 	size := int(structure.ReadLength(rd))
 	for i := 0; i < size; i++ {
 		container := structure.ReadLength(rd)
 		if container == quicklistNodeContainerPlain {
 			ele := structure.ReadString(rd)
-			o.elements = append(o.elements, ele)
+			cmdC <- RedisCmd{"rpush", o.key, ele}
 		} else if container == quicklistNodeContainerPacked {
 			listpackElements := structure.ReadListpack(rd)
-			o.elements = append(o.elements, listpackElements...)
+			for _, ele := range listpackElements {
+				cmdC <- RedisCmd{"rpush", o.key, ele}
+			}
 		} else {
 			log.Panicf("unknown quicklist container %d", container)
 		}

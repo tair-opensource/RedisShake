@@ -124,32 +124,35 @@ func readDouble(rd io.Reader) float64 {
 	return f
 }
 
-func (o *BloomObject) Rewrite() []RedisCmd {
-	var cs []RedisCmd
-	var h string
-	if ver := config.Opt.Module.TargetMBbloomVersion; ver > 20200 {
-		h = getEncodedHeader(&o.sb, true, true)
-	} else if ver == 20200 {
-		h = getEncodedHeader(&o.sb, true, false)
-	} else if ver >= 10000 {
-		h = getEncodedHeader(&o.sb, false, false)
-	} else if o.encver < BF_MIN_GROWTH_ENC {
-		h = getEncodedHeader(&o.sb, false, false)
-	} else {
-		h = getEncodedHeader(&o.sb, true, true)
-	}
-	cmd := RedisCmd{"BF.LOADCHUNK", o.key, "1", h}
-	cs = append(cs, cmd)
-	curIter := uint64(1)
-	for {
-		c := getEncodedChunk(&o.sb, &curIter, MAX_SCANDUMP_SIZE)
-		if c == "" {
-			break
+func (o *BloomObject) Rewrite() <-chan RedisCmd {
+	cmdC := make(chan RedisCmd)
+	go func() {
+		defer close(cmdC)
+		var h string
+		if ver := config.Opt.Module.TargetMBbloomVersion; ver > 20200 {
+			h = getEncodedHeader(&o.sb, true, true)
+		} else if ver == 20200 {
+			h = getEncodedHeader(&o.sb, true, false)
+		} else if ver >= 10000 {
+			h = getEncodedHeader(&o.sb, false, false)
+		} else if o.encver < BF_MIN_GROWTH_ENC {
+			h = getEncodedHeader(&o.sb, false, false)
+		} else {
+			h = getEncodedHeader(&o.sb, true, true)
 		}
-		cmd := RedisCmd{"BF.LOADCHUNK", o.key, strconv.FormatUint(curIter, 10), c}
-		cs = append(cs, cmd)
-	}
-	return cs
+		cmd := RedisCmd{"BF.LOADCHUNK", o.key, "1", h}
+		cmdC <- cmd
+		curIter := uint64(1)
+		for {
+			c := getEncodedChunk(&o.sb, &curIter, MAX_SCANDUMP_SIZE)
+			if c == "" {
+				break
+			}
+			cmd := RedisCmd{"BF.LOADCHUNK", o.key, strconv.FormatUint(curIter, 10), c}
+			cmdC <- cmd
+		}
+	}()
+	return cmdC
 }
 
 func getEncodedHeader(sb *chain, withGrowth, bigEntries bool) string {

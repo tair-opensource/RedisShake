@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 	"RedisShake/internal/rdb/structure"
@@ -157,40 +156,18 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			return
 		default:
 			key := structure.ReadString(rd)
-			var value bytes.Buffer
-			anotherReader := io.TeeReader(rd, &value)
-			o := types.ParseObject(anotherReader, typeByte, key)
-			if uint64(value.Len()) > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
-				cmds := o.Rewrite()
-				for _, cmd := range cmds {
-					e := entry.NewEntry()
-					e.DbId = ld.nowDBId
-					e.Argv = cmd
-					ld.ch <- e
-				}
-				if ld.expireMs != 0 {
-					e := entry.NewEntry()
-					e.DbId = ld.nowDBId
-					e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
-					ld.ch <- e
-				}
-			} else {
+			o := types.ParseObject(rd, typeByte, key)
+			cmdC := o.Rewrite()
+			for cmd := range cmdC {
 				e := entry.NewEntry()
 				e.DbId = ld.nowDBId
-				v := ld.createValueDump(typeByte, value.Bytes())
-				e.Argv = []string{"restore", key, strconv.FormatInt(ld.expireMs, 10), v}
-				if config.Opt.Advanced.RDBRestoreCommandBehavior == "rewrite" {
-					//if config.Opt.Target.Version < 3.0 {
-					//	log.Panicf("RDB restore command behavior is rewrite, but target redis version is %f, not support REPLACE modifier", config.Config.Target.Version)
-					//}
-					e.Argv = append(e.Argv, "replace")
-				}
-				//if ld.idle != 0 && config.Config.Target.Version >= 5.0 {
-				//	e.Argv = append(e.Argv, "idletime", strconv.FormatInt(ld.idle, 10))
-				//}
-				//if ld.freq != 0 && config.Config.Target.Version >= 5.0 {
-				//	e.Argv = append(e.Argv, "freq", strconv.FormatInt(ld.freq, 10))
-				//}
+				e.Argv = cmd
+				ld.ch <- e
+			}
+			if ld.expireMs != 0 {
+				e := entry.NewEntry()
+				e.DbId = ld.nowDBId
+				e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
 				ld.ch <- e
 			}
 			ld.expireMs = 0
