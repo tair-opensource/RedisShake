@@ -88,7 +88,7 @@ func readListpackEntry(rd io.Reader) string {
 		uval = uint64(ReadUint16(rd))
 		negstart = uint64(1) << 15
 		negmax = 65535                        // uint16_max
-		_ = ReadBytes(rd, lpEncodeBacklen(2)) // encode: 1byte, int: 2byte
+		_ = ReadBytes(rd, lpEncodeBacklen(1+2)) // encode: 1byte, int: 2byte
 
 	} else if (fireByte & lpEncoding24BitIntMask) == lpEncoding24BitInt { // 24bit int
 
