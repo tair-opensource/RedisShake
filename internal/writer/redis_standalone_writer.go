@@ -30,9 +30,10 @@ type redisStandaloneWriter struct {
 	client  *client.Redis
 	DbId    int
 
-	chWaitReply chan *entry.Entry
-	chWg        sync.WaitGroup
-	offReply    bool
+	chWaitReply     chan *entry.Entry
+	chWg            sync.WaitGroup
+	offReply        bool
+	isWriterCluster bool
 
 	stat struct {
 		Name              string `json:"name"`
@@ -44,6 +45,7 @@ type redisStandaloneWriter struct {
 func NewRedisStandaloneWriter(ctx context.Context, opts *RedisWriterOptions) Writer {
 	rw := new(redisStandaloneWriter)
 	rw.address = opts.Address
+	rw.isWriterCluster = opts.Cluster
 	rw.stat.Name = "writer_" + strings.Replace(opts.Address, ":", "_", -1)
 	rw.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls)
 	if opts.OffReply {
@@ -67,7 +69,7 @@ func (w *redisStandaloneWriter) Close() {
 
 func (w *redisStandaloneWriter) Write(e *entry.Entry) {
 	// switch db if we need
-	if w.DbId != e.DbId {
+	if w.DbId != e.DbId && !(w.isWriterCluster) {
 		w.switchDbTo(e.DbId)
 	}
 
