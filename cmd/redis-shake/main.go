@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
@@ -120,20 +121,37 @@ func main() {
 	ch := theReader.StartRead(ctx)
 	go waitShutdown(cancel)
 
-	for e := range ch {
-		// calc arguments
-		e.Parse()
-		status.AddReadCount(e.CmdName)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+Loop:
+	for {
+		select {
+		case e, ok := <-ch:
+			if !ok {
+				// ch has been closed, exit the loop
+				break Loop
+			}
+			// calc arguments
+			e.Parse()
+			status.AddReadCount(e.CmdName)
 
-		// filter
-		log.Debugf("function before: %v", e)
-		entries := luaRuntime.RunFunction(e)
-		log.Debugf("function after: %v", entries)
+			// filter
+			log.Debugf("function before: %v", e)
+			entries := luaRuntime.RunFunction(e)
+			log.Debugf("function after: %v", entries)
 
-		for _, entry := range entries {
-			entry.Parse()
-			theWriter.Write(entry)
-			status.AddWriteCount(entry.CmdName)
+			for _, theEntry := range entries {
+				theEntry.Parse()
+				theWriter.Write(theEntry)
+				status.AddWriteCount(theEntry.CmdName)
+			}
+		case <-ticker.C:
+			pingEntry := entry.NewEntry()
+			pingEntry.DbId = 0
+			pingEntry.CmdName = "PING"
+			pingEntry.Argv = []string{"PING"}
+			pingEntry.Group = "connection"
+			theWriter.Write(pingEntry)
 		}
 	}
 
