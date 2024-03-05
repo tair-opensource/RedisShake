@@ -101,7 +101,7 @@ func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
 	return nil
 }
 
-func moduleTypeNameByID(moduleId uint64) string {
+func ModuleTypeNameByID(moduleId uint64) string {
 	nameList := make([]byte, 9)
 	moduleId >>= 10
 	for i := 8; i >= 0; i-- {

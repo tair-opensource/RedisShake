@@ -16,7 +16,7 @@ func PareseModuleType(rd io.Reader, key string, typeByte byte) ModuleObject {
 		log.Panicf("module type with version 1 is not supported, key=[%s]", key)
 	}
 	moduleId := structure.ReadLength(rd)
-	moduleName := moduleTypeNameByID(moduleId)
+	moduleName := ModuleTypeNameByID(moduleId)
 	switch moduleName {
 	case "exstrtype":
 		o := new(TairStringObject)
