@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -133,6 +134,12 @@ func (r *syncStandaloneReader) sendPSync() {
 
 	// format: \n\n\n+<reply>\r\n
 	for {
+		select {
+		case <-r.ctx.Done():
+			close(r.ch)
+			runtime.Goexit() // stop goroutine
+		default:
+		}
 		bytes, err := r.rd.Peek(1)
 		if err != nil {
 			log.Panicf(err.Error())
