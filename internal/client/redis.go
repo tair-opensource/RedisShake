@@ -27,15 +27,17 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 		Timeout:   5 * time.Minute,
 		KeepAlive: 5 * time.Minute,
 	}
+	ctxWithDeadline, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
 	var err error
 	if Tls {
 		tlsDialer := &tls.Dialer{
 			NetDialer: dialer,
 			Config:    &tls.Config{InsecureSkipVerify: true},
 		}
-		conn, err = tlsDialer.DialContext(ctx, "tcp", address)
+		conn, err = tlsDialer.DialContext(ctxWithDeadline, "tcp", address)
 	} else {
-		conn, err = dialer.DialContext(ctx, "tcp", address)
+		conn, err = dialer.DialContext(ctxWithDeadline, "tcp", address)
 	}
 	if err != nil {
 		log.Panicf("dial failed. address=[%s], tls=[%v], err=[%v]", address, Tls, err)
