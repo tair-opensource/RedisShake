@@ -18,17 +18,26 @@ import (
 )
 
 const (
-	kFlagFunction2 = 245  // function library data
-	kFlagFunction  = 246  // old function library data for 7.0 rc1 and rc2
-	kFlagModuleAux = 247  // Module auxiliary data.
-	kFlagIdle      = 0xf8 // LRU idle time.
-	kFlagFreq      = 0xf9 // LFU frequency.
-	kFlagAUX       = 0xfa // RDB aux field.
-	kFlagResizeDB  = 0xfb // Hash table resize hint.
-	kFlagExpireMs  = 0xfc // Expire time in milliseconds.
-	kFlagExpire    = 0xfd // Old expire time in seconds.
-	kFlagSelect    = 0xfe // DB number of the following keys.
-	kEOF           = 0xff // End of the RDB file.
+	kFlagFunction2 = 245 // function library data
+	kFlagFunction  = 246 // old function library data for 7.0 rc1 and rc2
+	kFlagModuleAux = 247 // RDB_OPCODE_MODULE_AUX: Module auxiliary data.
+	kFlagIdle      = 248 // RDB_OPCODE_IDLE: LRU idle time.
+	kFlagFreq      = 249 // RDB_OPCODE_FREQ: LFU frequency.
+	kFlagAUX       = 250 // RDB_OPCODE_AUX: RDB aux field.
+	kFlagResizeDB  = 251 // RDB_OPCODE_RESIZEDB: Hash table resize hint.
+	kFlagExpireMs  = 252 // RDB_OPCODE_EXPIRETIME_MS: Expire time in milliseconds.
+	kFlagExpire    = 253 // RDB_OPCODE_EXPIRETIME: Old expire time in seconds.
+	kFlagSelect    = 254 // RDB_OPCODE_SELECTDB: DB number of the following keys.
+	kEOF           = 255 // RDB_OPCODE_EOF: End of the RDB file.
+)
+
+const (
+	kRDBModuleOpcodeEOF    = 0 // RDB_MODULE_OPCODE_EOF: End of module value.
+	kRDBModuleOpcodeSINT   = 1 // RDB_MODULE_OPCODE_SINT: Signed integer.
+	kRDBModuleOpcodeUINT   = 2 // RDB_MODULE_OPCODE_UINT: Unsigned integer.
+	kRDBModuleOpcodeFLOAT  = 3 // RDB_MODULE_OPCODE_FLOAT: Float.
+	kRDBModuleOpcodeDOUBLE = 4 // RDB_MODULE_OPCODE_DOUBLE: Double.
+	kRDBModuleOpcodeSTRING = 5 // RDB_MODULE_OPCODE_STRING: String.
 )
 
 type Loader struct {
@@ -113,7 +122,30 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 	defer ticker.Stop()
 	for {
 		typeByte := structure.ReadByte(rd)
+		log.Debugf("RDB type byte is: [%d]", typeByte)
 		switch typeByte {
+		case kFlagModuleAux:
+			moduleId := structure.ReadLength(rd) // module id
+			moduleName := types.ModuleTypeNameByID(moduleId)
+			log.Debugf("[%s] RDB module aux: module_id=[%d], module_name=[%s]", ld.name, moduleId, moduleName)
+			_ = structure.ReadLength(rd) // when_opcode
+			_ = structure.ReadLength(rd) // when
+			opcode := structure.ReadLength(rd)
+			for opcode != kRDBModuleOpcodeEOF {
+				switch opcode {
+				case kRDBModuleOpcodeSINT, kRDBModuleOpcodeUINT:
+					_ = structure.ReadLength(rd)
+				case kRDBModuleOpcodeFLOAT:
+					_ = structure.ReadFloat(rd)
+				case kRDBModuleOpcodeDOUBLE:
+					_ = structure.ReadDouble(rd)
+				case kRDBModuleOpcodeSTRING:
+					_ = structure.ReadString(rd)
+				default:
+					log.Panicf("module aux opcode not found. module_name=[%s], opcode=[%d]", moduleName, opcode)
+				}
+				opcode = structure.ReadLength(rd)
+			}
 		case kFlagIdle:
 			ld.idle = int64(structure.ReadLength(rd))
 		case kFlagFreq:
