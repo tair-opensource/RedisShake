@@ -86,7 +86,8 @@ func main() {
 	}
 	// create writer
 	var theWriter writer.Writer
-	if v.IsSet("redis_writer") {
+	switch {
+	case v.IsSet("redis_writer"):
 		opts := new(writer.RedisWriterOptions)
 		defaults.SetDefaults(opts)
 		err := v.UnmarshalKey("redis_writer", opts)
@@ -109,10 +110,9 @@ func main() {
 			entry.Argv = []string{"FLUSHALL"}
 			theWriter.Write(entry)
 		}
-	} else {
+	default:
 		log.Panicf("no writer config entry found")
 	}
-
 	// create status
 	status.Init(theReader, theWriter)
 
