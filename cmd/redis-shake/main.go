@@ -34,7 +34,8 @@ func main() {
 
 	// create reader
 	var theReader reader.Reader
-	if v.IsSet("sync_reader") {
+	switch {
+	case v.IsSet("sync_reader"):
 		opts := new(reader.SyncReaderOptions)
 		defaults.SetDefaults(opts)
 		err := v.UnmarshalKey("sync_reader", opts)
@@ -48,7 +49,7 @@ func main() {
 			theReader = reader.NewSyncStandaloneReader(ctx, opts)
 			log.Infof("create SyncStandaloneReader: %v", opts.Address)
 		}
-	} else if v.IsSet("scan_reader") {
+	case v.IsSet("scan_reader"):
 		opts := new(reader.ScanReaderOptions)
 		defaults.SetDefaults(opts)
 		err := v.UnmarshalKey("scan_reader", opts)
@@ -62,7 +63,7 @@ func main() {
 			theReader = reader.NewScanStandaloneReader(ctx, opts)
 			log.Infof("create ScanStandaloneReader: %v", opts.Address)
 		}
-	} else if v.IsSet("rdb_reader") {
+	case v.IsSet("rdb_reader"):
 		opts := new(reader.RdbReaderOptions)
 		defaults.SetDefaults(opts)
 		err := v.UnmarshalKey("rdb_reader", opts)
@@ -71,7 +72,7 @@ func main() {
 		}
 		theReader = reader.NewRDBReader(opts)
 		log.Infof("create RdbReader: %v", opts.Filepath)
-	} else if v.IsSet("aof_reader") {
+	case v.IsSet("aof_reader"):
 		opts := new(reader.AOFReaderOptions)
 		defaults.SetDefaults(opts)
 		err := v.UnmarshalKey("aof_reader", opts)
@@ -80,10 +81,9 @@ func main() {
 		}
 		theReader = reader.NewAOFReader(opts)
 		log.Infof("create AOFReader: %v", opts.Filepath)
-	} else {
+	default:
 		log.Panicf("no reader config entry found")
 	}
-
 	// create writer
 	var theWriter writer.Writer
 	if v.IsSet("redis_writer") {
