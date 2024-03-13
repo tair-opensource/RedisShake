@@ -76,7 +76,16 @@ For more detailed information, please refer to the documentation:
 - [English Documentation](https://tair-opensource.github.io/RedisShake/en/)
 
 ## Contributing
+<!-- Copy-paste in your Readme.md file -->
 
+<a href="https://next.ossinsight.io/widgets/official/compose-recent-top-contributors?repo_id=173063554" target="_blank" style="display: block" align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://next.ossinsight.io/widgets/official/compose-recent-top-contributors/thumbnail.png?repo_id=173063554&image_size=auto&color_scheme=dark" width="auto" height="auto">
+    <img alt="Top Contributors of tair-opensource/RedisShake - Last 28 days" src="https://next.ossinsight.io/widgets/official/compose-recent-top-contributors/thumbnail.png?repo_id=173063554&image_size=auto&color_scheme=light" width="auto" height="auto">
+  </picture>
+</a>
+
+<!-- Made with [OSS Insight](https://ossinsight.io/) -->
 We welcome contributions from the community. For significant changes, please open an issue first to discuss what you
 would like to change. We are particularly interested in:
 
