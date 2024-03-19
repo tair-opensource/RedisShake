@@ -58,7 +58,12 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 		r.dbs = []int{0}
 	} else {
 		if len(opts.DBS) == 0 {
-			r.dbs = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+			c.Send("info", "keyspace")
+			info, err := c.Receive()
+			if err != nil {
+				log.Panicf(err.Error())
+			}
+			r.dbs = utils.ParseDBs(info.(string))
 		} else {
 			r.dbs = opts.DBS
 		}
