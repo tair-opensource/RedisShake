@@ -106,8 +106,9 @@ func (r *scanStandaloneReader) subscript() {
 				if err != nil {
 					log.Panicf(err.Error())
 				}
-				key := resp.([]interface{})[3].(string)
-				dbId := regex.FindString(resp.([]interface{})[2].(string))
+				respSlice := resp.([]interface{})
+				key := respSlice[3].(string)
+				dbId := regex.FindString(respSlice[2].(string))
 				dbIdInt, err := strconv.Atoi(dbId)
 				if err != nil {
 					log.Panicf(err.Error())
