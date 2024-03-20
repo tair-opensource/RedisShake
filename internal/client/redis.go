@@ -148,8 +148,8 @@ func (r *Redis) Close() {
 
 /* Commands */
 
-func (r *Redis) Scan(cursor uint64, batch string) (newCursor uint64, keys []string) {
-	r.Send("scan", strconv.FormatUint(cursor, 10), "count", batch)
+func (r *Redis) Scan(cursor uint64, count string) (newCursor uint64, keys []string) {
+	r.Send("scan", strconv.FormatUint(cursor, 10), "count", count)
 	reply, err := r.Receive()
 	if err != nil {
 		log.Panicf(err.Error())
