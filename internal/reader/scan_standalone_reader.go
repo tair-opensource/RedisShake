@@ -26,6 +26,7 @@ type ScanReaderOptions struct {
 	KSN           bool   `mapstructure:"ksn" default:"false"`
 	DBS           []int  `mapstructure:"dbs"`
 	PreferReplica bool   `mapstructure:"prefer_replica" default:"false"`
+	Batch         int    `mapstructure:"batch" default:"2048"`
 }
 
 type dbKey struct {
@@ -131,9 +132,10 @@ func (r *scanStandaloneReader) scan() {
 		}
 
 		var cursor uint64 = 0
+		batch := strconv.Itoa(r.opts.Batch)
 		for {
 			var keys []string
-			cursor, keys = c.Scan(cursor)
+			cursor, keys = c.Scan(cursor, batch)
 			for _, key := range keys {
 				r.keyQueue.Put(dbKey{dbId, key}) // pass value not pointer
 			}
