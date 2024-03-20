@@ -132,7 +132,7 @@ func (r *scanStandaloneReader) scan() {
 		}
 
 		var cursor uint64 = 0
-		count := strconv.Itoa(r.opts.Count)
+		count := r.opts.Count
 		for {
 			var keys []string
 			cursor, keys = c.Scan(cursor, count)

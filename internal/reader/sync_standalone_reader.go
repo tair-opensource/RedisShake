@@ -116,7 +116,7 @@ func (r *syncStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry 
 
 func (r *syncStandaloneReader) sendReplconfListenPort() {
 	// use status_port as redis-shake port
-	argv := []string{"replconf", "listening-port", strconv.Itoa(config.Opt.Advanced.StatusPort)}
+	argv := []interface{}{"replconf", "listening-port", strconv.Itoa(config.Opt.Advanced.StatusPort)}
 	r.client.Send(argv...)
 	_, err := r.client.Receive()
 	if err != nil {
@@ -126,9 +126,9 @@ func (r *syncStandaloneReader) sendReplconfListenPort() {
 
 func (r *syncStandaloneReader) sendPSync() {
 	// send PSync
-	argv := []string{"PSYNC", "?", "-1"}
+	argv := []interface{}{"PSYNC", "?", "-1"}
 	if config.Opt.Advanced.AwsPSync != "" {
-		argv = []string{config.Opt.Advanced.GetPSyncCommand(r.stat.Address), "?", "-1"}
+		argv = []interface{}{config.Opt.Advanced.GetPSyncCommand(r.stat.Address), "?", "-1"}
 	}
 	r.client.Send(argv...)
 
