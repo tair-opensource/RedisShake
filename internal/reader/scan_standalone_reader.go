@@ -90,7 +90,11 @@ func (r *scanStandaloneReader) subscript() {
 	}
 	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
 	c.Send("psubscribe", "__keyevent@*__:*")
-
+	// filter dbs
+	dbIDmap := make(map[int]struct{})
+	for _, db := range r.dbs {
+		dbIDmap[db] = struct{}{}
+	}
 	go func() {
 		_, err := c.Receive()
 		if err != nil {
@@ -114,7 +118,10 @@ func (r *scanStandaloneReader) subscript() {
 				if err != nil {
 					log.Panicf(err.Error())
 				}
-				r.keyQueue.Put(dbKey{db: dbIdInt, key: key})
+				// if the db is not in the dbs, ignore it
+				if _, ok := dbIDmap[dbIdInt]; ok {
+					r.keyQueue.Put(dbKey{db: dbIdInt, key: key})
+				}
 			}
 		}
 	}()
