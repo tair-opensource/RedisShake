@@ -26,6 +26,7 @@ type ScanReaderOptions struct {
 	KSN           bool   `mapstructure:"ksn" default:"false"`
 	DBS           []int  `mapstructure:"dbs"`
 	PreferReplica bool   `mapstructure:"prefer_replica" default:"false"`
+	Count         int    `mapstructure:"count" default:"2048"`
 }
 
 type dbKey struct {
@@ -58,7 +59,12 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 		r.dbs = []int{0}
 	} else {
 		if len(opts.DBS) == 0 {
-			r.dbs = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+			c.Send("info", "keyspace")
+			info, err := c.Receive()
+			if err != nil {
+				log.Panicf(err.Error())
+			}
+			r.dbs = utils.ParseDBs(info.(string))
 		} else {
 			r.dbs = opts.DBS
 		}
@@ -101,8 +107,9 @@ func (r *scanStandaloneReader) subscript() {
 				if err != nil {
 					log.Panicf(err.Error())
 				}
-				key := resp.([]interface{})[3].(string)
-				dbId := regex.FindString(resp.([]interface{})[2].(string))
+				respSlice := resp.([]interface{})
+				key := respSlice[3].(string)
+				dbId := regex.FindString(respSlice[2].(string))
 				dbIdInt, err := strconv.Atoi(dbId)
 				if err != nil {
 					log.Panicf(err.Error())
@@ -125,9 +132,10 @@ func (r *scanStandaloneReader) scan() {
 		}
 
 		var cursor uint64 = 0
+		count := r.opts.Count
 		for {
 			var keys []string
-			cursor, keys = c.Scan(cursor)
+			cursor, keys = c.Scan(cursor, count)
 			for _, key := range keys {
 				r.keyQueue.Put(dbKey{dbId, key}) // pass value not pointer
 			}

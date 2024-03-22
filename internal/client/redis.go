@@ -71,7 +71,7 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	return r
 }
 
-func (r *Redis) DoWithStringReply(args ...string) string {
+func (r *Redis) DoWithStringReply(args ...interface{}) string {
 	r.Send(args...)
 
 	replyInterface, err := r.Receive()
@@ -82,7 +82,7 @@ func (r *Redis) DoWithStringReply(args ...string) string {
 	return reply
 }
 
-func (r *Redis) Do(args ...string) interface{} {
+func (r *Redis) Do(args ...interface{}) interface{} {
 	r.Send(args...)
 
 	reply, err := r.Receive()
@@ -92,7 +92,7 @@ func (r *Redis) Do(args ...string) interface{} {
 	return reply
 }
 
-func (r *Redis) Send(args ...string) {
+func (r *Redis) Send(args ...interface{}) {
 	argsInterface := make([]interface{}, len(args))
 	for inx, item := range args {
 		argsInterface[inx] = item
@@ -148,8 +148,8 @@ func (r *Redis) Close() {
 
 /* Commands */
 
-func (r *Redis) Scan(cursor uint64) (newCursor uint64, keys []string) {
-	r.Send("scan", strconv.FormatUint(cursor, 10), "count", "2048")
+func (r *Redis) Scan(cursor uint64, count int) (newCursor uint64, keys []string) {
+	r.Send("scan", strconv.FormatUint(cursor, 10), "count", count)
 	reply, err := r.Receive()
 	if err != nil {
 		log.Panicf(err.Error())
