@@ -3,6 +3,8 @@ package structure
 import (
 	"encoding/binary"
 	"io"
+
+	"RedisShake/internal/log"
 )
 
 func ReadUint8(rd io.Reader) uint8 {
@@ -11,8 +13,13 @@ func ReadUint8(rd io.Reader) uint8 {
 }
 
 func ReadUint16(rd io.Reader) uint16 {
-	buf := ReadBytes(rd, 2)
-	return binary.LittleEndian.Uint16(buf)
+	data := BytesPoolWithCap2.Get().(*[]byte)
+	if _, err := io.ReadFull(rd, *data); err != nil {
+		log.Panicf(err.Error())
+	}
+	result := binary.LittleEndian.Uint16(*data)
+	BytesPoolWithCap2.Put(data)
+	return result
 }
 
 func ReadUint24(rd io.Reader) uint32 {
@@ -22,13 +29,23 @@ func ReadUint24(rd io.Reader) uint32 {
 }
 
 func ReadUint32(rd io.Reader) uint32 {
-	buf := ReadBytes(rd, 4)
-	return binary.LittleEndian.Uint32(buf)
+	data := BytesPoolWithCap4.Get().(*[]byte)
+	if _, err := io.ReadFull(rd, *data); err != nil {
+		log.Panicf(err.Error())
+	}
+	result := binary.LittleEndian.Uint32(*data)
+	BytesPoolWithCap4.Put(data)
+	return result
 }
 
 func ReadUint64(rd io.Reader) uint64 {
-	buf := ReadBytes(rd, 8)
-	return binary.LittleEndian.Uint64(buf)
+	data := BytesPoolWithCap8.Get().(*[]byte)
+	if _, err := io.ReadFull(rd, *data); err != nil {
+		log.Panicf(err.Error())
+	}
+	result := binary.LittleEndian.Uint64(*data)
+	BytesPoolWithCap8.Put(data)
+	return result
 }
 
 func ReadInt8(rd io.Reader) int8 {
@@ -37,8 +54,13 @@ func ReadInt8(rd io.Reader) int8 {
 }
 
 func ReadInt16(rd io.Reader) int16 {
-	buf := ReadBytes(rd, 2)
-	return int16(binary.LittleEndian.Uint16(buf))
+	data := BytesPoolWithCap2.Get().(*[]byte)
+	if _, err := io.ReadFull(rd, *data); err != nil {
+		log.Panicf(err.Error())
+	}
+	result := int16(binary.LittleEndian.Uint16(*data))
+	BytesPoolWithCap2.Put(data)
+	return result
 }
 
 func ReadInt24(rd io.Reader) int32 {
@@ -48,11 +70,21 @@ func ReadInt24(rd io.Reader) int32 {
 }
 
 func ReadInt32(rd io.Reader) int32 {
-	buf := ReadBytes(rd, 4)
-	return int32(binary.LittleEndian.Uint32(buf))
+	data := BytesPoolWithCap4.Get().(*[]byte)
+	if _, err := io.ReadFull(rd, *data); err != nil {
+		log.Panicf(err.Error())
+	}
+	result := int32(binary.LittleEndian.Uint32(*data))
+	BytesPoolWithCap4.Put(data)
+	return result
 }
 
 func ReadInt64(rd io.Reader) int64 {
-	buf := ReadBytes(rd, 8)
-	return int64(binary.LittleEndian.Uint64(buf))
+	data := BytesPoolWithCap8.Get().(*[]byte)
+	if _, err := io.ReadFull(rd, *data); err != nil {
+		log.Panicf(err.Error())
+	}
+	result := int64(binary.LittleEndian.Uint64(*data))
+	BytesPoolWithCap8.Put(data)
+	return result
 }
