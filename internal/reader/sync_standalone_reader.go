@@ -302,6 +302,10 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 			if strings.EqualFold(argv[0], "opinfo") {
 				continue
 			}
+			// txn
+			if strings.EqualFold(argv[0], "multi") || strings.EqualFold(argv[0], "exec") {
+				continue
+			}
 			// sentinel
 			if strings.EqualFold(argv[0], "publish") && strings.EqualFold(argv[1], "__sentinel__:hello") {
 				continue
