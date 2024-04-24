@@ -601,15 +601,14 @@ func (aofInfo *INFO) LoadAppendOnlyFile(ctx context.Context, am *AOFManifest, AO
 			if ret == AOFEmpty {
 				ret = AOFOk
 			}
+			if ret == AOFOk || ret == AOFTruncated {
+				log.Infof("The AOF File was successfully loaded")
+			}
 			if ret == AOFOpenErr || ret == AOFFailed {
-				if ret == AOFOk || ret == AOFTruncated {
-					log.Infof("The AOF File was successfully loaded")
+				if ret == AOFOpenErr {
+					log.Panicf("There was an error opening the AOF File.")
 				} else {
-					if ret == AOFOpenErr {
-						log.Panicf("There was an error opening the AOF File.")
-					} else {
-						log.Panicf("Failed to open AOF File.")
-					}
+					log.Panicf("Failed to open AOF File.")
 				}
 				return ret
 			}
