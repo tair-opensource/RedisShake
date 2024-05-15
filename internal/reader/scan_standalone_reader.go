@@ -24,6 +24,7 @@ type ScanReaderOptions struct {
 	Username      string `mapstructure:"username" default:""`
 	Password      string `mapstructure:"password" default:""`
 	Tls           bool   `mapstructure:"tls" default:"false"`
+	Scan          bool   `mapstructure:"scan" default:"true"`
 	KSN           bool   `mapstructure:"ksn" default:"false"`
 	DBS           []int  `mapstructure:"dbs"`
 	PreferReplica bool   `mapstructure:"prefer_replica" default:"false"`
@@ -87,17 +88,18 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 
 func (r *scanStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry {
 	r.ctx = ctx
-	r.subscript()
-	go r.scan()
+	if r.opts.Scan {
+		go r.scan()
+	}
+	if r.opts.KSN {
+		go r.subscript()
+	}
 	go r.dump()
 	go r.restore()
 	return r.ch
 }
 
 func (r *scanStandaloneReader) subscript() {
-	if !r.opts.KSN {
-		return
-	}
 	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
 	c.Send("psubscribe", "__keyevent@*__:*")
 	// filter dbs
@@ -105,37 +107,35 @@ func (r *scanStandaloneReader) subscript() {
 	for _, db := range r.dbs {
 		dbIDmap[db] = struct{}{}
 	}
-	go func() {
-		_, err := c.Receive()
-		if err != nil {
-			log.Panicf(err.Error())
-		}
-		regex := regexp.MustCompile(`\d+`)
-		for {
-			select {
-			case <-r.ctx.Done():
-				log.Infof("[%s] scanStandaloneReader subscript finished.", r.stat.Name)
-				r.needDumpQueue.Close()
-				return
-			default:
-				resp, err := c.Receive()
-				if err != nil {
-					log.Panicf(err.Error())
-				}
-				respSlice := resp.([]interface{})
-				key := respSlice[3].(string)
-				dbId := regex.FindString(respSlice[2].(string))
-				dbIdInt, err := strconv.Atoi(dbId)
-				if err != nil {
-					log.Panicf(err.Error())
-				}
-				// if the db is not in the dbs, ignore it
-				if _, ok := dbIDmap[dbIdInt]; ok {
-					r.needDumpQueue.Put(dbKey{db: dbIdInt, key: key})
-				}
+	_, err := c.Receive()
+	if err != nil {
+		log.Panicf(err.Error())
+	}
+	regex := regexp.MustCompile(`\d+`)
+	for {
+		select {
+		case <-r.ctx.Done():
+			log.Infof("[%s] scanStandaloneReader subscript finished.", r.stat.Name)
+			r.needDumpQueue.Close()
+			return
+		default:
+			resp, err := c.Receive()
+			if err != nil {
+				log.Panicf(err.Error())
+			}
+			respSlice := resp.([]interface{})
+			key := respSlice[3].(string)
+			dbId := regex.FindString(respSlice[2].(string))
+			dbIdInt, err := strconv.Atoi(dbId)
+			if err != nil {
+				log.Panicf(err.Error())
+			}
+			// if the db is not in the dbs, ignore it
+			if _, ok := dbIDmap[dbIdInt]; ok {
+				r.needDumpQueue.Put(dbKey{db: dbIdInt, key: key})
 			}
 		}
-	}()
+	}
 }
 
 func (r *scanStandaloneReader) scan() {
