@@ -40,6 +40,12 @@ func TestCalcKeys(t *testing.T) {
 	if cmd != "ZUNIONSTORE" || group != "SORTED_SET" || !testEq(keys, []string{"key", "key1", "key2"}) {
 		t.Errorf("CalcKeys(ZUNIONSTORE key 2 key1 key2) failed. cmd=%s, group=%s, keys=%v", cmd, group, keys)
 	}
+
+	// COMMAND
+	cmd, group, keys, _ = CalcKeys([]string{"COMMAND"})
+	if cmd != "COMMAND" || group != "SERVER" || !testEq(keys, []string{}) {
+		t.Errorf("CalcKeys(COMMAND) failed. cmd=%s, group=%s, keys=%v", cmd, group, keys)
+	}
 }
 
 func TestKeyHash(t *testing.T) {
