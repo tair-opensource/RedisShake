@@ -9,7 +9,7 @@ password = ""              # keep empty if no authentication is required
 tls = false
 sync_rdb = true # set to false if you don't want to sync rdb
 sync_aof = true # set to false if you don't want to sync aof
-prefer_replica = true # set to true if you want to sync from replica node
+count = 1 # number of keys to scan per iteration
 
 # [scan_reader]
 # cluster = false            # set to true if source is a redis cluster
