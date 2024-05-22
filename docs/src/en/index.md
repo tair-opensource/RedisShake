@@ -4,8 +4,7 @@ layout: home
 
 hero:
     name: "RedisShake"
-    # text: "用于 Redis-like 数据库的数据迁移与处理服务"
-    tagline: 用于 Redis-like 数据库的数据迁移与处理服务
+    tagline: Data migration and processing for Redis-like databases
     actions:
         -   theme: brand
             text: Get Started

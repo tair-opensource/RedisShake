@@ -1,3 +1,7 @@
+---
+outline: deep
+---
+
 # Sync Reader
 
 ## 介绍
@@ -12,6 +16,10 @@
 优势：数据一致性最佳，对源库影响小，可以实现不停机的切换
 
 原理：RedisShake 模拟 Slave 连接到 Master 节点，Master 会向 RedisShake 发送数据，数据包含全量与增量两部分。全量是一个 RDB 文件，增量是 AOF 数据流，RedisShake 会接受全量与增量将其暂存到硬盘上。全量同步阶段：RedisShake 首先会将 RDB 文件解析为一条条的 Redis 命令，然后将这些命令发送至目的端。增量同步阶段：RedisShake 会持续将 AOF 数据流同步至目的端。
+
+### 常见问题
+
+**连接断开**：如果遇到 RedisShake 至源端节点的连接被断开，可通过源端对应节点的运行日志确认，多是因为源端 `client-output-buffer-limit replica` 参数设置过小，建议适当调高。
 
 ## 配置
 
