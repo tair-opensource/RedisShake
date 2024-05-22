@@ -47,13 +47,16 @@ outline: deep
 
 在不支持 PSync 协议的场景下，可以使用 `scan_reader`。需要注意的是，`scan_reader` 会对源库造成较大的压力。
 
-### AWS ElastiCache and MemoryDB
+### AWS ElastiCache 
 
-优选 `sync_reader`, AWS ElastiCache and MemoryDB 默认情况下没有开启 PSync 协议，但是可以通过提交工单的方式请求开启 PSync 协议。AWS 会在工单中给出一份重命名的 PSync 命令，比如 `xhma21yfkssync` 和 `nmfu2bl5osync`。此命令效果等同于 `psync` 命令，只是名字不一样。
+优选 `sync_reader`, AWS ElastiCache 默认情况下没有开启 PSync 协议，但是可以通过提交工单的方式请求开启 PSync 协议。AWS 会在工单中给出一份重命名的 PSync 命令，比如 `xhma21yfkssync` 和 `nmfu2bl5osync`。此命令效果等同于 `psync` 命令，只是名字不一样。
 用户修改 RedisShake 配置文件中的 `aws_psync` 配置项即可。对于单实例只写一对 `ip:port@cmd` 即可，对于集群实例，需要写上所有的 `ip:port@cmd`，以逗号分隔。
 
 不方便提交工单时，可以使用 `scan_reader`。需要注意的是，`scan_reader` 会对源库造成较大的压力。
 
+### AWS MemoryDB
+
+AWS MemoryDB 不提供 PSync 权限，可使用 `scan_reader` 与 `rdb_reader`。
 
 
 
