@@ -14,7 +14,7 @@ hero:
             link: /zh/guide/introduction
 features:
     -   icon: ☁️
-        title: 兼容性
+        title: 云厂商兼容性
         details: 兼容自建 Redis 与主流云厂商的 Redis-like 数据库
     -   icon: 🔍
         title: 数据过滤与修改

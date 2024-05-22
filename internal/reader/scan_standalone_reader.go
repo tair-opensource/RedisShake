@@ -2,6 +2,7 @@ package reader
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/bits"
 	"regexp"
@@ -23,10 +24,11 @@ type ScanReaderOptions struct {
 	Username      string `mapstructure:"username" default:""`
 	Password      string `mapstructure:"password" default:""`
 	Tls           bool   `mapstructure:"tls" default:"false"`
+	Scan          bool   `mapstructure:"scan" default:"true"`
 	KSN           bool   `mapstructure:"ksn" default:"false"`
 	DBS           []int  `mapstructure:"dbs"`
 	PreferReplica bool   `mapstructure:"prefer_replica" default:"false"`
-	Count         int    `mapstructure:"count" default:"2048"`
+	Count         int    `mapstructure:"count" default:"1"`
 }
 
 type dbKey struct {
@@ -34,12 +36,19 @@ type dbKey struct {
 	key string
 }
 
+type needRestoreItem struct {
+	dbId int
+	key  string
+}
+
 type scanStandaloneReader struct {
-	ctx      context.Context
-	dbs      []int
-	opts     *ScanReaderOptions
-	ch       chan *entry.Entry
-	keyQueue *utils.UniqueQueue
+	ctx             context.Context
+	dbs             []int
+	opts            *ScanReaderOptions
+	ch              chan *entry.Entry
+	needDumpQueue   *utils.UniqueQueue
+	needRestoreChan chan *needRestoreItem
+	dumpClient      *client.Redis
 
 	stat struct {
 		Name              string `json:"name"`
@@ -72,22 +81,25 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 	r.opts = opts
 	r.ch = make(chan *entry.Entry, 1024)
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
-	r.keyQueue = utils.NewUniqueQueue(100000) // cache 100000 keys
+	r.needDumpQueue = utils.NewUniqueQueue(100000)        // cache 100000 keys
+	r.needRestoreChan = make(chan *needRestoreItem, 1024) // inflight 1024 keys
 	return r
 }
 
 func (r *scanStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry {
 	r.ctx = ctx
-	r.subscript()
-	go r.scan()
-	go r.fetch()
+	if r.opts.Scan {
+		go r.scan()
+	}
+	if r.opts.KSN {
+		go r.subscript()
+	}
+	go r.dump()
+	go r.restore()
 	return r.ch
 }
 
 func (r *scanStandaloneReader) subscript() {
-	if !r.opts.KSN {
-		return
-	}
 	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
 	c.Send("psubscribe", "__keyevent@*__:*")
 	// filter dbs
@@ -95,36 +107,35 @@ func (r *scanStandaloneReader) subscript() {
 	for _, db := range r.dbs {
 		dbIDmap[db] = struct{}{}
 	}
-	go func() {
-		_, err := c.Receive()
-		if err != nil {
-			log.Panicf(err.Error())
-		}
-		regex := regexp.MustCompile(`\d+`)
-		for {
-			select {
-			case <-r.ctx.Done():
-				close(r.keyQueue.Ch)
-				return
-			default:
-				resp, err := c.Receive()
-				if err != nil {
-					log.Panicf(err.Error())
-				}
-				respSlice := resp.([]interface{})
-				key := respSlice[3].(string)
-				dbId := regex.FindString(respSlice[2].(string))
-				dbIdInt, err := strconv.Atoi(dbId)
-				if err != nil {
-					log.Panicf(err.Error())
-				}
-				// if the db is not in the dbs, ignore it
-				if _, ok := dbIDmap[dbIdInt]; ok {
-					r.keyQueue.Put(dbKey{db: dbIdInt, key: key})
-				}
+	_, err := c.Receive()
+	if err != nil {
+		log.Panicf(err.Error())
+	}
+	regex := regexp.MustCompile(`\d+`)
+	for {
+		select {
+		case <-r.ctx.Done():
+			log.Infof("[%s] scanStandaloneReader subscript finished.", r.stat.Name)
+			r.needDumpQueue.Close()
+			return
+		default:
+			resp, err := c.Receive()
+			if err != nil {
+				log.Panicf(err.Error())
+			}
+			respSlice := resp.([]interface{})
+			key := respSlice[3].(string)
+			dbId := regex.FindString(respSlice[2].(string))
+			dbIdInt, err := strconv.Atoi(dbId)
+			if err != nil {
+				log.Panicf(err.Error())
+			}
+			// if the db is not in the dbs, ignore it
+			if _, ok := dbIDmap[dbIdInt]; ok {
+				r.needDumpQueue.Put(dbKey{db: dbIdInt, key: key})
 			}
 		}
-	}()
+	}
 }
 
 func (r *scanStandaloneReader) scan() {
@@ -141,10 +152,18 @@ func (r *scanStandaloneReader) scan() {
 		var cursor uint64 = 0
 		count := r.opts.Count
 		for {
+			select {
+			case <-r.ctx.Done():
+				log.Infof("[%s] scanStandaloneReader scan finished.", r.stat.Name)
+				r.needDumpQueue.Close()
+				return
+			default:
+			}
+
 			var keys []string
 			cursor, keys = c.Scan(cursor, count)
 			for _, key := range keys {
-				r.keyQueue.Put(dbKey{dbId, key}) // pass value not pointer
+				r.needDumpQueue.Put(dbKey{dbId, key}) // pass value not pointer
 			}
 
 			// stat
@@ -159,31 +178,45 @@ func (r *scanStandaloneReader) scan() {
 	}
 	r.stat.ScanFinished = true
 	if !r.opts.KSN {
-		r.keyQueue.Close()
+		r.needDumpQueue.Close()
 	}
 }
 
-func (r *scanStandaloneReader) fetch() {
+func (r *scanStandaloneReader) dump() {
 	nowDbId := 0
-	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
-	defer c.Close()
-	for item := range r.keyQueue.Ch {
-		r.stat.NeedUpdateCount = int64(r.keyQueue.Len())
+	r.dumpClient = client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
+	for item := range r.needDumpQueue.Ch {
+		r.stat.NeedUpdateCount = int64(r.needDumpQueue.Len())
 		dbId := item.(dbKey).db
 		key := item.(dbKey).key
 		if nowDbId != dbId {
-			reply := c.DoWithStringReply("SELECT", strconv.Itoa(dbId))
-			if reply != "OK" {
+			r.dumpClient.Send("SELECT", strconv.Itoa(dbId))
+			nowDbId = dbId
+		}
+		// dump
+		r.dumpClient.Send("DUMP", key)
+		r.dumpClient.Send("PTTL", key)
+		r.needRestoreChan <- &needRestoreItem{dbId, key}
+	}
+	close(r.needRestoreChan)
+	log.Infof("[%s] scanStandaloneReader dump finished.", r.stat.Name)
+}
+
+func (r *scanStandaloneReader) restore() {
+	nowDbId := 0
+	for item := range r.needRestoreChan {
+		dbId := item.dbId
+		key := item.key
+		if nowDbId != dbId {
+			reply, err := r.dumpClient.Receive()
+			if err != nil || reply != "OK" {
 				log.Panicf("scanStandaloneReader select db failed. db=[%d]", dbId)
 			}
 			nowDbId = dbId
 		}
-		// dump
-		c.Send("DUMP", key)
-		c.Send("PTTL", key)
-		iDump, err1 := c.Receive()
-		iPttl, err2 := c.Receive()
-		if err1 == proto.Nil {
+		iDump, err1 := r.dumpClient.Receive()
+		iPttl, err2 := r.dumpClient.Receive()
+		if errors.Is(err1, proto.Nil) {
 			continue // key not exist
 		} else if err1 != nil {
 			log.Panicf(err1.Error())
@@ -227,8 +260,7 @@ func (r *scanStandaloneReader) fetch() {
 			}
 		}
 	}
-
-	log.Infof("[%s] scanStandaloneReader fetch finished.", r.stat.Name)
+	log.Infof("[%s] scanStandaloneReader restore finished.", r.stat.Name)
 	close(r.ch)
 }
 
