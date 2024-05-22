@@ -100,6 +100,9 @@ func main() {
 		if opts.Cluster {
 			theWriter = writer.NewRedisClusterWriter(ctx, opts)
 			log.Infof("create RedisClusterWriter: %v", opts.Address)
+		} else if opts.Sentinel {
+			theWriter = writer.NewRedisSentinelWriter(ctx, opts)
+			log.Infof("create RedisSentinelWriter: %v", opts.Address)
 		} else {
 			theWriter = writer.NewRedisStandaloneWriter(ctx, opts)
 			log.Infof("create RedisStandaloneWriter: %v", opts.Address)

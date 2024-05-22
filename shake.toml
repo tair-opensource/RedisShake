@@ -31,6 +31,8 @@ prefer_replica = true # set to true if you want to sync from replica node
 
 [redis_writer]
 cluster = false            # set to true if target is a redis cluster
+sentinel = false           # set to true if target is a redis sentinel
+master = ""                # set to master name if target is a redis sentinel
 address = "127.0.0.1:6380" # when cluster is true, set address to one of the cluster node
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
