@@ -19,6 +19,8 @@ import (
 
 type RedisWriterOptions struct {
 	Cluster  bool   `mapstructure:"cluster" default:"false"`
+	Sentinel bool   `mapstructure:"sentinel" default:"false"`
+	Master   string `mapstructure:"master" default:""`
 	Address  string `mapstructure:"address" default:""`
 	Username string `mapstructure:"username" default:""`
 	Password string `mapstructure:"password" default:""`
