@@ -149,31 +149,16 @@ func (r *syncStandaloneReader) sendPSync() {
 			runtime.Goexit() // stop goroutine
 		default:
 		}
-		b, err := r.rd.ReadByte()
+		bytes, err := r.rd.Peek(1)
 		if err != nil {
 			log.Panicf(err.Error())
 		}
-		if b == '\n' {
-			continue
+		if bytes[0] != '\n' {
+			break
 		}
-		if b == '-' {
-			reply, err := r.rd.ReadString('\n')
-			if err != nil {
-				log.Panicf(err.Error())
-			}
-			reply = strings.TrimSpace(reply)
-			log.Panicf("[%s] psync error. reply=[%s]", r.stat.Name, reply)
-		}
-		if b != '+' {
-			log.Panicf("[%s] invalid psync reply. b=[%s]", r.stat.Name, string(b))
-		}
-		break
+		r.rd.ReadByte()
 	}
-	reply, err := r.rd.ReadString('\n')
-	if err != nil {
-		log.Panicf(err.Error())
-	}
-	reply = strings.TrimSpace(reply)
+	reply := r.client.ReceiveString()
 	masterOffset, err := strconv.Atoi(strings.Split(reply, " ")[2])
 	if err != nil {
 		log.Panicf(err.Error())
