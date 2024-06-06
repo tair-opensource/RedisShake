@@ -132,6 +132,16 @@ func (r *scanStandaloneReader) subscript() {
 			}
 			// if the db is not in the dbs, ignore it
 			if _, ok := dbIDmap[dbIdInt]; ok {
+				// handle del action
+				eventSlice := strings.Split(respSlice[2].(string), ":")
+				if eventSlice[1] == "del" {
+					e := entry.NewEntry()
+					e.DbId = dbIdInt
+					e.Argv = []string{"DEL", key}
+					r.ch <- e
+					continue
+				}
+				
 				r.needDumpQueue.Put(dbKey{db: dbIdInt, key: key})
 			}
 		}
