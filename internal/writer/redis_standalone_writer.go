@@ -2,6 +2,7 @@ package writer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -18,6 +19,8 @@ import (
 
 type RedisWriterOptions struct {
 	Cluster  bool   `mapstructure:"cluster" default:"false"`
+	Sentinel bool   `mapstructure:"sentinel" default:"false"`
+	Master   string `mapstructure:"master" default:""`
 	Address  string `mapstructure:"address" default:""`
 	Username string `mapstructure:"username" default:""`
 	Password string `mapstructure:"password" default:""`
@@ -99,9 +102,10 @@ func (w *redisStandaloneWriter) processReply() {
 	for e := range w.chWaitReply {
 		reply, err := w.client.Receive()
 		log.Debugf("[%s] receive reply. reply=[%v], cmd=[%s]", w.stat.Name, reply, e.String())
-		if err == proto.Nil {
-			log.Warnf("[%s] receive nil reply. cmd=[%s]", w.stat.Name, e.String())
-		} else if err != nil {
+
+		// It's good to skip the nil error since some write commands will return the null reply. For example,
+		// the SET command with NX option will return nil if the key already exists.
+		if err != nil && !errors.Is(err, proto.Nil) {
 			if err.Error() == "BUSYKEY Target key name already exists." {
 				if config.Opt.Advanced.RDBRestoreCommandBehavior == "skip" {
 					log.Debugf("[%s] redisStandaloneWriter received BUSYKEY reply. cmd=[%s]", w.stat.Name, e.String())

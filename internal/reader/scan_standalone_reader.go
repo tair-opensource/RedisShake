@@ -132,6 +132,16 @@ func (r *scanStandaloneReader) subscript() {
 			}
 			// if the db is not in the dbs, ignore it
 			if _, ok := dbIDmap[dbIdInt]; ok {
+				// handle del action
+				eventSlice := strings.Split(respSlice[2].(string), ":")
+				if eventSlice[1] == "del" {
+					e := entry.NewEntry()
+					e.DbId = dbIdInt
+					e.Argv = []string{"DEL", key}
+					r.ch <- e
+					continue
+				}
+				
 				r.needDumpQueue.Put(dbKey{db: dbIdInt, key: key})
 			}
 		}
@@ -185,6 +195,12 @@ func (r *scanStandaloneReader) scan() {
 func (r *scanStandaloneReader) dump() {
 	nowDbId := 0
 	r.dumpClient = client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
+	// Support prefer_replica=true in both Cluster and Standalone mode
+	if r.opts.PreferReplica {
+		r.dumpClient.Do("READONLY")
+		log.Infof("running dump() in read-only mode")
+	}
+	
 	for item := range r.needDumpQueue.Ch {
 		r.stat.NeedUpdateCount = int64(r.needDumpQueue.Len())
 		dbId := item.(dbKey).db

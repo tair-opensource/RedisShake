@@ -150,7 +150,7 @@ func (o *StreamObject) readStream() {
 		/* Use the XADD MAXLEN 0 trick to generate an empty stream if
 		 * the key we are serializing is an empty string, which is possible
 		 * for the Stream type. */
-		args := []string{"xadd", masterKey, "MAXLEN", "0", lastid, "x", "y"}
+		args := []string{"xadd", masterKey, "MAXLEN", "0", "0-1", "x", "y"}
 		cmdC <- args
 	}
 
