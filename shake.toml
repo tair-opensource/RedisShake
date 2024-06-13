@@ -57,7 +57,7 @@ log_interval = 5       # in seconds
 # to change the default behavior of restore:
 # panic:   redis-shake will stop when meet "Target key name is busy" error.
 # rewrite: redis-shake will replace the key with new value.
-# ignore:  redis-shake will skip restore the key when meet "Target key name is busy" error.
+# skip:  redis-shake will skip restore the key when meet "Target key name is busy" error.
 rdb_restore_command_behavior = "panic" # panic, rewrite or skip
 
 # redis-shake uses pipeline to improve sending performance.
