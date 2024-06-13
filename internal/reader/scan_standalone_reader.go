@@ -101,12 +101,16 @@ func (r *scanStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry 
 
 func (r *scanStandaloneReader) subscript() {
 	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls)
-	strs := make([]string, len(r.dbs))
-	for i, v := range r.dbs {
-		strs[i] = strconv.Itoa(v)
+	if len(r.dbs) == 0 {
+		c.Send("psubscribe", "__keyevent@*__:*")
+	} else {
+		strs := make([]string, len(r.dbs))
+		for i, v := range r.dbs {
+			strs[i] = strconv.Itoa(v)
+		}
+		s := fmt.Sprintf("__keyevent@[%v]__:*", strings.Join(strs, ","))
+		c.Send("psubscribe", s)
 	}
-	s := fmt.Sprintf("__keyevent@[%v]__:*", strings.Join(strs, ","))
-	c.Send("psubscribe", s)
 	_, err := c.Receive()
 	if err != nil {
 		log.Panicf(err.Error())
