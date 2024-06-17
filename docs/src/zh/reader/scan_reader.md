@@ -25,7 +25,7 @@ Scan Reader 有 SCAN 和 KSN 两个阶段，SCAN 阶段是全量同步，KSN 阶
 
 `ksn` 使用 [Redis keyspace notifications](https://redis.io/docs/manual/keyspace-notifications/)
 能力来订阅 Key 的变化。具体来说，RedisShake 会使用 `psubscribe` 命令订阅 `__keyevent@*__:*`，当 Key 发生变化时，RedisShake 会收到发生修改的 Key，之后使用 `DUMP` 与 `RESTORE` 命令来从源端读取 Key 的内容，并写入目标端。
-1. Redis 在默认情况下不会开启 `notify-keyspace-events` 配置，需要手动开启，保证值中含有 `E`。
+1. Redis 在默认情况下不会开启 `notify-keyspace-events` 配置，需要手动开启，保证值中含有 `AE`。
 2. 如果在 KSN 阶段出现源端将连接断开，考虑适当调高 `client-output-buffer-limit pubsub` 的值。[802](https://github.com/tair-opensource/RedisShake/issues/802)
 3. `Redis keyspace notifications` 不会感知到 `FLUSHALL` 与 `FLUSHDB` 命令，因此在使用 `ksn` 参数时，需要确保源端数据库不会执行这两个命令。
 
