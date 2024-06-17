@@ -130,6 +130,9 @@ func getReplicaAddr(info string) RedisReplicaInfo {
 			replicas = append(replicas, replica)
 		}
 	}
+	if len(replicas) == 0 {
+		log.Panicf("no replica found, should not set `prefer_replica` to true")
+	}
 	best := replicas[0]
 	for _, replica := range replicas {
 		if replica.Offset > best.Offset {

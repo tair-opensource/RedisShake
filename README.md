@@ -7,6 +7,7 @@
 - [中文文档](https://tair-opensource.github.io/RedisShake/)
 - [English Documentation](https://tair-opensource.github.io/RedisShake/en/)
 
+![](./docs/demo.gif)
 ## Overview
 
 RedisShake is a tool designed for processing and migrating Redis data. It offers the following features:

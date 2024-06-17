@@ -166,7 +166,20 @@ Loop:
 func waitShutdown(cancel context.CancelFunc) {
 	quitCh := make(chan os.Signal, 1)
 	signal.Notify(quitCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	sig := <-quitCh
-	log.Infof("Got signal: %s to exit.", sig)
-	cancel()
+	sigTimes := 0
+	for {
+		sig := <-quitCh
+		sigTimes++
+		if sig != syscall.SIGINT {
+			log.Infof("Got signal: %s.", sig)
+		} else {
+			log.Infof("Got signal: %s to exit. Press Ctrl+C again to force exit.", sig)
+			if sigTimes >= 2 {
+				os.Exit(0)
+			}
+			cancel()
+		}
+
+	}
+
 }
