@@ -5,7 +5,9 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"RedisShake/internal/client/proto"
@@ -20,11 +22,11 @@ type Redis struct {
 	protoWriter *proto.Writer
 }
 
-func NewSentinelClient(ctx context.Context, address string, Tls bool) *Redis {
-	return NewRedisClient(ctx, address, "", "", Tls)
+func NewSentinelMasterClient(ctx context.Context, address string, Tls bool) *Redis {
+	return NewRedisClient(ctx, address, "", "", Tls, false)
 }
 
-func NewRedisClient(ctx context.Context, address string, username string, password string, Tls bool) *Redis {
+func NewRedisClient(ctx context.Context, address string, username string, password string, Tls bool, replica bool) *Redis {
 	r := new(Redis)
 	var conn net.Conn
 	var dialer = &net.Dialer{
@@ -71,8 +73,71 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	if reply != "PONG" {
 		panic("ping failed with reply: " + reply)
 	}
+	reply = r.DoWithStringReply("info", "replication")
+	// get best replica
+	if replica {
+		replicaInfo := getReplicaAddr(reply)
+		log.Infof("best replica: %s", replicaInfo.BestReplica)
+		r = NewRedisClient(ctx, replicaInfo.BestReplica, username, password, Tls, false)
+	}
 
 	return r
+}
+
+type Replica struct {
+	Addr   string
+	Offset string
+}
+
+type RedisReplicaInfo struct {
+	Role        string
+	BestReplica string
+}
+
+func getReplicaAddr(info string) RedisReplicaInfo {
+	infoReplica := RedisReplicaInfo{}
+	replicas := make([]Replica, 0)
+	slaveInfoRegexp := regexp.MustCompile(`slave\d+:ip=.*`)
+	for _, line := range strings.Split(info, "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, "role:slave"):
+			infoReplica.Role = "slave"
+			return infoReplica
+		case strings.HasPrefix(line, "role:master"):
+			infoReplica.Role = "master"
+		case slaveInfoRegexp.MatchString(line):
+			slaveInfo := strings.Split(line, ":")
+			s1 := slaveInfo[1]
+			slaveInfo = strings.Split(s1, ",")
+			replica := Replica{}
+			var host string
+			var port string
+			var offset string
+			for _, item := range slaveInfo {
+				if strings.HasPrefix(item, "ip=") {
+					host = strings.Split(item, "=")[1]
+				}
+				if strings.HasPrefix(item, "port=") {
+					port = strings.Split(item, "=")[1]
+				}
+				if strings.HasPrefix(item, "offset=") {
+					offset = strings.Split(item, "=")[1]
+				}
+			}
+			replica.Addr = host + ":" + port
+			replica.Offset = offset
+			replicas = append(replicas, replica)
+		}
+	}
+	best := replicas[0]
+	for _, replica := range replicas {
+		if replica.Offset > best.Offset {
+			best = replica
+		}
+	}
+	infoReplica.BestReplica = best.Addr
+	return infoReplica
 }
 
 func (r *Redis) DoWithStringReply(args ...interface{}) string {

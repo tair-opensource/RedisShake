@@ -11,7 +11,7 @@ import (
 )
 
 func GetRedisClusterNodes(ctx context.Context, address string, username string, password string, Tls bool, perferReplica bool) (addresses []string, slots [][]int) {
-	c := client.NewRedisClient(ctx, address, username, password, Tls)
+	c := client.NewRedisClient(ctx, address, username, password, Tls, false)
 	reply := c.DoWithStringReply("cluster", "nodes")
 	reply = strings.TrimSpace(reply)
 	slotsCount := 0
