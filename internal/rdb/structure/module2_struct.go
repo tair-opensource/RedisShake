@@ -50,7 +50,7 @@ func ReadModuleDouble(rd io.Reader) string {
 		log.Panicf("Unknown module double encode type")
 	}
 	value := ReadDouble(rd)
-	return fmt.Sprintf("%f", value)
+	return fmt.Sprintf("%.15f", value)
 }
 
 func ReadModuleString(rd io.Reader) string {
