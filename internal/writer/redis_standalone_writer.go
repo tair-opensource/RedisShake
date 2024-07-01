@@ -92,9 +92,11 @@ func (w *redisStandaloneWriter) switchDbTo(newDbId int) {
 	log.Debugf("[%s] switch db to [%d]", w.stat.Name, newDbId)
 	w.client.Send("select", strconv.Itoa(newDbId))
 	w.DbId = newDbId
-	w.chWaitReply <- &entry.Entry{
-		Argv:    []string{"select", strconv.Itoa(newDbId)},
-		CmdName: "select",
+	if !w.offReply {
+		w.chWaitReply <- &entry.Entry{
+			Argv:    []string{"select", strconv.Itoa(newDbId)},
+			CmdName: "select",
+		}
 	}
 }
 
