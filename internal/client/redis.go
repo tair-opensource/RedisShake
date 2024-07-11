@@ -77,6 +77,10 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	// get best replica
 	if replica {
 		replicaInfo := getReplicaAddr(reply)
+		// slave node return BestReplica is none，set value by address
+		if replicaInfo.BestReplica == "" {
+			replicaInfo.BestReplica = address
+		}
 		log.Infof("best replica: %s", replicaInfo.BestReplica)
 		r = NewRedisClient(ctx, replicaInfo.BestReplica, username, password, Tls, false)
 	}
