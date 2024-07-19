@@ -76,11 +76,7 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	reply = r.DoWithStringReply("info", "replication")
 	// get best replica
 	if replica {
-		replicaInfo := getReplicaAddr(reply)
-		// slave node return BestReplica is none，set value by address
-		if replicaInfo.BestReplica == "" {
-			replicaInfo.BestReplica = address
-		}
+		replicaInfo := getReplicaAddr(reply, address)
 		log.Infof("best replica: %s", replicaInfo.BestReplica)
 		r = NewRedisClient(ctx, replicaInfo.BestReplica, username, password, Tls, false)
 	}
@@ -98,7 +94,7 @@ type RedisReplicaInfo struct {
 	BestReplica string
 }
 
-func getReplicaAddr(info string) RedisReplicaInfo {
+func getReplicaAddr(info, addr string) RedisReplicaInfo {
 	infoReplica := RedisReplicaInfo{}
 	replicas := make([]Replica, 0)
 	slaveInfoRegexp := regexp.MustCompile(`slave\d+:ip=.*`)
@@ -107,6 +103,7 @@ func getReplicaAddr(info string) RedisReplicaInfo {
 		switch {
 		case strings.HasPrefix(line, "role:slave"):
 			infoReplica.Role = "slave"
+			infoReplica.BestReplica = addr
 			return infoReplica
 		case strings.HasPrefix(line, "role:master"):
 			infoReplica.Role = "master"
