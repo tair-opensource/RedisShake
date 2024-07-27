@@ -121,7 +121,10 @@ func main() {
 
 	log.Infof("start syncing...")
 
-	ch := theReader.StartRead(ctx)
+	chr := theReader.StartRead(ctx)
+
+	theWriter.StartWrite(ctx)
+
 	go waitShutdown(cancel)
 
 	ticker := time.NewTicker(1 * time.Second)
@@ -129,7 +132,7 @@ func main() {
 Loop:
 	for {
 		select {
-		case e, ok := <-ch:
+		case e, ok := <-chr:
 			if !ok {
 				// ch has been closed, exit the loop
 				break Loop
