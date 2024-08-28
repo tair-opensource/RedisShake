@@ -64,25 +64,24 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 	r := new(scanStandaloneReader)
 	// dbs
 	c := client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.PreferReplica)
-	if c.IsCluster() { // not use opts.Cluster, because user may use standalone mode to scan a cluster node
+	if len(opts.DBS) != 0 {
+		r.dbs = opts.DBS
+	} else if c.IsCluster() { // not use opts.Cluster, because user may use standalone mode to scan a cluster node
 		r.dbs = []int{0}
 	} else {
-		if len(opts.DBS) == 0 {
-			c.Send("info", "keyspace")
-			info, err := c.Receive()
-			if err != nil {
-				log.Panicf(err.Error())
-			}
-			r.dbs = utils.ParseDBs(info.(string))
-		} else {
-			r.dbs = opts.DBS
+		c.Send("info", "keyspace")
+		info, err := c.Receive()
+		if err != nil {
+			log.Panicf(err.Error())
 		}
+		r.dbs = utils.ParseDBs(info.(string))
 	}
 	r.opts = opts
 	r.ch = make(chan *entry.Entry, 1024)
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
 	r.needDumpQueue = utils.NewUniqueQueue(100000)        // cache 100000 keys
 	r.needRestoreChan = make(chan *needRestoreItem, 1024) // inflight 1024 keys
+	log.Infof("[%s] scanStandaloneReader init finished. dbs=[%v]", r.stat.Name, r.dbs)
 	return r
 }
 
