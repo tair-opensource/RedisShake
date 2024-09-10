@@ -39,12 +39,22 @@ RedisShake is a tool designed for processing and migrating Redis data. It offers
 
 Download the binary package directly from the [Releases](https://github.com/tair-opensource/RedisShake/releases) page.
 
+#### Docker
+
+```shell
+docker run --network host \
+    -e SYNC=true \
+    -e SHAKE_SRC_ADDRESS=127.0.0.1:6379 \
+    -e SHAKE_DST_ADDRESS=127.0.0.1:6380 \
+    ghcr.io/tair-opensource/redisshake:latest
+```
+
 #### Compile from Source
 
 To compile from source, ensure that you have a Golang environment set up on your local machine:
 
 ```shell
-git clone https://github.com/alibaba/RedisShake
+git clone https://github.com/tair-opensource/RedisShake
 cd RedisShake
 sh build.sh
 ```
