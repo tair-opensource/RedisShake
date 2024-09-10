@@ -32,7 +32,7 @@ Versions (configurations are not interchangeable between different versions):
 
 - The [RedisShake 2.x](https://github.com/tair-opensource/RedisShake/tree/v2) version brought a series of improvements and updates, enhancing its overall stability and performance.
 - The [RedisShake 3.x](https://github.com/tair-opensource/RedisShake/tree/v3) version was a significant milestone, with the entire codebase being completely rewritten and optimized for better efficiency and availability.
-- The [RedisShake 4.x](https://github.com/tair-opensource/RedisShake/tree/v4) version further enhanced features related to the [Reader](../reader/scan_reader.md), configuration, observability, and [function](../function/introduction.md).
+- The [RedisShake 4.x](https://github.com/tair-opensource/RedisShake/tree/v4) version further enhanced features related to the [Reader](../reader/scan_reader.md), configuration, observability, and `function`.
 
 ## License
 

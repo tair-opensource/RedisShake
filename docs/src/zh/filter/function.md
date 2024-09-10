@@ -33,8 +33,6 @@ address = "127.0.0.1:6380"
 
 除了 `DB`，还有其他信息如 `KEYS`、`ARGV`、`SLOTS`、`GROUP` 等，可供调用的函数有 `shake.log` 和 `shake.call`，具体请参考 [function API](#function-api)。
 
-关于更多的示例，可以参考 [最佳实践](./best_practices.md)。
-
 ## function API
 
 ### 变量

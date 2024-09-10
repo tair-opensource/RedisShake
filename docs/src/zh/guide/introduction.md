@@ -36,7 +36,7 @@ RedisShake 是阿里云 [Tair 团队](https://github.com/tair-opensource)
 - [RedisShake 2.x](https://github.com/tair-opensource/RedisShake/tree/v2) 版本带来了一系列的改进和更新，提高了其整体稳定性和性能。
 - [RedisShake 3.x](https://github.com/tair-opensource/RedisShake/tree/v3) 版本是一个重要的里程碑，整个代码库被完全重写和优化，具有更好的效率和可用性。
 - [RedisShake 4.x](https://github.com/tair-opensource/RedisShake/tree/v4) 版本
-  ，进一步增强了 [Reader](../reader/scan_reader.md)、配置、可观察性和 [function](../function/introduction.md) 相关的特性。
+  ，进一步增强了 [Reader](../reader/scan_reader.md)、配置、可观察性和 function 相关的特性。
 
 ## 许可证
 
