@@ -1,6 +1,3 @@
-function = ""
-
-
 [sync_reader]
 cluster = false            # set to true if source is a redis cluster
 address = "127.0.0.1:6379" # when cluster is true, set address to one of the cluster node
@@ -28,7 +25,7 @@ try_diskless = false       # set to true if you want to sync by socket and sourc
 
 # [aof_reader]
 # filepath = "/tmp/.aof"
-# timestamp = 0              # subsecond
+# timestamp = 0            # subsecond
 
 [redis_writer]
 cluster = false            # set to true if target is a redis cluster
@@ -39,6 +36,53 @@ username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
 tls = false
 off_reply = false          # turn off the server reply
+
+[filter]
+# Allow keys with specific prefixes or suffixes
+# Examples:
+#   allow_key_prefix = ["user:", "product:"]
+#   allow_key_suffix = [":active", ":valid"]
+# Leave empty to allow all keys
+allow_key_prefix = []
+allow_key_suffix = []
+
+# Block keys with specific prefixes or suffixes
+# Examples:
+#   block_key_prefix = ["temp:", "cache:"]
+#   block_key_suffix = [":tmp", ":old"]
+# Leave empty to block nothing
+block_key_prefix = []
+block_key_suffix = []
+
+# Specify allowed and blocked database numbers (e.g., allow_db = [0, 1, 2], block_db = [3, 4, 5])
+# Leave empty to allow all databases
+allow_db = []
+block_db = []
+
+# Allow or block specific commands
+# Examples:
+#   allow_command = ["GET", "SET"]  # Only allow GET and SET commands
+#   block_command = ["DEL", "FLUSHDB"]  # Block DEL and FLUSHDB commands
+# Leave empty to allow all commands
+allow_command = [] 
+block_command = [] 
+
+# Allow or block specific command groups
+# Available groups:
+#   SERVER, STRING, CLUSTER, CONNECTION, BITMAP, LIST, SORTED_SET,
+#   GENERIC, TRANSACTIONS, SCRIPTING, TAIRHASH, TAIRSTRING, TAIRZSET,
+#   GEO, HASH, HYPERLOGLOG, PUBSUB, SET, SENTINEL, STREAM
+# Examples:
+#   allow_command_group = ["STRING", "HASH"]  # Only allow STRING and HASH commands
+#   block_command_group = ["SCRIPTING", "PUBSUB"]  # Block SCRIPTING and PUBSUB commands
+# Leave empty to allow all command groups
+allow_command_group = [] 
+block_command_group = [] 
+
+# Function for custom data processing
+# For best practices and examples, visit:
+# https://tair-opensource.github.io/RedisShake/zh/function/best_practices.html
+function = ""
 
 [advanced]
 dir = "data"
@@ -61,18 +105,25 @@ log_interval = 5       # in seconds
 rdb_restore_command_behavior = "panic" # panic, rewrite or skip
 
 # redis-shake uses pipeline to improve sending performance.
-# This item limits the maximum number of commands in a pipeline.
+# Adjust this value based on the destination Redis performance:
+# - Higher values may improve performance for capable destinations.
+# - Lower values are recommended for destinations with poor performance.
+# 1024 is a good default value for most cases.
 pipeline_count_limit = 1024
 
-# Client query buffers accumulate new commands. They are limited to a fixed
-# amount by default. This amount is normally 1gb.
-target_redis_client_max_querybuf_len = 1024_000_000
+# This setting corresponds to the 'client-query-buffer-limit' in Redis configuration.
+# The default value is typically 1GB. 
+# It's recommended not to modify this value unless absolutely necessary.
+target_redis_client_max_querybuf_len = 1073741824  # 1GB in bytes
 
-# In the Redis protocol, bulk requests, that are, elements representing single
-# strings, are normally limited to 512 mb.
+# This setting corresponds to the 'proto-max-bulk-len' in Redis configuration.
+# It defines the maximum size of a single string element in the Redis protocol.
+# The value must be 1MB or greater. Default is 512MB.
+# It's recommended not to modify this value unless absolutely necessary.
 target_redis_proto_max_bulk_len = 512_000_000
 
-# If the source is Elasticache or MemoryDB, you can set this item.
+# If the source is Elasticache, you can set this item. AWS ElastiCache has custom 
+# psync command, which can be obtained through a ticket.
 aws_psync = "" # example: aws_psync = "10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync"
 
 # destination will delete itself entire database before fetching files

@@ -8,6 +8,7 @@
 - [English Documentation](https://tair-opensource.github.io/RedisShake/en/)
 
 ![](./docs/demo.gif)
+
 ## Overview
 
 RedisShake is a tool designed for processing and migrating Redis data. It offers the following features:
@@ -50,12 +51,14 @@ sh build.sh
 
 ### Usage
 
-Assume you have two Redis instances:
+To migrate data from one Redis instance to another while skipping keys with specific prefixes, follow these steps:
+
+1. Ensure you have two Redis instances running:
 
 * Instance A: 127.0.0.1:6379
 * Instance B: 127.0.0.1:6380
 
-Create a new configuration file `shake.toml`:
+2. Create a new configuration file `shake.toml`, and set the `block_key_prefix` parameter to skip keys with specific prefixes:
 
 ```toml
 [sync_reader]
@@ -63,9 +66,12 @@ address = "127.0.0.1:6379"
 
 [redis_writer]
 address = "127.0.0.1:6380"
+
+[filter]
+block_key_prefix = ["temp:", "cache:"]
 ```
 
-To start RedisShake, run the following command:
+3. Start RedisShake by running the following command:
 
 ```shell
 ./redis-shake shake.toml
@@ -84,6 +90,7 @@ would like to change. We are particularly interested in:
 1. Adding support for more modules
 2. Enhancing support for Readers and Writers
 3. Sharing your Lua scripts and best practices
+4. Improving the documentation
 
 ## History
 

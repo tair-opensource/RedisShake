@@ -46,10 +46,10 @@ function sidebar(): DefaultTheme.SidebarItem[] {
             ]
         },
         {
-            text: 'Function',
+            text: '过滤与加工',
             items: [
-                { text: '什么是 function', link: '/zh/function/introduction' },
-                { text: '最佳实践', link: '/zh/function/best_practices' }
+                { text: '内置过滤规则', link: '/zh/filter/filter' },
+                { text: '什么是 function', link: '/zh/filter/function' },
             ]
         },
         {

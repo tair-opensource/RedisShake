@@ -9,7 +9,8 @@ def filter_db():
     dst = h.Redis()
 
     opts = h.ShakeOpts.create_sync_opts(src, dst)
-    opts["function"] = """
+    opts["filter"] = {}
+    opts["filter"]["function"] = """
         shake.log(DB)
         if DB == 0
         then
@@ -39,7 +40,8 @@ def split_mset_to_set():
     src = h.Redis()
     dst = h.Redis()
     opts = h.ShakeOpts.create_sync_opts(src, dst)
-    opts["function"] = """
+    opts["filter"] = {}
+    opts["filter"]["function"] = """
         shake.log(KEYS)
         if CMD == "MSET"
         then

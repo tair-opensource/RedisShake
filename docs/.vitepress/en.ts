@@ -48,16 +48,18 @@ function sidebar(): DefaultTheme.SidebarItem[] {
             ]
         },
         {
-            text: 'Function',
+            text: 'Filter and Processing',
             items: [
-                { text: 'What is function', link: '/en/function/introduction' },
-                { text: 'Best Practices', link: '/en/function/best_practices' }
+                { text: 'Built-in Filter Rules', link: '/en/filter/filter' },
+                { text: 'What is function', link: '/en/filter/function' },
             ]
         },
         {
             text: 'Others',
             items: [
                 { text: 'Redis Modules', link: '/en/others/modules' },
+                { text: 'How to Verify Data Consistency', link: '/en/others/consistent' },
+                { text: 'Cross-version Migration', link: '/en/others/version' },
             ]
         },
     ]
