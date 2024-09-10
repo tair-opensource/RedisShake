@@ -12,6 +12,20 @@ import (
 	"github.com/spf13/viper"
 )
 
+type FilterOptions struct {
+	AllowKeyPrefix []string `mapstructure:"allow_key_prefix" default:"[]"`
+	AllowKeySuffix []string `mapstructure:"allow_key_suffix" default:"[]"`
+	BlockKeyPrefix []string `mapstructure:"block_key_prefix" default:"[]"`
+	BlockKeySuffix []string `mapstructure:"block_key_suffix" default:"[]"`
+	AllowDB        []int    `mapstructure:"allow_db" default:"[]"`
+	BlockDB        []int    `mapstructure:"block_db" default:"[]"`
+	AllowCommand   []string `mapstructure:"allow_command" default:"[]"`
+	BlockCommand   []string `mapstructure:"block_command" default:"[]"`
+	AllowCommandGroup []string `mapstructure:"allow_command_group" default:"[]"`
+	BlockCommandGroup []string `mapstructure:"block_command_group" default:"[]"`
+	Function          string   `mapstructure:"function" default:""`
+}
+
 type AdvancedOptions struct {
 	Dir string `mapstructure:"dir" default:"data"`
 
@@ -59,7 +73,7 @@ func (opt *AdvancedOptions) GetPSyncCommand(address string) string {
 }
 
 type ShakeOptions struct {
-	Function string `mapstructure:"function" default:""`
+	Filter FilterOptions
 	Advanced AdvancedOptions
 	Module   ModuleOptions
 }

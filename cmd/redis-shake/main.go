@@ -10,7 +10,7 @@ import (
 
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
-	"RedisShake/internal/function"
+	"RedisShake/internal/filter"
 	"RedisShake/internal/log"
 	"RedisShake/internal/reader"
 	"RedisShake/internal/status"
@@ -27,7 +27,7 @@ func main() {
 	utils.ChdirAndAcquireFileLock()
 	utils.SetNcpu()
 	utils.SetPprofPort()
-	luaRuntime := function.New(config.Opt.Function)
+	luaRuntime := filter.NewFunctionFilter(config.Opt.Filter.Function)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -139,6 +139,10 @@ Loop:
 			status.AddReadCount(e.CmdName)
 
 			// filter
+			if !filter.Filter(e) {
+				log.Debugf("skip command: %v", e)
+				continue
+			}
 			log.Debugf("function before: %v", e)
 			entries := luaRuntime.RunFunction(e)
 			log.Debugf("function after: %v", entries)

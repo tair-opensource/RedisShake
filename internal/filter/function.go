@@ -1,4 +1,4 @@
-package function
+package filter
 
 import (
 	"strings"
@@ -16,7 +16,7 @@ type Runtime struct {
 	compiledFunction *lua.FunctionProto
 }
 
-func New(luaCode string) *Runtime {
+func NewFunctionFilter(luaCode string) *Runtime {
 	if len(luaCode) == 0 {
 		return nil
 	}

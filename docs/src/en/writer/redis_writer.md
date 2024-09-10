@@ -1,10 +1,10 @@
 # Redis Writer
 
-## 介绍
+## Introduction
 
-`redis_writer` 用于将数据写入 Redis-like 数据库。
+`redis_writer` is used to write data to Redis-like databases.
 
-## 配置
+## Configuration
 
 ```toml
 [redis_writer]
@@ -15,14 +15,17 @@ password = ""              # keep empty if no authentication is required
 tls = false
 ```
 
-* `cluster`：是否为集群。
-* `address`：连接地址。当目的端为集群时，`address` 填写集群中的任意一个节点即可
-* 鉴权：
-    * 当使用 ACL 账号体系时，配置 `username` 和 `password`
-    * 当使用传统账号体系时，仅配置 `password`
-    * 当无鉴权时，不配置 `username` 和 `password`
-* `tls`：是否开启 TLS/SSL，不需要配置证书因为 RedisShake 没有校验服务器证书
+* `cluster`: Whether it's a cluster or not.
+* `address`: Connection address. When the destination is a cluster, `address` can be any node in the cluster.
+* Authentication:
+    * When using the ACL account system, configure both `username` and `password`
+    * When using the traditional account system, only configure `password`
+    * When no authentication is required, leave both `username` and `password` empty
+* `tls`: Whether to enable TLS/SSL. No need to configure certificates as RedisShake doesn't verify server certificates.
 
-注意事项：
-1. 当目的端为集群时，应保证源端发过来的命令满足 [Key 的哈希值属于同一个 slot](https://redis.io/docs/reference/cluster-spec/#implemented-subset)。
-2. 应尽量保证目的端版本大于等于源端版本，否则可能会出现不支持的命令。如确实需要降低版本，可以设置 `target_redis_proto_max_bulk_len` 为 0，来避免使用 `restore` 命令恢复数据。
+Important notes:
+1. When the destination is a cluster, ensure that the commands from the source satisfy the [requirement that keys' hash values belong to the same slot](https://redis.io/docs/reference/cluster-spec/#implemented-subset).
+2. It's recommended to ensure that the destination version is greater than or equal to the source version, otherwise unsupported commands may occur. If a lower version is necessary, you can set `target_redis_proto_max_bulk_len` to 0 to avoid using the `restore` command for data recovery.
+
+
+

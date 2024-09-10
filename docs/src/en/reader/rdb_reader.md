@@ -1,14 +1,15 @@
-# rdb_reader
+# RDB Reader
 
-## 介绍
+## Introduction
 
-可以使用 `rdb_reader` 来从 RDB 文件中读取数据，然后写入目标端。常见于从备份文件中恢复数据。
+The `rdb_reader` can be used to read data from an RDB file and then write it to the target destination. This is commonly used for recovering data from backup files.
 
-## 配置
+## Configuration
 
 ```toml
 [rdb_reader]
 filepath = "/tmp/dump.rdb"
 ```
 
-* 应传入绝对路径。
+* An absolute path should be passed in.
+

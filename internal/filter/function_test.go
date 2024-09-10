@@ -1,4 +1,4 @@
-package function
+package filter
 
 import (
 	"testing"
@@ -19,22 +19,24 @@ import (
 // BenchmarkRunFunction-16           118228              8482 ns/op           15292 B/op         42 allocs/op
 func BenchmarkRunFunction(b *testing.B) {
 	config.Opt = config.ShakeOptions{
-		Function: `
-local prefix = "mlpSummary:"
-local prefix_len = #prefix
-if KEYS[1] == nil then
-  return
-end
-if KEYS[1] == "" then
-  return
-end
-if string.sub(KEYS[1], 1, prefix_len) ~= prefix then
-  return
-end
-shake.call(DB, ARGV)
-`,
+		Filter: config.FilterOptions{
+			Function: `
+				local prefix = "mlpSummary:"
+				local prefix_len = #prefix
+				if KEYS[1] == nil then
+				return
+				end
+				if KEYS[1] == "" then
+				return
+				end
+				if string.sub(KEYS[1], 1, prefix_len) ~= prefix then
+				return
+				end
+				shake.call(DB, ARGV)
+				`,
+		},
 	}
-	luaRuntime := New(config.Opt.Function)
+	luaRuntime := NewFunctionFilter(config.Opt.Filter.Function)
 	e := &entry.Entry{
 		DbId:           0,
 		Argv:           []string{"set", "mlpSummary:1", "1"},
