@@ -1,26 +1,28 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
 
 	"RedisShake/internal/log"
 
+	"github.com/a8m/envsubst"
 	"github.com/mcuadros/go-defaults"
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 )
 
 type FilterOptions struct {
-	AllowKeyPrefix []string `mapstructure:"allow_key_prefix" default:"[]"`
-	AllowKeySuffix []string `mapstructure:"allow_key_suffix" default:"[]"`
-	BlockKeyPrefix []string `mapstructure:"block_key_prefix" default:"[]"`
-	BlockKeySuffix []string `mapstructure:"block_key_suffix" default:"[]"`
-	AllowDB        []int    `mapstructure:"allow_db" default:"[]"`
-	BlockDB        []int    `mapstructure:"block_db" default:"[]"`
-	AllowCommand   []string `mapstructure:"allow_command" default:"[]"`
-	BlockCommand   []string `mapstructure:"block_command" default:"[]"`
+	AllowKeyPrefix    []string `mapstructure:"allow_key_prefix" default:"[]"`
+	AllowKeySuffix    []string `mapstructure:"allow_key_suffix" default:"[]"`
+	BlockKeyPrefix    []string `mapstructure:"block_key_prefix" default:"[]"`
+	BlockKeySuffix    []string `mapstructure:"block_key_suffix" default:"[]"`
+	AllowDB           []int    `mapstructure:"allow_db" default:"[]"`
+	BlockDB           []int    `mapstructure:"block_db" default:"[]"`
+	AllowCommand      []string `mapstructure:"allow_command" default:"[]"`
+	BlockCommand      []string `mapstructure:"block_command" default:"[]"`
 	AllowCommandGroup []string `mapstructure:"allow_command_group" default:"[]"`
 	BlockCommandGroup []string `mapstructure:"block_command_group" default:"[]"`
 	Function          string   `mapstructure:"function" default:""`
@@ -73,7 +75,7 @@ func (opt *AdvancedOptions) GetPSyncCommand(address string) string {
 }
 
 type ShakeOptions struct {
-	Filter FilterOptions
+	Filter   FilterOptions
 	Advanced AdvancedOptions
 	Module   ModuleOptions
 }
@@ -97,18 +99,20 @@ func LoadConfig() *viper.Viper {
 	if len(os.Args) == 2 {
 		logger.Info().Msgf("load config from file: %s", os.Args[1])
 		configFile := os.Args[1]
-		v.SetConfigFile(configFile)
-		err := v.ReadInConfig()
+		buf, err := envsubst.ReadFile(configFile)
 		if err != nil {
-			panic(err)
+			logger.Error().Msgf("failed to read config file: %v", err)
+			os.Exit(1)
 		}
-	}
-
-	// load config from environment variables
-	if len(os.Args) == 1 {
-		logger.Warn().Msg("load config from environment variables")
-		v.SetConfigType("env")
-		v.AutomaticEnv()
+		v.SetConfigType("toml")
+		err = v.ReadConfig(bytes.NewReader(buf))
+		if err != nil {
+			logger.Error().Msgf("failed to read config file: %v", err)
+			os.Exit(1)
+		}
+	} else {
+		logger.Error().Msg("config file not found")
+		os.Exit(1)
 	}
 
 	// unmarshal config

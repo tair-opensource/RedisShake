@@ -1,0 +1,5 @@
+[sync_reader]
+address = "${SHAKE_SRC_ADDRESS}" # export SHAKE_SRC_ADDRESS=127.0.0.1:6379
+
+[redis_writer]
+address = "${SHAKE_DST_ADDRESS}" # export SHAKE_DST_ADDRESS=127.0.0.1:6380
