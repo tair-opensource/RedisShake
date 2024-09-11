@@ -1,46 +1,40 @@
-# RedisShake 4.x: Redis Data Processing & Migration Tool
+# RedisShake: Redis Data Transformation and Migration Tool
 
-[![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml/badge.svg?event=push&branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml)
-[![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/pages.yml/badge.svg?branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/pages.yml)
-[![CI](https://github.com/tair-opensource/RedisShake/actions/workflows/release.yml/badge.svg?branch=v4)](https://github.com/tair-opensource/RedisShake/actions/workflows/release.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/tair-opensource/RedisShake/ci.yml?branch=v4&label=CI
+)](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Ftair-opensource.github.io%2FRedisShake%2F&up_message=%E4%B8%AD%E6%96%87%20%2F%20English&up_color=red&label=Doc
+)](https://tair-opensource.github.io/RedisShake/)
+[![Release](https://img.shields.io/github/v/release/tair-opensource/RedisShake?color=blue&label=Release)](https://github.com/tair-opensource/RedisShake/releases)
+[![ghcr.io](https://ghcr-badge.egpl.dev/tair-opensource/redisshake/latest_tag?color=%231d63ed&ignore=latest&label=ghcr.io&trim=)](https://github.com/tair-opensource/RedisShake/pkgs/container/redisshake)
 
 - [中文文档](https://tair-opensource.github.io/RedisShake/)
 - [English Documentation](https://tair-opensource.github.io/RedisShake/en/)
 
-![](./docs/demo.gif)
+![](./docs/intro.png)
 
 ## Overview
 
-RedisShake is a tool designed for processing and migrating Redis data. It offers the following features:
+RedisShake is a powerful tool for Redis data transformation and migration, offering:
 
-1. **Redis Compatibility**: RedisShake is compatible with Redis versions ranging from 2.8 to 7.2, and supports various
-   deployment methods including standalone, master-slave, sentinel, and cluster.
+1. 🔄 **Zero Downtime Migration**: Enables seamless data migration without data loss or service interruption, ensuring continuous operation during the transfer process.
 
-2. **Cloud Service Compatibility**: RedisShake works seamlessly with popular Redis-like databases provided by leading
-   cloud service providers, including but not limited to:
-    - [Alibaba Cloud - ApsaraDB for Redis](https://www.alibabacloud.com/product/apsaradb-for-redis)
-    - [Alibaba Cloud - Tair](https://www.alibabacloud.com/product/tair)
-    - [AWS - ElastiCache](https://aws.amazon.com/elasticache/)
-    - [AWS - MemoryDB](https://aws.amazon.com/memorydb/)
+2. 🌈 **Redis Compatibility**: Supports Redis 2.8 to 7.2, across standalone, master-slave, sentinel, and cluster deployments.
 
-3. **Module Compatibility**: RedisShake is compatible
-   with [TairString](https://github.com/tair-opensource/TairString), [TairZSet](https://github.com/tair-opensource/TairZset),
-   and [TairHash](https://github.com/tair-opensource/TairHash) modules.
+3. ☁️ **Cloud Service Integration**: Seamlessly works with Redis-like databases from major cloud providers:
+   - Alibaba Cloud: [ApsaraDB for Redis](https://www.alibabacloud.com/product/apsaradb-for-redis), [Tair](https://www.alibabacloud.com/product/tair)
+   - AWS: [ElastiCache](https://aws.amazon.com/elasticache/), [MemoryDB](https://aws.amazon.com/memorydb/)  
 
-4. **Multiple Export Modes**: RedisShake supports PSync, RDB, and Scan export modes.
+4. 🧩 **Module Support**: Compatible with [TairString](https://github.com/tair-opensource/TairString), [TairZSet](https://github.com/tair-opensource/TairZset), and [TairHash](https://github.com/tair-opensource/TairHash).
 
-5. **Data Processing**: RedisShake enables data filtering and transformation through custom scripts.
+5. 📤 **Flexible Data Source**: Supports [PSync](https://tair-opensource.github.io/RedisShake/zh/reader/sync_reader.html), [RDB](https://tair-opensource.github.io/RedisShake/zh/reader/rdb_reader.html), and [Scan](https://tair-opensource.github.io/RedisShake/zh/reader/scan_reader.html) data fetch methods.
 
-## Getting Started
+6. 🔧 **Advanced Data Processing**: Enables custom [script-based data transformation](https://tair-opensource.github.io/RedisShake/zh/filter/function.html) and easy-to-use [data filter rules](https://tair-opensource.github.io/RedisShake/zh/filter/filter.html).
 
-### Installation
+## How to Get RedisShake
 
-#### Download the Binary Package
+1. Download from [Releases](https://github.com/tair-opensource/RedisShake/releases).
 
-Download the binary package directly from the [Releases](https://github.com/tair-opensource/RedisShake/releases) page.
-
-#### Docker
-
+2. Use Docker:
 ```shell
 docker run --network host \
     -e SYNC=true \
@@ -49,27 +43,18 @@ docker run --network host \
     ghcr.io/tair-opensource/redisshake:latest
 ```
 
-#### Compile from Source
-
-To compile from source, ensure that you have a Golang environment set up on your local machine:
-
+3. Build it yourself:
 ```shell
 git clone https://github.com/tair-opensource/RedisShake
 cd RedisShake
 sh build.sh
 ```
 
-### Usage
+## How to Use RedisShake
 
-To migrate data from one Redis instance to another while skipping keys with specific prefixes, follow these steps:
+To move data between two Redis instances and skip some keys:
 
-1. Ensure you have two Redis instances running:
-
-* Instance A: 127.0.0.1:6379
-* Instance B: 127.0.0.1:6380
-
-2. Create a new configuration file `shake.toml`, and set the `block_key_prefix` parameter to skip keys with specific prefixes:
-
+1. Make a file called `shake.toml` with these settings:
 ```toml
 [sync_reader]
 address = "127.0.0.1:6379"
@@ -78,45 +63,24 @@ address = "127.0.0.1:6379"
 address = "127.0.0.1:6380"
 
 [filter]
-block_key_prefix = ["temp:", "cache:"]
+# skip keys with "temp:" or "cache:" prefix
+block_key_prefix = ["temp:", "cache:"] 
 ```
 
-3. Start RedisShake by running the following command:
-
+2. Run RedisShake:
 ```shell
 ./redis-shake shake.toml
 ```
 
-For more detailed information, please refer to the documentation:
-
-- [中文文档](https://tair-opensource.github.io/RedisShake/)
-- [English Documentation](https://tair-opensource.github.io/RedisShake/en/)
-
-## Contributing
-
-We welcome contributions from the community. For significant changes, please open an issue first to discuss what you
-would like to change. We are particularly interested in:
-
-1. Adding support for more modules
-2. Enhancing support for Readers and Writers
-3. Sharing your Lua scripts and best practices
-4. Improving the documentation
+For more help, check the [docs](https://tair-opensource.github.io/RedisShake/zh/guide/mode.html).
 
 ## History
 
-RedisShake is a project actively maintained by the [Tair team](https://github.com/tair-opensource) at Alibaba Cloud. Its
-evolution can be traced back to its initial version, which was forked
-from [redis-port](https://github.com/CodisLabs/redis-port).
+RedisShake, actively maintained by the [Tair team](https://github.com/tair-opensource) at Alibaba Cloud, evolved from [redis-port](https://github.com/CodisLabs/redis-port). Key milestones:
 
-During its evolution:
-
-- The [RedisShake 2.x](https://github.com/tair-opensource/RedisShake/tree/v2) version brought a series of improvements
-  and updates, enhancing its overall stability and performance.
-- The [RedisShake 3.x](https://github.com/tair-opensource/RedisShake/tree/v3) version represented a significant
-  milestone where the entire codebase was completely rewritten and optimized, leading to better efficiency and
-  usability.
-- The current version, [RedisShake 4.x](https://github.com/tair-opensource/RedisShake/tree/v4), has further enhanced
-  features related to readers, configuration, observability, and functions.
+- [RedisShake 2.x](https://github.com/tair-opensource/RedisShake/tree/v2): Improved stability and performance.
+- [RedisShake 3.x](https://github.com/tair-opensource/RedisShake/tree/v3): Complete codebase rewrite, enhancing efficiency and usability.
+- [RedisShake 4.x](https://github.com/tair-opensource/RedisShake/tree/v4): Enhanced readers, configuration, observability, and functions.
 
 ## License
 
