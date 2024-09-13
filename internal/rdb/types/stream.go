@@ -188,7 +188,7 @@ func (o *StreamObject) readStream() {
 		cmdC <- []string{"XGROUP", "CREATE", masterKey, groupName, lastid}
 
 		/* Load group offset. */
-		if typeByte == rdbTypeStreamListpacks2 {
+		if typeByte >= rdbTypeStreamListpacks2 {
 			_ = structure.ReadLength(rd) // offset
 		}
 
