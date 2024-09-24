@@ -8,6 +8,7 @@ import (
 	"RedisShake/internal/log"
 	"RedisShake/internal/rdb"
 	"RedisShake/internal/utils"
+
 	"github.com/dustin/go-humanize"
 )
 
@@ -41,7 +42,7 @@ func NewRDBReader(opts *RdbReaderOptions) Reader {
 	return r
 }
 
-func (r *rdbReader) StartRead(ctx context.Context) chan *entry.Entry {
+func (r *rdbReader) StartRead(ctx context.Context) []chan *entry.Entry {
 	log.Infof("[%s] start read", r.stat.Name)
 	r.ch = make(chan *entry.Entry, 1024)
 	updateFunc := func(offset int64) {
@@ -58,7 +59,7 @@ func (r *rdbReader) StartRead(ctx context.Context) chan *entry.Entry {
 		close(r.ch)
 	}()
 
-	return r.ch
+	return []chan *entry.Entry{r.ch}
 }
 
 func (r *rdbReader) Status() interface{} {

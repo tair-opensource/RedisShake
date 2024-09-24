@@ -121,39 +121,55 @@ func main() {
 
 	log.Infof("start syncing...")
 
-	chr := theReader.StartRead(ctx)
+	go waitShutdown(cancel)
+
+	chrs := theReader.StartRead(ctx)
 
 	theWriter.StartWrite(ctx)
 
-	go waitShutdown(cancel)
+	readerDone := make(chan bool)
+
+	for _, chr := range chrs {
+		go func(ch chan *entry.Entry) {
+			for e := range ch {
+				// calc arguments
+				e.Parse()
+				status.AddReadCount(e.CmdName)
+
+				// filter
+				if !filter.Filter(e) {
+					log.Debugf("skip command: %v", e)
+					continue
+				}
+
+				// run lua function
+				log.Debugf("function before: %v", e)
+				entries := luaRuntime.RunFunction(e)
+				log.Debugf("function after: %v", entries)
+
+				// write
+				for _, theEntry := range entries {
+					theEntry.Parse()
+					theWriter.Write(theEntry)
+					status.AddWriteCount(theEntry.CmdName)
+				}
+			}
+			readerDone <- true
+		}(chr)
+	}
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
+	readerCnt := len(chrs)
 Loop:
 	for {
 		select {
-		case e, ok := <-chr:
-			if !ok {
-				// ch has been closed, exit the loop
+		case done := <-readerDone:
+			if done {
+				readerCnt--
+			}
+			if readerCnt == 0 {
 				break Loop
-			}
-			// calc arguments
-			e.Parse()
-			status.AddReadCount(e.CmdName)
-
-			// filter
-			if !filter.Filter(e) {
-				log.Debugf("skip command: %v", e)
-				continue
-			}
-			log.Debugf("function before: %v", e)
-			entries := luaRuntime.RunFunction(e)
-			log.Debugf("function after: %v", entries)
-
-			for _, theEntry := range entries {
-				theEntry.Parse()
-				theWriter.Write(theEntry)
-				status.AddWriteCount(theEntry.CmdName)
 			}
 		case <-ticker.C:
 			pingEntry := entry.NewEntry()

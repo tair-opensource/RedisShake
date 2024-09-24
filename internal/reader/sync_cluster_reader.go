@@ -3,7 +3,6 @@ package reader
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
@@ -30,23 +29,13 @@ func NewSyncClusterReader(ctx context.Context, opts *SyncReaderOptions) Reader {
 	return rd
 }
 
-func (rd *syncClusterReader) StartRead(ctx context.Context) chan *entry.Entry {
-	ch := make(chan *entry.Entry, 1024)
-	var wg sync.WaitGroup
+func (rd *syncClusterReader) StartRead(ctx context.Context) []chan *entry.Entry {
+	chs := make([]chan *entry.Entry, 0)
 	for _, r := range rd.readers {
-		wg.Add(1)
-		go func(r Reader) {
-			defer wg.Done()
-			for e := range r.StartRead(ctx) {
-				ch <- e
-			}
-		}(r)
+		ch := r.StartRead(ctx)
+		chs = append(chs, ch[0])
 	}
-	go func() {
-		wg.Wait()
-		close(ch)
-	}()
-	return ch
+	return chs
 }
 
 func (rd *syncClusterReader) Status() interface{} {
