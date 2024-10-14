@@ -70,35 +70,26 @@ func (r *RedisClusterWriter) StartWrite(ctx context.Context) chan *entry.Entry {
 		chs[stat.Name] = w.StartWrite(ctx)
 	}
 
-	r.chWg = sync.WaitGroup{}
-	r.chWg.Add(1)
-	go func() {
-		for entry := range r.ch {
-			if len(entry.Slots) == 0 {
-				for _, writer := range r.writers {
-					writer.Write(entry)
-				}
-				continue
-			}
-			lastSlot := -1
-			for _, slot := range entry.Slots {
-				if lastSlot == -1 {
-					lastSlot = slot
-				}
-				if slot != lastSlot {
-					log.Panicf("CROSSSLOT Keys in request don't hash to the same slot. argv=%v", entry.Argv)
-				}
-			}
-			r.router[lastSlot].Write(entry)
-		}
-		r.chWg.Done()
-	}()
-
-	return r.ch
+	return nil
 }
 
 func (r *RedisClusterWriter) Write(entry *entry.Entry) {
-	r.ch <- entry
+	if len(entry.Slots) == 0 {
+		for _, writer := range r.writers {
+			writer.Write(entry)
+		}
+		return
+	}
+	lastSlot := -1
+	for _, slot := range entry.Slots {
+		if lastSlot == -1 {
+			lastSlot = slot
+		}
+		if slot != lastSlot {
+			log.Panicf("CROSSSLOT Keys in request don't hash to the same slot. argv=%v", entry.Argv)
+		}
+	}
+	r.router[lastSlot].Write(entry)
 }
 
 func (r *RedisClusterWriter) Consistent() bool {
