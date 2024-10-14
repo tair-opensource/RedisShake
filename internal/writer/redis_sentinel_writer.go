@@ -8,7 +8,7 @@ import (
 )
 
 func NewRedisSentinelWriter(ctx context.Context, opts *RedisWriterOptions) Writer {
-	sentinel := client.NewSentinelMasterClient(ctx, opts.Address, opts.Tls)
+	sentinel := client.NewSentinelMasterClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls)
 	sentinel.Send("SENTINEL", "GET-MASTER-ADDR-BY-NAME", opts.Master)
 	addr, err := sentinel.Receive()
 	if err != nil {
