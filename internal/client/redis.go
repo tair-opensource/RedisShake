@@ -22,8 +22,8 @@ type Redis struct {
 	protoWriter *proto.Writer
 }
 
-func NewSentinelMasterClient(ctx context.Context, address string, Tls bool) *Redis {
-	return NewRedisClient(ctx, address, "", "", Tls, false)
+func NewSentinelMasterClient(ctx context.Context, address string, username string, password string, Tls bool) *Redis {
+	return NewRedisClient(ctx, address, username, password, Tls, false)
 }
 
 func NewRedisClient(ctx context.Context, address string, username string, password string, Tls bool, replica bool) *Redis {
