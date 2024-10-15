@@ -50,7 +50,7 @@ type AdvancedOptions struct {
 	// ignore:  redis-shake will skip restore the key when meet "Target key name is busy" error.
 	RDBRestoreCommandBehavior string `mapstructure:"rdb_restore_command_behavior" default:"panic"`
 
-	PipelineCountLimit              uint64 `mapstructure:"pipeline_count_limit" default:"1024"`
+	PipelineCountLimit              uint32 `mapstructure:"pipeline_count_limit" default:"1024"`
 	TargetRedisClientMaxQuerybufLen int64  `mapstructure:"target_redis_client_max_querybuf_len" default:"1024000000"`
 	TargetRedisProtoMaxBulkLen      uint64 `mapstructure:"target_redis_proto_max_bulk_len" default:"512000000"`
 
