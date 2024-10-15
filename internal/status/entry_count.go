@@ -18,7 +18,7 @@ type EntryCount struct {
 }
 
 // call this function every second
-func (e *EntryCount) updateOPS() {
+func (e *EntryCount) UpdateOPS() {
 	nowTimestampSec := float64(time.Now().UnixNano()) / 1e9
 	if e.lastUpdateTimestampSec != 0 {
 		timeIntervalSec := nowTimestampSec - e.lastUpdateTimestampSec

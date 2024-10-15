@@ -5,6 +5,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -116,8 +117,16 @@ func main() {
 	default:
 		log.Panicf("no writer config entry found")
 	}
+
 	// create status
-	status.Init(theReader, theWriter)
+	if config.Opt.Advanced.StatusPort != 0 {
+		status.Init(theReader, theWriter)
+	}
+	// create log entry count
+	logEntryCount := status.EntryCount{
+		ReadCount:  0,
+		WriteCount: 0,
+	}
 
 	log.Infof("start syncing...")
 
@@ -134,7 +143,13 @@ func main() {
 			for e := range ch {
 				// calc arguments
 				e.Parse()
-				status.AddReadCount(e.CmdName)
+
+				// update reader status
+				if config.Opt.Advanced.StatusPort != 0 {
+					status.AddReadCount(e.CmdName)
+				}
+				// update log entry count
+				atomic.AddUint64(&logEntryCount.ReadCount, 1)
 
 				// filter
 				if !filter.Filter(e) {
@@ -151,12 +166,32 @@ func main() {
 				for _, theEntry := range entries {
 					theEntry.Parse()
 					theWriter.Write(theEntry)
-					status.AddWriteCount(theEntry.CmdName)
+
+					// update writer status
+					if config.Opt.Advanced.StatusPort != 0 {
+						status.AddWriteCount(theEntry.CmdName)
+					}
+					// update log entry count
+					atomic.AddUint64(&logEntryCount.WriteCount, 1)
 				}
 			}
 			readerDone <- true
 		}(chr)
 	}
+
+	// caluate ops and log to screen
+	go func() {
+		if config.Opt.Advanced.LogInterval <= 0 {
+			log.Infof("log interval is 0, will not log to screen")
+			return
+		}
+		ticker := time.NewTicker(time.Duration(config.Opt.Advanced.LogInterval) * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			logEntryCount.UpdateOPS()
+			log.Infof("%s, %s", logEntryCount.String(), theReader.StatusString())
+		}
+	}()
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
