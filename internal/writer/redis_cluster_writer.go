@@ -2,6 +2,7 @@ package writer
 
 import (
 	"context"
+	"sync"
 
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
@@ -14,18 +15,22 @@ type RedisClusterWriter struct {
 	addresses []string
 	writers   []Writer
 	router    [KeySlots]Writer
-
-	stat []interface{}
+	ch        chan *entry.Entry
+	chWg      sync.WaitGroup
+	stat      []interface{}
 }
 
 func NewRedisClusterWriter(ctx context.Context, opts *RedisWriterOptions) Writer {
 	rw := new(RedisClusterWriter)
 	rw.loadClusterNodes(ctx, opts)
+	rw.ch = make(chan *entry.Entry, 1024)
 	log.Infof("redisClusterWriter connected to redis cluster successful. addresses=%v", rw.addresses)
 	return rw
 }
 
 func (r *RedisClusterWriter) Close() {
+	r.chWg.Wait()
+	close(r.ch)
 	for _, writer := range r.writers {
 		writer.Close()
 	}
@@ -54,6 +59,20 @@ func (r *RedisClusterWriter) loadClusterNodes(ctx context.Context, opts *RedisWr
 	}
 }
 
+func (r *RedisClusterWriter) StartWrite(ctx context.Context) chan *entry.Entry {
+	chs := make(map[string]chan *entry.Entry, len(r.writers))
+	for _, w := range r.writers {
+		stat := w.Status().(struct {
+			Name              string `json:"name"`
+			UnansweredBytes   int64  `json:"unanswered_bytes"`
+			UnansweredEntries int64  `json:"unanswered_entries"`
+		})
+		chs[stat.Name] = w.StartWrite(ctx)
+	}
+
+	return nil
+}
+
 func (r *RedisClusterWriter) Write(entry *entry.Entry) {
 	if len(entry.Slots) == 0 {
 		for _, writer := range r.writers {
@@ -61,7 +80,6 @@ func (r *RedisClusterWriter) Write(entry *entry.Entry) {
 		}
 		return
 	}
-
 	lastSlot := -1
 	for _, slot := range entry.Slots {
 		if lastSlot == -1 {

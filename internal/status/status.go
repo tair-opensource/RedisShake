@@ -2,9 +2,6 @@ package status
 
 import (
 	"time"
-
-	"RedisShake/internal/config"
-	"RedisShake/internal/log"
 )
 
 type Statusable interface {
@@ -32,9 +29,6 @@ var theWriter Statusable
 
 func AddReadCount(cmd string) {
 	ch <- func() {
-		if stat.PerCmdEntriesCount == nil {
-			stat.PerCmdEntriesCount = make(map[string]EntryCount)
-		}
 		cmdEntryCount, ok := stat.PerCmdEntriesCount[cmd]
 		if !ok {
 			cmdEntryCount = EntryCount{}
@@ -48,9 +42,6 @@ func AddReadCount(cmd string) {
 
 func AddWriteCount(cmd string) {
 	ch <- func() {
-		if stat.PerCmdEntriesCount == nil {
-			stat.PerCmdEntriesCount = make(map[string]EntryCount)
-		}
 		cmdEntryCount, ok := stat.PerCmdEntriesCount[cmd]
 		if !ok {
 			cmdEntryCount = EntryCount{}
@@ -68,6 +59,11 @@ func Init(r Statusable, w Statusable) {
 	setStatusPort()
 	stat.Time = time.Now().Format("2006-01-02 15:04:05")
 
+	// init per cmd entries count
+	if stat.PerCmdEntriesCount == nil {
+		stat.PerCmdEntriesCount = make(map[string]EntryCount)
+	}
+
 	// for update reader/writer stat
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
@@ -81,25 +77,10 @@ func Init(r Statusable, w Statusable) {
 				stat.Consistent = lastConsistent && theReader.StatusConsistent() && theWriter.StatusConsistent()
 				lastConsistent = stat.Consistent
 				// update OPS
-				stat.TotalEntriesCount.updateOPS()
+				stat.TotalEntriesCount.UpdateOPS()
 				for _, cmdEntryCount := range stat.PerCmdEntriesCount {
-					cmdEntryCount.updateOPS()
+					cmdEntryCount.UpdateOPS()
 				}
-			}
-		}
-	}()
-
-	// for log to screen
-	go func() {
-		if config.Opt.Advanced.LogInterval <= 0 {
-			log.Infof("log interval is 0, will not log to screen")
-			return
-		}
-		ticker := time.NewTicker(time.Duration(config.Opt.Advanced.LogInterval) * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			ch <- func() {
-				log.Infof("%s, %s", stat.TotalEntriesCount.String(), theReader.StatusString())
 			}
 		}
 	}()

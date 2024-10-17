@@ -5,6 +5,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -116,41 +117,94 @@ func main() {
 	default:
 		log.Panicf("no writer config entry found")
 	}
+
 	// create status
-	status.Init(theReader, theWriter)
+	if config.Opt.Advanced.StatusPort != 0 {
+		status.Init(theReader, theWriter)
+	}
+	// create log entry count
+	logEntryCount := status.EntryCount{
+		ReadCount:  0,
+		WriteCount: 0,
+	}
 
 	log.Infof("start syncing...")
 
-	ch := theReader.StartRead(ctx)
 	go waitShutdown(cancel)
+
+	chrs := theReader.StartRead(ctx)
+
+	theWriter.StartWrite(ctx)
+
+	readerDone := make(chan bool)
+
+	for _, chr := range chrs {
+		go func(ch chan *entry.Entry) {
+			for e := range ch {
+				// calc arguments
+				e.Parse()
+
+				// update reader status
+				if config.Opt.Advanced.StatusPort != 0 {
+					status.AddReadCount(e.CmdName)
+				}
+				// update log entry count
+				atomic.AddUint64(&logEntryCount.ReadCount, 1)
+
+				// filter
+				if !filter.Filter(e) {
+					log.Debugf("skip command: %v", e)
+					continue
+				}
+
+				// run lua function
+				log.Debugf("function before: %v", e)
+				entries := luaRuntime.RunFunction(e)
+				log.Debugf("function after: %v", entries)
+
+				// write
+				for _, theEntry := range entries {
+					theEntry.Parse()
+					theWriter.Write(theEntry)
+
+					// update writer status
+					if config.Opt.Advanced.StatusPort != 0 {
+						status.AddWriteCount(theEntry.CmdName)
+					}
+					// update log entry count
+					atomic.AddUint64(&logEntryCount.WriteCount, 1)
+				}
+			}
+			readerDone <- true
+		}(chr)
+	}
+
+	// caluate ops and log to screen
+	go func() {
+		if config.Opt.Advanced.LogInterval <= 0 {
+			log.Infof("log interval is 0, will not log to screen")
+			return
+		}
+		ticker := time.NewTicker(time.Duration(config.Opt.Advanced.LogInterval) * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			logEntryCount.UpdateOPS()
+			log.Infof("%s, %s", logEntryCount.String(), theReader.StatusString())
+		}
+	}()
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
+	readerCnt := len(chrs)
 Loop:
 	for {
 		select {
-		case e, ok := <-ch:
-			if !ok {
-				// ch has been closed, exit the loop
+		case done := <-readerDone:
+			if done {
+				readerCnt--
+			}
+			if readerCnt == 0 {
 				break Loop
-			}
-			// calc arguments
-			e.Parse()
-			status.AddReadCount(e.CmdName)
-
-			// filter
-			if !filter.Filter(e) {
-				log.Debugf("skip command: %v", e)
-				continue
-			}
-			log.Debugf("function before: %v", e)
-			entries := luaRuntime.RunFunction(e)
-			log.Debugf("function after: %v", entries)
-
-			for _, theEntry := range entries {
-				theEntry.Parse()
-				theWriter.Write(theEntry)
-				status.AddWriteCount(theEntry.CmdName)
 			}
 		case <-ticker.C:
 			pingEntry := entry.NewEntry()

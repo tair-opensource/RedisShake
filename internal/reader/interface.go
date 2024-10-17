@@ -8,5 +8,5 @@ import (
 
 type Reader interface {
 	status.Statusable
-	StartRead(ctx context.Context) chan *entry.Entry
+	StartRead(ctx context.Context) []chan *entry.Entry
 }

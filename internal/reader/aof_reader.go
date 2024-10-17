@@ -66,7 +66,7 @@ func NewAOFReader(opts *AOFReaderOptions) Reader {
 	return r
 }
 
-func (r *aofReader) StartRead(ctx context.Context) chan *entry.Entry {
+func (r *aofReader) StartRead(ctx context.Context) []chan *entry.Entry {
 	//init entry
 	r.ch = make(chan *entry.Entry, 1024)
 
@@ -101,5 +101,5 @@ func (r *aofReader) StartRead(ctx context.Context) chan *entry.Entry {
 
 	}()
 
-	return r.ch
+	return []chan *entry.Entry{r.ch}
 }

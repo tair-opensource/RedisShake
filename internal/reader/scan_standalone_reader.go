@@ -85,7 +85,7 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 	return r
 }
 
-func (r *scanStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry {
+func (r *scanStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entry {
 	r.ctx = ctx
 	if r.opts.Scan {
 		go r.scan()
@@ -95,7 +95,7 @@ func (r *scanStandaloneReader) StartRead(ctx context.Context) chan *entry.Entry 
 	}
 	go r.dump()
 	go r.restore()
-	return r.ch
+	return []chan *entry.Entry{r.ch}
 }
 
 func (r *scanStandaloneReader) subscript() {
