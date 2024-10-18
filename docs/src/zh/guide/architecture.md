@@ -1,10 +1,14 @@
-# 集群同步架构
+# 架构与性能说明
 
 ## 架构图
 
-当源端和目的端都为集群时，同步架构图如下。
+当源端和目的端都为集群（Cluster）时，同步架构图如下。
 
-![集群同步架构图](/architecture.svg)
+![集群同步架构图](/architecture-c2c.svg)
+
+当源端和目的端为单实例节点（Standalone）时，同步架构图如下。
+
+![单实例节点同步架构图](/architecture-s2s.svg)
 
 ## 架构说明
 
@@ -40,9 +44,11 @@ Cluster Writer 即集群写入类，根据目的端分片数量创建同等数�
 
 - redis-benchmark：redis 的压力测试工具，为源端创造持续的写入流量
 
-分别对 redisshake 两种模式 sync 和 scan，数据同步全量同步阶段（rdb）、增量同步阶段（aof）设计了测试案例。对于全量同步阶段，需要提前写入数据到源端，再开启 redisshake 同步；对于增量同步阶段，先开启 redisshake 开始同步，再利用 redis-benchmark 持续产生写入流量。
+分别对 redisshake 两种模式 sync 和 scan，数据同步全量同步和增量同步两个阶段设计了测试案例。对于全量同步阶段，需要提前写入数据到源端，再开启 redisshake 同步；对于增量同步阶段，先开启 redisshake 开始同步，再利用 redis-benchmark 持续产生写入流量。
 
-其中对于增量同步阶段，redis-benchmark 脚本设置如下，产生的写请求大概为 1500k/s，可以占满 ECS 服务器的前 16 个 cpu 内核。
+其中，sync 模式下，全量同步阶段同步一个 rdb 文件，增量同步阶段则是 aof 数据流；在 scan 模式下，全量同步采用 scan 遍历源端数据库，增量同步阶段则是开启 ksn 进行键值同步。
+
+对于增量同步阶段，redis-benchmark 脚本设置如下，产生的写请求大概为 1500k/s，可以占满 ECS 服务器的前 16 个 cpu 内核。
 
 ```bash
 taskset -c 0-15 redis-benchmark \
@@ -51,7 +57,7 @@ taskset -c 0-15 redis-benchmark \
   --cluster -c 256 -d 8 -P 2
 ```
 
-测试结果可见 [RedisShake 云端测试结果](https://github.com/OxalisCu/RedisShake/tree/benchmark-backup-cloud/demo)
+测试结果可见 [RedisShake 云端性能测试结果](https://github.com/OxalisCu/RedisShake/tree/benchmark-backup-cloud/demo)
 
 ### 性能数据
 
@@ -67,16 +73,16 @@ taskset -c 0-15 redis-benchmark \
 | --------------- | ----- | ------- | --------------- | --------------- |
 | **sync + aof**  | 1599k | 1520k   | 12*(130k)=1560k | 0.97            |
 | **sync + rdb**  |       | 1498k   | 12*(220k)=2640k | 0.57            |
-| **scan + aof**  | 1084k | 1081k   | 12*(95k)=1140k  | 0.95            |
-| **scan + rdb**  |       | 665k    | 12*(58k)=696k   | 0.95            |
+| **scan + ksn**  | 1084k | 1081k   | 12*(95k)=1140k  | 0.95            |
+| **scan + scan** |       | 665k    | 12*(58k)=696k   | 0.95            |
 
 ### 资源消耗
 
-cpu 占用和 io 速率采用 htop 工具监测，network 收发速率采用 iftop 工具监测，得到结果如下。
+cpu 占用和 disk 读写速率采用 htop 工具监测，network 收发速率采用 iftop 工具监测，得到结果如下。
 
-|                 | cpu                                 | network                              | io         |
+|                 | cpu                                 | network                              | disk       |
 | --------------- | ----------------------------------- | ------------------------------------ | ---------- |
 | **sync + aof**  | 16 核占用 70%-90%，总使用率 1276.9%  | 发送速率 1340Mb/s，接收速率 998Mb/s   | 155.91MB/s |
 | **sync + rdb**  | 32 核占用 50%-60%，总使用率 1605.0%  | 发送速率 435Mb/s，接收速率 82.1 Mb/s  | 113.53KB/s |
-| **scan + aof**  | 16 核占用 90%-100%，总使用率 1911.4% | 发送速率 2100Mb/s，接收速率 1330 Mb/s | 172.07KB/s |
-| **scan + rdb**  | 32 核占用 40%-60%，总使用率 1297.2%  | 发送速率 1130Mb/s，接收速率 533Mb/s   | 155.78KB/s |
+| **scan + ksn**  | 16 核占用 90%-100%，总使用率 1911.4% | 发送速率 2100Mb/s，接收速率 1330 Mb/s | 172.07KB/s |
+| **scan + scan** | 32 核占用 40%-60%，总使用率 1297.2%  | 发送速率 1130Mb/s，接收速率 533Mb/s   | 155.78KB/s |
