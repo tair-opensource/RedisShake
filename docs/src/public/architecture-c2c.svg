@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- 由 Microsoft Visio, SVG Export 生成 改进5.svg Page-1 -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events"
+		xmlns:v="http://schemas.microsoft.com/visio/2003/SVGExtensions/" width="14.701in" height="5.27124in"
+		viewBox="0 0 1058.47 379.529" xml:space="preserve" color-interpolation-filters="sRGB" class="st21">
+	<v:documentProperties v:langID="2052" v:metric="true" v:viewMarkup="false">
+		<v:userDefs>
+			<v:ud v:nameU="msvSubprocessMaster" v:prompt="" v:val="VT4(Rectangle)"/>
+			<v:ud v:nameU="msvNoAutoConnect" v:val="VT0(1):26"/>
+		</v:userDefs>
+	</v:documentProperties>
+
+	<style type="text/css">
+	<![CDATA[
+		.st1 {fill:#90aadb;stroke:#90aadb;stroke-width:0.25}
+		.st2 {fill:#feffff;font-family:微软雅黑;font-size:0.833336em}
+		.st3 {font-size:1em}
+		.st4 {fill:none;stroke:#90aadb;stroke-dasharray:15,9;stroke-width:1}
+		.st5 {fill:none;stroke:none;stroke-width:0.25}
+		.st6 {fill:#4672c4;font-family:Calibri;font-size:1.00001em;font-weight:bold}
+		.st7 {marker-end:url(#mrkr4-36);stroke:#90aadb;stroke-linecap:round;stroke-linejoin:round;stroke-width:1}
+		.st8 {fill:#90aadb;fill-opacity:1;stroke:#90aadb;stroke-opacity:1;stroke-width:0.28409090909091}
+		.st9 {fill:#a8d08d;font-family:Calibri;font-size:1.00001em;font-weight:bold}
+		.st10 {fill:#ed7d31;font-family:Calibri;font-size:1.00001em;font-weight:bold}
+		.st11 {fill:#ed7d31;font-family:Calibri;font-size:1.00001em}
+		.st12 {fill:#a8d08d;stroke:#a8d08d;stroke-width:0.25}
+		.st13 {fill:#feffff;font-family:微软雅黑;font-size:0.75em}
+		.st14 {fill:#fbe5d5;stroke:#f4b183;stroke-width:0.25}
+		.st15 {fill:#ed7d31;stroke:#ed7d31;stroke-width:0.25}
+		.st16 {fill:#feffff;font-family:Arial;font-size:0.833336em}
+		.st17 {fill:#ffc000;stroke:#ffd965;stroke-width:0.25}
+		.st18 {fill:#c55a11;stroke:#ed7d31;stroke-width:0.25}
+		.st19 {marker-end:url(#mrkr4-129);stroke:#c5e0b3;stroke-linecap:round;stroke-linejoin:round;stroke-width:1}
+		.st20 {fill:#c5e0b3;fill-opacity:1;stroke:#c5e0b3;stroke-opacity:1;stroke-width:0.28409090909091}
+		.st21 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
+	]]>
+	</style>
+
+	<defs id="Markers">
+		<g id="lend4">
+			<path d="M 2 1 L 0 0 L 2 -1 L 2 1 " style="stroke:none"/>
+		</g>
+		<marker id="mrkr4-36" class="st8" v:arrowType="4" v:arrowSize="2" v:setback="7.04" refX="-7.04" orient="auto"
+				markerUnits="strokeWidth" overflow="visible">
+			<use xlink:href="#lend4" transform="scale(-3.52,-3.52) "/>
+		</marker>
+		<marker id="mrkr4-129" class="st20" v:arrowType="4" v:arrowSize="2" v:setback="7.04" refX="-7.04" orient="auto"
+				markerUnits="strokeWidth" overflow="visible">
+			<use xlink:href="#lend4" transform="scale(-3.52,-3.52) "/>
+		</marker>
+	</defs>
+	<g v:mID="0" v:index="1" v:groupContext="foregroundPage">
+		<v:userDefs>
+			<v:ud v:nameU="msvThemeOrder" v:val="VT0(0):26"/>
+		</v:userDefs>
+		<title>页-1</title>
+		<v:pageProperties v:drawingScale="0.0393701" v:pageScale="0.0393701" v:drawingUnits="24" v:shadowOffsetX="8.50394"
+				v:shadowOffsetY="-8.50394"/>
+		<v:layer v:name="连接线" v:index="0"/>
+		<g id="shape19-1" v:mID="19" v:groupContext="shape" transform="translate(45.0019,-235.356)">
+			<title>矩形.19</title>
+			<desc>Cluster node 1 (slot 0–5460)</desc>
+			<v:userDefs>
+				<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+				<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="56.4242" cy="348.388" width="112.85" height="62.2817"/>
+			<rect x="0" y="317.248" width="112.848" height="62.2817" class="st1"/>
+			<text x="21.56" y="345.39" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Cluster node 1<v:newlineChar/><tspan
+						x="25.56" dy="1.2em" class="st3">(slot 0</tspan>–5460)</text>		</g>
+		<g id="shape20-5" v:mID="20" v:groupContext="shape" transform="translate(45.0019,-155.946)">
+			<title>矩形.20</title>
+			<desc>Cluster node 2 (slot 5461–10922)</desc>
+			<v:userDefs>
+				<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+				<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="56.4242" cy="348.388" width="112.85" height="62.2817"/>
+			<rect x="0" y="317.248" width="112.848" height="62.2817" class="st1"/>
+			<text x="21.56" y="345.39" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Cluster node 2<v:newlineChar/><tspan
+						x="13.83" dy="1.2em" class="st3">(slot 5461</tspan>–10922)</text>		</g>
+		<g id="shape21-9" v:mID="21" v:groupContext="shape" transform="translate(44.4743,-75.928)">
+			<title>矩形.3</title>
+			<desc>Cluster node 3 (slot 10923-16383)</desc>
+			<v:userDefs>
+				<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+				<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="56.4242" cy="348.388" width="112.85" height="62.2817"/>
+			<rect x="0" y="317.248" width="112.848" height="62.2817" class="st1"/>
+			<text x="21.56" y="345.39" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Cluster node 3<v:newlineChar/><tspan
+						x="11.43" dy="1.2em" class="st3">(slot 10923</tspan>-16383)</text>		</g>
+		<g id="shape22-13" v:mID="22" v:groupContext="shape" transform="translate(23.2126,-48.7559)">
+			<title>矩形.22</title>
+			<v:userDefs>
+				<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+				<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+			</v:userDefs>
+			<path d="M0 379.53 L152 379.53 L152 99.47 L0 99.47 L0 379.53 Z" class="st4"/>
+		</g>
+		<g id="shape23-15" v:mID="23" v:groupContext="shape" transform="translate(29.7638,-303.15)">
+			<title>工作表.23</title>
+			<desc>Source</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="69.4488" cy="369.529" width="138.9" height="20"/>
+			<rect x="0" y="359.529" width="138.898" height="20" class="st5"/>
+			<text x="52.5" y="373.13" class="st6" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Source</text>		</g>
+		<g id="shape26-18" v:mID="26" v:groupContext="shape" transform="translate(864.836,-191.339)">
+			<title>矩形</title>
+			<desc>Cluster node 1 (slot 0–8191)</desc>
+			<v:userDefs>
+				<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+				<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="56.4242" cy="348.388" width="112.85" height="62.2817"/>
+			<rect x="0" y="317.248" width="112.848" height="62.2817" class="st1"/>
+			<text x="21.56" y="345.39" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Cluster node 1<v:newlineChar/><tspan
+						x="25.56" dy="1.2em" class="st3">(slot 0</tspan>–8191)</text>		</g>
+		<g id="shape27-22" v:mID="27" v:groupContext="shape" transform="translate(864.836,-112.409)">
+			<title>矩形.2</title>
+			<desc>Cluster node 2 (slot 8192–16383)</desc>
+			<v:userDefs>
+				<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+				<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+			</v:userDefs>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="56.4242" cy="348.388" width="112.85" height="62.2817"/>
+			<rect x="0" y="317.248" width="112.848" height="62.2817" class="st1"/>
+			<text x="21.56" y="345.39" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Cluster node 2<v:newlineChar/><tspan
+						x="13.83" dy="1.2em" class="st3">(slot 8192</tspan>–16383)</text>		</g>
+		<g id="shape28-26" v:mID="28" v:groupContext="shape" transform="translate(845.26,-92.126)">
+			<title>矩形.26</title>
+			<v:userDefs>
+				<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+				<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+			</v:userDefs>
+			<path d="M0 379.53 L152 379.53 L152 181.1 L0 181.1 L0 379.53 Z" class="st4"/>
+		</g>
+		<g id="shape29-28" v:mID="29" v:groupContext="shape" transform="translate(846.028,-256.535)">
+			<title>工作表.29</title>
+			<desc>Destination</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="75.2323" cy="364.423" width="150.47" height="30.2133"/>
+			<rect x="0" y="349.316" width="150.465" height="30.2133" class="st5"/>
+			<text x="46.3" y="368.02" class="st6" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Destination</text>		</g>
+		<g id="shape36-31" v:mID="36" v:groupContext="shape" v:layerMember="0" transform="translate(157.85,-261.78)">
+			<title>动态连接线.82</title>
+			<path d="M0 372.58 L45.45 372.34" class="st7"/>
+		</g>
+		<g id="shape56-37" v:mID="56" v:groupContext="shape" v:layerMember="0" transform="translate(808.047,-229.799)">
+			<title>动态连接线.56</title>
+			<path d="M0 386.38 L49.75 386.79" class="st7"/>
+		</g>
+		<g id="shape71-42" v:mID="71" v:groupContext="shape" v:layerMember="0" transform="translate(157.85,-194.173)">
+			<title>动态连接线</title>
+			<path d="M0 386.62 L45.45 386.62" class="st7"/>
+		</g>
+		<g id="shape81-47" v:mID="81" v:groupContext="shape" transform="translate(512.189,-311.288)">
+			<title>工作表.81</title>
+			<desc>Write by slot</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+			<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+			<text x="43.91" y="373.13" class="st9" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Write by slot</text>		</g>
+		<g id="shape118-50" v:mID="118" v:groupContext="shape" transform="translate(192.181,-323.15)">
+			<title>工作表.118</title>
+			<desc>Cluster Reader</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+			<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+			<text x="39.41" y="373.13" class="st10" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Cluster Reader</text>		</g>
+		<g id="shape119-53" v:mID="119" v:groupContext="shape" transform="translate(366.205,-323.15)">
+			<title>工作表.119</title>
+			<desc>Main</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+			<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+			<text x="63.1" y="373.13" class="st10" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Main</text>		</g>
+		<g id="shape120-56" v:mID="120" v:groupContext="shape" transform="translate(672,-286.458)">
+			<title>工作表.120</title>
+			<desc>Cluster Writer</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+			<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+			<text x="40.87" y="373.13" class="st10" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Cluster Writer</text>		</g>
+		<g id="shape149-59" v:mID="149" v:groupContext="shape" transform="translate(192.181,-297.185)">
+			<title>工作表.149</title>
+			<desc>Goroutinue</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+			<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+			<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>		</g>
+		<g id="shape180-62" v:mID="180" v:groupContext="shape" v:layerMember="0" transform="translate(157.323,-118.959)">
+			<title>动态连接线.180</title>
+			<path d="M0 386.52 L45.98 386.69" class="st7"/>
+		</g>
+		<g id="shape189-67" v:mID="189" v:groupContext="shape" transform="translate(192.181,-107.004)">
+			<title>工作表.189</title>
+			<desc>Goroutinue</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+			<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+			<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>		</g>
+		<g id="group198-70" transform="translate(623.622,-206.092)" v:mID="198" v:groupContext="group">
+			<title>工作表.198</title>
+			<g id="shape38-71" v:mID="38" v:groupContext="shape" transform="translate(6.39488E-14,-17.6604)">
+				<title>矩形.38</title>
+				<desc>Writer Channel 1</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="35.5314" cy="359.722" width="71.07" height="39.6146"/>
+				<rect x="0" y="339.915" width="71.0628" height="39.6146" class="st12"/>
+				<text x="22.09" y="357.02" class="st13" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Writer<v:newlineChar/><tspan
+							x="14" dy="1.2em" class="st3">Channel 1</tspan></text>			</g>
+			<g id="shape195-75" v:mID="195" v:groupContext="shape" transform="translate(68.7401,0)">
+				<title>矩形.148</title>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<rect x="0" y="307.271" width="115.685" height="72.2579" class="st14"/>
+			</g>
+			<g id="shape196-77" v:mID="196" v:groupContext="shape" transform="translate(50.5827,-50.0157)">
+				<title>工作表.196</title>
+				<desc>Goroutinue</desc>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+				<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+				<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>			</g>
+			<g id="shape197-80" v:mID="197" v:groupContext="shape" transform="translate(83.8345,-12.2933)">
+				<title>矩形.150</title>
+				<desc>Standalone Writer 1</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="42.7482" cy="361.492" width="85.5" height="36.0748"/>
+				<rect x="0" y="343.455" width="85.4964" height="36.0748" class="st15"/>
+				<text x="17.45" y="358.49" class="st16" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Standalone<v:newlineChar/><tspan
+							x="25.25" dy="1.2em" class="st3">Writer 1</tspan></text>			</g>
+		</g>
+		<g id="group199-84" transform="translate(623.622,-103.348)" v:mID="199" v:groupContext="group">
+			<title>工作表.199</title>
+			<g id="shape200-85" v:mID="200" v:groupContext="shape" transform="translate(6.39488E-14,-17.6604)">
+				<title>矩形.38</title>
+				<desc>Writer Channel 2</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="35.5314" cy="359.722" width="71.07" height="39.6146"/>
+				<rect x="0" y="339.915" width="71.0628" height="39.6146" class="st12"/>
+				<text x="22.09" y="357.02" class="st13" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Writer<v:newlineChar/><tspan
+							x="14" dy="1.2em" class="st3">Channel 2</tspan></text>			</g>
+			<g id="shape201-89" v:mID="201" v:groupContext="shape" transform="translate(68.7401,0)">
+				<title>矩形.148</title>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<rect x="0" y="307.271" width="115.685" height="72.2579" class="st14"/>
+			</g>
+			<g id="shape202-91" v:mID="202" v:groupContext="shape" transform="translate(50.5827,-50.0157)">
+				<title>工作表.202</title>
+				<desc>Goroutinue</desc>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+				<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+				<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>			</g>
+			<g id="shape203-94" v:mID="203" v:groupContext="shape" transform="translate(83.8345,-12.2933)">
+				<title>矩形.150</title>
+				<desc>Standalone Writer 2</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="42.7482" cy="361.492" width="85.5" height="36.0748"/>
+				<rect x="0" y="343.455" width="85.4964" height="36.0748" class="st15"/>
+				<text x="17.45" y="358.49" class="st16" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Standalone<v:newlineChar/><tspan
+							x="25.25" dy="1.2em" class="st3">Writer 2</tspan></text>			</g>
+		</g>
+		<g id="group208-98" transform="translate(192.181,-150.958)" v:mID="208" v:groupContext="group">
+			<title>工作表.208</title>
+			<g id="shape173-99" v:mID="173" v:groupContext="shape" transform="translate(128.295,-16.2712)">
+				<title>矩形.173</title>
+				<desc>Reader Channel 2</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="35.5314" cy="359.035" width="71.07" height="40.9886"/>
+				<rect x="0" y="338.541" width="71.0628" height="40.9886" class="st17"/>
+				<text x="18.72" y="356.04" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Reader<v:newlineChar/><tspan
+							x="11.6" dy="1.2em" class="st3">Channel 2</tspan></text>			</g>
+			<g id="shape174-103" v:mID="174" v:groupContext="shape" transform="translate(193.677,-1.89054E-05)">
+				<title>矩形.174</title>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<rect x="0" y="307.271" width="115.685" height="72.2579" class="st14"/>
+			</g>
+			<g id="shape175-105" v:mID="175" v:groupContext="shape" transform="translate(175.52,-49.3401)">
+				<title>工作表.175</title>
+				<desc>Goroutinue</desc>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+				<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+				<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>			</g>
+			<g id="shape176-108" v:mID="176" v:groupContext="shape" transform="translate(211.338,-11.6772)">
+				<title>矩形.176</title>
+				<desc>Parse, Filter, Function</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="40.1813" cy="361.492" width="80.37" height="36.0748"/>
+				<rect x="0" y="343.455" width="80.3625" height="36.0748" class="st18"/>
+				<text x="11.49" y="358.49" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Parse, Filter, <tspan
+							x="19.4" dy="1.2em" class="st3">Function</tspan></text>			</g>
+			<g id="shape177-112" v:mID="177" v:groupContext="shape" transform="translate(18.1575,0)">
+				<title>矩形.177</title>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<rect x="0" y="307.271" width="115.685" height="72.2579" class="st14"/>
+			</g>
+			<g id="shape178-114" v:mID="178" v:groupContext="shape" transform="translate(7.99361E-14,-50.0157)">
+				<title>工作表.178</title>
+				<desc>Goroutinue</desc>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+				<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+				<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>			</g>
+			<g id="shape179-117" v:mID="179" v:groupContext="shape" transform="translate(33.2518,-12.2933)">
+				<title>矩形.179</title>
+				<desc>Standalone Reader 2</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="42.7482" cy="361.492" width="85.5" height="36.0748"/>
+				<rect x="0" y="343.455" width="85.4964" height="36.0748" class="st15"/>
+				<text x="17.45" y="358.49" class="st16" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Standalone<v:newlineChar/><tspan
+							x="22.18" dy="1.2em" class="st3">Reader 2</tspan></text>			</g>
+			<g id="shape205-121" v:mID="205" v:groupContext="shape" transform="translate(309.551,-18.1299)">
+				<title>矩形.205</title>
+				<desc>Write</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="22.3898" cy="364.718" width="44.78" height="29.622"/>
+				<rect x="0" y="349.907" width="44.7796" height="29.622" class="st12"/>
+				<text x="9.36" y="367.72" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Write</text>			</g>
+		</g>
+		<g id="shape210-124" v:mID="210" v:groupContext="shape" v:layerMember="0" transform="translate(546.512,-280.11)">
+			<title>动态连接线.210</title>
+			<path d="M0 379.53 L70.75 413.06" class="st19"/>
+		</g>
+		<g id="shape211-130" v:mID="211" v:groupContext="shape" v:layerMember="0" transform="translate(546.512,-183.899)">
+			<title>动态连接线.211</title>
+			<path d="M0 379.53 L35.42 352.12 A2.3622 2.3622 0 1 1 39.16 349.23 L71.54 324.18" class="st19"/>
+		</g>
+		<g id="shape212-135" v:mID="212" v:groupContext="shape" v:layerMember="0" transform="translate(546.512,-88.2421)">
+			<title>动态连接线.212</title>
+			<path d="M0 379.53 L73.98 230.52" class="st19"/>
+		</g>
+		<g id="shape213-140" v:mID="213" v:groupContext="shape" v:layerMember="0" transform="translate(546.512,-280.11)">
+			<title>动态连接线.213</title>
+			<path d="M0 379.53 L49.07 468.18 A2.3622 2.3622 0 0 1 51.36 472.31 L73.7 512.66" class="st19"/>
+		</g>
+		<g id="shape214-145" v:mID="214" v:groupContext="shape" v:layerMember="0" transform="translate(546.512,-183.899)">
+			<title>动态连接线.214</title>
+			<path d="M0 379.53 L35.12 399.15 A2.3622 2.3622 0 0 1 39.24 401.45 L70.96 419.18" class="st19"/>
+		</g>
+		<g id="shape215-150" v:mID="215" v:groupContext="shape" v:layerMember="0" transform="translate(546.512,-88.2421)">
+			<title>动态连接线.215</title>
+			<path d="M0 379.53 L71.29 330.92" class="st19"/>
+		</g>
+		<g id="shape216-155" v:mID="216" v:groupContext="shape" transform="translate(192.181,-104.641)">
+			<title>工作表.216</title>
+			<desc>Goroutinue</desc>
+			<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+			<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+			<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+			<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>		</g>
+		<g id="group218-158" transform="translate(192.181,-55.3012)" v:mID="218" v:groupContext="group">
+			<title>工作表.218</title>
+			<g id="shape188-159" v:mID="188" v:groupContext="shape" transform="translate(18.1575,0)">
+				<title>矩形.188</title>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<rect x="0" y="307.271" width="115.685" height="72.2579" class="st14"/>
+			</g>
+			<g id="shape185-161" v:mID="185" v:groupContext="shape" transform="translate(193.677,-1.89054E-05)">
+				<title>矩形.185</title>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<rect x="0" y="307.271" width="115.685" height="72.2579" class="st14"/>
+			</g>
+			<g id="shape186-163" v:mID="186" v:groupContext="shape" transform="translate(175.52,-49.3401)">
+				<title>工作表.186</title>
+				<desc>Goroutinue</desc>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+				<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+				<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>			</g>
+			<g id="shape187-166" v:mID="187" v:groupContext="shape" transform="translate(211.338,-11.6772)">
+				<title>矩形.187</title>
+				<desc>Parse, Filter, Function</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="40.1813" cy="361.492" width="80.37" height="36.0748"/>
+				<rect x="0" y="343.455" width="80.3625" height="36.0748" class="st18"/>
+				<text x="11.49" y="358.49" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Parse, Filter, <tspan
+							x="19.4" dy="1.2em" class="st3">Function</tspan></text>			</g>
+			<g id="shape190-170" v:mID="190" v:groupContext="shape" transform="translate(33.2518,-12.2933)">
+				<title>矩形.190</title>
+				<desc>Standalone Reader 3</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="42.7482" cy="361.492" width="85.5" height="36.0748"/>
+				<rect x="0" y="343.455" width="85.4964" height="36.0748" class="st15"/>
+				<text x="17.45" y="358.49" class="st16" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Standalone<v:newlineChar/><tspan
+							x="22.18" dy="1.2em" class="st3">Reader 3</tspan></text>			</g>
+			<g id="shape206-174" v:mID="206" v:groupContext="shape" transform="translate(309.551,-18.1299)">
+				<title>矩形.206</title>
+				<desc>Write</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="22.3898" cy="364.718" width="44.78" height="29.622"/>
+				<rect x="0" y="349.907" width="44.7796" height="29.622" class="st12"/>
+				<text x="9.36" y="367.72" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Write</text>			</g>
+			<g id="shape184-177" v:mID="184" v:groupContext="shape" transform="translate(128.295,-16.2712)">
+				<title>矩形.184</title>
+				<desc>Reader Channel 2</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="35.5314" cy="359.035" width="71.07" height="40.9886"/>
+				<rect x="0" y="338.541" width="71.0628" height="40.9886" class="st17"/>
+				<text x="18.72" y="356.04" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Reader<v:newlineChar/><tspan
+							x="11.6" dy="1.2em" class="st3">Channel 2</tspan></text>			</g>
+			<g id="shape217-181" v:mID="217" v:groupContext="shape" transform="translate(0,-49.4232)">
+				<title>工作表.217</title>
+				<desc>Goroutinue</desc>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+				<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+				<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>			</g>
+		</g>
+		<g id="group220-184" transform="translate(192.181,-247.169)" v:mID="220" v:groupContext="group">
+			<title>工作表.220</title>
+			<g id="shape85-185" v:mID="85" v:groupContext="shape" transform="translate(309.551,-18.1299)">
+				<title>矩形.85</title>
+				<desc>Write</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="22.3898" cy="364.718" width="44.78" height="29.622"/>
+				<rect x="0" y="349.907" width="44.7796" height="29.622" class="st12"/>
+				<text x="9.36" y="367.72" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Write</text>			</g>
+			<g id="shape4-188" v:mID="4" v:groupContext="shape" transform="translate(128.295,-16.2712)">
+				<title>矩形.7</title>
+				<desc>Reader Channel 1</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="35.5314" cy="359.035" width="71.07" height="40.9886"/>
+				<rect x="0" y="338.541" width="71.0628" height="40.9886" class="st17"/>
+				<text x="18.72" y="356.04" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Reader<v:newlineChar/><tspan
+							x="11.6" dy="1.2em" class="st3">Channel 1</tspan></text>			</g>
+			<g id="shape82-192" v:mID="82" v:groupContext="shape" transform="translate(193.677,-1.89054E-05)">
+				<title>矩形.82</title>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<rect x="0" y="307.271" width="115.685" height="72.2579" class="st14"/>
+			</g>
+			<g id="shape84-194" v:mID="84" v:groupContext="shape" transform="translate(175.52,-49.3401)">
+				<title>工作表.84</title>
+				<desc>Goroutinue</desc>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+				<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+				<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>			</g>
+			<g id="shape57-197" v:mID="57" v:groupContext="shape" transform="translate(211.338,-11.6772)">
+				<title>矩形.57</title>
+				<desc>Parse, Filter, Function</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="40.1813" cy="361.492" width="80.37" height="36.0748"/>
+				<rect x="0" y="343.455" width="80.3625" height="36.0748" class="st18"/>
+				<text x="11.49" y="358.49" class="st2" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Parse, Filter, <tspan
+							x="19.4" dy="1.2em" class="st3">Function</tspan></text>			</g>
+			<g id="shape148-201" v:mID="148" v:groupContext="shape" transform="translate(18.1575,0)">
+				<title>矩形.148</title>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<rect x="0" y="307.271" width="115.685" height="72.2579" class="st14"/>
+			</g>
+			<g id="shape150-203" v:mID="150" v:groupContext="shape" transform="translate(33.2518,-12.2933)">
+				<title>矩形.150</title>
+				<desc>Standalone Reader 1</desc>
+				<v:userDefs>
+					<v:ud v:nameU="visVersion" v:val="VT0(15):26"/>
+					<v:ud v:nameU="visMasterStencil" v:prompt="" v:val="VT4(Basic_M.vssx)"/>
+				</v:userDefs>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="42.7482" cy="361.492" width="85.5" height="36.0748"/>
+				<rect x="0" y="343.455" width="85.4964" height="36.0748" class="st15"/>
+				<text x="17.45" y="358.49" class="st16" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Standalone<v:newlineChar/><tspan
+							x="22.18" dy="1.2em" class="st3">Reader 1</tspan></text>			</g>
+			<g id="shape219-207" v:mID="219" v:groupContext="shape" transform="translate(0,-48.9726)">
+				<title>工作表.219</title>
+				<desc>Goroutinue</desc>
+				<v:textBlock v:margins="rect(4,4,4,4)" v:tabSpace="42.5197"/>
+				<v:textRect cx="76" cy="369.529" width="152" height="20"/>
+				<rect x="0" y="359.529" width="152" height="20" class="st5"/>
+				<text x="47.97" y="373.13" class="st11" v:langID="2052"><v:paragraph v:horizAlign="1"/><v:tabList/>Goroutinue</text>			</g>
+		</g>
+	</g>
+</svg>

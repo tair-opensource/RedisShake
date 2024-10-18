@@ -29,6 +29,7 @@ function sidebar(): DefaultTheme.SidebarItem[] {
                 { text: '快速上手', link: '/zh/guide/getting-started' },
                 { text: '配置', link: '/zh/guide/config' },
                 { text: '迁移模式选择', link: '/zh/guide/mode' },
+                { text: '架构与性能说明', link: '/zh/guide/architecture' },
             ]
         },
         {
