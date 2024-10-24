@@ -31,6 +31,7 @@ function sidebar(): DefaultTheme.SidebarItem[] {
                 { text: 'Getting Started', link: '/en/guide/getting-started' },
                 { text: 'Configuration', link: '/en/guide/config' },
                 { text: 'Migration Mode Selection', link: '/en/guide/mode' },
+                { text: 'Architecture and Performance', link: '/en/guide/architecture' },
             ]
         },
         {

@@ -16,19 +16,19 @@
 
 RedisShake is a powerful tool for Redis data transformation and migration, offering:
 
-1. 🔄 **Zero Downtime Migration**: Enables seamless data migration without data loss or service interruption, ensuring continuous operation during the transfer process.
+1. **Zero Downtime Migration**: Enables seamless data migration without data loss or service interruption, ensuring continuous operation during the transfer process.
 
-2. 🌈 **Redis Compatibility**: Supports Redis 2.8 to 7.2, across standalone, master-slave, sentinel, and cluster deployments.
+2. **Redis Compatibility**: Supports Redis 2.8 to 7.2, across standalone, master-slave, sentinel, and cluster deployments.
 
-3. ☁️ **Cloud Service Integration**: Seamlessly works with Redis-like databases from major cloud providers:
+3. **Cloud Service Integration**: Seamlessly works with Redis-like databases from major cloud providers:
    - Alibaba Cloud: [ApsaraDB for Redis](https://www.alibabacloud.com/product/apsaradb-for-redis), [Tair](https://www.alibabacloud.com/product/tair)
    - AWS: [ElastiCache](https://aws.amazon.com/elasticache/), [MemoryDB](https://aws.amazon.com/memorydb/)  
 
-4. 🧩 **Module Support**: Compatible with [TairString](https://github.com/tair-opensource/TairString), [TairZSet](https://github.com/tair-opensource/TairZset), and [TairHash](https://github.com/tair-opensource/TairHash).
+4. **Module Support**: Compatible with [TairString](https://github.com/tair-opensource/TairString), [TairZSet](https://github.com/tair-opensource/TairZset), and [TairHash](https://github.com/tair-opensource/TairHash).
 
-5. 📤 **Flexible Data Source**: Supports [PSync](https://tair-opensource.github.io/RedisShake/zh/reader/sync_reader.html), [RDB](https://tair-opensource.github.io/RedisShake/zh/reader/rdb_reader.html), and [Scan](https://tair-opensource.github.io/RedisShake/zh/reader/scan_reader.html) data fetch methods.
+5. **Flexible Data Source**: Supports [PSync](https://tair-opensource.github.io/RedisShake/zh/reader/sync_reader.html), [RDB](https://tair-opensource.github.io/RedisShake/zh/reader/rdb_reader.html), and [Scan](https://tair-opensource.github.io/RedisShake/zh/reader/scan_reader.html) data fetch methods.
 
-6. 🔧 **Advanced Data Processing**: Enables custom [script-based data transformation](https://tair-opensource.github.io/RedisShake/zh/filter/function.html) and easy-to-use [data filter rules](https://tair-opensource.github.io/RedisShake/zh/filter/filter.html).
+6. **Advanced Data Processing**: Enables custom [script-based data transformation](https://tair-opensource.github.io/RedisShake/zh/filter/function.html) and easy-to-use [data filter rules](https://tair-opensource.github.io/RedisShake/zh/filter/filter.html).
 
 ## How to Get RedisShake
 

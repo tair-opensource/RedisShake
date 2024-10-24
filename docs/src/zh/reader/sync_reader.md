@@ -10,8 +10,8 @@ outline: deep
 
 * Redis
 * Tair
-* ElastiCache 部分兼容
-* MemoryDB 部分兼容
+* Valkey
+* ElastiCache 需要提供 aws_psync 配置
 
 优势：数据一致性最佳，对源库影响小，可以实现不停机的切换
 

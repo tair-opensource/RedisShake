@@ -6,8 +6,8 @@ When the source database is compatible with the PSync protocol, `sync_reader` is
 
 * Redis
 * Tair
-* ElastiCache (partially compatible)
-* MemoryDB (partially compatible)
+* Valkey
+* ElastiCache (requires aws_psync configuration)
 
 Advantages: Best data consistency, minimal impact on the source database, and allows for seamless switching.
 
