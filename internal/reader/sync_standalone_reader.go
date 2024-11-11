@@ -112,7 +112,7 @@ func (r *syncStandaloneReader) supportPSYNC() bool {
 					return false
 				}
 			}
-			
+
 		}
 	}
 
@@ -178,6 +178,28 @@ func (r *syncStandaloneReader) sendReplconfListenPort() {
 	}
 }
 
+// When BGSAVE is triggered by the source Redis itself, synchronization is blocked, so need to check it
+func (r *syncStandaloneReader) checkBgsaveInProgress() {
+	for {
+		select {
+		case <-r.ctx.Done():
+			close(r.ch)
+			runtime.Goexit() // stop goroutine
+		default:
+			argv := []interface{}{"INFO", "persistence"}
+			r.client.Send(argv...)
+			receiveString := r.client.ReceiveString()
+			if strings.Contains(receiveString, "rdb_bgsave_in_progress:1") {
+				log.Warnf("[%s] source db is doing bgsave, waiting for a while.", r.stat.Name)
+			} else {
+				log.Infof("[%s] source db is not doing bgsave! continue.", r.stat.Name)
+				return
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+
 func (r *syncStandaloneReader) sendPSync() {
 	if r.opts.TryDiskless {
 		argv := []interface{}{"REPLCONF", "CAPA", "EOF"}
@@ -186,6 +208,7 @@ func (r *syncStandaloneReader) sendPSync() {
 			log.Warnf("[%s] send replconf capa eof to redis server failed. reply=[%v]", r.stat.Name, reply)
 		}
 	}
+	r.checkBgsaveInProgress()
 	// send PSync
 	argv := []interface{}{"PSYNC", "?", "-1"}
 	if config.Opt.Advanced.AwsPSync != "" {
@@ -226,6 +249,7 @@ func (r *syncStandaloneReader) sendSync() {
 			log.Warnf("[%s] send replconf capa eof to redis server failed. reply=[%v]", r.stat.Name, reply)
 		}
 	}
+	r.checkBgsaveInProgress()
 	// send SYNC
 	argv := []interface{}{"SYNC"}
 	if config.Opt.Advanced.AwsPSync != "" {
