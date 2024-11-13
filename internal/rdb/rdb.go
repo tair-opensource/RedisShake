@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	kFlagFunction2 = 245 // function library data
-	kFlagFunction  = 246 // old function library data for 7.0 rc1 and rc2
+	kFlagSlotInfo  = 244 // (Redis 7.4) RDB_OPCODE_SLOT_INFO: slot info
+	kFlagFunction2 = 245 // RDB_OPCODE_FUNCTION2: function library data
+	kFlagFunction  = 246 // RDB_OPCODE_FUNCTION_PRE_GA: old function library data for 7.0 rc1 and rc2
 	kFlagModuleAux = 247 // RDB_OPCODE_MODULE_AUX: Module auxiliary data.
 	kFlagIdle      = 248 // RDB_OPCODE_IDLE: LRU idle time.
 	kFlagFreq      = 249 // RDB_OPCODE_FREQ: LFU frequency.
@@ -124,6 +125,12 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 		typeByte := structure.ReadByte(rd)
 		log.Debugf("RDB type byte is: [%d]", typeByte)
 		switch typeByte {
+		case kFlagSlotInfo:
+			_ = structure.ReadLength(rd) // slot_id
+			_ = structure.ReadLength(rd) // slot_size
+			_ = structure.ReadLength(rd) // expires_slot_size
+		case kFlagFunction, kFlagFunction2:
+			log.Panicf("function library data not supported, need PR to support")
 		case kFlagModuleAux:
 			moduleId := structure.ReadLength(rd) // module id
 			moduleName := types.ModuleTypeNameByID(moduleId)
