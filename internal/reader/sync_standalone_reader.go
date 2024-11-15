@@ -189,7 +189,7 @@ func (r *syncStandaloneReader) checkBgsaveInProgress() {
 			argv := []interface{}{"INFO", "persistence"}
 			r.client.Send(argv...)
 			receiveString := r.client.ReceiveString()
-			if strings.Contains(receiveString, "rdb_bgsave_in_progress:1") {
+			if strings.Contains(receiveString, "rdb_bgsave_in_progress:1") || strings.Contains(receiveString, "aof_rewrite_in_progress:1") {
 				log.Warnf("[%s] source db is doing bgsave, waiting for a while.", r.stat.Name)
 			} else {
 				log.Infof("[%s] source db is not doing bgsave! continue.", r.stat.Name)
