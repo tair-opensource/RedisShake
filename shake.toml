@@ -42,17 +42,23 @@ off_reply = false          # turn off the server reply
 # Examples:
 #   allow_key_prefix = ["user:", "product:"]
 #   allow_key_suffix = [":active", ":valid"]
+#   allow A collection of keys containing 11-digit mobile phone numbers
+#   allow_key_regex = [":\\d{11}:"]
 # Leave empty to allow all keys
 allow_key_prefix = []
 allow_key_suffix = []
+allow_key_regex = []
 
 # Block keys with specific prefixes or suffixes
 # Examples:
 #   block_key_prefix = ["temp:", "cache:"]
 #   block_key_suffix = [":tmp", ":old"]
+#   block test 11-digit mobile phone numbers keys
+#   block_key_regex = [":test:\\d{11}:"]
 # Leave empty to block nothing
 block_key_prefix = []
 block_key_suffix = []
+block_key_regex = []
 
 # Specify allowed and blocked database numbers (e.g., allow_db = [0, 1, 2], block_db = [3, 4, 5])
 # Leave empty to allow all databases

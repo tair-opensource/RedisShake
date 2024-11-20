@@ -19,6 +19,8 @@ type FilterOptions struct {
 	AllowKeySuffix    []string `mapstructure:"allow_key_suffix" default:"[]"`
 	BlockKeyPrefix    []string `mapstructure:"block_key_prefix" default:"[]"`
 	BlockKeySuffix    []string `mapstructure:"block_key_suffix" default:"[]"`
+	AllowKeyRegex     []string `mapstructure:"allow_key_regex" default:"[]"`
+	BlockKeyRegex     []string `mapstructure:"block_key_regex" default:"[]"`
 	AllowDB           []int    `mapstructure:"allow_db" default:"[]"`
 	BlockDB           []int    `mapstructure:"block_db" default:"[]"`
 	AllowCommand      []string `mapstructure:"allow_command" default:"[]"`
