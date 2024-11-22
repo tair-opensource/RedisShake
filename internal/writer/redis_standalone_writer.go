@@ -26,6 +26,7 @@ type RedisWriterOptions struct {
 	Password string `mapstructure:"password" default:""`
 	Tls      bool   `mapstructure:"tls" default:"false"`
 	OffReply bool   `mapstructure:"off_reply" default:"false"`
+	BuffSend bool `mapstructure:"buff_send" default:"false"`
 }
 
 type redisStandaloneWriter struct {
@@ -38,6 +39,8 @@ type redisStandaloneWriter struct {
 	offReply    bool
 	ch          chan *entry.Entry
 	chWg        sync.WaitGroup
+
+	buffSend bool
 
 	stat struct {
 		Name              string `json:"name"`
@@ -52,6 +55,7 @@ func NewRedisStandaloneWriter(ctx context.Context, opts *RedisWriterOptions) Wri
 	rw.stat.Name = "writer_" + strings.Replace(opts.Address, ":", "_", -1)
 	rw.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, false)
 	rw.ch = make(chan *entry.Entry, 1024)
+	rw.buffSend = opts.BuffSend
 	if opts.OffReply {
 		log.Infof("turn off the reply of write")
 		rw.offReply = true
@@ -93,7 +97,12 @@ func (w *redisStandaloneWriter) StartWrite(ctx context.Context) chan *entry.Entr
 				atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
 				atomic.AddInt64(&w.stat.UnansweredEntries, 1)
 			}
-			w.client.SendBytes(bytes)
+			if w.buffSend {
+				w.client.SendBytesBuff(bytes)
+			} else {
+				w.client.SendBytes(bytes)
+			}
+
 		}
 		w.chWg.Done()
 	}()
