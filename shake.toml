@@ -34,6 +34,8 @@ master = ""                # set to master name if target is a redis sentinel
 address = "127.0.0.1:6380" # when cluster is true, set address to one of the cluster node
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
+sentinel_username = ""     # keep empty if not using sentinel ACL
+sentinel_password = ""     # keep empty if sentinel no authentication is required
 tls = false
 off_reply = false          # turn off the server reply
 
@@ -70,8 +72,8 @@ block_db = []
 #   allow_command = ["GET", "SET"]  # Only allow GET and SET commands
 #   block_command = ["DEL", "FLUSHDB"]  # Block DEL and FLUSHDB commands
 # Leave empty to allow all commands
-allow_command = [] 
-block_command = [] 
+allow_command = []
+block_command = []
 
 # Allow or block specific command groups
 # Available groups:
@@ -82,8 +84,8 @@ block_command = []
 #   allow_command_group = ["STRING", "HASH"]  # Only allow STRING and HASH commands
 #   block_command_group = ["SCRIPTING", "PUBSUB"]  # Block SCRIPTING and PUBSUB commands
 # Leave empty to allow all command groups
-allow_command_group = [] 
-block_command_group = [] 
+allow_command_group = []
+block_command_group = []
 
 # Function for custom data processing
 # For best practices and examples, visit:
@@ -118,7 +120,7 @@ rdb_restore_command_behavior = "panic" # panic, rewrite or skip
 pipeline_count_limit = 1024
 
 # This setting corresponds to the 'client-query-buffer-limit' in Redis configuration.
-# The default value is typically 1GB. 
+# The default value is typically 1GB.
 # It's recommended not to modify this value unless absolutely necessary.
 target_redis_client_max_querybuf_len = 1073741824  # 1GB in bytes
 
@@ -128,7 +130,7 @@ target_redis_client_max_querybuf_len = 1073741824  # 1GB in bytes
 # It's recommended not to modify this value unless absolutely necessary.
 target_redis_proto_max_bulk_len = 512_000_000
 
-# If the source is Elasticache, you can set this item. AWS ElastiCache has custom 
+# If the source is Elasticache, you can set this item. AWS ElastiCache has custom
 # psync command, which can be obtained through a ticket.
 aws_psync = "" # example: aws_psync = "10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync"
 
