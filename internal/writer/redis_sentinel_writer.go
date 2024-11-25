@@ -24,6 +24,7 @@ func NewRedisSentinelWriter(ctx context.Context, opts *RedisWriterOptions) Write
 		Password: opts.Password,
 		Tls:      opts.Tls,
 		OffReply: opts.OffReply,
+		BuffSend: opts.BuffSend,
 	}
 	log.Infof("connecting to master node at %s", redisOpt.Address)
 	return NewRedisStandaloneWriter(ctx, redisOpt)
