@@ -28,7 +28,7 @@ type RedisWriterOptions struct {
 	SentinelPassword string `mapstructure:"sentinel_password" default:""`
 	Tls              bool   `mapstructure:"tls" default:"false"`
 	OffReply         bool   `mapstructure:"off_reply" default:"false"`
-  BuffSend         bool   `mapstructure:"buff_send" default:"false"`
+        BuffSend         bool   `mapstructure:"buff_send" default:"false"`
 }
 
 type redisStandaloneWriter struct {
