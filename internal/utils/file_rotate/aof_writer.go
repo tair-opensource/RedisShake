@@ -50,10 +50,6 @@ func (w *AOFWriter) Write(buf []byte) {
 		w.Close()
 		w.openFile(w.offset)
 	}
-	err = w.file.Sync()
-	if err != nil {
-		log.Panicf(err.Error())
-	}
 }
 
 func (w *AOFWriter) Close() {

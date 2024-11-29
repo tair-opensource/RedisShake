@@ -204,9 +204,6 @@ func (r *Redis) SendBytesBuff(buf []byte) {
 }
 
 func (r *Redis) flushBuff() {
-	if atomic.AddUint64(&r.sendCount, 1)%100 != 0 {
-		return
-	}
 	if !r.timer.Stop() {
 		select {
 		case <-r.timer.C:
@@ -214,6 +211,9 @@ func (r *Redis) flushBuff() {
 		}
 	}
 	r.timer.Reset(time.Second)
+	if atomic.AddUint64(&r.sendCount, 1)%100 != 0 {
+		return
+	}
 	r.flush()
 }
 
