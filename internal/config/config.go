@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"RedisShake/internal/log"
 
-	"github.com/a8m/envsubst"
 	"github.com/mcuadros/go-defaults"
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
@@ -101,13 +101,14 @@ func LoadConfig() *viper.Viper {
 	if len(os.Args) == 2 {
 		logger.Info().Msgf("load config from file: %s", os.Args[1])
 		configFile := os.Args[1]
-		buf, err := envsubst.ReadFile(configFile)
+		file, err := os.ReadFile(configFile)
 		if err != nil {
 			logger.Error().Msgf("failed to read config file: %v", err)
 			os.Exit(1)
 		}
+		fallback := envWithFallback(string(file))
 		v.SetConfigType("toml")
-		err = v.ReadConfig(bytes.NewReader(buf))
+		err = v.ReadConfig(bytes.NewReader([]byte(fallback)))
 		if err != nil {
 			logger.Error().Msgf("failed to read config file: %v", err)
 			os.Exit(1)
@@ -123,4 +124,20 @@ func LoadConfig() *viper.Viper {
 		panic(err)
 	}
 	return v
+}
+
+// Custom substitution function that returns as is if the environment variable is empty
+func envWithFallback(input string) string {
+	re := regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*?)}`)
+	return re.ReplaceAllStringFunc(input, func(match string) string {
+		varName := match[1:]
+		if strings.HasPrefix(varName, "{") && strings.HasSuffix(varName, "}") {
+			varName = varName[1 : len(varName)-1] // Remove { and }
+		}
+		value := os.Getenv(varName)
+		if value == "" {
+			return match // if the environment variable is empty return as is
+		}
+		return value
+	})
 }
