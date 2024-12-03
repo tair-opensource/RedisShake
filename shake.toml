@@ -43,22 +43,26 @@ buff_send = false          # buffer send, default false. may be a sync delay whe
 [filter]
 # Allow keys with specific prefixes or suffixes
 # Examples:
+#   allow_keys = ["user:1001", "product:2001"]
 #   allow_key_prefix = ["user:", "product:"]
 #   allow_key_suffix = [":active", ":valid"]
 #   allow A collection of keys containing 11-digit mobile phone numbers
 #   allow_key_regex = [":\\d{11}:"]
 # Leave empty to allow all keys
+allow_keys = []
 allow_key_prefix = []
 allow_key_suffix = []
 allow_key_regex = []
 
 # Block keys with specific prefixes or suffixes
 # Examples:
+#   block_keys = ["temp:1001", "cache:2001"]
 #   block_key_prefix = ["temp:", "cache:"]
 #   block_key_suffix = [":tmp", ":old"]
 #   block test 11-digit mobile phone numbers keys
 #   block_key_regex = [":test:\\d{11}:"]
 # Leave empty to block nothing
+block_keys = []
 block_key_prefix = []
 block_key_suffix = []
 block_key_regex = []
@@ -90,7 +94,7 @@ block_command_group = []
 
 # Function for custom data processing
 # For best practices and examples, visit:
-# https://tair-opensource.github.io/RedisShake/zh/function/best_practices.html
+# https://tair-opensource.github.io/RedisShake/zh/filter/function.html
 function = ""
 
 [advanced]

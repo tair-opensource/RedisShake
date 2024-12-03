@@ -3,7 +3,7 @@ package filter
 import (
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
-	"log"
+	"RedisShake/internal/log"
 	"slices"
 	"strings"
 	"sync"
@@ -47,9 +47,9 @@ func Filter(e *entry.Entry) bool {
 		return false
 	} else {
 		// If we reach here, it means some keys are true and some are false
-		log.Printf("Error: Inconsistent filter results for entry with %d keys", len(e.Keys))
-		log.Printf("Passed keys: %v", passedKeys)
-		log.Printf("Filtered keys: %v", filteredKeys)
+		log.Infof("Error: Inconsistent filter results for entry with %d keys", len(e.Keys))
+		log.Infof("Passed keys: %v", passedKeys)
+		log.Infof("Filtered keys: %v", filteredKeys)
 		return false
 	}
 
@@ -97,9 +97,14 @@ func Filter(e *entry.Entry) bool {
 
 // blockKeyFilter is block key? default false
 func blockKeyFilter(key string) bool {
-	if len(config.Opt.Filter.BlockKeyRegex) == 0 && len(config.Opt.Filter.BlockKeyPrefix) == 0 &&
-		len(config.Opt.Filter.BlockKeySuffix) == 0 {
+	if len(config.Opt.Filter.BlockKeyRegex) == 0 &&
+		len(config.Opt.Filter.BlockKeyPrefix) == 0 &&
+		len(config.Opt.Filter.BlockKeySuffix) == 0 &&
+		len(config.Opt.Filter.BlockKeys) == 0 {
 		return false
+	}
+	if slices.Contains(config.Opt.Filter.BlockKeys, key) {
+		return true
 	}
 	if blockKeyMatch(config.Opt.Filter.BlockKeyRegex, key) {
 		return true
@@ -120,9 +125,14 @@ func blockKeyFilter(key string) bool {
 
 // allowKeyFilter is allow key? default true
 func allowKeyFilter(key string) bool {
-	// if all allow filter is empty. default is true
-	if len(config.Opt.Filter.AllowKeyRegex) == 0 && len(config.Opt.Filter.AllowKeyPrefix) == 0 &&
-		len(config.Opt.Filter.AllowKeySuffix) == 0 {
+	if len(config.Opt.Filter.AllowKeyRegex) == 0 &&
+		len(config.Opt.Filter.AllowKeyPrefix) == 0 &&
+		len(config.Opt.Filter.AllowKeySuffix) == 0 &&
+		len(config.Opt.Filter.AllowKeys) == 0 {
+		return true
+	}
+
+	if slices.Contains(config.Opt.Filter.AllowKeys, key) {
 		return true
 	}
 	// If the RE matches, there is no need to iterate over the others

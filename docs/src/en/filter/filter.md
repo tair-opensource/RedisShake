@@ -5,12 +5,14 @@ outline: deep
 RedisShake provides various built-in filter rules that users can choose from according to their needs.
 
 ## Filtering Keys
-RedisShake supports filtering by key name prefixes and suffixes. You can set the following options in the configuration file, for example:
+RedisShake supports filtering by key name, key name prefixes, and suffixes. You can set the following options in the configuration file, for example:
 ```toml
-allow_key_prefix = ["user:", "product:"]
-allow_key_suffix = [":active", ":valid"]
-block_key_prefix = ["temp:", "cache:"]
-block_key_suffix = [":tmp", ":old"]
+allow_keys = ["user:1001", "product:2001"] # allowed key names  
+allow_key_prefix = ["user:", "product:"] # allowed key name prefixes
+allow_key_suffix = [":active", ":valid"] # allowed key name suffixes
+block_keys = ["temp:1001", "cache:2001"] # blocked key names
+block_key_prefix = ["temp:", "cache:"] # blocked key name prefixes
+block_key_suffix = [":tmp", ":old"] # blocked key name suffixes
 ```
 If these options are not set, all keys are allowed by default.
 

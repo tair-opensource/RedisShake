@@ -15,8 +15,10 @@ import (
 )
 
 type FilterOptions struct {
+	AllowKeys         []string `mapstructure:"allow_keys" default:"[]"`
 	AllowKeyPrefix    []string `mapstructure:"allow_key_prefix" default:"[]"`
 	AllowKeySuffix    []string `mapstructure:"allow_key_suffix" default:"[]"`
+	BlockKeys         []string `mapstructure:"block_keys" default:"[]"`
 	BlockKeyPrefix    []string `mapstructure:"block_key_prefix" default:"[]"`
 	BlockKeySuffix    []string `mapstructure:"block_key_suffix" default:"[]"`
 	AllowKeyRegex     []string `mapstructure:"allow_key_regex" default:"[]"`

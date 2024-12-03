@@ -5,12 +5,14 @@ outline: deep
 RedisShake 提供了多种内置的过滤规则，用户可以根据需要选择合适的规则。
 
 ## 过滤 Key
-RedisShake 支持通过键名前缀和后缀进行过滤。您可以在配置文件中设置以下选项，例如：
+RedisShake 支持通过键名、键名前缀和后缀进行过滤。您可以在配置文件中设置以下选项，例如：
 ```toml
-allow_key_prefix = ["user:", "product:"]
-allow_key_suffix = [":active", ":valid"]
-block_key_prefix = ["temp:", "cache:"]
-block_key_suffix = [":tmp", ":old"]
+allow_keys = ["user:1001", "product:2001"] # 允许的键名
+allow_key_prefix = ["user:", "product:"] # 允许的键名前缀
+allow_key_suffix = [":active", ":valid"] # 允许的键名后缀
+block_keys = ["temp:1001", "cache:2001"] # 阻止的键名
+block_key_prefix = ["temp:", "cache:"] # 阻止的键名前缀
+block_key_suffix = [":tmp", ":old"] # 阻止的键名后缀
 ```
 如果不设置这些选项，默认允许所有键。
 
