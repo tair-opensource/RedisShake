@@ -80,7 +80,8 @@ type syncStandaloneReader struct {
 	}
 
 	// version info
-	SupportPSYNC  bool
+	SupportPSYNC bool
+	isDiskless   bool
 }
 
 func NewSyncStandaloneReader(ctx context.Context, opts *SyncReaderOptions) Reader {
@@ -94,21 +95,20 @@ func NewSyncStandaloneReader(ctx context.Context, opts *SyncReaderOptions) Reade
 	r.stat.Dir = utils.GetAbsPath(r.stat.Name)
 	utils.CreateEmptyDir(r.stat.Dir)
 
-	r.SupportPSYNC = r.supportPSYNC();
+	r.SupportPSYNC = r.supportPSYNC()
 	return r
 }
-
 
 func (r *syncStandaloneReader) supportPSYNC() bool {
 	reply := r.client.DoWithStringReply("info", "server")
 	for _, line := range strings.Split(reply, "\n") {
 		if strings.HasPrefix(line, "redis_version:") {
 			version := strings.Split(line, ":")[1]
-			parts := strings.Split(version,".");
-			if len(parts) > 2{
-				v1,_ := strconv.Atoi(parts[0]);
-				v2,_ := strconv.Atoi(parts[1]);
-				if v1 * 1000  + v2 < 2008{
+			parts := strings.Split(version, ".")
+			if len(parts) > 2 {
+				v1, _ := strconv.Atoi(parts[0])
+				v2, _ := strconv.Atoi(parts[1])
+				if v1*1000+v2 < 2008 {
 					return false
 				}
 			}
@@ -116,12 +116,12 @@ func (r *syncStandaloneReader) supportPSYNC() bool {
 		}
 	}
 
-	return true;
+	return true
 }
 
 func (r *syncStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entry {
-	if !r.SupportPSYNC{
-		return r.StartReadWithSync(ctx);
+	if !r.SupportPSYNC {
+		return r.StartReadWithSync(ctx)
 	}
 	r.ctx = ctx
 	r.ch = make(chan *entry.Entry, 1024)
@@ -206,6 +206,8 @@ func (r *syncStandaloneReader) sendPSync() {
 		reply := r.client.DoWithStringReply(argv...)
 		if reply != "OK" {
 			log.Warnf("[%s] send replconf capa eof to redis server failed. reply=[%v]", r.stat.Name, reply)
+		} else {
+			r.isDiskless = true
 		}
 	}
 	r.checkBgsaveInProgress()
@@ -517,6 +519,12 @@ func (r *syncStandaloneReader) StatusString() string {
 	}
 	if r.stat.Status == kSyncAof {
 		return fmt.Sprintf("%s, diff=[%v]", r.stat.Status, -r.stat.AofSentOffset+r.stat.AofReceivedOffset)
+	}
+	if r.stat.Status == kReceiveRdb {
+		if r.isDiskless {
+			return fmt.Sprintf("%s diskless, size=[%s]", r.stat.Status, r.stat.RdbReceivedHuman)
+		}
+		return fmt.Sprintf("%s, size=[%s/%s]", r.stat.Status, r.stat.RdbReceivedHuman, r.stat.RdbFileSizeHuman)
 	}
 	return string(r.stat.Status)
 }
