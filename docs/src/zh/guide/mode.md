@@ -22,9 +22,40 @@ outline: deep
 
 ## Redis Sentinel 架构
 
-当源端 Redis 以 sentinel 架构部署且 RedisShake 使用  `sync_reader` 连接主库时，会被主库当做 slave，从而有可能被 sentinel 选举为新的 master。
+1. 通常情况下，忽略 Sentinel 组件，直接将 Redis 的连接信息写入 RedisShake 配置文件即可。
+::: warning
+需要注意的是使用 `sync_reader` 连接被 Sentinel 接管的 Redis Master 节点时，RedisShake 会被 Sentinel 当做 Slave 节点，从而引发非预期内问题。
+所以此类场景应尽量选择备库作为源端。
+:::
+2. 如果不方便直接获取 Redis 的连接信息([#888](https://github.com/tair-opensource/RedisShake/pull/888#issuecomment-2513984861))，可以将 Sentinel 的信息配置在 RedisShake 配置文件中，RedisShake 会自动从 Sentinel 中获取主节点地址。配置参考：
+```toml
+[sync_reader]
+cluster = false
+address = "" # 源端 Redis 的地址会从 Sentinel 中获取
+username = ""
+password = "redis6380password"
+tls = false
+[sync_reader.sentinel]
+master_name = "mymaster"
+address = "127.0.0.1:26380"
+username = ""
+password = ""
+tls = false
 
-为了避免这种情况，应选择备库作为源端。
+[redis_writer]
+cluster = false
+address = "" # 目标端 Redis 的地址会从 Sentinel 中获取
+username = ""
+password = "redis6381password"
+tls = false
+[redis_writer.sentinel]
+master_name = "mymaster1"
+address = "127.0.0.1:26380"
+username = ""
+password = ""
+tls = false
+
+```
 
 ## 云 Redis 服务
 

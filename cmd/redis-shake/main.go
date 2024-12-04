@@ -1,10 +1,12 @@
 package main
 
 import (
+	"RedisShake/internal/client"
 	"context"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -66,11 +68,23 @@ func main() {
 			log.Panicf("failed to read the SyncReader config entry. err: %v", err)
 		}
 		if opts.Cluster {
+			log.Infof("create SyncClusterReader")
+			log.Infof("* address (should be the address of one node in the Redis cluster): %s", opts.Address)
+			log.Infof("* username: %s", opts.Username)
+			log.Infof("* password: %s", strings.Repeat("*", len(opts.Password)))
+			log.Infof("* tls: %v", opts.Tls)
 			theReader = reader.NewSyncClusterReader(ctx, opts)
-			log.Infof("create SyncClusterReader: %v", opts.Address)
 		} else {
+			if opts.Sentinel.Address != "" {
+				address := client.FetchAddressFromSentinel(&opts.Sentinel)
+				opts.Address = address
+			}
+			log.Infof("create SyncStandaloneReader")
+			log.Infof("* address: %s", opts.Address)
+			log.Infof("* username: %s", opts.Username)
+			log.Infof("* password: %s", strings.Repeat("*", len(opts.Password)))
+			log.Infof("* tls: %v", opts.Tls)
 			theReader = reader.NewSyncStandaloneReader(ctx, opts)
-			log.Infof("create SyncStandaloneReader: %v", opts.Address)
 		}
 	case v.IsSet("scan_reader"):
 		opts := new(reader.ScanReaderOptions)
@@ -80,11 +94,19 @@ func main() {
 			log.Panicf("failed to read the ScanReader config entry. err: %v", err)
 		}
 		if opts.Cluster {
+			log.Infof("create ScanClusterReader")
+			log.Infof("* address (should be the address of one node in the Redis cluster): %s", opts.Address)
+			log.Infof("* username: %s", opts.Username)
+			log.Infof("* password: %s", strings.Repeat("*", len(opts.Password)))
+			log.Infof("* tls: %v", opts.Tls)
 			theReader = reader.NewScanClusterReader(ctx, opts)
-			log.Infof("create ScanClusterReader: %v", opts.Address)
 		} else {
+			log.Infof("create ScanStandaloneReader")
+			log.Infof("* address: %s", opts.Address)
+			log.Infof("* username: %s", opts.Username)
+			log.Infof("* password: %s", strings.Repeat("*", len(opts.Password)))
+			log.Infof("* tls: %v", opts.Tls)
 			theReader = reader.NewScanStandaloneReader(ctx, opts)
-			log.Infof("create ScanStandaloneReader: %v", opts.Address)
 		}
 	case v.IsSet("rdb_reader"):
 		opts := new(reader.RdbReaderOptions)
@@ -121,14 +143,23 @@ func main() {
 			log.Panicf("the RDBRestoreCommandBehavior can't be 'panic' when the server not reply to commands")
 		}
 		if opts.Cluster {
+			log.Infof("create RedisClusterWriter")
+			log.Infof("* address (should be the address of one node in the Redis cluster): %s", opts.Address)
+			log.Infof("* username: %s", opts.Username)
+			log.Infof("* password: %s", strings.Repeat("*", len(opts.Password)))
+			log.Infof("* tls: %v", opts.Tls)
 			theWriter = writer.NewRedisClusterWriter(ctx, opts)
-			log.Infof("create RedisClusterWriter: %v", opts.Address)
-		} else if opts.Sentinel {
-			theWriter = writer.NewRedisSentinelWriter(ctx, opts)
-			log.Infof("create RedisSentinelWriter: %v", opts.Address)
 		} else {
+			if opts.Sentinel.Address != "" {
+				address := client.FetchAddressFromSentinel(&opts.Sentinel)
+				opts.Address = address
+			}
+			log.Infof("create RedisStandaloneWriter")
+			log.Infof("* address: %s", opts.Address)
+			log.Infof("* username: %s", opts.Username)
+			log.Infof("* password: %s", strings.Repeat("*", len(opts.Password)))
+			log.Infof("* tls: %v", opts.Tls)
 			theWriter = writer.NewRedisStandaloneWriter(ctx, opts)
-			log.Infof("create RedisStandaloneWriter: %v", opts.Address)
 		}
 		if config.Opt.Advanced.EmptyDBBeforeSync {
 			// exec FLUSHALL command to flush db

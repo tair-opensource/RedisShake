@@ -20,9 +20,40 @@ When the source Redis is deployed in a cluster architecture, you can use `sync_r
 
 ## Redis Sentinel Architecture
 
-When the source Redis is deployed in a sentinel architecture and RedisShake uses `sync_reader` to connect to the master, it will be treated as a slave by the master and may be elected as the new master by the sentinel.
+1. Typically, you can ignore the Sentinel component and directly write the Redis connection information into the RedisShake configuration file.
+::: warning
+Note that when using `sync_reader` to connect to a Redis Master node managed by Sentinel, RedisShake will be treated as a Slave node by Sentinel, which may cause unexpected issues. Therefore, in such scenarios, it is recommended to choose a replica as the source.
+:::
+2. If it is not convenient to directly obtain the Redis connection information, you can configure the Sentinel information in the RedisShake configuration file. RedisShake will automatically obtain the master node address from Sentinel. Configuration reference:
+```toml
+[sync_reader]
+cluster = false
+address = "" # The source Redis address will be obtained from Sentinel
+username = ""
+password = "redis6380password"
+tls = false
+[sync_reader.sentinel]
+master_name = "mymaster"
+address = "127.0.0.1:26380"
+username = ""
+password = ""
+tls = false
 
-To avoid this situation, you should choose a replica as the source.
+[redis_writer]
+cluster = false
+address = "" # The target Redis address will be obtained from Sentinel
+username = ""
+password = "redis6381password"
+tls = false
+[redis_writer.sentinel]
+master_name = "mymaster1"
+address = "127.0.0.1:26380"
+username = ""
+password = ""
+tls = false
+
+```
+
 
 ## Cloud Redis Services
 

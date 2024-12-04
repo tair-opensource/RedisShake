@@ -1,13 +1,13 @@
 [sync_reader]
-cluster = false            # set to true if source is a redis cluster
-address = "127.0.0.1:6379" # when cluster is true, set address to one of the cluster node
-username = ""              # keep empty if not using ACL
-password = ""              # keep empty if no authentication is required
-tls = false                #
-sync_rdb = true            # set to false if you don't want to sync rdb
-sync_aof = true            # set to false if you don't want to sync aof
-prefer_replica = false     # set to true if you want to sync from replica node
-try_diskless = false       # set to true if you want to sync by socket and source repl-diskless-sync=yes
+cluster = false            # Set to true if the source is a Redis cluster
+address = "127.0.0.1:6379" # For clusters, specify the address of any cluster node; use the master or slave address in master-slave mode
+username = ""              # Keep empty if ACL is not in use
+password = ""              # Keep empty if no authentication is required
+tls = false                # Set to true to enable TLS if needed
+sync_rdb = true            # Set to false if RDB synchronization is not required
+sync_aof = true            # Set to false if AOF synchronization is not required
+prefer_replica = false     # Set to true to sync from a replica node
+try_diskless = false       # Set to true for diskless sync if the source has repl-diskless-sync=yes
 
 #[scan_reader]
 #cluster = false            # set to true if source is a redis cluster
@@ -29,13 +29,9 @@ try_diskless = false       # set to true if you want to sync by socket and sourc
 
 [redis_writer]
 cluster = false            # set to true if target is a redis cluster
-sentinel = false           # set to true if target is a redis sentinel
-master = ""                # set to master name if target is a redis sentinel
 address = "127.0.0.1:6380" # when cluster is true, set address to one of the cluster node
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
-sentinel_username = ""     # keep empty if not using sentinel ACL
-sentinel_password = ""     # keep empty if sentinel no authentication is required
 tls = false
 off_reply = false          # turn off the server reply
 buff_send = false          # buffer send, default false. may be a sync delay when true, but it can greatly improve the speed

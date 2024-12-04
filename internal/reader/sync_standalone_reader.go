@@ -26,15 +26,16 @@ import (
 )
 
 type SyncReaderOptions struct {
-	Cluster       bool   `mapstructure:"cluster" default:"false"`
-	Address       string `mapstructure:"address" default:""`
-	Username      string `mapstructure:"username" default:""`
-	Password      string `mapstructure:"password" default:""`
-	Tls           bool   `mapstructure:"tls" default:"false"`
-	SyncRdb       bool   `mapstructure:"sync_rdb" default:"true"`
-	SyncAof       bool   `mapstructure:"sync_aof" default:"true"`
-	PreferReplica bool   `mapstructure:"prefer_replica" default:"false"`
-	TryDiskless   bool   `mapstructure:"try_diskless" default:"false"`
+	Cluster       bool                   `mapstructure:"cluster" default:"false"`
+	Address       string                 `mapstructure:"address" default:""`
+	Username      string                 `mapstructure:"username" default:""`
+	Password      string                 `mapstructure:"password" default:""`
+	Tls           bool                   `mapstructure:"tls" default:"false"`
+	SyncRdb       bool                   `mapstructure:"sync_rdb" default:"true"`
+	SyncAof       bool                   `mapstructure:"sync_aof" default:"true"`
+	PreferReplica bool                   `mapstructure:"prefer_replica" default:"false"`
+	TryDiskless   bool                   `mapstructure:"try_diskless" default:"false"`
+	Sentinel      client.SentinelOptions `mapstructure:"sentinel"`
 }
 
 type State string
