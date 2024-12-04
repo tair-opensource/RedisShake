@@ -1,13 +1,11 @@
 package rotate
 
 import (
+	"RedisShake/internal/log"
+	"RedisShake/internal/utils"
 	"fmt"
 	"io"
 	"os"
-	"time"
-
-	"RedisShake/internal/log"
-	"RedisShake/internal/utils"
 )
 
 type AOFReader struct {
@@ -39,30 +37,38 @@ func (r *AOFReader) openFile(offset int64) {
 	log.Debugf("[%s] open file for read. filename=[%s]", r.name, r.filepath)
 }
 
-func (r *AOFReader) readNextFile(offset int64) {
+func (r *AOFReader) readNextFile(offset int64) bool {
 	filepath := fmt.Sprintf("%s/%d.aof", r.dir, r.offset)
-	if utils.IsExist(filepath) {
-		r.Close()
-		err := os.Remove(r.filepath)
-		if err != nil {
-			return
-		}
-		r.openFile(offset)
+	if r.filepath == filepath {
+		return false
 	}
+	if !utils.IsExist(filepath) {
+		return false
+	}
+	r.Close()
+	err := os.Remove(r.filepath)
+	if err != nil {
+		log.Panicf("[%s] remove file failed. filename=[%s], err=[%v]", r.name, r.filepath, err)
+		return false
+	}
+	r.openFile(offset)
+	return true
 }
 
 func (r *AOFReader) Read(buf []byte) (n int, err error) {
 	n, err = r.file.Read(buf)
-	for err == io.EOF {
-		if r.filepath != fmt.Sprintf("%s/%d.aof", r.dir, r.offset) {
-			r.readNextFile(r.offset)
+	if err == io.EOF {
+		if !r.readNextFile(r.offset) {
+			return n, io.EOF
 		}
-		time.Sleep(time.Millisecond * 10)
 		_, err = r.file.Seek(0, 1)
 		if err != nil {
 			log.Panicf(err.Error())
 		}
 		n, err = r.file.Read(buf)
+		if err != nil {
+			return n, err
+		}
 	}
 	if err != nil {
 		log.Panicf(err.Error())

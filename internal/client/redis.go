@@ -261,13 +261,24 @@ func (r *Redis) ReceiveString() string {
 	return reply.(string)
 }
 
-func (r *Redis) BufioReader() *bufio.Reader {
-	return r.reader
+func (r *Redis) Peek() (byte, error) {
+	bytes, err := r.protoReader.Peek(1)
+	if err != nil {
+		return 0, err
+	}
+	return bytes[0], nil
 }
 
-func (r *Redis) SetBufioReader(rd *bufio.Reader) {
-	r.reader = rd
-	r.protoReader = proto.NewReader(r.reader)
+func (r *Redis) Read(p []byte) (int, error) {
+	return r.reader.Read(p)
+}
+
+func (r *Redis) ReadByte() (byte, error) {
+	return r.reader.ReadByte()
+}
+
+func (r *Redis) ReadString(delim byte) (string, error) {
+	return r.reader.ReadString(delim)
 }
 
 func (r *Redis) Close() {
