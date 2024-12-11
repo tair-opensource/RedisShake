@@ -1,4 +1,3 @@
-import random
 import socket
 import threading
 
@@ -6,17 +5,16 @@ import threading
 def is_port_available(port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
-            s.bind(('localhost', port))
-            s.close()
+            s.bind(('0.0.0.0', port))
             return True
         except OSError:
             return False
 
 
-MIN_PORT = 20000
+MIN_PORT = 1000
 MAX_PORT = 40000
 
-port_cursor = random.choice(range(MIN_PORT, MAX_PORT, 1000))
+port_cursor = MIN_PORT
 
 g_lock = threading.Lock()
 
