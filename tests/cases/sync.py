@@ -17,7 +17,12 @@ def test(src, dst):
     shake = h.Shake(opts)
 
     # wait sync done
-    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10)
+    try: # HTTPConnectionPool
+        p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10)
+    except Exception as e:
+        with open(f"{shake.dir}/data/shake.log") as f:
+            p.log(f.read())
+        raise e
 
     # add data again
     inserter.add_data(src, cross_slots_cmd=cross_slots_cmd)

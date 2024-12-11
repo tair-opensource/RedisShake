@@ -18,10 +18,32 @@ import (
 	"RedisShake/internal/utils"
 	"RedisShake/internal/writer"
 
+	"fmt"
+	"runtime"
+
 	"github.com/mcuadros/go-defaults"
 )
 
+var (
+	// These variables will be set during build time
+	Version   = "unknown"
+	GitCommit = "unknown"
+)
+
+func getVersionString() string {
+	return fmt.Sprintf("%s %s/%s (Git SHA: %s)", Version, runtime.GOOS, runtime.GOARCH, GitCommit)
+}
+
 func main() {
+	// Add version flag check before config loading
+	if len(os.Args) == 2 && (os.Args[1] == "-v" || os.Args[1] == "--version" || os.Args[1] == "version") {
+		fmt.Printf("redis-shake version %s\n", getVersionString())
+		os.Exit(0)
+	}
+
+	// Add version info at startup
+	log.Infof("redis-shake version %s", getVersionString())
+
 	v := config.LoadConfig()
 
 	log.Init(config.Opt.Advanced.LogLevel, config.Opt.Advanced.LogFile, config.Opt.Advanced.Dir)
