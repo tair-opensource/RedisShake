@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"RedisShake/internal/client/proto"
@@ -22,13 +20,6 @@ type Redis struct {
 	writer      *bufio.Writer
 	protoReader *proto.Reader
 	protoWriter *proto.Writer
-	timer       *time.Timer
-	sendBytes   uint64
-	mu          sync.Mutex
-}
-
-func NewSentinelMasterClient(ctx context.Context, address string, username string, password string, Tls bool) *Redis {
-	return NewRedisClient(ctx, address, username, password, Tls, false)
 }
 
 func NewRedisClient(ctx context.Context, address string, username string, password string, Tls bool, replica bool) *Redis {
@@ -56,7 +47,7 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 
 	r.conn = conn
 	r.reader = bufio.NewReader(conn)
-	r.writer = bufio.NewWriter(conn)
+	r.writer = bufio.NewWriterSize(conn, 16*1024*1024) // size is 16MB
 	r.protoReader = proto.NewReader(r.reader)
 	r.protoWriter = proto.NewWriter(r.writer)
 
@@ -85,9 +76,6 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 		log.Infof("best replica: %s", replicaInfo.BestReplica)
 		r = NewRedisClient(ctx, replicaInfo.BestReplica, username, password, Tls, false)
 	}
-
-	r.timer = time.NewTimer(time.Second)
-	go r.autoFlush(ctx)
 
 	return r
 }
@@ -182,70 +170,21 @@ func (r *Redis) Send(args ...interface{}) {
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	r.flush()
+	r.Flush()
 }
 
-func (r *Redis) SendBytes(buf []byte) {
-	_, err := r.writer.Write(buf)
-	if err != nil {
-		log.Panicf(err.Error())
-	}
-	r.flush()
-}
-
+// SendBytesBuff send bytes to buffer, need to call Flush() to send the buffer
 func (r *Redis) SendBytesBuff(buf []byte) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	_, err := r.writer.Write(buf)
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	r.flushBuff(len(buf))
 }
 
-func (r *Redis) resetTimer() {
-	if !r.timer.Stop() {
-		select {
-		case <-r.timer.C:
-		default:
-		}
-	}
-	r.timer.Reset(time.Second)
-}
-
-func (r *Redis) flushBuff(l int) {
-	// if the data size is too small, no need to flush
-	if atomic.AddUint64(&r.sendBytes, uint64(l)) > 64*1024 {
-		r.flush()
-		r.resetTimer()
-		return
-	}
-	r.resetTimer()
-}
-
-func (r *Redis) flush() {
+func (r *Redis) Flush() {
 	err := r.writer.Flush()
 	if err != nil {
 		log.Panicf(err.Error())
-	}
-	atomic.StoreUint64(&r.sendBytes, 0)
-}
-
-func (r *Redis) autoFlush(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-r.timer.C:
-			if atomic.LoadUint64(&r.sendBytes) > 0 {
-				r.mu.Lock()
-				err := r.writer.Flush()
-				r.mu.Unlock()
-				if err != nil {
-					log.Panicf(err.Error())
-				}
-			}
-		}
 	}
 }
 
@@ -284,13 +223,6 @@ func (r *Redis) ReadString(delim byte) (string, error) {
 func (r *Redis) Close() {
 	if err := r.conn.Close(); err != nil {
 		log.Infof("close redis conn err: %s\n", err.Error())
-	}
-	// release the timer
-	if !r.timer.Stop() {
-		select {
-		case <-r.timer.C:
-		default:
-		}
 	}
 }
 

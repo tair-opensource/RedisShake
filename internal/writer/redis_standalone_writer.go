@@ -24,7 +24,6 @@ type RedisWriterOptions struct {
 	Password string                 `mapstructure:"password" default:""`
 	Tls      bool                   `mapstructure:"tls" default:"false"`
 	OffReply bool                   `mapstructure:"off_reply" default:"false"`
-	BuffSend bool                   `mapstructure:"buff_send" default:"false"`
 	Sentinel client.SentinelOptions `mapstructure:"sentinel"`
 }
 
@@ -39,8 +38,6 @@ type redisStandaloneWriter struct {
 	ch          chan *entry.Entry
 	chWg        sync.WaitGroup
 
-	buffSend bool
-
 	stat struct {
 		Name              string `json:"name"`
 		UnansweredBytes   int64  `json:"unanswered_bytes"`
@@ -54,7 +51,6 @@ func NewRedisStandaloneWriter(ctx context.Context, opts *RedisWriterOptions) Wri
 	rw.stat.Name = "writer_" + strings.Replace(opts.Address, ":", "_", -1)
 	rw.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, false)
 	rw.ch = make(chan *entry.Entry, 1024)
-	rw.buffSend = opts.BuffSend
 	if opts.OffReply {
 		log.Infof("turn off the reply of write")
 		rw.offReply = true
@@ -79,31 +75,38 @@ func (w *redisStandaloneWriter) Close() {
 func (w *redisStandaloneWriter) StartWrite(ctx context.Context) chan *entry.Entry {
 	w.chWg = sync.WaitGroup{}
 	w.chWg.Add(1)
+	timer := time.NewTicker(100 * time.Millisecond)
 	go func() {
-		for e := range w.ch {
-			// switch db if we need
-			if w.DbId != e.DbId {
-				w.switchDbTo(e.DbId)
-			}
-			// send
-			bytes := e.Serialize()
-			for e.SerializedSize+atomic.LoadInt64(&w.stat.UnansweredBytes) > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen {
-				time.Sleep(1 * time.Nanosecond)
-			}
-			log.Debugf("[%s] send cmd. cmd=[%s]", w.stat.Name, e.String())
-			if !w.offReply {
-				w.chWaitReply <- e
-				atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
-				atomic.AddInt64(&w.stat.UnansweredEntries, 1)
-			}
-			if w.buffSend {
+		for {
+			select {
+			case <-ctx.Done():
+				// do nothing until w.ch is closed
+			case <-timer.C:
+				w.client.Flush()
+			case e, ok := <-w.ch:
+				if !ok {
+					w.client.Flush()
+					w.chWg.Done()
+					return
+				}
+				// switch db if we need
+				if w.DbId != e.DbId {
+					w.switchDbTo(e.DbId)
+				}
+				// send
+				bytes := e.Serialize()
+				for e.SerializedSize+atomic.LoadInt64(&w.stat.UnansweredBytes) > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen {
+					time.Sleep(1 * time.Nanosecond)
+				}
+				log.Debugf("[%s] send cmd. cmd=[%s]", w.stat.Name, e.String())
+				if !w.offReply {
+					w.chWaitReply <- e
+					atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
+					atomic.AddInt64(&w.stat.UnansweredEntries, 1)
+				}
 				w.client.SendBytesBuff(bytes)
-			} else {
-				w.client.SendBytes(bytes)
 			}
-
 		}
-		w.chWg.Done()
 	}()
 
 	return w.ch

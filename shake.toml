@@ -34,7 +34,6 @@ username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
 tls = false
 off_reply = false          # turn off the server reply
-buff_send = false          # buffer send, default false. may be a sync delay when true, but it can greatly improve the speed
 
 [filter]
 # Allow keys with specific prefixes or suffixes
