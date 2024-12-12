@@ -21,7 +21,7 @@ RedisShake is a powerful tool for Redis data transformation and migration, offer
 2. **Redis Compatibility**: Supports Redis 2.8 to 7.4, across standalone, master-slave, sentinel, and cluster deployments.
 
 3. **Cloud Service Integration**: Seamlessly works with Redis-like databases from major cloud providers:
-   - Alibaba Cloud: [ApsaraDB for Redis](https://www.alibabacloud.com/product/apsaradb-for-redis), [Tair](https://www.alibabacloud.com/product/tair)
+   - Alibaba Cloud: [Tair (Redis® OSS-Compatible)](https://www.alibabacloud.com/en/product/tair)
    - AWS: [ElastiCache](https://aws.amazon.com/elasticache/), [MemoryDB](https://aws.amazon.com/memorydb/)  
 
 4. **Module Support**: Compatible with [TairString](https://github.com/tair-opensource/TairString), [TairZSet](https://github.com/tair-opensource/TairZset), and [TairHash](https://github.com/tair-opensource/TairHash).

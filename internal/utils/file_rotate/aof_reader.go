@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 type AOFReader struct {
@@ -21,7 +22,18 @@ func NewAOFReader(name string, dir string, offset int64) *AOFReader {
 	r := new(AOFReader)
 	r.name = name
 	r.dir = dir
+
+	filepath := fmt.Sprintf("%s/%d.aof", r.dir, r.offset)
+
+	startWaitTimeStart := time.Now()
+	for !utils.IsExist(filepath) {
+		time.Sleep(100 * time.Millisecond)
+		if time.Since(startWaitTimeStart) > 3*time.Second {
+			log.Panicf("[%s] file not exist. filename=[%s]", r.name, filepath)
+		}
+	}
 	r.openFile(offset)
+
 	return r
 }
 
