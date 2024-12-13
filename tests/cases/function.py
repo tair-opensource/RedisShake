@@ -1,6 +1,5 @@
-import pybbt as p
-
 import helpers as h
+import pybbt as p
 
 
 @p.subcase()
@@ -26,7 +25,7 @@ def filter_db():
         src.do("set", "key", "value")
 
     # wait sync done
-    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10)
+    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10, interval=0.01)
 
     dst.do("select", 0)
     p.ASSERT_EQ(dst.do("get", "key"), None)
@@ -55,7 +54,7 @@ def split_mset_to_set():
     shake = h.Shake(opts)
     src.do("mset", "k1", "v1", "k2", "v2", "k3", "v3")
     # wait sync done
-    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10)
+    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10, interval=0.01)
     dst.do("select", 1)
     p.ASSERT_EQ(dst.do("get", "k1"), b"v1")
     p.ASSERT_EQ(dst.do("get", "k2"), b"v2")

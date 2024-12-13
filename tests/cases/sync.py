@@ -18,7 +18,7 @@ def test(src, dst):
 
     # wait sync done
     try: # HTTPConnectionPool
-        p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10)
+        p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10, interval=0.01)
     except Exception as e:
         with open(f"{shake.dir}/data/shake.log") as f:
             p.log(f.read())
@@ -28,7 +28,7 @@ def test(src, dst):
     inserter.add_data(src, cross_slots_cmd=cross_slots_cmd)
 
     # wait sync done
-    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent())
+    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), interval=0.01)
     p.log(shake.get_status())
     time.sleep(5)
 
