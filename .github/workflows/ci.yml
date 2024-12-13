@@ -11,7 +11,7 @@ jobs:
     black-box-test:
         runs-on: ubuntu-latest
         strategy:
-            max-parallel: 1
+            max-parallel: 10
             matrix:
                 redis-version: [ "2.8", "3.0", "4.0", "5.0", "6.0", "7.0" ]
             fail-fast: false
