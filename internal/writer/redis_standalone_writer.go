@@ -75,7 +75,7 @@ func (w *redisStandaloneWriter) Close() {
 func (w *redisStandaloneWriter) StartWrite(ctx context.Context) chan *entry.Entry {
 	w.chWg = sync.WaitGroup{}
 	w.chWg.Add(1)
-	timer := time.NewTicker(100 * time.Millisecond)
+	timer := time.NewTicker(10 * time.Millisecond)
 	go func() {
 		for {
 			select {

@@ -54,7 +54,12 @@ def split_mset_to_set():
     shake = h.Shake(opts)
     src.do("mset", "k1", "v1", "k2", "v2", "k3", "v3")
     # wait sync done
-    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10, interval=0.01)
+    try:
+        p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10, interval=0.01)
+    except Exception as e:
+        with open(f"{shake.dir}/data/shake.log") as f:
+            p.log(f.read())
+        raise e
     dst.do("select", 1)
     p.ASSERT_EQ(dst.do("get", "k1"), b"v1")
     p.ASSERT_EQ(dst.do("get", "k2"), b"v2")

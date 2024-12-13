@@ -464,7 +464,7 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 		iArgv, err := protoReader.ReadReply()
 		if err != nil {
 			if err == io.EOF {
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(10 * time.Millisecond)
 				continue
 			} else {
 				log.Panicf("[%s] read aof file failed. error=[%v]", r.stat.Name, err)
