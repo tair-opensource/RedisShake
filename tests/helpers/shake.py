@@ -57,6 +57,9 @@ class ShakeOpts:
             "redis_writer": {
                 "cluster": dts.is_cluster(),
                 "address": dts.get_address()
+            },
+            "advanced": {
+                "log_level": "debug"
             }
         }
         return d

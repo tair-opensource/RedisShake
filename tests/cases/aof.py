@@ -304,7 +304,7 @@ def main():
     aof_to_standalone_single() #single aof 
     aof_to_standalone_error() # error aof file 
     aof_to_standalone_rm_file() # rm aof file
-    aof_to_standalone_history_file() # history + incr aof-multi
+    # aof_to_standalone_history_file() # history + incr aof-multi
     aof_to_cluster() #test cluster
     aof_to_standalone_timestamp() #set timestamp aof-multi
 

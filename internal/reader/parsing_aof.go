@@ -405,7 +405,9 @@ func AOFLoadManifestFromFile(amFilepath string) *AOFManifest {
 			am.BaseAOFInfo = ai
 			am.CurrBaseFileSeq = ai.FileSeq
 		} else if ai.AOFFileType == AOFManifestTypeHist {
-			am.HistoryList.PushBack(ai)
+			if !strings.Contains(ai.FileName, "base.rdb") {
+				am.HistoryList.PushBack(ai)
+			}
 		} else if ai.AOFFileType == AOFManifestTypeIncr {
 			if ai.FileSeq <= maxSeq {
 				log.Infof("Reading the manifest file, at line %d", lineNum)
