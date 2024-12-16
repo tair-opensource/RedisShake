@@ -49,7 +49,7 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	// Increase the size of the underlying TCP send cache to avoid short-write errors
 	SetWriteConnBuff(r.conn, 128*1024)
 	r.reader = bufio.NewReader(conn)
-	r.writer = bufio.NewWriterSize(conn, 16*1024*1024) // size is 16MB
+	r.writer = bufio.NewWriterSize(conn, 32*1024) // size is 32KiB
 	r.protoReader = proto.NewReader(r.reader)
 	r.protoWriter = proto.NewWriter(r.writer)
 
