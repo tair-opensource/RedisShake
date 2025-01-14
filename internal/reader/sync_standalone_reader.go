@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -477,7 +478,7 @@ func (r *syncStandaloneReader) sendRDB(rdbFilePath string) {
 }
 
 func (r *syncStandaloneReader) sendAOF(offset int64) {
-	aofReader := rotate.NewAOFReader(r.stat.Name, r.stat.Dir, offset)
+	aofReader := rotate.NewAOFReader(r.ctx, r.stat.Name, r.stat.Dir, offset)
 	defer aofReader.Close()
 	protoReader := proto.NewReader(bufio.NewReader(aofReader))
 	for {
@@ -488,12 +489,10 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 
 		iArgv, err := protoReader.ReadReply()
 		if err != nil {
-			if err == io.EOF {
-				time.Sleep(10 * time.Millisecond)
-				continue
-			} else {
-				log.Panicf("[%s] read aof file failed. error=[%v]", r.stat.Name, err)
+			if errors.Is(err, context.Canceled) {
+				return
 			}
+			log.Panicf("[%s] read aof file failed. error=[%v]", r.stat.Name, err)
 		}
 
 		argv := client.ArrayString(iArgv, nil)

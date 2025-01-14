@@ -90,7 +90,7 @@ func (w *fileWriter) processWrite(ctx context.Context) {
 	defer ticker.Stop()
 	file, err := os.Create(w.path)
 	if err != nil {
-		log.Panicf("create file failed:", err)
+		log.Panicf("create file failed: %v", err)
 		return
 	}
 	defer file.Close()

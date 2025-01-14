@@ -3,6 +3,7 @@ package rotate
 import (
 	"RedisShake/internal/log"
 	"RedisShake/internal/utils"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 )
 
 type AOFReader struct {
+	ctx      context.Context
 	name     string
 	dir      string
 	file     *os.File
@@ -18,8 +20,9 @@ type AOFReader struct {
 	filepath string
 }
 
-func NewAOFReader(name string, dir string, offset int64) *AOFReader {
+func NewAOFReader(ctx context.Context, name string, dir string, offset int64) *AOFReader {
 	r := new(AOFReader)
+	r.ctx = ctx
 	r.name = name
 	r.dir = dir
 
@@ -69,17 +72,27 @@ func (r *AOFReader) readNextFile(offset int64) bool {
 
 func (r *AOFReader) Read(buf []byte) (n int, err error) {
 	n, err = r.file.Read(buf)
-	if err == io.EOF {
-		if !r.readNextFile(r.offset) {
-			return n, io.EOF
+	for err == io.EOF {
+		// sleep or context
+		timer := time.NewTimer(1 * time.Millisecond)
+		select {
+		case <-r.ctx.Done():
+			return n, r.ctx.Err()
+		case <-timer.C:
 		}
+		r.readNextFile(r.offset) // try to read next file
 		_, err = r.file.Seek(0, 1)
 		if err != nil {
 			log.Panicf(err.Error())
 		}
 		n, err = r.file.Read(buf)
-		if err != nil {
-			return n, err
+
+		if err == nil {
+			break
+		} else if err == io.EOF {
+			continue
+		} else {
+			log.Panicf("[%s] read file failed. filename=[%s], err=[%v]", r.name, r.filepath, err)
 		}
 	}
 	if err != nil {
