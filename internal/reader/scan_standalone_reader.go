@@ -19,16 +19,17 @@ import (
 )
 
 type ScanReaderOptions struct {
-	Cluster       bool   `mapstructure:"cluster" default:"false"`
-	Address       string `mapstructure:"address" default:""`
-	Username      string `mapstructure:"username" default:""`
-	Password      string `mapstructure:"password" default:""`
-	Tls           bool   `mapstructure:"tls" default:"false"`
-	Scan          bool   `mapstructure:"scan" default:"true"`
-	KSN           bool   `mapstructure:"ksn" default:"false"`
-	DBS           []int  `mapstructure:"dbs"`
-	PreferReplica bool   `mapstructure:"prefer_replica" default:"false"`
-	Count         int    `mapstructure:"count" default:"1"`
+	Cluster       bool             `mapstructure:"cluster" default:"false"`
+	Address       string           `mapstructure:"address" default:""`
+	Username      string           `mapstructure:"username" default:""`
+	Password      string           `mapstructure:"password" default:""`
+	Tls           bool             `mapstructure:"tls" default:"false"`
+	TlsConfig     client.TlsConfig `mapstructure:"tls_config" default:"{}"`
+	Scan          bool             `mapstructure:"scan" default:"true"`
+	KSN           bool             `mapstructure:"ksn" default:"false"`
+	DBS           []int            `mapstructure:"dbs"`
+	PreferReplica bool             `mapstructure:"prefer_replica" default:"false"`
+	Count         int              `mapstructure:"count" default:"1"`
 }
 
 type dbKey struct {
@@ -63,7 +64,7 @@ type scanStandaloneReader struct {
 func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reader {
 	r := new(scanStandaloneReader)
 	// dbs
-	c := client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.PreferReplica)
+	c := client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, opts.PreferReplica)
 	if len(opts.DBS) != 0 {
 		r.dbs = opts.DBS
 	} else if c.IsCluster() { // not use opts.Cluster, because user may use standalone mode to scan a cluster node
@@ -99,7 +100,7 @@ func (r *scanStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entr
 }
 
 func (r *scanStandaloneReader) subscript() {
-	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.PreferReplica)
+	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.TlsConfig, r.opts.PreferReplica)
 	if len(r.dbs) == 0 {
 		c.Send("psubscribe", "__keyevent@*__:*")
 	} else {
@@ -148,7 +149,7 @@ func (r *scanStandaloneReader) subscript() {
 }
 
 func (r *scanStandaloneReader) scan() {
-	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.PreferReplica)
+	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.TlsConfig, r.opts.PreferReplica)
 	defer c.Close()
 	for _, dbId := range r.dbs {
 		if dbId != 0 {
@@ -193,7 +194,7 @@ func (r *scanStandaloneReader) scan() {
 
 func (r *scanStandaloneReader) dump() {
 	nowDbId := 0
-	r.dumpClient = client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.PreferReplica)
+	r.dumpClient = client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.TlsConfig, r.opts.PreferReplica)
 	// Support prefer_replica=true in both Cluster and Standalone mode
 	if r.opts.PreferReplica {
 		r.dumpClient.Do("READONLY")

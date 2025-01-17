@@ -14,7 +14,7 @@ type scanClusterReader struct {
 }
 
 func NewScanClusterReader(ctx context.Context, opts *ScanReaderOptions) Reader {
-	addresses, _ := utils.GetRedisClusterNodes(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.PreferReplica)
+	addresses, _ := utils.GetRedisClusterNodes(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, opts.PreferReplica)
 
 	rd := &scanClusterReader{}
 	for _, address := range addresses {

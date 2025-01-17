@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -34,6 +34,7 @@ type SyncReaderOptions struct {
 	Username      string                 `mapstructure:"username" default:""`
 	Password      string                 `mapstructure:"password" default:""`
 	Tls           bool                   `mapstructure:"tls" default:"false"`
+	TlsConfig     client.TlsConfig       `mapstructure:"tls_config" default:"{}"`
 	SyncRdb       bool                   `mapstructure:"sync_rdb" default:"true"`
 	SyncAof       bool                   `mapstructure:"sync_aof" default:"true"`
 	PreferReplica bool                   `mapstructure:"prefer_replica" default:"false"`
@@ -111,7 +112,7 @@ type syncStandaloneReader struct {
 func NewSyncStandaloneReader(ctx context.Context, opts *SyncReaderOptions) Reader {
 	r := new(syncStandaloneReader)
 	r.opts = opts
-	r.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.PreferReplica)
+	r.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, opts.PreferReplica)
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
 	r.stat.Address = opts.Address
 	r.stat.Status = kHandShake

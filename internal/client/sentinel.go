@@ -7,18 +7,19 @@ import (
 )
 
 type SentinelOptions struct {
-	MasterName string `mapstructure:"master_name" default:""`
-	Address    string `mapstructure:"address" default:""`
-	Username   string `mapstructure:"username" default:""`
-	Password   string `mapstructure:"password" default:""`
-	Tls        bool   `mapstructure:"tls" default:"false"`
+	MasterName string    `mapstructure:"master_name" default:""`
+	Address    string    `mapstructure:"address" default:""`
+	Username   string    `mapstructure:"username" default:""`
+	Password   string    `mapstructure:"password" default:""`
+	Tls        bool      `mapstructure:"tls" default:"false"`
+	TlsConfig  TlsConfig `mapstructure:"tls_config" default:"{}"`
 }
 
 func FetchAddressFromSentinel(opts *SentinelOptions) string {
 	log.Infof("fetching master address from sentinel. sentinel address: %s, master name: %s", opts.Address, opts.MasterName)
 
 	ctx := context.Background()
-	c := NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, false)
+	c := NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, false)
 	defer c.Close()
 	c.Send("SENTINEL", "GET-MASTER-ADDR-BY-NAME", opts.MasterName)
 	hostport := ArrayString(c.Receive())

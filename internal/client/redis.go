@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"net"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,7 +24,13 @@ type Redis struct {
 	protoWriter *proto.Writer
 }
 
-func NewRedisClient(ctx context.Context, address string, username string, password string, Tls bool, replica bool) *Redis {
+type TlsConfig struct {
+	CACertFilePath string `mapstructure:"ca_cert" default:""`
+	CertFilePath   string `mapstructure:"cert" default:""`
+	KeyFilePath    string `mapstructure:"key" default:""`
+}
+
+func NewRedisClient(ctx context.Context, address string, username string, password string, Tls bool, tlsConfig TlsConfig, replica bool) *Redis {
 	r := new(Redis)
 	var conn net.Conn
 	var dialer = &net.Dialer{
@@ -35,7 +43,7 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	if Tls {
 		tlsDialer := &tls.Dialer{
 			NetDialer: dialer,
-			Config:    &tls.Config{InsecureSkipVerify: true},
+			Config:    getTlsConfig(tlsConfig),
 		}
 		conn, err = tlsDialer.DialContext(ctxWithDeadline, "tcp", address)
 	} else {
@@ -75,10 +83,33 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	if replica {
 		replicaInfo := getReplicaAddr(reply, address)
 		log.Infof("best replica: %s", replicaInfo.BestReplica)
-		r = NewRedisClient(ctx, replicaInfo.BestReplica, username, password, Tls, false)
+		r = NewRedisClient(ctx, replicaInfo.BestReplica, username, password, Tls, tlsConfig, false)
 	}
 
 	return r
+}
+
+func getTlsConfig(tlsConfig TlsConfig) *tls.Config {
+	if tlsConfig.CACertFilePath == "" || tlsConfig.CertFilePath == "" || tlsConfig.KeyFilePath == "" {
+		return &tls.Config{InsecureSkipVerify: true}
+	}
+
+	// Use mutual authentication (mTLS)
+	cert, err := tls.LoadX509KeyPair(tlsConfig.CertFilePath, tlsConfig.KeyFilePath)
+	if err != nil {
+		log.Panicf("load tls cert failed. cert=[%s], key=[%s], err=[%v]", tlsConfig.CertFilePath, tlsConfig.KeyFilePath, err)
+	}
+	caCert, err := os.ReadFile(tlsConfig.CACertFilePath)
+	if err != nil {
+		log.Panicf("read ca cert failed. ca_cert=[%s], err=[%v]", tlsConfig.CACertFilePath, err)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	return &tls.Config{
+		RootCAs:            caCertPool,
+		Certificates:       []tls.Certificate{cert},
+		InsecureSkipVerify: true,
+	}
 }
 
 type Replica struct {
