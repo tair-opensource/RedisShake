@@ -1,2 +1,0 @@
-*.rdb filter=lfs diff=lfs merge=lfs -text
-internal/rdb/dump.rdb filter=lfs diff=lfs merge=lfs -text
