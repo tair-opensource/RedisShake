@@ -33,6 +33,6 @@ func Panicf(format string, args ...interface{}) {
 		}
 		errMsg += fmt.Sprintf("\n\t\t\t%v -> %n()", frameStr, frame)
 	}
-	logger.Error().Msgf(errMsg)
+	logger.Error().Msg(errMsg)
 	os.Exit(1)
 }
