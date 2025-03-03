@@ -25,6 +25,7 @@ func (o *TairZsetObject) Rewrite() <-chan RedisCmd {
 	cmdC := o.cmdC
 	go func() {
 		defer close(cmdC)
+		cmdC <- RedisCmd{"del", o.key}
 		length, _ := strconv.Atoi(structure.ReadModuleUnsigned(rd))
 		scoreNum, _ := strconv.Atoi(structure.ReadModuleUnsigned(rd))
 		for i := 0; i < length; i++ {
