@@ -140,6 +140,7 @@ func (o *BloomObject) Rewrite() <-chan RedisCmd {
 		} else {
 			h = getEncodedHeader(&o.sb, true, true)
 		}
+		cmdC <- RedisCmd{"del", o.key}
 		cmd := RedisCmd{"BF.LOADCHUNK", o.key, "1", h}
 		cmdC <- cmd
 		curIter := uint64(1)
