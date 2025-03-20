@@ -78,9 +78,9 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	if reply != "PONG" {
 		panic("ping failed with reply: " + reply)
 	}
-	reply = r.DoWithStringReply("info", "replication")
 	// get best replica
 	if replica {
+		reply = r.DoWithStringReply("info", "replication")
 		replicaInfo := getReplicaAddr(reply, address)
 		log.Infof("best replica: %s", replicaInfo.BestReplica)
 		r = NewRedisClient(ctx, replicaInfo.BestReplica, username, password, Tls, tlsConfig, false)

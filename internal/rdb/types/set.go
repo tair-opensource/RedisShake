@@ -24,6 +24,7 @@ func (o *SetObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 func (o *SetObject) Rewrite() <-chan RedisCmd {
 	go func() {
 		defer close(o.cmdC)
+		o.cmdC <- RedisCmd{"del", o.key}
 		switch o.typeByte {
 		case rdbTypeSet:
 			o.readSet()

@@ -26,6 +26,7 @@ func (o *TairHashObject) Rewrite() <-chan RedisCmd {
 		dictSizeStr := structure.ReadModuleUnsigned(rd)
 		key := structure.ReadModuleString(rd)
 		size, _ := strconv.Atoi(dictSizeStr)
+		cmdC <- RedisCmd{"del", key}
 		for i := 0; i < size; i++ {
 			skey := structure.ReadModuleString(rd)
 			version := structure.ReadModuleUnsigned(rd)
