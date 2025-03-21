@@ -48,7 +48,7 @@ func (o *ZsetObject) readZset() {
 	for i := 0; i < size; i++ {
 		member := structure.ReadString(rd)
 		score := structure.ReadFloat(rd)
-		o.cmdC <- RedisCmd{"zadd", o.key, fmt.Sprintf("%f", score), member}
+		o.cmdC <- RedisCmd{"zadd", o.key, fmt.Sprintf("%.17g", score), member}
 	}
 }
 
@@ -58,7 +58,7 @@ func (o *ZsetObject) readZset2() {
 	for i := 0; i < size; i++ {
 		member := structure.ReadString(rd)
 		score := structure.ReadDouble(rd)
-		o.cmdC <- RedisCmd{"zadd", o.key, fmt.Sprintf("%f", score), member}
+		o.cmdC <- RedisCmd{"zadd", o.key, fmt.Sprintf("%.17g", score), member}
 	}
 }
 
