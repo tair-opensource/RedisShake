@@ -90,6 +90,8 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysI
 			log.Panicf("wrong type: %s", spec.findKeysType)
 		}
 	}
+
+	cmaName = argv[0]
 	return
 }
 
