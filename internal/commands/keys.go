@@ -14,8 +14,11 @@ import (
 func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysIndexes []int) {
 	argc := len(argv)
 	group = "unknown"
+	originalName := argv[0]
 	cmaName = strings.ToUpper(argv[0])
+	inContainersCmd := false
 	if _, ok := containers[cmaName]; ok {
+		inContainersCmd = true
 		if len(argv) > 1 {
 			cmaName = fmt.Sprintf("%s-%s", cmaName, strings.ToUpper(argv[1]))
 		}
@@ -91,7 +94,9 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysI
 		}
 	}
 
-	cmaName = argv[0]
+	if inContainersCmd == false {
+		cmaName = originalName
+	}
 	return
 }
 
