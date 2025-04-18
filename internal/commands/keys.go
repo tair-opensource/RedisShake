@@ -14,16 +14,14 @@ import (
 func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysIndexes []int) {
 	argc := len(argv)
 	group = "unknown"
-	originalName := argv[0]
-	cmaName = strings.ToUpper(argv[0])
-	inContainersCmd := false
-	if _, ok := containers[cmaName]; ok {
-		inContainersCmd = true
+	cmaName = argv[0]
+	upperCmaName := strings.ToUpper(argv[0])
+	if _, ok := containers[upperCmaName]; ok {
 		if len(argv) > 1 {
-			cmaName = fmt.Sprintf("%s-%s", cmaName, strings.ToUpper(argv[1]))
+			cmaName = fmt.Sprintf("%s-%s", upperCmaName, strings.ToUpper(argv[1]))
 		}
 	}
-	cmd, ok := redisCommands[cmaName]
+	cmd, ok := redisCommands[upperCmaName]
 	if !ok {
 		log.Warnf("unknown command. argv=%v", argv)
 		return
@@ -94,9 +92,6 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysI
 		}
 	}
 
-	if inContainersCmd == false {
-		cmaName = originalName
-	}
 	return
 }
 
