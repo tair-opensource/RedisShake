@@ -18,7 +18,7 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysI
 	upperCmaName := strings.ToUpper(argv[0])
 	if _, ok := containers[upperCmaName]; ok {
 		if len(argv) > 1 {
-			cmaName = fmt.Sprintf("%s-%s", upperCmaName, strings.ToUpper(argv[1]))
+			upperCmaName = fmt.Sprintf("%s-%s", upperCmaName, strings.ToUpper(argv[1]))
 		}
 	}
 	cmd, ok := redisCommands[upperCmaName]
