@@ -57,7 +57,6 @@ func (o *StreamObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
 func (o *StreamObject) Rewrite() <-chan RedisCmd {
 	go func() {
 		defer close(o.cmdC)
-		o.cmdC <- RedisCmd{"del", o.key}
 		switch o.typeByte {
 		case rdbTypeStreamListpacks:
 			o.readStream()

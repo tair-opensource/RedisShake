@@ -1,6 +1,7 @@
 package rdb
 
 import (
+	"RedisShake/internal/config"
 	"bufio"
 	"bytes"
 	"context"
@@ -201,6 +202,15 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			return
 		default:
 			key := structure.ReadString(rd)
+			// if rdb_restore_command_behavior is rewrite. first del key. otherwise list type  key maybe write repeat
+			if config.Opt.Advanced.RDBRestoreCommandBehavior == "rewrite" {
+				argv := []string{"DEL", key}
+				ld.ch <- &entry.Entry{
+					DbId: ld.nowDBId,
+					Argv: argv,
+				}
+			}
+
 			o := types.ParseObject(rd, typeByte, key)
 			cmdC := o.Rewrite()
 			for cmd := range cmdC {

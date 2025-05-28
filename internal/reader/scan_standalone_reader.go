@@ -252,6 +252,16 @@ func (r *scanStandaloneReader) restore() {
 		}
 		if uint64(len(dump)) > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
 			log.Warnf("key=[%s] dump len=[%d] too large, split it. This is not a good practice in Redis.", key, len(dump))
+			// fix: if TargetRedisProtoMaxBulkLen is small. list type key maybe write repeat
+			if config.Opt.Advanced.RDBRestoreCommandBehavior == "rewrite" {
+				argv := []string{"DEL", key}
+
+				r.ch <- &entry.Entry{
+					DbId: dbId,
+					Argv: argv,
+				}
+			}
+
 			typeByte := dump[0]
 			anotherReader := strings.NewReader(dump[1 : len(dump)-10])
 			o := types.ParseObject(anotherReader, typeByte, key)
