@@ -9,7 +9,6 @@ outline: deep
 当源端数据库兼容 PSync 协议时，推荐使用 `sync_reader`。兼容 PSync 协议的数据库有：
 
 * Redis
-* Tair
 * Valkey
 * ElastiCache 需要提供 aws_psync 配置
 
