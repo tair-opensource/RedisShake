@@ -49,6 +49,12 @@ const (
 	rdbTypeSetListpack      = 20 // RDB_TYPE_SET_LISTPACK
 	rdbTypeStreamListpacks3 = 21 // RDB_TYPE_STREAM_LISTPACKS_3
 
+	// https://github.com/redis/redis/pull/13391
+	rdbTypeHashMetadataPreGa = 22 // RDB_TYPE_HASH_METADATA_PRE_GA
+	rdbTypeHashListpackExPre = 23 // RDB_TYPE_HASH_LISTPACK_EX_PRE_GA
+	rdbTypeHashMetadata      = 24 // RDB_TYPE_HASH_METADATA
+	rdbTypeHashListpackEx    = 25 // RDB_TYPE_HASH_LISTPACK_EX
+
 	moduleTypeNameCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
 	rdbModuleOpcodeEOF    = 0 // End of module value.
@@ -85,7 +91,8 @@ func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
 		o := new(ZsetObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
-	case rdbTypeHash, rdbTypeHashZipmap, rdbTypeHashZiplist, rdbTypeHashListpack: // hash
+	case rdbTypeHash, rdbTypeHashZipmap, rdbTypeHashZiplist, rdbTypeHashListpack,
+		rdbTypeHashMetadataPreGa, rdbTypeHashListpackExPre, rdbTypeHashMetadata, rdbTypeHashListpackEx: // hash
 		o := new(HashObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
