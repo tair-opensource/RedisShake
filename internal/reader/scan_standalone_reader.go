@@ -171,21 +171,20 @@ func (r *scanStandaloneReader) scan() {
 				r.needDumpQueue.Close()
 				return
 			default:
-			}
+				var keys []string
+				cursor, keys = c.Scan(cursor, count)
+				for _, key := range keys {
+					r.needDumpQueue.Put(dbKey{dbId, key}) // pass value not pointer
+				}
 
-			var keys []string
-			cursor, keys = c.Scan(cursor, count)
-			for _, key := range keys {
-				r.needDumpQueue.Put(dbKey{dbId, key}) // pass value not pointer
-			}
+				// stat
+				r.stat.ScanCursor = cursor
+				r.stat.ScanDbId = dbId
+				r.stat.ScanPercentByDbId = fmt.Sprintf("%.2f%%", float64(bits.Reverse64(cursor))/float64(^uint(0))*100)
 
-			// stat
-			r.stat.ScanCursor = cursor
-			r.stat.ScanDbId = dbId
-			r.stat.ScanPercentByDbId = fmt.Sprintf("%.2f%%", float64(bits.Reverse64(cursor))/float64(^uint(0))*100)
-
-			if cursor == 0 {
-				break
+				if cursor == 0 {
+					break
+				}
 			}
 		}
 	}
