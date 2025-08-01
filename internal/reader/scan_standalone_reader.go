@@ -19,17 +19,18 @@ import (
 )
 
 type ScanReaderOptions struct {
-	Cluster       bool             `mapstructure:"cluster" default:"false"`
-	Address       string           `mapstructure:"address" default:""`
-	Username      string           `mapstructure:"username" default:""`
-	Password      string           `mapstructure:"password" default:""`
-	Tls           bool             `mapstructure:"tls" default:"false"`
-	TlsConfig     client.TlsConfig `mapstructure:"tls_config" default:"{}"`
-	Scan          bool             `mapstructure:"scan" default:"true"`
-	KSN           bool             `mapstructure:"ksn" default:"false"`
-	DBS           []int            `mapstructure:"dbs"`
-	PreferReplica bool             `mapstructure:"prefer_replica" default:"false"`
-	Count         int              `mapstructure:"count" default:"1"`
+	Cluster         bool             `mapstructure:"cluster" default:"false"`
+	Address         string           `mapstructure:"address" default:""`
+	Username        string           `mapstructure:"username" default:""`
+	Password        string           `mapstructure:"password" default:""`
+	Tls             bool             `mapstructure:"tls" default:"false"`
+	TlsConfig       client.TlsConfig `mapstructure:"tls_config" default:"{}"`
+	Scan            bool             `mapstructure:"scan" default:"true"`
+	KSN             bool             `mapstructure:"ksn" default:"false"`
+	DBS             []int            `mapstructure:"dbs"`
+	PreferReplica   bool             `mapstructure:"prefer_replica" default:"false"`
+	Count           int              `mapstructure:"count" default:"1"`
+	SkipUnknownType []string         `mapstructure:"skip_unknown_type" default:"[]"`
 }
 
 type dbKey struct {
@@ -215,6 +216,9 @@ func (r *scanStandaloneReader) dump() {
 		// dump
 		r.dumpClient.Send("DUMP", key)
 		r.dumpClient.Send("PTTL", key)
+		if len(r.opts.SkipUnknownType) > 0 {
+			r.dumpClient.Send("TYPE", key)
+		}
 		r.needRestoreChan <- &needRestoreItem{dbId, key}
 	}
 	close(r.needRestoreChan)
@@ -235,6 +239,24 @@ func (r *scanStandaloneReader) restore() {
 		}
 		iDump, err1 := r.dumpClient.Receive()
 		iPttl, err2 := r.dumpClient.Receive()
+		if len(r.opts.SkipUnknownType) > 0 {
+			iType, err3 := r.dumpClient.Receive()
+			if err3 != nil {
+				log.Panicf(err3.Error())
+			}
+			typeStr := iType.(string)
+			// type in SkipUnknownType
+			skip := false
+			for _, skipType := range r.opts.SkipUnknownType {
+				if strings.EqualFold(typeStr, skipType) {
+					skip = true
+				}
+			}
+			if skip {
+				log.Infof("skip restore key=[%s] type=[%s]", key, typeStr)
+				continue
+			}
+		}
 		if errors.Is(err1, proto.Nil) {
 			continue // key not exist
 		} else if err1 != nil {
@@ -243,7 +265,16 @@ func (r *scanStandaloneReader) restore() {
 			log.Panicf(err2.Error())
 		}
 		dump := iDump.(string)
-		pttl := int(iPttl.(int64))
+		pttl := 0
+		switch v := iPttl.(type) {
+		case int64:
+			pttl = int(v)
+		case string:
+			log.Panicf("iPttl is string, this should not happen. key=[%s], pttl=[%s]", key, v)
+		default:
+			log.Panicf("unexpected type for pttl: %T", iPttl)
+		}
+
 		if pttl == -2 {
 			continue // key not exist
 		}
