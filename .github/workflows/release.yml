@@ -2,92 +2,105 @@ name: Release
 
 # Controls when the workflow will run
 on:
+    # Triggers on tag pushes that match version pattern
+    push:
+        tags:
+            - 'v*.*.*'
     # Allows you to run this workflow manually from the Actions tab
     workflow_dispatch:
 
 jobs:
     build:
-        permissions: write-all
+        permissions:
+            contents: write
+            pull-requests: write
         runs-on: ubuntu-latest
         steps:
             -   name: Checkout
-                uses: actions/checkout@v2
+                uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0
 
             -   name: Setup Golang with cache
-                uses: magnetikonline/action-golang-cache@v3
+                uses: magnetikonline/action-golang-cache@v4
                 with:
                     go-version-file: go.mod
 
-
             -   name: "Draft release"
                 id: "release"
-                uses: release-drafter/release-drafter@v5
+                if: github.event_name == 'workflow_dispatch'
+                uses: release-drafter/release-drafter@v6
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
             -   name: Build
                 run: |
-                    VERSION=${{ steps.release.outputs.tag_name }}
+                    # Extract version from git tag or use release drafter output
+                    if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+                        VERSION=${GITHUB_REF#refs/tags/}
+                    else
+                        VERSION=${{ steps.release.outputs.tag_name }}
+                    fi
                     COMMIT=${GITHUB_SHA::8}
                     export VERSION COMMIT
+                    echo "Building with VERSION=$VERSION COMMIT=$COMMIT"
                     bash build.sh dist
+
+            -   name: Verify build artifacts
+                run: |
+                    echo "Checking for build artifacts..."
+                    ls -la ./bin/
+                    
+                    # Check if all expected files exist
+                    for file in redis-shake-linux-amd64.tar.gz redis-shake-linux-arm64.tar.gz redis-shake-darwin-amd64.tar.gz redis-shake-darwin-arm64.tar.gz redis-shake-windows-amd64.tar.gz redis-shake-windows-arm64.tar.gz; do
+                        if [ ! -f "./bin/$file" ]; then
+                            echo "Error: $file not found!"
+                            exit 1
+                        else
+                            echo "✓ $file found ($(stat -c%s ./bin/$file) bytes)"
+                        fi
+                    done
     
-            -   name: "Upload release linux-amd64"
-                uses: actions/upload-release-asset@v1
-                with:
-                    upload_url: ${{ steps.release.outputs.upload_url }}
-                    asset_path: ./bin/redis-shake-linux-amd64.tar.gz
-                    asset_name: redis-shake-${{ steps.release.outputs.tag_name }}-linux-amd64.tar.gz
-                    asset_content_type: application/gzip
-                env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            -   name: Prepare versioned assets
+                run: |
+                    # Extract version from git tag or use release drafter output
+                    if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+                        VERSION=${GITHUB_REF#refs/tags/}
+                    else
+                        VERSION=${{ steps.release.outputs.tag_name }}
+                    fi
+                    echo "Using VERSION=$VERSION"
+                    cd ./bin/
+                    
+                    # Create versioned copies of the assets
+                    for file in redis-shake-*.tar.gz; do
+                        if [ -f "$file" ]; then
+                            # Extract OS and ARCH from filename (redis-shake-OS-ARCH.tar.gz)
+                            base_name=$(echo "$file" | sed 's/redis-shake-\(.*\)\.tar\.gz/\1/')
+                            versioned_name="redis-shake-${VERSION}-${base_name}.tar.gz"
+                            cp "$file" "$versioned_name"
+                            echo "Created: $versioned_name"
+                        fi
+                    done
+                    
+                    ls -la redis-shake-${VERSION}-*.tar.gz
 
-            -   name: "Upload release linux-arm64"
-                uses: actions/upload-release-asset@v1
+            -   name: Upload Release Assets
+                uses: softprops/action-gh-release@v1
                 with:
-                    upload_url: ${{ steps.release.outputs.upload_url }}
-                    asset_path: ./bin/redis-shake-linux-arm64.tar.gz
-                    asset_name: redis-shake-${{ steps.release.outputs.tag_name }}-linux-arm64.tar.gz
-                    asset_content_type: application/gzip
-                env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            -   name: "Upload release darwin-amd64"
-                uses: actions/upload-release-asset@v1
-                with:
-                    upload_url: ${{ steps.release.outputs.upload_url }}
-                    asset_path: ./bin/redis-shake-darwin-amd64.tar.gz
-                    asset_name: redis-shake-${{ steps.release.outputs.tag_name }}-darwin-amd64.tar.gz
-                    asset_content_type: application/gzip
-                env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            -   name: "Upload release darwin-arm64"
-                uses: actions/upload-release-asset@v1
-                with:
-                    upload_url: ${{ steps.release.outputs.upload_url }}
-                    asset_path: ./bin/redis-shake-darwin-arm64.tar.gz
-                    asset_name: redis-shake-${{ steps.release.outputs.tag_name }}-darwin-arm64.tar.gz
-                    asset_content_type: application/gzip
-                env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            -   name: "Upload release windows-amd64"
-                uses: actions/upload-release-asset@v1
-                with:
-                    upload_url: ${{ steps.release.outputs.upload_url }}
-                    asset_path: ./bin/redis-shake-windows-amd64.tar.gz
-                    asset_name: redis-shake-${{ steps.release.outputs.tag_name }}-windows-amd64.tar.gz
-                    asset_content_type: application/gzip
-                env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            -   name: "Upload release windows-arm64"
-                uses: actions/upload-release-asset@v1
-                with:
-                    upload_url: ${{ steps.release.outputs.upload_url }}
-                    asset_path: ./bin/redis-shake-windows-arm64.tar.gz
-                    asset_name: redis-shake-${{ steps.release.outputs.tag_name }}-windows-arm64.tar.gz
-                    asset_content_type: application/gzip
+                    # For tag-triggered builds, these will be auto-detected
+                    # For manual builds, use release drafter outputs
+                    tag_name: ${{ github.event_name == 'push' && github.ref_name || steps.release.outputs.tag_name }}
+                    name: ${{ github.event_name == 'push' && github.ref_name || steps.release.outputs.name }}
+                    body: ${{ github.event_name == 'push' && format('Release {0}', github.ref_name) || steps.release.outputs.body }}
+                    draft: ${{ github.event_name != 'push' }}
+                    prerelease: false
+                    files: |
+                        ./bin/redis-shake-${{ github.event_name == 'push' && github.ref_name || steps.release.outputs.tag_name }}-linux-amd64.tar.gz
+                        ./bin/redis-shake-${{ github.event_name == 'push' && github.ref_name || steps.release.outputs.tag_name }}-linux-arm64.tar.gz
+                        ./bin/redis-shake-${{ github.event_name == 'push' && github.ref_name || steps.release.outputs.tag_name }}-darwin-amd64.tar.gz
+                        ./bin/redis-shake-${{ github.event_name == 'push' && github.ref_name || steps.release.outputs.tag_name }}-darwin-arm64.tar.gz
+                        ./bin/redis-shake-${{ github.event_name == 'push' && github.ref_name || steps.release.outputs.tag_name }}-windows-amd64.tar.gz
+                        ./bin/redis-shake-${{ github.event_name == 'push' && github.ref_name || steps.release.outputs.tag_name }}-windows-arm64.tar.gz
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
