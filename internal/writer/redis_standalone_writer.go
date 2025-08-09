@@ -2,8 +2,10 @@ package writer
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,9 +30,9 @@ type RedisWriterOptions struct {
 	Sentinel  client.SentinelOptions `mapstructure:"sentinel"`
 }
 
-type redisStandaloneWriter struct {
+type RedisStandaloneWriter struct {
 	address string
-	client  *client.Redis
+	Client  *client.Redis
 	DbId    int
 
 	chWaitReply chan *entry.Entry
@@ -44,27 +46,44 @@ type redisStandaloneWriter struct {
 		UnansweredBytes   int64  `json:"unanswered_bytes"`
 		UnansweredEntries int64  `json:"unanswered_entries"`
 	}
+	TargetClient *redis.Client
 }
 
 func NewRedisStandaloneWriter(ctx context.Context, opts *RedisWriterOptions) Writer {
-	rw := new(redisStandaloneWriter)
+	rw := new(RedisStandaloneWriter)
 	rw.address = opts.Address
 	rw.stat.Name = "writer_" + strings.Replace(opts.Address, ":", "_", -1)
-	rw.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, false)
+	rw.Client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, false)
 	rw.ch = make(chan *entry.Entry, config.Opt.Advanced.PipelineCountLimit)
 	if opts.OffReply {
 		log.Infof("turn off the reply of write")
 		rw.offReply = true
-		rw.client.Send("CLIENT", "REPLY", "OFF")
+		rw.Client.Send("CLIENT", "REPLY", "OFF")
 	} else {
 		rw.chWaitReply = make(chan *entry.Entry, config.Opt.Advanced.PipelineCountLimit*2)
 		rw.chWaitWg.Add(1)
 		go rw.processReply()
 	}
+
+	var tlsConfig *tls.Config
+	if opts.Tls {
+		tlsConfig, err := client.CreateTLSConfig(opts.TlsConfig.KeyFilePath, opts.TlsConfig.CACertFilePath, opts.TlsConfig.CertFilePath)
+		_ = tlsConfig
+		if err != nil {
+			log.Panicf("failed to load Tls config.")
+		}
+	}
+	rw.TargetClient = redis.NewClient(&redis.Options{
+		Addr:      opts.Address,
+		Username:  opts.Username,
+		Password:  opts.Password,
+		TLSConfig: tlsConfig,
+	})
+
 	return rw
 }
 
-func (w *redisStandaloneWriter) Close() {
+func (w *RedisStandaloneWriter) Close() {
 	if !w.offReply {
 		close(w.ch)
 		w.chWg.Wait()
@@ -73,20 +92,20 @@ func (w *redisStandaloneWriter) Close() {
 	}
 }
 
-func (w *redisStandaloneWriter) StartWrite(ctx context.Context) chan *entry.Entry {
+func (w *RedisStandaloneWriter) StartWrite(ctx context.Context) chan *entry.Entry {
 	w.chWg = sync.WaitGroup{}
 	w.chWg.Add(1)
 	go w.processWrite(ctx)
 	return w.ch
 }
 
-func (w *redisStandaloneWriter) Write(e *entry.Entry) {
+func (w *RedisStandaloneWriter) Write(e *entry.Entry) {
 	w.ch <- e
 }
 
-func (w *redisStandaloneWriter) switchDbTo(newDbId int) {
+func (w *RedisStandaloneWriter) switchDbTo(newDbId int) {
 	log.Debugf("[%s] switch db to [%d]", w.stat.Name, newDbId)
-	w.client.Send("select", strconv.Itoa(newDbId))
+	w.Client.Send("select", strconv.Itoa(newDbId))
 	w.DbId = newDbId
 	if !w.offReply {
 		w.chWaitReply <- &entry.Entry{
@@ -96,7 +115,7 @@ func (w *redisStandaloneWriter) switchDbTo(newDbId int) {
 	}
 }
 
-func (w *redisStandaloneWriter) processWrite(ctx context.Context) {
+func (w *RedisStandaloneWriter) processWrite(ctx context.Context) {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -104,11 +123,11 @@ func (w *redisStandaloneWriter) processWrite(ctx context.Context) {
 		case <-ctx.Done():
 			// do nothing until w.ch is closed
 		case <-ticker.C:
-			w.client.Flush()
+			w.Client.Flush()
 		case e, ok := <-w.ch:
 			if !ok {
 				// clean up and exit
-				w.client.Flush()
+				w.Client.Flush()
 				w.chWg.Done()
 				return
 			}
@@ -126,20 +145,20 @@ func (w *redisStandaloneWriter) processWrite(ctx context.Context) {
 				select {
 				case w.chWaitReply <- e:
 				default:
-					w.client.Flush()
+					w.Client.Flush()
 					w.chWaitReply <- e
 				}
 				atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
 				atomic.AddInt64(&w.stat.UnansweredEntries, 1)
 			}
-			w.client.SendBytesBuff(bytes)
+			w.Client.SendBytesBuff(bytes)
 		}
 	}
 }
 
-func (w *redisStandaloneWriter) processReply() {
+func (w *RedisStandaloneWriter) processReply() {
 	for e := range w.chWaitReply {
-		reply, err := w.client.Receive()
+		reply, err := w.Client.Receive()
 		log.Debugf("[%s] receive reply. reply=[%v], cmd=[%s]", w.stat.Name, reply, e.String())
 
 		// It's good to skip the nil error since some write commands will return the null reply. For example,
@@ -164,14 +183,14 @@ func (w *redisStandaloneWriter) processReply() {
 	w.chWaitWg.Done()
 }
 
-func (w *redisStandaloneWriter) Status() interface{} {
+func (w *RedisStandaloneWriter) Status() interface{} {
 	return w.stat
 }
 
-func (w *redisStandaloneWriter) StatusString() string {
+func (w *RedisStandaloneWriter) StatusString() string {
 	return fmt.Sprintf("[%s]: unanswered_entries=%d", w.stat.Name, atomic.LoadInt64(&w.stat.UnansweredEntries))
 }
 
-func (w *redisStandaloneWriter) StatusConsistent() bool {
+func (w *RedisStandaloneWriter) StatusConsistent() bool {
 	return atomic.LoadInt64(&w.stat.UnansweredBytes) == 0 && atomic.LoadInt64(&w.stat.UnansweredEntries) == 0
 }

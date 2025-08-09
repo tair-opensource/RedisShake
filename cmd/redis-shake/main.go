@@ -3,9 +3,11 @@ package main
 import (
 	"RedisShake/internal/client"
 	"context"
+	"github.com/cespare/xxhash/v2"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -66,6 +68,8 @@ func main() {
 
 	// create reader
 	var theReader reader.Reader
+	var isolation entry.Isolation
+
 	switch {
 	case v.IsSet("sync_reader"):
 		opts := new(reader.SyncReaderOptions)
@@ -74,6 +78,12 @@ func main() {
 		if err != nil {
 			log.Panicf("failed to read the SyncReader config entry. err: %v", err)
 		}
+		isolation.OriginAddr = opts.Address
+		isolation.OriginUser = opts.Username
+		isolation.OriginIsCluster = opts.Cluster
+		isolation.BySync = opts.BiSync
+		isolation.Prefix = opts.Prefix
+
 		if opts.Cluster {
 			log.Infof("create SyncClusterReader")
 			log.Infof("* address (should be the address of one node in the Redis cluster): %s", opts.Address)
@@ -146,6 +156,7 @@ func main() {
 		if err != nil {
 			log.Panicf("failed to read the FileWriter config entry. err: %v", err)
 		}
+		isolation.TargetAddr = opts.Filepath
 		theWriter = writer.NewFileWriter(ctx, opts)
 	case v.IsSet("redis_writer"):
 		opts := new(writer.RedisWriterOptions)
@@ -154,6 +165,10 @@ func main() {
 		if err != nil {
 			log.Panicf("failed to read the RedisStandaloneWriter config entry. err: %v", err)
 		}
+		isolation.TargetUser = opts.Username
+		isolation.TargetAddr = opts.Address
+		isolation.TargetIsCLuster = opts.Cluster
+
 		if opts.OffReply && config.Opt.Advanced.RDBRestoreCommandBehavior == "panic" {
 			log.Panicf("the RDBRestoreCommandBehavior can't be 'panic' when the server not reply to commands")
 		}
@@ -230,17 +245,144 @@ func main() {
 				entries := luaRuntime.RunFunction(e)
 				log.Debugf("function after: %v", entries)
 
+				var is_rep_key = false // Is it a loopback command?
+
 				// write
 				for _, theEntry := range entries {
 					theEntry.Parse()
-					theWriter.Write(theEntry)
+					if isolation.BySync {
+						argv := theEntry.Argv
 
-					// update writer status
-					if config.Opt.Advanced.StatusPort != 0 {
-						status.AddWriteCount(theEntry.CmdName)
+						if len(theEntry.Keys) == 0 && argv[0] != "FLUSHALL" && argv[0] != "FLUSHDB" {
+							continue
+						}
+
+						command := strings.Join(argv, " ")
+						timestamp := time.Now().Unix()
+						bisyncCommand := []string{
+							"SETEX", // SETEX
+							isolation.Prefix + ":" + strconv.FormatUint(xxhash.Sum64String(command), 10), // new key
+							"60", // ttl
+							isolation.OriginAddr + "@" + strconv.FormatInt(timestamp, 10), // value
+						}
+
+						if isolation.TargetIsCLuster && isolation.OriginIsCluster {
+							clusterReader, ok := theReader.(*reader.SyncClusterReader)
+							if !ok {
+								log.Panicf("Type assertion failed: reader is not *syncClusterReader")
+							}
+							clusterWrite, ok := theWriter.(*writer.RedisClusterWriter)
+							if !ok {
+								log.Panicf("Type assertion failed: writer is not *RedisClusterWriter")
+							}
+
+							value, err := clusterReader.OriginClient.Get(context.Background(), bisyncCommand[1]).Result()
+							//If the source key does not begin with the prefix and the command hash does not exist, immediately mark it in the target cluster.
+							if err != nil && value == "" && (argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" || !strings.HasPrefix(theEntry.Keys[0], isolation.Prefix)) {
+								if argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" {
+									log.Infof("Writing key %s from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
+								} else {
+									log.Infof("Writing key %s from %s to %s ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
+								}
+
+								seconds, err := strconv.ParseInt(bisyncCommand[2], 10, 64)
+								err = clusterWrite.TargetClient.SetEx(context.Background(), bisyncCommand[1], bisyncCommand[3], time.Duration(seconds)*time.Second).Err()
+								if err != nil {
+									log.Panicf("SETEX failed: %w", err)
+								}
+							} else {
+								is_rep_key = true
+							}
+						} else if !isolation.TargetIsCLuster && !isolation.OriginIsCluster {
+							standaloneReader, ok := theReader.(*reader.SyncStandaloneReader)
+							if !ok {
+								log.Panicf("Type assertion failed: reader is not *SyncStandaloneReader")
+							}
+							standalonWriter, ok := theWriter.(*writer.RedisStandaloneWriter)
+							if !ok {
+								log.Panicf("Type assertion failed: writer is not *RedisStandaloneWriter")
+							}
+
+							value, _ := standaloneReader.OriginClient.Get(context.Background(), bisyncCommand[1]).Result()
+							if value == "" && (argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" || !strings.HasPrefix(theEntry.Keys[0], isolation.Prefix)) {
+								if argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" {
+									log.Infof("Writing key %s from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
+								} else {
+									log.Infof("Writing key %s from %s to %s  ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
+								}
+								seconds, err := strconv.ParseInt(bisyncCommand[2], 10, 64)
+								err = standalonWriter.TargetClient.SetEx(context.Background(), bisyncCommand[1], bisyncCommand[3], time.Duration(seconds)*time.Second).Err()
+								if err != nil {
+									log.Panicf("SETEX failed: %w", err)
+								}
+							} else {
+								is_rep_key = true
+							}
+						} else if isolation.TargetIsCLuster && !isolation.OriginIsCluster {
+
+							standaloneReader, ok := theReader.(*reader.SyncStandaloneReader)
+							if !ok {
+								log.Panicf("Type assertion failed: reader is not *SyncStandaloneReader")
+							}
+
+							clusterWrite, ok := theWriter.(*writer.RedisClusterWriter)
+							if !ok {
+								log.Panicf("Type assertion failed: writer is not *RedisClusterWriter")
+							}
+
+							value, err := standaloneReader.OriginClient.Get(context.Background(), bisyncCommand[1]).Result()
+							if err != nil && value == "" && (argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" || !strings.HasPrefix(theEntry.Keys[0], isolation.Prefix)) {
+								if argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" {
+									log.Infof("Writing key %s from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
+								} else {
+									log.Infof("Writing key %s from %s to %s ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
+								}
+								seconds, err := strconv.ParseInt(bisyncCommand[2], 10, 64)
+								err = clusterWrite.TargetClient.SetEx(context.Background(), bisyncCommand[1], bisyncCommand[3], time.Duration(seconds)*time.Second).Err()
+								if err != nil {
+									log.Panicf("SETEX failed: %w", err)
+								}
+							} else {
+								is_rep_key = true
+							}
+
+						} else {
+							clusterReader, ok := theReader.(*reader.SyncClusterReader)
+							if !ok {
+								log.Panicf("Type assertion failed: reader is not *syncClusterReader")
+							}
+							standalonWriter, ok := theWriter.(*writer.RedisStandaloneWriter)
+							if !ok {
+								log.Panicf("Type assertion failed: writer is not *RedisStandaloneWriter")
+							}
+							value, _ := clusterReader.OriginClient.Get(context.Background(), bisyncCommand[1]).Result()
+							if value == "" && (argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" || !strings.HasPrefix(theEntry.Keys[0], isolation.Prefix)) {
+								if argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" {
+									log.Infof("Writing key %s from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
+								} else {
+									log.Infof("Writing key %s from %s to %s ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
+								}
+								// immediately set the command of BISYNC to the target cluster
+								seconds, err := strconv.ParseInt(bisyncCommand[2], 10, 64)
+								err = standalonWriter.TargetClient.SetEx(context.Background(), bisyncCommand[1], bisyncCommand[3], time.Duration(seconds)*time.Second).Err()
+								if err != nil {
+									log.Panicf("SETEX failed: %w", err)
+								}
+							} else {
+								is_rep_key = true
+							}
+						}
 					}
-					// update log entry count
-					atomic.AddUint64(&logEntryCount.WriteCount, 1)
+
+					if !is_rep_key {
+						theWriter.Write(theEntry)
+						// update writer status
+						if config.Opt.Advanced.StatusPort != 0 {
+							status.AddWriteCount(theEntry.CmdName)
+						}
+						// update log entry count
+						atomic.AddUint64(&logEntryCount.WriteCount, 1)
+					}
 				}
 			}
 			readerDone <- true
