@@ -1,6 +1,6 @@
 [sync_reader]
 cluster = false            # Set to true if the source is a Redis cluster
-address = "127.0.0.1:6001" # For clusters, specify the address of any cluster node; use the master or slave address in master-slave mode
+address = "127.0.0.1:9001" # For clusters, specify the address of any cluster node; use the master or slave address in master-slave mode
 username = ""              # Keep empty if ACL is not in use
 password = ""              # Keep empty if no authentication is required
 tls = false                # Set to true to enable TLS if needed
@@ -33,8 +33,8 @@ bisync = true              # set to true for Data Synchronization Between Differ
 # timestamp = 0            # subsecond
 
 [redis_writer]
-cluster = false            # set to true if target is a redis cluster
-address = "127.0.0.1:9001" # when cluster is true, set address to one of the cluster node
+cluster = true            # set to true if target is a redis cluster
+address = "127.0.0.1:8001" # when cluster is true, set address to one of the cluster node
 username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
 tls = false

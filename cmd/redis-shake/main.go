@@ -280,9 +280,9 @@ func main() {
 							//If the source key does not begin with the prefix and the command hash does not exist, immediately mark it in the target cluster.
 							if err != nil && value == "" && (argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" || !strings.HasPrefix(theEntry.Keys[0], isolation.Prefix)) {
 								if argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" {
-									log.Infof("Writing key %s from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
+									log.Infof("Writing key:[%s] from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
 								} else {
-									log.Infof("Writing key %s from %s to %s ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
+									log.Infof("Writing key:[%s] from %s to %s ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
 								}
 
 								seconds, err := strconv.ParseInt(bisyncCommand[2], 10, 64)
@@ -306,9 +306,9 @@ func main() {
 							value, _ := standaloneReader.OriginClient.Get(context.Background(), bisyncCommand[1]).Result()
 							if value == "" && (argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" || !strings.HasPrefix(theEntry.Keys[0], isolation.Prefix)) {
 								if argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" {
-									log.Infof("Writing key %s from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
+									log.Infof("Writing key:[%s] from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
 								} else {
-									log.Infof("Writing key %s from %s to %s  ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
+									log.Infof("Writing key:[%s] from %s to %s  ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
 								}
 								seconds, err := strconv.ParseInt(bisyncCommand[2], 10, 64)
 								err = standalonWriter.TargetClient.SetEx(context.Background(), bisyncCommand[1], bisyncCommand[3], time.Duration(seconds)*time.Second).Err()
@@ -333,9 +333,9 @@ func main() {
 							value, err := standaloneReader.OriginClient.Get(context.Background(), bisyncCommand[1]).Result()
 							if err != nil && value == "" && (argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" || !strings.HasPrefix(theEntry.Keys[0], isolation.Prefix)) {
 								if argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" {
-									log.Infof("Writing key %s from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
+									log.Infof("Writing key:[%s] from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
 								} else {
-									log.Infof("Writing key %s from %s to %s ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
+									log.Infof("Writing key:[%s] from %s to %s ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
 								}
 								seconds, err := strconv.ParseInt(bisyncCommand[2], 10, 64)
 								err = clusterWrite.TargetClient.SetEx(context.Background(), bisyncCommand[1], bisyncCommand[3], time.Duration(seconds)*time.Second).Err()
@@ -358,9 +358,9 @@ func main() {
 							value, _ := clusterReader.OriginClient.Get(context.Background(), bisyncCommand[1]).Result()
 							if value == "" && (argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" || !strings.HasPrefix(theEntry.Keys[0], isolation.Prefix)) {
 								if argv[0] == "FLUSHALL" || argv[0] == "FLUSHDB" {
-									log.Infof("Writing key %s from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
+									log.Infof("Writing key:[%s] from %s to %s ", argv[0], isolation.OriginAddr, isolation.TargetAddr)
 								} else {
-									log.Infof("Writing key %s from %s to %s ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
+									log.Infof("Writing key:[%s] from %s to %s ", theEntry.Keys[0], isolation.OriginAddr, isolation.TargetAddr)
 								}
 								// immediately set the command of BISYNC to the target cluster
 								seconds, err := strconv.ParseInt(bisyncCommand[2], 10, 64)
