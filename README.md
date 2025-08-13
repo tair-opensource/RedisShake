@@ -74,6 +74,10 @@ block_key_prefix = ["temp:", "cache:"]
 
 For more help, check the [docs](https://tair-opensource.github.io/RedisShake/zh/guide/mode.html).
 
+## Compatibility Report
+
+Planning a major version upgrade? To prevent unexpected issues, please check our **[Major Version Compatibility Report](compatibility_report.md)** for a list of breaking changes and important bug fixes.
+
 ## History
 
 RedisShake, actively maintained by the [Tair team](https://github.com/tair-opensource) at Alibaba Cloud, evolved from [redis-port](https://github.com/CodisLabs/redis-port). Key milestones:
