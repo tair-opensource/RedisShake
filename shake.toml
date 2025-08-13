@@ -131,6 +131,11 @@ rdb_restore_command_behavior = "panic" # panic, rewrite or skip
 # 1024 is a good default value for most cases.
 pipeline_count_limit = 1024
 
+# Use the token bucket rate limiting method to limit the maximum written QPS
+# If the performance of the target end is too poor or you want to protect the target redisyou can reduce this parameter
+# 300,000 is a maximum value. You can consider it as no rate limit
+target_redis_max_qps = 300000
+
 # This setting corresponds to the 'client-query-buffer-limit' in Redis configuration.
 # The default value is typically 1GB.
 # It's recommended not to modify this value unless absolutely necessary.
