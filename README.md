@@ -76,7 +76,7 @@ For more help, check the [docs](https://tair-opensource.github.io/RedisShake/zh/
 
 ## Compatibility Report
 
-Planning a major version upgrade? To prevent unexpected issues, please check our **[Major Version Compatibility Report](compatibility_report.md)** for a list of breaking changes and important bug fixes.
+Planning a major version upgrade? To prevent unexpected issues, please check our **[Major Version Compatibility Report](compatibility_report_zh_CN.md)** for a list of breaking changes and important bug fixes.
 
 ## History
 
