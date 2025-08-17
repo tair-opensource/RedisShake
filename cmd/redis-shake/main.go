@@ -1,6 +1,7 @@
 package main
 
 import (
+	"RedisShake/cmd/commands"
 	"RedisShake/internal/client"
 	"context"
 	_ "net/http/pprof"
@@ -41,6 +42,22 @@ func main() {
 	if len(os.Args) == 2 && (os.Args[1] == "-v" || os.Args[1] == "--version" || os.Args[1] == "version") {
 		fmt.Printf("redis-shake version %s\n", getVersionString())
 		os.Exit(0)
+	}
+
+	if len(os.Args) == 2 && (os.Args[1] == "-h" || os.Args[1] == "--help" || os.Args[1] == "help") {
+		commands.ConvertArgs2Toml(true, false)
+		os.Exit(0)
+	}
+
+	commandLine := strings.Join(os.Args[1:], ",")
+	if strings.Contains(commandLine, "reader") || strings.Contains(commandLine, "writer") ||
+		strings.Contains(commandLine, "filter") || strings.Contains(commandLine, "advanced") ||
+		strings.Contains(commandLine, "module") {
+		tomlPath, err := commands.ConvertArgs2Toml(false, strings.Contains(commandLine, "--dry-run"))
+		if err != nil || tomlPath == "" {
+			os.Exit(0)
+		}
+		os.Args = []string{os.Args[0], tomlPath}
 	}
 
 	// Add version info at startup
