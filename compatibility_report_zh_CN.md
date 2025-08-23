@@ -417,6 +417,9 @@
 17. 修复了恶意的 `KEYS`, `HRANDFIELD`, `SRANDMEMBER`, `ZRANDMEMBER` 命令可能导致 server hang 死，（`KEYS` 仍有可能在 6.2 及以下版本造成 server hang 死）。
     -   社区 PR：[https://github.com/redis/redis/pull/11676](https://github.com/redis/redis/pull/11676)
 
+18. Lua 脚本安全性修复，禁止定义全局变量，所有的用户变量必须加 local 声明，否则直接报错。（全版本 backport，老脚本在升级小版本或大版本后均会报错）
+    -   社区 PR：https://github.com/redis/redis/pull/10651
+
 ## 7.2 版本
 
 1.  修复了 `SRANDMEMBER`, `ZRANDMEMBER`, `HRANDFIELD` 命令在使用 `count` 参数时，有小概率死循环的 Bug（backport to 7.0，6.2 及以下版本仍有问题）
