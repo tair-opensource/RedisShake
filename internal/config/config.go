@@ -1,13 +1,12 @@
 package config
 
 import (
+	"RedisShake/internal/log"
 	"bytes"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
-
-	"RedisShake/internal/log"
 
 	"github.com/mcuadros/go-defaults"
 	"github.com/rs/zerolog"
@@ -62,6 +61,7 @@ type AdvancedOptions struct {
 	PipelineCountLimit              uint64 `mapstructure:"pipeline_count_limit" default:"1024"`
 	TargetRedisClientMaxQuerybufLen int64  `mapstructure:"target_redis_client_max_querybuf_len" default:"1024000000"`
 	TargetRedisProtoMaxBulkLen      uint64 `mapstructure:"target_redis_proto_max_bulk_len" default:"512000000"`
+	TargetRedisMaxQPS               int    `mapstructure:"target_redis_max_qps" default:"300000"`
 
 	AwsPSync string `mapstructure:"aws_psync" default:""` // 10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync
 
