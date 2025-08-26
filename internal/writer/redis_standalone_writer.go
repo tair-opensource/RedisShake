@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/ratelimit"
 	"strconv"
 	"strings"
 	"sync"
@@ -118,6 +119,10 @@ func (w *RedisStandaloneWriter) switchDbTo(newDbId int) {
 func (w *RedisStandaloneWriter) processWrite(ctx context.Context) {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
+
+	var rl ratelimit.Limiter = nil
+	rl = ratelimit.New(config.Opt.Advanced.TargetRedisMaxQPS)
+	log.Infof("set target redis max qps to %d", config.Opt.Advanced.TargetRedisMaxQPS)
 	for {
 		select {
 		case <-ctx.Done():
@@ -140,6 +145,7 @@ func (w *RedisStandaloneWriter) processWrite(ctx context.Context) {
 			for e.SerializedSize+atomic.LoadInt64(&w.stat.UnansweredBytes) > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen {
 				time.Sleep(1 * time.Nanosecond)
 			}
+			rl.Take()
 			log.Debugf("[%s] send cmd. cmd=[%s]", w.stat.Name, e.String())
 			if !w.offReply {
 				select {
