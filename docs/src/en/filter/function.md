@@ -14,6 +14,7 @@ To use the function feature, you only need to write a Lua script. After RedisSha
 
 Here's a specific example:
 ```toml
+[filter]
 function = """
 shake.log(DB)
 if DB == 0
