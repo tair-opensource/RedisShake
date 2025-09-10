@@ -74,9 +74,10 @@ block_key_prefix = ["temp:", "cache:"]
 
 For more help, check the [docs](https://tair-opensource.github.io/RedisShake/zh/guide/mode.html).
 
-## Compatibility Report
+## Cross-Version Migration
 
-Planning a major version upgrade? To prevent unexpected issues, please check our **[Major Version Compatibility Report](compatibility_report_zh_CN.md)** for a list of breaking changes and important bug fixes.
+Before migrating data between different major versions of Redis, we recommend using the **[resp-compatibility](https://github.com/tair-opensource/resp-compatibility/)** tool for a compatibility check and consulting the **[compatibility report](https://github.com/tair-opensource/resp-compatibility/blob/main/compatibility_report_en_US.md)** to avoid known breaking changes and bugs.
+
 
 ## History
 
