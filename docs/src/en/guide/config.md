@@ -39,7 +39,12 @@ RedisShake provides different Writers to interface with different targets, see t
 
 ## filter Configuration
 
-You can set filter rules through the configuration file. Refer to [Filter and Processing](../filter/filter.md) and [function](../filter/function.md).
+The `[filter]` section contains two layers:
+
+* **Rule engine:** Configure `allow_*` and `block_*` lists to keep or drop keys, databases, commands, and command groups. See [Filter and Processing](../filter/filter.md) for detailed semantics and examples.
+* **Lua function hook:** Provide inline Lua code via the `function` option to rewrite commands after they pass the rule engine. See [function](../filter/function.md) for API details and best practices.
+
+Filters always run before the Lua hook. Commands blocked by the rule engine never enter the script or reach the writer, so you can reserve the Lua layer for the smaller, approved subset of traffic.
 
 ## advanced Configuration
 
