@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"RedisShake/internal/client"
 	"RedisShake/internal/client/proto"
@@ -51,6 +52,7 @@ type scanStandaloneReader struct {
 	needDumpQueue   *utils.UniqueQueue
 	needRestoreChan chan *needRestoreItem
 	dumpClient      *client.Redis
+	subWG           sync.WaitGroup
 
 	stat struct {
 		Name              string `json:"name"`
@@ -68,7 +70,7 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 	r.opts = opts
 	r.ch = make(chan *entry.Entry, 1024)
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
-	r.needDumpQueue = utils.NewUniqueQueue(100000)        // cache 100000 keys
+	r.needDumpQueue = utils.NewUniqueQueue(100000000)     // cache 100000000 keys
 	r.needRestoreChan = make(chan *needRestoreItem, 1024) // inflight 1024 keys
 	log.Infof("[%s] scanStandaloneReader init finished. dbs=[%v]", r.stat.Name, r.dbs)
 	return r
@@ -76,20 +78,22 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 
 func (r *scanStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entry {
 	r.ctx = ctx
+	if r.opts.KSN {
+		r.subWG.Add(1)
+		go r.subscribe()
+		r.subWG.Wait()
+	}
 	if r.opts.Scan {
 		go r.scan()
-	}
-	if r.opts.KSN {
-		go r.subscript()
 	}
 	go r.dump()
 	go r.restore()
 	return []chan *entry.Entry{r.ch}
 }
 
-func (r *scanStandaloneReader) subscript() {
+func (r *scanStandaloneReader) subscribe() {
 	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.TlsConfig, r.opts.PreferReplica)
-	log.Infof("[%s] scanStandaloneReader subscript started. dbs=[%v]", r.stat.Name, r.dbs)
+	log.Infof("[%s] scanStandaloneReader subscribe started. dbs=[%v]", r.stat.Name, r.dbs)
 	if len(r.dbs) == 0 {
 		c.Send("psubscribe", "__keyevent@*__:*")
 		_, err := c.Receive()
@@ -110,11 +114,14 @@ func (r *scanStandaloneReader) subscript() {
 		}
 	}
 
+	// wait
+	r.subWG.Done()
+
 	regex := regexp.MustCompile(`\d+`)
 	for {
 		select {
 		case <-r.ctx.Done():
-			log.Infof("[%s] scanStandaloneReader subscript finished.", r.stat.Name)
+			log.Infof("[%s] scanStandaloneReader subscribe finished.", r.stat.Name)
 			r.needDumpQueue.Close()
 			return
 		default:
@@ -269,6 +276,9 @@ func (r *scanStandaloneReader) restore() {
 		switch v := iPttl.(type) {
 		case int64:
 			pttl = int(v)
+			if pttl == 0 {
+				pttl = 1
+			}
 		case string:
 			log.Panicf("iPttl is string, this should not happen. key=[%s], pttl=[%s]", key, v)
 		default:
