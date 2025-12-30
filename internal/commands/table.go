@@ -3312,6 +3312,42 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
+	"HGETDEL": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HGETEX": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
 	"HINCRBY": {
 		"HASH",
 		[]keySpec{
@@ -3457,6 +3493,24 @@ var redisCommands = map[string]redisCommand{
 		},
 	},
 	"HSET": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HSETEX": {
 		"HASH",
 		[]keySpec{
 			{
@@ -4183,6 +4237,24 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
+	"XACKDEL": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
 	"XADD": {
 		"STREAM",
 		[]keySpec{
@@ -4238,6 +4310,24 @@ var redisCommands = map[string]redisCommand{
 		},
 	},
 	"XDEL": {
+		"STREAM",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"XDELEX": {
 		"STREAM",
 		[]keySpec{
 			{
@@ -4724,168 +4814,6 @@ var redisCommands = map[string]redisCommand{
 	},
 	"BF.SCANDUMP": {
 		"BLOOM FILTER",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HPEXPIREAT": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HEXPIREAT": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HEXPIRE": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HPEXPIRE": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HPERSIST": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HEXPIRETIME": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HPEXPIRETIME": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HTTL": {
-		"HASH",
-		[]keySpec{
-			{
-				"index",
-				1,
-				"",
-				0,
-				"range",
-				0,
-				1,
-				0,
-				0,
-				0,
-				0,
-			},
-		},
-	},
-	"HPTTL": {
-		"HASH",
 		[]keySpec{
 			{
 				"index",

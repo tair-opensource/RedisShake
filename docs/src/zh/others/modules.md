@@ -14,6 +14,22 @@ Redis Modules 是 Redis 4.0 版本引入的一个新特性，它允许开发者�
 - [TairString](https://github.com/tair-opensource/TairString)：支持版本的 String 结构，可以实现分布式锁/乐观锁。
 - [TairZset](https://github.com/tair-opensource/TairZset)：支持最多 256 维的 double 排序，可以实现多维排行榜。
 
+## 不支持的 Redis Modules 列表
+
+以下模块目前不受支持：
+
+**Redis 8 内置模块：**
+- **Vector Sets**：Redis 8 引入的向量数据类型，用于向量相似度搜索
+
+**Redis Stack 模块：**
+- **RedisJSON**：JSON 数据类型
+- **RediSearch**：全文搜索和二级索引
+- **RedisTimeSeries**：时间序列数据库
+- **RedisBloom**：概率数据结构（Bloom filter、Cuckoo filter、Count-Min Sketch、Top-K）
+- **RedisGraph**：图数据库（已弃用）
+
+如需迁移使用这些模块的数据，请参考 [如何支持新的 Redis Modules](#如何支持新的-redis-modules) 进行适配，或使用其他迁移方案。
+
 ## 如何支持新的 Redis Modules
 
 ### 核心流程

@@ -2603,6 +2603,38 @@
                     }
                 }
             ],
+            "HGETDEL": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HGETEX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "HINCRBY": [
                 {
                     "begin_search": {
@@ -2732,6 +2764,22 @@
                 }
             ],
             "HSET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HSETEX": [
                 {
                     "begin_search": {
                         "index": {
@@ -3310,6 +3358,22 @@
                     }
                 }
             ],
+            "XACKDEL": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "XADD": [
                 {
                     "begin_search": {
@@ -3359,6 +3423,22 @@
                 }
             ],
             "XDEL": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "XDELEX": [
                 {
                     "begin_search": {
                         "index": {
