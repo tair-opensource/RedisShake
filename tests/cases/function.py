@@ -24,8 +24,8 @@ def filter_db():
         src.do("select", db)
         src.do("set", "key", "value")
 
-    # wait sync done
-    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10, interval=0.01)
+    # wait sync done (use db=1 because db=0 is filtered)
+    shake.wait_for_sync(timeout=10, db=1)
 
     dst.do("select", 0)
     p.ASSERT_EQ(dst.do("get", "key"), None)
@@ -53,15 +53,21 @@ def split_mset_to_set():
     p.log(f"opts: {opts}")
     shake = h.Shake(opts)
     src.do("mset", "k1", "v1", "k2", "v2", "k3", "v3")
-    # wait sync done
+
+    # wait sync done - check both consistency AND data presence
+    # is_consistent() can return true before MSET is captured by AOF streaming
+    def data_synced():
+        if not shake.is_consistent():
+            return False
+        dst.do("select", 1)
+        return dst.do("get", "k1") == b"v1"
+
     try:
-        p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10, interval=0.01)
+        p.ASSERT_TRUE_TIMEOUT(data_synced, timeout=10, interval=0.01)
     except Exception as e:
         with open(f"{shake.dir}/data/shake.log") as f:
             p.log(f.read())
         raise e
-    dst.do("select", 1)
-    p.ASSERT_EQ(dst.do("get", "k1"), b"v1")
     p.ASSERT_EQ(dst.do("get", "k2"), b"v2")
     p.ASSERT_EQ(dst.do("get", "k3"), b"v3")
 

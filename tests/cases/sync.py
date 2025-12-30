@@ -1,5 +1,3 @@
-import time
-
 import pybbt as p
 
 import helpers as h
@@ -17,8 +15,8 @@ def test(src, dst):
     shake = h.Shake(opts)
 
     # wait sync done
-    try: # HTTPConnectionPool
-        p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), timeout=10, interval=0.01)
+    try:
+        shake.wait_for_sync(timeout=10)
     except Exception as e:
         with open(f"{shake.dir}/data/shake.log") as f:
             p.log(f.read())
@@ -28,9 +26,8 @@ def test(src, dst):
     inserter.add_data(src, cross_slots_cmd=cross_slots_cmd)
 
     # wait sync done
-    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), interval=0.01)
+    shake.wait_for_sync(timeout=10)
     p.log(shake.get_status())
-    time.sleep(5)
 
     # check data
     inserter.check_data(src, cross_slots_cmd=cross_slots_cmd)

@@ -28,7 +28,7 @@ def acl():
     shake = h.Shake(opts)
 
     # wait sync done
-    p.ASSERT_TRUE_TIMEOUT(lambda: shake.is_consistent(), interval=0.01)
+    shake.wait_for_sync(timeout=10)
     p.log(shake.get_status())
 
     # check data
