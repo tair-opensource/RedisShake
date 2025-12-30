@@ -16,25 +16,7 @@ Redis Modules 是 Redis 4.0 版本引入的一个新特性，它允许开发者�
 
 ## 版本特性支持
 
-### Redis 8.x
-
-**支持：**
-- Hash 字段过期命令（HSETEX、HGETEX、HGETDEL、HTTL、HPTTL、HPERSIST、HEXPIRE、HEXPIREAT、HPEXPIRE、HPEXPIREAT、HEXPIRETIME、HPEXPIRETIME）
-- Hash 字段过期 RDB 格式（RDB type 22-25）
-
-**不支持：**
-- Vector Sets（向量数据类型）
-
-### Valkey 8.x
-
-**支持：**
-- 基础数据类型和命令
-
-### Valkey 9.x
-
-**支持：**
-- Hash 字段过期命令和 RDB 格式（与 Redis 8.x 相同）
-- 基础数据类型和命令
+关于各版本 Redis 和 Valkey 的详细特性支持，请参考[版本兼容性](./compatibility.md)文档。
 
 ## 不支持的 Redis Modules 列表
 

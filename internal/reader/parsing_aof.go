@@ -715,8 +715,10 @@ func (aofInfo *INFO) ParsingSingleAppendOnlyFile(ctx context.Context, FileName s
 		}
 	}
 	defer fp.Close()
-	sig := make([]byte, 5)
-	if n, err := fp.Read(sig); err != nil || n != 5 || !bytes.Equal(sig, []byte("REDIS")) {
+	sig := make([]byte, 6)
+	n, err := fp.Read(sig)
+	isRDB := (err == nil) && ((n >= 5 && bytes.Equal(sig[:5], []byte("REDIS"))) || (n >= 6 && bytes.Equal(sig[:6], []byte("VALKEY"))))
+	if !isRDB {
 		if _, err := fp.Seek(0, 0); err != nil {
 			log.Infof("Unrecoverable error reading the append only File %v: %v", FileName, err)
 			return AOFFailed

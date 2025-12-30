@@ -7,7 +7,7 @@ outline: deep
 RedisShake 是一个用于处理和迁移 Redis 数据的工具，它提供以下特性：
 
 1. **Redis 兼容性**：RedisShake 兼容从 2.8 到 8.x 的 Redis 版本，并支持各种部署方式，包括单机、主从、哨兵和集群。
-2. **Valkey 兼容性**：RedisShake 兼容 Valkey 8.x 和 9.x 版本。
+2. **Valkey 兼容性**：RedisShake 兼容 Valkey 8.x 和 9.x 版本。详细的版本特性支持请参考[版本兼容性](../others/compatibility.md)。
 3. **云服务兼容性**：RedisShake 与主流云服务提供商提供的流行 Redis-like 数据库无缝工作，包括但不限于：
     - [阿里云-云数据库 Redis 版](https://www.aliyun.com/product/redis)
     - [阿里云-云原生内存数据库Tair](https://www.aliyun.com/product/apsaradb/kvstore/tair)
@@ -18,14 +18,6 @@ RedisShake 是一个用于处理和迁移 Redis 数据的工具，它提供以�
    和 [TairHash](https://github.com/tair-opensource/TairHash) 模块兼容。注意：目前不支持 Redis Stack 模块（如 RedisJSON、RediSearch、RedisTimeSeries、RedisBloom 等）。
 5. **多种导出模式**：RedisShake 支持 PSync，RDB 和 Scan 导出模式。
 6. **数据处理**：RedisShake 通过自定义脚本实现数据过滤和转换。
-
-### 版本特性支持详情
-
-| 版本 | 支持的特性 | 不支持的特性 |
-|------|-----------|-------------|
-| **Redis 8.x** | Hash 字段过期（HSETEX、HGETEX、HGETDEL、HTTL 等） | Vector Sets |
-| **Valkey 8.x** | 基础数据类型和命令 | - |
-| **Valkey 9.x** | Hash 字段过期、基础数据类型和命令 | - |
 
 ## 贡献
 

@@ -7,7 +7,7 @@ outline: deep
 RedisShake is a tool for processing and migrating Redis data, offering the following features:
 
 1. **Redis Compatibility**: RedisShake is compatible with Redis versions from 2.8 to 8.x and supports various deployment methods, including standalone, master-slave, sentinel, and cluster.
-2. **Valkey Compatibility**: RedisShake is compatible with Valkey 8.x and 9.x.
+2. **Valkey Compatibility**: RedisShake is compatible with Valkey 8.x and 9.x. For detailed version feature support, see [Version Compatibility](../others/compatibility.md).
 3. **Cloud Service Compatibility**: RedisShake seamlessly works with popular Redis-like databases provided by mainstream cloud service providers, including but not limited to:
     - [Alibaba Cloud - ApsaraDB for Redis](https://www.alibabacloud.com/product/apsaradb-for-redis)
     - [Alibaba Cloud - Tair](https://www.alibabacloud.com/product/tair)
@@ -16,14 +16,6 @@ RedisShake is a tool for processing and migrating Redis data, offering the follo
 4. **Module Compatibility**: RedisShake is compatible with [TairString](https://github.com/tair-opensource/TairString), [TairZSet](https://github.com/tair-opensource/TairZset), and [TairHash](https://github.com/tair-opensource/TairHash) modules. Note: Redis Stack modules (such as RedisJSON, RediSearch, RedisTimeSeries, RedisBloom, etc.) are not currently supported.
 5. **Various Export Modes**: RedisShake supports PSync, RDB, and Scan export modes.
 6. **Data Processing**: RedisShake implements data filtering and transformation through custom scripts.
-
-### Version Feature Support Details
-
-| Version | Supported Features | Unsupported Features |
-|---------|-------------------|---------------------|
-| **Redis 8.x** | Hash field expiration (HSETEX, HGETEX, HGETDEL, HTTL, etc.) | Vector Sets |
-| **Valkey 8.x** | Basic data types and commands | - |
-| **Valkey 9.x** | Hash field expiration, basic data types and commands | - |
 
 ## Contributions
 

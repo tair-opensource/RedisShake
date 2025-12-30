@@ -58,6 +58,7 @@ function sidebar(): DefaultTheme.SidebarItem[] {
         {
             text: 'Others',
             items: [
+                { text: 'Version Compatibility', link: '/en/others/compatibility' },
                 { text: 'Redis Modules', link: '/en/others/modules' },
                 { text: 'How to Verify Data Consistency', link: '/en/others/consistent' },
                 { text: 'Cross-version Migration', link: '/en/others/version' },

@@ -57,6 +57,7 @@ type Loader struct {
 
 	name       string
 	updateFunc func(int64)
+	isValkey   bool // true if reading a Valkey RDB (VALKEY magic string)
 }
 
 func NewLoader(name string, updateFunc func(int64), filPath string, ch chan *entry.Entry) *Loader {
@@ -89,10 +90,18 @@ func (ld *Loader) ParseRDB(ctx context.Context) int {
 	if err != nil {
 		log.Panicf(err.Error())
 	}
-	if !bytes.Equal(buf[:5], []byte("REDIS")) {
-		log.Panicf("verify magic string, invalid file format. bytes=[%v]", buf[:5])
+	var version int
+	if bytes.Equal(buf[:5], []byte("REDIS")) {
+		// Redis format: "REDIS" (5 bytes) + version (4 bytes), e.g., "REDIS0012"
+		version, err = strconv.Atoi(string(buf[5:]))
+		ld.isValkey = false
+	} else if bytes.Equal(buf[:6], []byte("VALKEY")) {
+		// Valkey 9.0+ format: "VALKEY" (6 bytes) + version (3 bytes), e.g., "VALKEY080"
+		version, err = strconv.Atoi(string(buf[6:]))
+		ld.isValkey = true
+	} else {
+		log.Panicf("verify magic string, invalid file format. bytes=[%v]", buf[:6])
 	}
-	version, err := strconv.Atoi(string(buf[5:]))
 	if err != nil {
 		log.Panicf(err.Error())
 	}
@@ -201,7 +210,7 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			return
 		default:
 			key := structure.ReadString(rd)
-			o := types.ParseObject(rd, typeByte, key)
+			o := types.ParseObject(rd, typeByte, key, ld.isValkey)
 			cmdC := o.Rewrite()
 			for cmd := range cmdC {
 				e := entry.NewEntry()

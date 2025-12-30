@@ -295,7 +295,9 @@ func (r *scanStandaloneReader) restore() {
 			log.Warnf("key=[%s] dump len=[%d] too large, split it. This is not a good practice in Redis.", key, len(dump))
 			typeByte := dump[0]
 			anotherReader := strings.NewReader(dump[1 : len(dump)-10])
-			o := types.ParseObject(anotherReader, typeByte, key)
+			// TODO: detect if server is Valkey and pass appropriate flag
+			// For now, assume Redis format (false)
+			o := types.ParseObject(anotherReader, typeByte, key, false)
 			cmdC := o.Rewrite()
 			for cmd := range cmdC {
 				e := entry.NewEntry()

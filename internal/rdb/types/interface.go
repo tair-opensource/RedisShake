@@ -49,11 +49,15 @@ const (
 	rdbTypeSetListpack      = 20 // RDB_TYPE_SET_LISTPACK
 	rdbTypeStreamListpacks3 = 21 // RDB_TYPE_STREAM_LISTPACKS_3
 
-	// https://github.com/redis/redis/pull/13391
-	rdbTypeHashMetadataPreGa = 22 // RDB_TYPE_HASH_METADATA_PRE_GA
-	rdbTypeHashListpackExPre = 23 // RDB_TYPE_HASH_LISTPACK_EX_PRE_GA
-	rdbTypeHashMetadata      = 24 // RDB_TYPE_HASH_METADATA
-	rdbTypeHashListpackEx    = 25 // RDB_TYPE_HASH_LISTPACK_EX
+	// Hash with field expiration (type 22-25)
+	// Note: Type 22 has different formats:
+	//   - Redis 8.0: RDB_TYPE_HASH_METADATA_PRE_GA (format: TTL, field, value)
+	//   - Valkey 9.0: RDB_TYPE_HASH_2 (format: field, value, TTL as 8-byte ms)
+	// See: https://github.com/redis/redis/pull/13391
+	rdbTypeHashWithExpiry22 = 22
+	rdbTypeHashWithExpiry23 = 23 // Redis: RDB_TYPE_HASH_LISTPACK_EX_PRE_GA
+	rdbTypeHashWithExpiry24 = 24 // Redis: RDB_TYPE_HASH_METADATA
+	rdbTypeHashWithExpiry25 = 25 // Redis: RDB_TYPE_HASH_LISTPACK_EX
 
 	moduleTypeNameCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
@@ -73,7 +77,13 @@ type RedisObject interface {
 	Rewrite() <-chan RedisCmd
 }
 
-func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
+// HashObjectValkey is interface for hash objects that need Valkey format detection
+type HashObjectValkey interface {
+	RedisObject
+	SetIsValkey(isValkey bool)
+}
+
+func ParseObject(rd io.Reader, typeByte byte, key string, isValkey bool) RedisObject {
 	switch typeByte {
 	case rdbTypeString: // string
 		o := new(StringObject)
@@ -92,8 +102,9 @@ func ParseObject(rd io.Reader, typeByte byte, key string) RedisObject {
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
 	case rdbTypeHash, rdbTypeHashZipmap, rdbTypeHashZiplist, rdbTypeHashListpack,
-		rdbTypeHashMetadataPreGa, rdbTypeHashListpackExPre, rdbTypeHashMetadata, rdbTypeHashListpackEx: // hash
+		rdbTypeHashWithExpiry22, rdbTypeHashWithExpiry23, rdbTypeHashWithExpiry24, rdbTypeHashWithExpiry25: // hash
 		o := new(HashObject)
+		o.SetIsValkey(isValkey)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
 	case rdbTypeStreamListpacks, rdbTypeStreamListpacks2, rdbTypeStreamListpacks3: // stream

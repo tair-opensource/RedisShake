@@ -13,6 +13,11 @@ type HashObject struct {
 	typeByte byte
 	rd       io.Reader
 	cmdC     chan RedisCmd
+	isValkey bool
+}
+
+func (o *HashObject) SetIsValkey(isValkey bool) {
+	o.isValkey = isValkey
 }
 
 func (o *HashObject) LoadFromBuffer(rd io.Reader, key string, typeByte byte) {
@@ -35,13 +40,18 @@ func (o *HashObject) Rewrite() <-chan RedisCmd {
 			o.readHashZiplist()
 		case rdbTypeHashListpack:
 			o.readHashListpack()
-		case rdbTypeHashMetadataPreGa:
-			o.readHashTtl(true)
-		case rdbTypeHashListpackExPre:
+		case rdbTypeHashWithExpiry22:
+			// Type 22: Redis uses RDB_TYPE_HASH_METADATA_PRE_GA, Valkey uses RDB_TYPE_HASH_2
+			if o.isValkey {
+				o.readHashValkey() // Valkey 9.0 HASH_2 format: field, value, TTL (8-byte ms)
+			} else {
+				o.readHashTtl(true) // Redis 8.0 format: TTL (length), field, value
+			}
+		case rdbTypeHashWithExpiry23:
 			o.readHashListpackTtl(true)
-		case rdbTypeHashMetadata:
+		case rdbTypeHashWithExpiry24:
 			o.readHashTtl(false)
-		case rdbTypeHashListpackEx:
+		case rdbTypeHashWithExpiry25:
 			o.readHashListpackTtl(false)
 		default:
 			log.Panicf("unknown hash type. typeByte=[%d]", o.typeByte)
@@ -83,6 +93,23 @@ func (o *HashObject) readHashListpack() {
 		key := list[i]
 		value := list[i+1]
 		o.cmdC <- RedisCmd{"hset", o.key, key, value}
+	}
+}
+
+// readHashValkey reads Valkey 9.0's RDB_TYPE_HASH_2 format
+// Format: size, then for each entry: field (string), value (string), TTL (8-byte ms timestamp)
+func (o *HashObject) readHashValkey() {
+	rd := o.rd
+	size := int(structure.ReadLength(rd))
+	for i := 0; i < size; i++ {
+		key := structure.ReadString(rd)
+		value := structure.ReadString(rd)
+		// TTL is stored as 8-byte little-endian millisecond timestamp
+		expireAt := int64(structure.ReadUint64(rd))
+		o.cmdC <- RedisCmd{"hset", o.key, key, value}
+		if expireAt != 0 {
+			o.cmdC <- RedisCmd{"hpexpireat", o.key, strconv.FormatInt(expireAt, 10), "fields", "1", key}
+		}
 	}
 }
 

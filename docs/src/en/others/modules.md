@@ -16,25 +16,7 @@ Since Redis Modules can define new data types and commands, RedisShake needs to 
 
 ## Version Feature Support
 
-### Redis 8.x
-
-**Supported:**
-- Hash field expiration commands (HSETEX, HGETEX, HGETDEL, HTTL, HPTTL, HPERSIST, HEXPIRE, HEXPIREAT, HPEXPIRE, HPEXPIREAT, HEXPIRETIME, HPEXPIRETIME)
-- Hash field expiration RDB format (RDB type 22-25)
-
-**Not Supported:**
-- Vector Sets (vector data type)
-
-### Valkey 8.x
-
-**Supported:**
-- Basic data types and commands
-
-### Valkey 9.x
-
-**Supported:**
-- Hash field expiration commands and RDB format (same as Redis 8.x)
-- Basic data types and commands
+For detailed feature support across Redis and Valkey versions, see [Version Compatibility](./compatibility.md).
 
 ## Unsupported Redis Modules
 
