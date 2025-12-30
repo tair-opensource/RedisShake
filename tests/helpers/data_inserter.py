@@ -1,4 +1,7 @@
-from helpers.commands import SelectChecker, StringChecker, TairHashChecker, TairStringChecker, TairZsetChecker
+from helpers.commands import (
+    SelectChecker, StringChecker, ListChecker, HashChecker, StreamChecker,
+    TairHashChecker, TairStringChecker, TairZsetChecker
+)
 from helpers.redis import Redis
 
 
@@ -6,6 +9,9 @@ class DataInserter:
     def __init__(self, ):
         self.checkers = [
             StringChecker(),
+            ListChecker(),
+            HashChecker(),
+            StreamChecker(),
             SelectChecker(),
             TairStringChecker(),
             TairHashChecker(),
