@@ -2571,6 +2571,54 @@
                     }
                 }
             ],
+            "HEXPIRE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HEXPIREAT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HEXPIRETIME": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "HGET": [
                 {
                     "begin_search": {
@@ -2731,6 +2779,86 @@
                     }
                 }
             ],
+            "HPERSIST": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HPEXPIRE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HPEXPIREAT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HPEXPIRETIME": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HPTTL": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "HRANDFIELD": [
                 {
                     "begin_search": {
@@ -2812,6 +2940,22 @@
                 }
             ],
             "HSTRLEN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HTTL": [
                 {
                     "begin_search": {
                         "index": {

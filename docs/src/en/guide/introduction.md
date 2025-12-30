@@ -17,6 +17,14 @@ RedisShake is a tool for processing and migrating Redis data, offering the follo
 5. **Various Export Modes**: RedisShake supports PSync, RDB, and Scan export modes.
 6. **Data Processing**: RedisShake implements data filtering and transformation through custom scripts.
 
+### Version Feature Support Details
+
+| Version | Supported Features | Unsupported Features |
+|---------|-------------------|---------------------|
+| **Redis 8.x** | Hash field expiration (HSETEX, HGETEX, HGETDEL, HTTL, etc.) | Vector Sets |
+| **Valkey 8.x** | Basic data types and commands | - |
+| **Valkey 9.x** | Hash field expiration, basic data types and commands | - |
+
 ## Contributions
 
 We welcome contributions from the community. For significant changes, please open an issue first to discuss what you would like to change. We are particularly interested in:

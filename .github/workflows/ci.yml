@@ -8,7 +8,7 @@ on:
     workflow_dispatch:
 
 jobs:
-    black-box-test:
+    redis-test:
         runs-on: ubuntu-latest
         strategy:
             max-parallel: 10
@@ -43,38 +43,33 @@ jobs:
                     cd $GITHUB_WORKSPACE
                     apt-get install -y cmake
                     git clone https://github.com/tair-opensource/TairString.git
-                    cd TairString 
-                    mkdir build 
-                    cd build 
+                    cd TairString
+                    mkdir build
+                    cd build
                     cmake ../ && make -j
                     cp $GITHUB_WORKSPACE/TairString/lib/tairstring_module.so /lib
-                    
-                    
 
             -   name: clone and make TairHash Module
                 if:  contains( '5.0, 6.0, 7.0, 8.0', matrix.redis-version)
                 run: |
                     cd $GITHUB_WORKSPACE
                     git clone https://github.com/tair-opensource/TairHash.git
-                    cd TairHash 
-                    mkdir build 
-                    cd build 
+                    cd TairHash
+                    mkdir build
+                    cd build
                     cmake ../ && make -j
                     cp $GITHUB_WORKSPACE/TairHash/lib/tairhash_module.so /lib
-        
-                    
 
             -   name: clone and make TairZset Module
                 if:  contains( '5.0, 6.0, 7.0, 8.0', matrix.redis-version)
                 run: |
                     cd $GITHUB_WORKSPACE
                     git clone https://github.com/tair-opensource/TairZset.git
-                    cd TairZset 
-                    mkdir build 
-                    cd build 
+                    cd TairZset
+                    mkdir build
+                    cd build
                     cmake ../ && make -j
                     cp $GITHUB_WORKSPACE/TairZset/lib/tairzset_module.so /lib
-
 
             -   name: Setup Python
                 uses: actions/setup-python@v4
@@ -83,9 +78,53 @@ jobs:
 
             -   name: make redis-shake
                 run: |
-                    sh build.sh 
+                    sh build.sh
 
             -   name: test
                 run: |
                     python -m pip install -r tests/requirements.txt
                     sh test.sh
+
+    valkey-test:
+        runs-on: ubuntu-latest
+        strategy:
+            max-parallel: 10
+            matrix:
+                valkey-version: [ "8.0", "9.0" ]
+            fail-fast: false
+        container: ubuntu:latest
+        steps:
+            -   name: Git checkout
+                uses: actions/checkout@v2
+
+            -   name: Setup Golang with cache
+                uses: magnetikonline/action-golang-cache@v3
+                with:
+                    go-version-file: go.mod
+
+            -   name: clone and make valkey
+                run: |
+                    apt-get update
+                    apt-get install -y --no-install-recommends git build-essential ca-certificates
+                    git clone https://github.com/valkey-io/valkey
+                    cd valkey
+                    git checkout ${{ matrix.valkey-version }}
+                    make -j
+                    mkdir bin
+                    cp src/valkey-server bin/redis-server
+                    echo "$GITHUB_WORKSPACE/valkey/bin" >> $GITHUB_PATH
+
+            -   name: Setup Python
+                uses: actions/setup-python@v4
+                with:
+                    python-version: '3.11'
+
+            -   name: make redis-shake
+                run: |
+                    sh build.sh
+
+            -   name: test
+                run: |
+                    python -m pip install -r tests/requirements.txt
+                    go test ./... -v
+                    cd tests/ && pybbt cases --verbose

@@ -14,6 +14,28 @@ Since Redis Modules can define new data types and commands, RedisShake needs to 
 - [TairString](https://github.com/tair-opensource/TairString): String structure with versioning, enabling distributed locks and optimistic locking.
 - [TairZset](https://github.com/tair-opensource/TairZset): Supports up to 256-dimensional double sorting for multi-dimensional leaderboards.
 
+## Version Feature Support
+
+### Redis 8.x
+
+**Supported:**
+- Hash field expiration commands (HSETEX, HGETEX, HGETDEL, HTTL, HPTTL, HPERSIST, HEXPIRE, HEXPIREAT, HPEXPIRE, HPEXPIREAT, HEXPIRETIME, HPEXPIRETIME)
+- Hash field expiration RDB format (RDB type 22-25)
+
+**Not Supported:**
+- Vector Sets (vector data type)
+
+### Valkey 8.x
+
+**Supported:**
+- Basic data types and commands
+
+### Valkey 9.x
+
+**Supported:**
+- Hash field expiration commands and RDB format (same as Redis 8.x)
+- Basic data types and commands
+
 ## Unsupported Redis Modules
 
 The following modules are currently not supported:

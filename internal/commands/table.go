@@ -3276,6 +3276,60 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
+	"HEXPIRE": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HEXPIREAT": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HEXPIRETIME": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
 	"HGET": {
 		"HASH",
 		[]keySpec{
@@ -3456,6 +3510,96 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
+	"HPERSIST": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HPEXPIRE": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HPEXPIREAT": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HPEXPIRETIME": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HPTTL": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
 	"HRANDFIELD": {
 		"HASH",
 		[]keySpec{
@@ -3547,6 +3691,24 @@ var redisCommands = map[string]redisCommand{
 		},
 	},
 	"HSTRLEN": {
+		"HASH",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"HTTL": {
 		"HASH",
 		[]keySpec{
 			{

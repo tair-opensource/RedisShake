@@ -1,7 +1,7 @@
 import pybbt
 
 from helpers.commands.checker import Checker
-from helpers.constant import REDIS_SERVER_VERSION
+from helpers.constant import HASH_FIELD_EXPIRATION_SUPPORTED
 from helpers.redis import Redis
 
 
@@ -13,15 +13,16 @@ class HashChecker(Checker):
 
     def add_data(self, r: Redis, cross_slots_cmd: bool):
         p = r.pipeline()
-        # basic hash commands
+        # basic hash commands (use individual HSET for Redis < 4.0 compatibility)
         p.hset(f"{self.PREFIX}_{self.cnt}_basic", "field1", "value1")
         p.hset(f"{self.PREFIX}_{self.cnt}_basic", "field2", "value2")
-        p.hset(f"{self.PREFIX}_{self.cnt}_basic", mapping={"field3": "value3", "field4": "value4"})
+        p.hset(f"{self.PREFIX}_{self.cnt}_basic", "field3", "value3")
+        p.hset(f"{self.PREFIX}_{self.cnt}_basic", "field4", "value4")
         ret = p.execute()
-        pybbt.ASSERT_EQ(ret, [1, 1, 2])
+        pybbt.ASSERT_EQ(ret, [1, 1, 1, 1])
 
-        # Redis 8.0+ hash field expiration commands
-        if REDIS_SERVER_VERSION >= 8.0:
+        # Hash field expiration commands (Redis 8.0+ or Valkey 9.0+)
+        if HASH_FIELD_EXPIRATION_SUPPORTED:
             p = r.pipeline()
             # HSETEX with EX (seconds)
             p.execute_command("HSETEX", f"{self.PREFIX}_{self.cnt}_hsetex_ex", "EX", 3600, "FIELDS", 2, "f1", "v1", "f2", "v2")
@@ -47,8 +48,8 @@ class HashChecker(Checker):
             expected = {b"field1": b"value1", b"field2": b"value2", b"field3": b"value3", b"field4": b"value4"}
             pybbt.ASSERT_TRUE(ret[0] == expected)
 
-            # Redis 8.0+ check
-            if REDIS_SERVER_VERSION >= 8.0:
+            # Hash field expiration check (Redis 8.0+ or Valkey 9.0+)
+            if HASH_FIELD_EXPIRATION_SUPPORTED:
                 p = r.pipeline()
                 p.hgetall(f"{self.PREFIX}_{i}_hsetex_ex")
                 p.hgetall(f"{self.PREFIX}_{i}_hsetex_px")

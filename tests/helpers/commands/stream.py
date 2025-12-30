@@ -1,7 +1,7 @@
 import pybbt
 
 from helpers.commands.checker import Checker
-from helpers.constant import REDIS_SERVER_VERSION
+from helpers.constant import REDIS_SERVER_VERSION, STREAM_XACKDEL_SUPPORTED
 from helpers.redis import Redis
 
 
@@ -26,8 +26,8 @@ class StreamChecker(Checker):
         self.entry_ids.append(ret)
         pybbt.ASSERT_EQ(len(ret), 3)
 
-        # Create consumer group for testing XACKDEL (Redis 8.2+)
-        if REDIS_SERVER_VERSION >= 8.2:
+        # Create consumer group for testing XACKDEL (Redis 8.2+ only)
+        if STREAM_XACKDEL_SUPPORTED:
             # Create a stream for XACKDEL test
             entry_id = r.do("XADD", f"{self.PREFIX}_{self.cnt}_xackdel", "*", "f1", "v1")
             r.do("XADD", f"{self.PREFIX}_{self.cnt}_xackdel", "*", "f2", "v2")
@@ -50,8 +50,8 @@ class StreamChecker(Checker):
             entries = r.do("XRANGE", f"{self.PREFIX}_{i}_basic", "-", "+")
             pybbt.ASSERT_EQ(len(entries), 3)
 
-            # Redis 8.2+ XACKDEL test
-            if REDIS_SERVER_VERSION >= 8.2:
+            # XACKDEL test (Redis 8.2+ only)
+            if STREAM_XACKDEL_SUPPORTED:
                 # Check the stream for xackdel exists
                 length = r.do("XLEN", f"{self.PREFIX}_{i}_xackdel")
                 pybbt.ASSERT_TRUE(length >= 1)  # At least 1 entry should remain

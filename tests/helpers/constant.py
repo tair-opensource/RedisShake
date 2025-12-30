@@ -11,6 +11,15 @@ output = subprocess.check_output(f"{PATH_REDIS_SERVER} --version", shell=True)
 output_str = output.decode("utf-8")
 REDIS_SERVER_VERSION = float(output_str.split("=")[1].split(" ")[0][:3])
 
+# Detect if running Valkey or Redis
+IS_VALKEY = "Valkey" in output_str or "valkey" in output_str
+
+# Hash field expiration support: Redis >= 8.0 or Valkey >= 9.0
+HASH_FIELD_EXPIRATION_SUPPORTED = (not IS_VALKEY and REDIS_SERVER_VERSION >= 8.0) or (IS_VALKEY and REDIS_SERVER_VERSION >= 9.0)
+
+# Stream XACKDEL/XDELEX support: Redis >= 8.2 only (not in Valkey yet)
+STREAM_XACKDEL_SUPPORTED = not IS_VALKEY and REDIS_SERVER_VERSION >= 8.2
+
 # REDIS_SERVER_MODULES_ENABLED
 REDIS_SERVER_MODULES_ENABLED = REDIS_SERVER_VERSION >= 5.0 and "modules" in pybbt.get_global_flags()
 
