@@ -15,75 +15,73 @@ jobs:
             matrix:
                 redis-version: [ "2.8", "3.0", "4.0", "5.0", "6.0", "7.0", "8.0" ]
             fail-fast: false
-        container: ubuntu:latest
         steps:
             -   name: Git checkout
-                uses: actions/checkout@v2
+                uses: actions/checkout@v4
 
             -   name: Setup Golang with cache
-                uses: magnetikonline/action-golang-cache@v3
+                uses: magnetikonline/action-golang-cache@v5
                 with:
                     go-version-file: go.mod
 
-            -   name: clone and make redis
+            -   name: Cache Redis binary
+                id: cache-redis
+                uses: actions/cache@v4
+                with:
+                    path: redis/bin
+                    key: redis-${{ matrix.redis-version }}-${{ runner.os }}-v1
+
+            -   name: Build Redis
+                if: steps.cache-redis.outputs.cache-hit != 'true'
                 run: |
-                    apt-get update
-                    apt-get install -y --no-install-recommends git build-essential ca-certificates
-                    git clone https://github.com/redis/redis
+                    git clone --depth 1 --branch ${{ matrix.redis-version }} https://github.com/redis/redis
                     cd redis
-                    git checkout ${{ matrix.redis-version }}
-                    make -j
-                    mkdir bin
-                    cp src/redis-server bin/redis-server
-                    echo "$GITHUB_WORKSPACE/redis/bin" >> $GITHUB_PATH
+                    make -j$(nproc)
+                    mkdir -p bin
+                    cp src/redis-server bin/
 
-            -   name: clone and make TairString Module
-                if:  contains( '5.0, 6.0, 7.0, 8.0', matrix.redis-version)
+            -   name: Add Redis to PATH
+                run: echo "$GITHUB_WORKSPACE/redis/bin" >> $GITHUB_PATH
+
+            -   name: Cache Tair Modules
+                id: cache-tair
+                if: contains('5.0, 6.0, 7.0, 8.0', matrix.redis-version)
+                uses: actions/cache@v4
+                with:
+                    path: tair-modules
+                    key: tair-modules-${{ runner.os }}-v1
+
+            -   name: Build Tair Modules
+                if: contains('5.0, 6.0, 7.0, 8.0', matrix.redis-version) && steps.cache-tair.outputs.cache-hit != 'true'
                 run: |
-                    cd $GITHUB_WORKSPACE
-                    apt-get install -y cmake
-                    git clone https://github.com/tair-opensource/TairString.git
-                    cd TairString
-                    mkdir build
-                    cd build
-                    cmake ../ && make -j
-                    cp $GITHUB_WORKSPACE/TairString/lib/tairstring_module.so /lib
+                    mkdir -p tair-modules
+                    for repo in TairString TairHash TairZset; do
+                        git clone --depth 1 https://github.com/tair-opensource/${repo}.git
+                        cd ${repo} && mkdir build && cd build
+                        cmake .. && make -j$(nproc)
+                        cp ../lib/*.so $GITHUB_WORKSPACE/tair-modules/
+                        cd $GITHUB_WORKSPACE
+                    done
 
-            -   name: clone and make TairHash Module
-                if:  contains( '5.0, 6.0, 7.0, 8.0', matrix.redis-version)
-                run: |
-                    cd $GITHUB_WORKSPACE
-                    git clone https://github.com/tair-opensource/TairHash.git
-                    cd TairHash
-                    mkdir build
-                    cd build
-                    cmake ../ && make -j
-                    cp $GITHUB_WORKSPACE/TairHash/lib/tairhash_module.so /lib
+            -   name: Install Tair Modules
+                if: contains('5.0, 6.0, 7.0, 8.0', matrix.redis-version)
+                run: sudo cp tair-modules/*.so /lib/
 
-            -   name: clone and make TairZset Module
-                if:  contains( '5.0, 6.0, 7.0, 8.0', matrix.redis-version)
-                run: |
-                    cd $GITHUB_WORKSPACE
-                    git clone https://github.com/tair-opensource/TairZset.git
-                    cd TairZset
-                    mkdir build
-                    cd build
-                    cmake ../ && make -j
-                    cp $GITHUB_WORKSPACE/TairZset/lib/tairzset_module.so /lib
-
-            -   name: Setup Python
-                uses: actions/setup-python@v4
+            -   name: Setup Python with cache
+                uses: actions/setup-python@v5
                 with:
                     python-version: '3.11'
+                    cache: 'pip'
+                    cache-dependency-path: tests/requirements.txt
 
-            -   name: make redis-shake
-                run: |
-                    sh build.sh
+            -   name: Install Python dependencies
+                run: pip install -r tests/requirements.txt
 
-            -   name: test
-                run: |
-                    python -m pip install -r tests/requirements.txt
-                    sh test.sh
+            -   name: Build redis-shake
+                run: sh build.sh
+
+            -   name: Run tests
+                run: sh test.sh
 
     valkey-test:
         runs-on: ubuntu-latest
@@ -92,39 +90,48 @@ jobs:
             matrix:
                 valkey-version: [ "8.0", "9.0" ]
             fail-fast: false
-        container: ubuntu:latest
         steps:
             -   name: Git checkout
-                uses: actions/checkout@v2
+                uses: actions/checkout@v4
 
             -   name: Setup Golang with cache
-                uses: magnetikonline/action-golang-cache@v3
+                uses: magnetikonline/action-golang-cache@v5
                 with:
                     go-version-file: go.mod
 
-            -   name: clone and make valkey
-                run: |
-                    apt-get update
-                    apt-get install -y --no-install-recommends git build-essential ca-certificates
-                    git clone https://github.com/valkey-io/valkey
-                    cd valkey
-                    git checkout ${{ matrix.valkey-version }}
-                    make -j
-                    mkdir bin
-                    cp src/valkey-server bin/redis-server
-                    echo "$GITHUB_WORKSPACE/valkey/bin" >> $GITHUB_PATH
+            -   name: Cache Valkey binary
+                id: cache-valkey
+                uses: actions/cache@v4
+                with:
+                    path: valkey/bin
+                    key: valkey-${{ matrix.valkey-version }}-${{ runner.os }}-v1
 
-            -   name: Setup Python
-                uses: actions/setup-python@v4
+            -   name: Build Valkey
+                if: steps.cache-valkey.outputs.cache-hit != 'true'
+                run: |
+                    git clone --depth 1 --branch ${{ matrix.valkey-version }} https://github.com/valkey-io/valkey
+                    cd valkey
+                    make -j$(nproc)
+                    mkdir -p bin
+                    cp src/valkey-server bin/redis-server
+
+            -   name: Add Valkey to PATH
+                run: echo "$GITHUB_WORKSPACE/valkey/bin" >> $GITHUB_PATH
+
+            -   name: Setup Python with cache
+                uses: actions/setup-python@v5
                 with:
                     python-version: '3.11'
+                    cache: 'pip'
+                    cache-dependency-path: tests/requirements.txt
 
-            -   name: make redis-shake
-                run: |
-                    sh build.sh
+            -   name: Install Python dependencies
+                run: pip install -r tests/requirements.txt
 
-            -   name: test
+            -   name: Build redis-shake
+                run: sh build.sh
+
+            -   name: Run tests
                 run: |
-                    python -m pip install -r tests/requirements.txt
                     go test ./... -v
                     cd tests/ && pybbt cases --verbose
