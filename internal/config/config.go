@@ -55,9 +55,12 @@ type AdvancedOptions struct {
 	// to change the default behavior of restore:
 	// panic:   redis-shake will stop when meet "Target key name is busy" error.
 	// rewrite: redis-shake will replace the key with new value.
-	// ignore:  redis-shake will skip restore the key when meet "Target key name is busy" error.
+	// skip:    redis-shake will skip restore the key when meet "Target key name is busy" error.
+	// Note: This configuration only applies to RDB parsing phase (rdb_reader and sync_reader RDB phase).
+	// For sync_reader's AOF phase, commands are forwarded directly without RESTORE.
+	// For large values exceeding target_redis_proto_max_bulk_len, RESTORE cannot be used,
+	// and individual commands will be used instead, which may not respect this setting.
 	RDBRestoreCommandBehavior string `mapstructure:"rdb_restore_command_behavior" default:"panic"`
-
 	PipelineCountLimit              uint64 `mapstructure:"pipeline_count_limit" default:"1024"`
 	TargetRedisClientMaxQuerybufLen int64  `mapstructure:"target_redis_client_max_querybuf_len" default:"1024000000"`
 	TargetRedisProtoMaxBulkLen      uint64 `mapstructure:"target_redis_proto_max_bulk_len" default:"512000000"`

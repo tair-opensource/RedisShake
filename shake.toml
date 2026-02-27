@@ -121,9 +121,12 @@ log_compress = true    # enable log compression after rotate, default true
 # to change the default behavior of restore:
 # panic:   redis-shake will stop when meet "Target key name is busy" error.
 # rewrite: redis-shake will replace the key with new value.
-# skip:  redis-shake will skip restore the key when meet "Target key name is busy" error.
+# skip:    redis-shake will skip restore the key when meet "Target key name is busy" error.
+# Note: This configuration only applies to RDB parsing phase (rdb_reader and sync_reader RDB phase).
+# For sync_reader's AOF phase, commands are forwarded directly without RESTORE.
+# For large values exceeding target_redis_proto_max_bulk_len, RESTORE cannot be used,
+# and individual commands will be used instead, which may not respect this setting.
 rdb_restore_command_behavior = "panic" # panic, rewrite or skip
-
 # redis-shake uses pipeline to improve sending performance.
 # Adjust this value based on the destination Redis performance:
 # - Higher values may improve performance for capable destinations.

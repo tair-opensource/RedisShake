@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"time"
 
+	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 	"RedisShake/internal/rdb/structure"
 	"RedisShake/internal/rdb/types"
 	"RedisShake/internal/utils"
 )
-
 const (
 	kFlagSlotInfo  = 244 // (Redis 7.4) RDB_OPCODE_SLOT_INFO: slot info
 	kFlagFunction2 = 245 // RDB_OPCODE_FUNCTION2: function library data
@@ -40,6 +40,32 @@ const (
 	kRDBModuleOpcodeDOUBLE = 4 // RDB_MODULE_OPCODE_DOUBLE: Double.
 	kRDBModuleOpcodeSTRING = 5 // RDB_MODULE_OPCODE_STRING: String.
 )
+
+// capturingReader is an io.Reader wrapper that captures all bytes read.
+// This is used to capture raw RDB value bytes for RESTORE command generation.
+type capturingReader struct {
+	rd     io.Reader
+	buffer bytes.Buffer
+}
+
+// Read implements io.Reader. It reads from the underlying reader and captures the bytes.
+func (cr *capturingReader) Read(p []byte) (n int, err error) {
+	n, err = cr.rd.Read(p)
+	if n > 0 {
+		cr.buffer.Write(p[:n])
+	}
+	return n, err
+}
+
+// Bytes returns the captured bytes.
+func (cr *capturingReader) Bytes() []byte {
+	return cr.buffer.Bytes()
+}
+
+// Reset clears the captured bytes.
+func (cr *capturingReader) Reset() {
+	cr.buffer.Reset()
+}
 
 type Loader struct {
 	replStreamDbId int // https://github.com/tair-opensource/RedisShake/pull/430#issuecomment-1099014464
@@ -210,20 +236,63 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			return
 		default:
 			key := structure.ReadString(rd)
-			o := types.ParseObject(rd, typeByte, key, ld.isValkey)
+			// Use RESTORE command to properly handle duplicate key behavior (panic/skip/rewrite).
+			// This is controlled by the rdb_restore_command_behavior configuration.
+			// Note: For sync_reader's AOF phase, commands are forwarded directly without RESTORE,
+			// so this configuration only applies to RDB parsing phase.
+
+			// Capture raw value bytes using capturingReader
+			cr := &capturingReader{rd: rd}
+			o := types.ParseObject(cr, typeByte, key, ld.isValkey)
+			// Drain the Rewrite channel to ensure all value bytes are read
 			cmdC := o.Rewrite()
-			for cmd := range cmdC {
+			for range cmdC {
+			}
+
+			// Get captured value bytes (excluding the type byte that was already read)
+			valueBytes := cr.Bytes()
+
+			// Create RESTORE-compatible dump
+			dump := ld.createValueDump(typeByte, valueBytes)
+
+			// Check if dump size exceeds limit - if so, fall back to Rewrite commands
+			if uint64(len(dump)) > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
+				log.Warnf("key=[%s] dump len=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
+					"rdb_restore_command_behavior setting may not work correctly for this key.", key, len(dump))
+				// Parse again with the captured bytes (skip type byte, version, and CRC)
+				// The dump format is: type(1) + value + version(2) + crc(8)
+				valueOnly := valueBytes
+				anotherReader := bytes.NewReader(valueOnly)
+				o2 := types.ParseObject(anotherReader, typeByte, key, ld.isValkey)
+				cmdC2 := o2.Rewrite()
+				for cmd := range cmdC2 {
+					e := entry.NewEntry()
+					e.DbId = ld.nowDBId
+					e.Argv = cmd
+					ld.ch <- e
+				}
+				if ld.expireMs != 0 {
+					e := entry.NewEntry()
+					e.DbId = ld.nowDBId
+					e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
+					ld.ch <- e
+				}
+			} else {
+				// Use RESTORE command
+				pttl := 0
+				if ld.expireMs > 0 {
+					pttl = int(ld.expireMs)
+				}
+				argv := []string{"RESTORE", key, strconv.Itoa(pttl), dump}
+				if config.Opt.Advanced.RDBRestoreCommandBehavior == "rewrite" {
+					argv = append(argv, "replace")
+				}
 				e := entry.NewEntry()
 				e.DbId = ld.nowDBId
-				e.Argv = cmd
+				e.Argv = argv
 				ld.ch <- e
 			}
-			if ld.expireMs != 0 {
-				e := entry.NewEntry()
-				e.DbId = ld.nowDBId
-				e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
-				ld.ch <- e
-			}
+
 			ld.expireMs = 0
 			ld.idle = 0
 			ld.freq = 0
