@@ -160,6 +160,7 @@ class Shake:
         # 3. Write marker key
         marker_key = f"__shake_sync_marker_{uuid.uuid4()}"
         marker_value = str(time.time())
+        pybbt.log(f"Writing marker key: {marker_key}")
         self.src.do("set", marker_key, marker_value)
 
         # 4. Wait for marker in dst
@@ -168,8 +169,12 @@ class Shake:
             if result == marker_value.encode():
                 break
             if timer.elapsed() > timeout:
-                raise TimeoutError(f"marker key not synced within {timeout}s")
-            time.sleep(0.01)
+                # Log current status for debugging
+                status = self.get_status()
+                pybbt.log(f"Sync status: consistent={status.get('consistent')}, "
+                         f"src_dbsize={src_dbsize}, dst_dbsize={self.dst.dbsize()}")
+                raise TimeoutError(f"marker key '{marker_key}' not synced within {timeout}s")
+            time.sleep(0.1)  # Increased from 0.01 to 0.1 for cluster stability
 
         # 5. Delete marker key
         self.src.do("del", marker_key)
@@ -181,7 +186,7 @@ class Shake:
                 break
             if timer.elapsed() > timeout:
                 raise TimeoutError(f"marker key not deleted within {timeout}s")
-            time.sleep(0.01)
+            time.sleep(0.1)  # Increased from 0.01 to 0.1 for cluster stability
 
         # 7. Wait for consistent again
         while not self.is_consistent():
