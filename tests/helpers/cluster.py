@@ -1,3 +1,5 @@
+import time
+
 import pybbt as p
 import redis
 from redis.cluster import ClusterNode
@@ -20,8 +22,29 @@ class Cluster:
             ClusterNode(self.nodes[1].host, self.nodes[1].port)
         ], require_full_coverage=True)
         p.ASSERT_EQ_TIMEOUT(lambda: self.client.cluster_info()["cluster_state"], "ok", 10)
+
+        # Wait for all nodes to be connected and cluster is truly ready
+        self._wait_cluster_ready()
+
         p.log(f"cluster started at {self.nodes[0].get_address()}")
         p.log(self.client.cluster_nodes())
+
+    def _wait_cluster_ready(self, timeout=10):
+        """Wait for cluster to be fully ready by verifying writes work on all slots."""
+        start = time.time()
+        test_key = 0
+        while time.time() - start < timeout:
+            try:
+                # Try to write to keys that map to different slots
+                # Key "key0" maps to slot 5798 (node 0), "key8192" maps to slot 12103 (node 1)
+                self.client.set("__cluster_ready_test_0__", "ok")
+                self.client.set("__cluster_ready_test_8192__", "ok")
+                self.client.delete("__cluster_ready_test_0__", "__cluster_ready_test_8192__")
+                return  # Success - cluster is ready
+            except Exception as e:
+                p.log(f"Cluster not ready yet: {e}")
+                time.sleep(0.1)
+        raise TimeoutError(f"Cluster not ready after {timeout} seconds")
 
     def do(self, *args):
         try:
