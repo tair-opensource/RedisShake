@@ -6,6 +6,9 @@ on:
     pull_request:
         branches: [ v4 ]
     workflow_dispatch:
+    # Schedule weekly cache refresh to prevent cache expiration (7-day limit)
+    schedule:
+        - cron: '0 0 * * 0'  # Every Sunday at 00:00 UTC
 
 jobs:
     redis-test:
@@ -81,6 +84,8 @@ jobs:
                 run: sh build.sh
 
             -   name: Run tests
+                # Skip tests for scheduled runs (only refresh cache)
+                if: github.event_name != 'schedule'
                 run: sh test.sh
 
     valkey-test:
@@ -132,6 +137,8 @@ jobs:
                 run: sh build.sh
 
             -   name: Run tests
+                # Skip tests for scheduled runs (only refresh cache)
+                if: github.event_name != 'schedule'
                 run: |
                     go test ./... -v
                     cd tests/ && pybbt cases --verbose
