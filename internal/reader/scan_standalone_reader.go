@@ -232,6 +232,10 @@ func (r *scanStandaloneReader) dump() {
 	log.Infof("[%s] scanStandaloneReader dump finished.", r.stat.Name)
 }
 
+// restore sends RESTORE commands to the target Redis.
+// Note: rdb_restore_command_behavior configuration only applies when RESTORE command is used.
+// For large values exceeding target_redis_proto_max_bulk_len, individual commands (SET, HSET, etc.)
+// are used instead, which may not respect the rdb_restore_command_behavior setting.
 func (r *scanStandaloneReader) restore() {
 	nowDbId := 0
 	for item := range r.needRestoreChan {
@@ -292,7 +296,8 @@ func (r *scanStandaloneReader) restore() {
 			pttl = 0 // -1 means no expire
 		}
 		if uint64(len(dump)) > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
-			log.Warnf("key=[%s] dump len=[%d] too large, split it. This is not a good practice in Redis.", key, len(dump))
+			log.Warnf("key=[%s] dump len=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
+				"rdb_restore_command_behavior setting may not work correctly for this key.", key, len(dump))
 			typeByte := dump[0]
 			anotherReader := strings.NewReader(dump[1 : len(dump)-10])
 			// TODO: detect if server is Valkey and pass appropriate flag

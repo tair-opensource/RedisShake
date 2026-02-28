@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 	"RedisShake/internal/rdb/structure"
@@ -210,20 +211,54 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			return
 		default:
 			key := structure.ReadString(rd)
-			o := types.ParseObject(rd, typeByte, key, ld.isValkey)
+			// Use RESTORE command to properly handle duplicate key behavior (panic/skip/rewrite).
+			// Capture raw value bytes using io.TeeReader
+			var value bytes.Buffer
+			teeReader := io.TeeReader(rd, &value)
+			o := types.ParseObject(teeReader, typeByte, key, ld.isValkey)
+
+			// Rewrite() triggers the actual data reading from teeReader
 			cmdC := o.Rewrite()
-			for cmd := range cmdC {
+
+			// Check if dump size exceeds limit
+			// dump size = typeByte(1) + value + version(2) + crc(8)
+			dumpSize := uint64(1 + value.Len() + 2 + 8)
+			if dumpSize > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
+				log.Warnf("key=[%s] dump size=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
+					"rdb_restore_command_behavior setting may not work correctly for this key.", key, dumpSize)
+				// Use the commands from Rewrite()
+				for cmd := range cmdC {
+					e := entry.NewEntry()
+					e.DbId = ld.nowDBId
+					e.Argv = cmd
+					ld.ch <- e
+				}
+				if ld.expireMs != 0 {
+					e := entry.NewEntry()
+					e.DbId = ld.nowDBId
+					e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
+					ld.ch <- e
+				}
+			} else {
+				// Drain the channel to ensure data is fully read
+				for range cmdC {
+				}
+				// Use RESTORE command
+				pttl := 0
+				if ld.expireMs > 0 {
+					pttl = int(ld.expireMs)
+				}
+				v := ld.createValueDump(typeByte, value.Bytes())
+				argv := []string{"RESTORE", key, strconv.Itoa(pttl), v}
+				if config.Opt.Advanced.RDBRestoreCommandBehavior == "rewrite" {
+					argv = append(argv, "replace")
+				}
 				e := entry.NewEntry()
 				e.DbId = ld.nowDBId
-				e.Argv = cmd
+				e.Argv = argv
 				ld.ch <- e
 			}
-			if ld.expireMs != 0 {
-				e := entry.NewEntry()
-				e.DbId = ld.nowDBId
-				e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
-				ld.ch <- e
-			}
+
 			ld.expireMs = 0
 			ld.idle = 0
 			ld.freq = 0
