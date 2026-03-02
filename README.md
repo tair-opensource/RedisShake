@@ -32,6 +32,8 @@ RedisShake is a powerful tool for Redis data transformation and migration, offer
 
 ## How to Get RedisShake
 
+### For Humans
+
 1. Download from [Releases](https://github.com/tair-opensource/RedisShake/releases).
 
 2. Use Docker:
@@ -48,6 +50,15 @@ docker run --network host \
 git clone https://github.com/tair-opensource/RedisShake
 cd RedisShake
 sh build.sh
+```
+
+### For LLM Agents
+
+Copy and paste this prompt to your LLM agent (Claude Code, Cursor, etc.):
+
+```
+Read the RedisShake usage guide and help me with my task:
+https://raw.githubusercontent.com/tair-opensource/RedisShake/v4/README_FOR_AGENTS.md
 ```
 
 ## How to Use RedisShake
