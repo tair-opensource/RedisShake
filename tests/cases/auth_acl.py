@@ -1,9 +1,13 @@
-import pybbt as p
+import pybbt
 
 import helpers as h
 
 
-def acl():
+@pybbt.case()
+def test_acl():
+    if h.REDIS_SERVER_VERSION < 6.0:
+        return
+
     src = h.Redis()
     dst = h.Redis()
 
@@ -23,26 +27,14 @@ def acl():
     opts["sync_reader"]["password"] = "password0"
     opts["redis_writer"]["username"] = "user1"
     opts["redis_writer"]["password"] = "password1"
-    p.log(f"opts: {opts}")
+    pybbt.log(f"opts: {opts}")
     shake = h.Shake(opts)
 
     # wait sync done
     shake.wait_for_sync(timeout=10)
-    p.log(shake.get_status())
+    pybbt.log(shake.get_status())
 
     # check data
     inserter.check_data(src, cross_slots_cmd=True)
     inserter.check_data(dst, cross_slots_cmd=True)
-    p.ASSERT_EQ(src.dbsize(), dst.dbsize())
-
-
-@p.case()
-def main():
-    if h.REDIS_SERVER_VERSION < 6.0:
-        return
-
-    acl()
-
-
-if __name__ == '__main__':
-    main()
+    pybbt.ASSERT_EQ(src.dbsize(), dst.dbsize())

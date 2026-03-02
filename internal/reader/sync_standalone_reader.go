@@ -338,6 +338,21 @@ func (r *syncStandaloneReader) receiveRDB() string {
 	}
 	marker = strings.TrimSpace(marker)
 
+	r.stat.Status = kReceiveRdb
+
+	// When sync_rdb is disabled, we still must receive the RDB payload from the source
+	// (required by Redis replication protocol), but we discard it instead of writing to disk.
+	if !r.opts.SyncRdb {
+		log.Infof("[%s] sync_rdb is disabled. Receiving and discarding RDB payload (required by replication protocol).", r.stat.Name)
+		if strings.HasPrefix(marker, "EOF") {
+			r.receiveRDBWithDiskless(marker, io.Discard)
+		} else {
+			r.receiveRDBWithoutDiskless(marker, io.Discard)
+		}
+		log.Infof("[%s] RDB payload discarded. timeUsed=[%.2f]s", r.stat.Name, time.Since(timeStart).Seconds())
+		return ""
+	}
+
 	// create rdb file
 	rdbFilePath, err := filepath.Abs(r.stat.Name + "/dump.rdb")
 	if err != nil {
@@ -351,7 +366,6 @@ func (r *syncStandaloneReader) receiveRDB() string {
 	}
 
 	// receive rdb
-	r.stat.Status = kReceiveRdb
 	if strings.HasPrefix(marker, "EOF") {
 		log.Infof("[%s] source db supoort diskless sync capability.", r.stat.Name)
 		r.receiveRDBWithDiskless(marker, rdbFileHandle)
