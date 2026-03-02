@@ -22,14 +22,12 @@ def test(src, dst):
     p.ASSERT_EQ(src.dbsize(), dst.dbsize())
 
 
-@p.subcase()
 def standalone_to_standalone():
     src = h.Redis()
     dst = h.Redis()
     test(src, dst)
 
 
-@p.subcase()
 def standalone_to_cluster():
     if h.REDIS_SERVER_VERSION < 3.0:
         return
@@ -38,7 +36,6 @@ def standalone_to_cluster():
     test(src, dst)
 
 
-@p.subcase()
 def cluster_to_standalone():
     if h.REDIS_SERVER_VERSION < 3.0:
         return
@@ -47,7 +44,6 @@ def cluster_to_standalone():
     test(src, dst)
 
 
-@p.subcase()
 def cluster_to_cluster():
     if h.REDIS_SERVER_VERSION < 3.0:
         return
@@ -56,7 +52,7 @@ def cluster_to_cluster():
     test(src, dst)
 
 
-@p.case(tags=["scan"])
+@p.case()
 def main():
     standalone_to_standalone()
     standalone_to_cluster()

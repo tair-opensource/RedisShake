@@ -1,3 +1,4 @@
+import os
 import typing
 import time
 import uuid
@@ -10,6 +11,16 @@ from helpers.redis import Redis
 from helpers.utils.filesystem import create_empty_dir
 from helpers.utils.network import get_free_port
 from helpers.utils.timer import Timer
+
+# Get the tests directory as base path for resolving relative paths
+_TESTS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _abs_path(path: str) -> str:
+    """Convert relative path to absolute path based on tests directory."""
+    if os.path.isabs(path):
+        return path
+    return os.path.join(_TESTS_DIR, path)
 
 
 class ShakeOpts:
@@ -48,7 +59,7 @@ class ShakeOpts:
     @staticmethod
     def create_rdb_opts(rdb_path: str, dst: Redis) -> typing.Dict:
         d = {
-            "rdb_reader": {"filepath": rdb_path},
+            "rdb_reader": {"filepath": _abs_path(rdb_path)},
             "redis_writer": {
                 "cluster": dst.is_cluster(),
                 "address": dst.get_address()
@@ -60,7 +71,7 @@ class ShakeOpts:
     @staticmethod
     def create_aof_opts(aof_path: str, dst: Redis, timestamp: int = 0) -> typing.Dict:
         d = {
-            "aof_reader": {"filepath": aof_path, "timestamp": timestamp},
+            "aof_reader": {"filepath": _abs_path(aof_path), "timestamp": timestamp},
             "redis_writer": {
                 "cluster": dst.is_cluster(),
                 "address": dst.get_address()

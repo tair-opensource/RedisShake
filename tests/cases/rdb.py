@@ -19,14 +19,12 @@ def test(src, dst):
     p.ASSERT_EQ(src.dbsize(), dst.dbsize())
 
 
-@p.subcase()
 def rdb_to_standalone():
     src = h.Redis()
     dst = h.Redis()
     test(src, dst)
 
 
-@p.subcase()
 def rdb_to_cluster():
     if h.REDIS_SERVER_VERSION < 3.0:
         return
@@ -35,7 +33,7 @@ def rdb_to_cluster():
     test(src, dst)
 
 
-@p.case(tags=["sync"])
+@p.case()
 def main():
     rdb_to_standalone()
     rdb_to_cluster()

@@ -134,4 +134,4 @@ jobs:
             -   name: Run tests
                 run: |
                     go test ./... -v
-                    cd tests/ && pybbt cases --verbose
+                    cd tests/ && export PYTHONPATH="$(pwd):$PYTHONPATH" && python -m pybbt cases --verbose

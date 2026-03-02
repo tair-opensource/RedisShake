@@ -34,4 +34,6 @@ echo "Redis server: $REDIS_VERSION"
 TEST_TARGET="${1:-cases}"
 shift 2>/dev/null || true
 
-pybbt "$TEST_TARGET" --verbose "$@"
+# Use local pybbt module (must set PYTHONPATH before running)
+export PYTHONPATH="$(pwd):$PYTHONPATH"
+python -m pybbt "$TEST_TARGET" --verbose "$@"

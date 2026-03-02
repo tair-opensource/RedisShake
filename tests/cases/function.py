@@ -2,7 +2,6 @@ import helpers as h
 import pybbt as p
 
 
-@p.subcase()
 def filter_db():
     src = h.Redis()
     dst = h.Redis()
@@ -34,7 +33,6 @@ def filter_db():
         p.ASSERT_EQ(dst.do("get", "key"), b"value")
 
 
-@p.subcase()
 def split_mset_to_set():
     src = h.Redis()
     dst = h.Redis()
@@ -72,7 +70,7 @@ def split_mset_to_set():
     p.ASSERT_EQ(dst.do("get", "k3"), b"v3")
 
 
-@p.case(tags=["function"])
+@p.case()
 def main():
     filter_db()
     split_mset_to_set()

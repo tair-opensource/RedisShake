@@ -3,7 +3,6 @@ import pybbt as p
 import helpers as h
 
 
-@p.subcase()
 def acl():
     src = h.Redis()
     dst = h.Redis()
@@ -37,7 +36,7 @@ def acl():
     p.ASSERT_EQ(src.dbsize(), dst.dbsize())
 
 
-@p.case(tags=["acl"])
+@p.case()
 def main():
     if h.REDIS_SERVER_VERSION < 6.0:
         return

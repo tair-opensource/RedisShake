@@ -4,6 +4,7 @@ set -e
 # unit test
 go test ./... -v
 
-# black box test
+# black box test - use local pybbt module
 cd tests/
-pybbt cases --verbose --flags modules
+export PYTHONPATH="$(pwd):$PYTHONPATH"
+python -m pybbt cases --verbose --flags modules
