@@ -189,13 +189,19 @@ class Shake:
 
         # 5. Delete marker key
         self.src.do("del", marker_key)
+        pybbt.log(f"Deleted marker key from src: {marker_key}")
 
         # 6. Wait for marker to be deleted in dst
         while True:
             result = self.dst.do("get", marker_key)
             if result is None:
+                pybbt.log(f"Marker key deleted from dst: {marker_key}")
                 break
             if timer.elapsed() > timeout:
+                # Log detailed status for debugging
+                status = self.get_status()
+                pybbt.log(f"Timeout waiting for marker deletion. Status: consistent={status.get('consistent')}")
+                pybbt.log(f"Marker key still exists in dst with value: {result}")
                 raise TimeoutError(f"marker key not deleted within {timeout}s")
             time.sleep(0.1)  # Increased from 0.01 to 0.1 for cluster stability
 
