@@ -16,6 +16,12 @@ outline: deep
 
 不同模式各有优缺点，需要查看各 Reader 章节了解更多信息。
 
+## 断点续传（Checkpoint）
+
+::: warning 重要提示
+RedisShake 4.x 不支持断点续传，也不支持感知集群拓扑变化，不适合长期同步场景。详见 [断点续传](../others/checkpoint.md)。
+:::
+
 ## Redis Cluster 架构
 
 当源端 Redis 以 cluster 架构部署时，可以使用 `sync_reader` 或者 `scan_reader`。两者配置项中均有开关支持开启 cluster 模式，会通过 `cluster nodes` 命令自动获取集群中的所有节点，并建立连接。

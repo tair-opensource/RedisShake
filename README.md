@@ -74,6 +74,12 @@ block_key_prefix = ["temp:", "cache:"]
 
 For more help, check the [docs](https://tair-opensource.github.io/RedisShake/zh/guide/mode.html).
 
+## Limitations
+
+**Resumable Transfer (Checkpoint) is NOT Supported**: RedisShake 4.x does not support resumable transfer. Unlike commercial solutions such as Alibaba Cloud DTS or Tair Global Active-Active which can resume from the last checkpoint after interruption, RedisShake will perform a full resync from the beginning when restarted.
+
+**Cluster Topology Change Awareness is NOT Supported**: RedisShake assumes a static cluster topology. Any topology changes (such as scaling, failover, or slot migration) will cause the process to panic. Combined with the lack of checkpoint support, RedisShake is best suited for **one-time data migration scenarios**, not for long-term continuous synchronization.
+
 ## Cross-Version Migration
 
 Before migrating data between different major versions of Redis, we recommend using the **[resp-compatibility](https://github.com/tair-opensource/resp-compatibility/)** tool for a compatibility check and consulting the **[compatibility report](https://github.com/tair-opensource/resp-compatibility/blob/main/compatibility_report_en_US.md)** to avoid known breaking changes and bugs.

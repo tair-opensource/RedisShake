@@ -60,6 +60,7 @@ function sidebar(): DefaultTheme.SidebarItem[] {
                 { text: 'Redis Modules', link: '/zh/others/modules' },
                 { text: '如何判断数据一致', link: '/zh/others/consistent' },
                 { text: '跨版本迁移', link: '/zh/others/version' },
+                { text: '断点续传', link: '/zh/others/checkpoint' },
             ]
         },
     ]

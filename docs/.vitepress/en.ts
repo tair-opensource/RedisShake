@@ -62,6 +62,7 @@ function sidebar(): DefaultTheme.SidebarItem[] {
                 { text: 'Redis Modules', link: '/en/others/modules' },
                 { text: 'How to Verify Data Consistency', link: '/en/others/consistent' },
                 { text: 'Cross-version Migration', link: '/en/others/version' },
+                { text: 'Checkpoint', link: '/en/others/checkpoint' },
             ]
         },
     ]

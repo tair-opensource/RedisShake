@@ -14,6 +14,12 @@ Currently, RedisShake has three migration modes: `PSync`, `RDB`, and `SCAN`, cor
 
 Different modes have their pros and cons. Refer to each Reader section for more information.
 
+## Resumable Transfer (Checkpoint)
+
+::: warning Important
+RedisShake 4.x does not support resumable transfer or cluster topology change awareness, making it unsuitable for long-term synchronization scenarios. See [Checkpoint](../others/checkpoint.md) for details.
+:::
+
 ## Redis Cluster Architecture
 
 When the source Redis is deployed in a cluster architecture, you can use `sync_reader` or `scan_reader`. Both have switches in their configuration items to enable cluster mode, which will automatically obtain all nodes in the cluster through the `cluster nodes` command and establish connections.
