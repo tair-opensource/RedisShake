@@ -40,14 +40,16 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysI
 				inx = -spec.beginSearchStartFrom
 				step = -1
 			}
-			for ; ; inx += step {
-				if inx == argc {
-					log.Panicf("not found keyword. argv=%v", argv)
-				}
+			found := false
+			for ; inx >= 0 && inx < argc; inx += step {
 				if strings.ToUpper(argv[inx]) == spec.beginSearchKeyword {
 					begin = inx + 1
+					found = true
 					break
 				}
+			}
+			if !found {
+				continue // optional keyword not present, skip this key spec
 			}
 		default:
 			log.Panicf("wrong type: %s", spec.beginSearchType)

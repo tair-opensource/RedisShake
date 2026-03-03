@@ -46,6 +46,36 @@ func TestCalcKeys(t *testing.T) {
 	if cmd != "COMMAND" || group != "SERVER" || !testEq(keys, []string{}) {
 		t.Errorf("CalcKeys(COMMAND) failed. cmd=%s, group=%s, keys=%v", cmd, group, keys)
 	}
+
+	// GEORADIUS with STORE
+	cmd, group, keys, _ = CalcKeys([]string{"GEORADIUS", "Sicily", "15", "37", "200", "km", "STORE", "dest"})
+	if cmd != "GEORADIUS" || group != "GEO" || !testEq(keys, []string{"Sicily", "dest"}) {
+		t.Errorf("CalcKeys(GEORADIUS with STORE) failed. cmd=%s, group=%s, keys=%v", cmd, group, keys)
+	}
+
+	// GEORADIUS with STOREDIST
+	cmd, group, keys, _ = CalcKeys([]string{"GEORADIUS", "Sicily", "15", "37", "200", "km", "STOREDIST", "dest"})
+	if cmd != "GEORADIUS" || group != "GEO" || !testEq(keys, []string{"Sicily", "dest"}) {
+		t.Errorf("CalcKeys(GEORADIUS with STOREDIST) failed. cmd=%s, group=%s, keys=%v", cmd, group, keys)
+	}
+
+	// GEORADIUS without STORE or STOREDIST
+	cmd, group, keys, _ = CalcKeys([]string{"GEORADIUS", "Sicily", "15", "37", "200", "km"})
+	if cmd != "GEORADIUS" || group != "GEO" || !testEq(keys, []string{"Sicily"}) {
+		t.Errorf("CalcKeys(GEORADIUS without STORE) failed. cmd=%s, group=%s, keys=%v", cmd, group, keys)
+	}
+
+	// GEORADIUSBYMEMBER with STORE
+	cmd, group, keys, _ = CalcKeys([]string{"GEORADIUSBYMEMBER", "Sicily", "Palermo", "200", "km", "STORE", "dest"})
+	if cmd != "GEORADIUSBYMEMBER" || group != "GEO" || !testEq(keys, []string{"Sicily", "dest"}) {
+		t.Errorf("CalcKeys(GEORADIUSBYMEMBER with STORE) failed. cmd=%s, group=%s, keys=%v", cmd, group, keys)
+	}
+
+	// GEORADIUSBYMEMBER without STORE or STOREDIST
+	cmd, group, keys, _ = CalcKeys([]string{"GEORADIUSBYMEMBER", "Sicily", "Palermo", "200", "km"})
+	if cmd != "GEORADIUSBYMEMBER" || group != "GEO" || !testEq(keys, []string{"Sicily"}) {
+		t.Errorf("CalcKeys(GEORADIUSBYMEMBER without STORE) failed. cmd=%s, group=%s, keys=%v", cmd, group, keys)
+	}
 }
 
 func TestKeyHash(t *testing.T) {
