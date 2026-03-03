@@ -1,22 +1,23 @@
 package commands
 
 var containers = map[string]bool{
-	"ACL":      true,
-	"CLIENT":   true,
-	"CLUSTER":  true,
-	"COMMAND":  true,
-	"CONFIG":   true,
-	"FUNCTION": true,
-	"LATENCY":  true,
-	"MEMORY":   true,
-	"MODULE":   true,
-	"OBJECT":   true,
-	"PUBSUB":   true,
-	"SCRIPT":   true,
-	"SENTINEL": true,
-	"SLOWLOG":  true,
-	"XGROUP":   true,
-	"XINFO":    true,
+	"ACL":        true,
+	"CLIENT":     true,
+	"CLUSTER":    true,
+	"COMMAND":    true,
+	"COMMANDLOG": true,
+	"CONFIG":     true,
+	"FUNCTION":   true,
+	"LATENCY":    true,
+	"MEMORY":     true,
+	"MODULE":     true,
+	"OBJECT":     true,
+	"PUBSUB":     true,
+	"SCRIPT":     true,
+	"SENTINEL":   true,
+	"SLOWLOG":    true,
+	"XGROUP":     true,
+	"XINFO":      true,
 }
 var redisCommands = map[string]redisCommand{
 	"ACL-CAT": {
@@ -112,6 +113,26 @@ var redisCommands = map[string]redisCommand{
 		[]keySpec{},
 	},
 	"COMMAND": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMANDLOG-GET": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMANDLOG-HELP": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMANDLOG-LEN": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMANDLOG-RESET": {
+		"SERVER",
+		[]keySpec{},
+	},
+	"COMMANDLOG": {
 		"SERVER",
 		[]keySpec{},
 	},
@@ -311,6 +332,10 @@ var redisCommands = map[string]redisCommand{
 		"SERVER",
 		[]keySpec{},
 	},
+	"SFLUSH": {
+		"SERVER",
+		[]keySpec{},
+	},
 	"SHUTDOWN": {
 		"SERVER",
 		[]keySpec{},
@@ -351,6 +376,10 @@ var redisCommands = map[string]redisCommand{
 		"SERVER",
 		[]keySpec{},
 	},
+	"TRIMSLOTS": {
+		"SERVER",
+		[]keySpec{},
+	},
 	"APPEND": {
 		"STRING",
 		[]keySpec{
@@ -388,6 +417,60 @@ var redisCommands = map[string]redisCommand{
 		},
 	},
 	"DECRBY": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"DELEX": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"DELIFEQ": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"range",
+				0,
+				1,
+				0,
+				0,
+				0,
+				0,
+			},
+		},
+	},
+	"DIGEST": {
 		"STRING",
 		[]keySpec{
 			{
@@ -603,6 +686,24 @@ var redisCommands = map[string]redisCommand{
 			},
 		},
 	},
+	"MSETEX": {
+		"STRING",
+		[]keySpec{
+			{
+				"index",
+				1,
+				"",
+				0,
+				"keynum",
+				0,
+				0,
+				0,
+				0,
+				1,
+				2,
+			},
+		},
+	},
 	"MSETNX": {
 		"STRING",
 		[]keySpec{
@@ -763,6 +864,10 @@ var redisCommands = map[string]redisCommand{
 		"CLUSTER",
 		[]keySpec{},
 	},
+	"CLUSTER-CANCELSLOTMIGRATIONS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
 	"CLUSTER-COUNT-FAILURE-REPORTS": {
 		"CLUSTER",
 		[]keySpec{},
@@ -783,6 +888,10 @@ var redisCommands = map[string]redisCommand{
 		"CLUSTER",
 		[]keySpec{},
 	},
+	"CLUSTER-FLUSHSLOT": {
+		"CLUSTER",
+		[]keySpec{},
+	},
 	"CLUSTER-FLUSHSLOTS": {
 		"CLUSTER",
 		[]keySpec{},
@@ -792,6 +901,10 @@ var redisCommands = map[string]redisCommand{
 		[]keySpec{},
 	},
 	"CLUSTER-GETKEYSINSLOT": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-GETSLOTMIGRATIONS": {
 		"CLUSTER",
 		[]keySpec{},
 	},
@@ -815,7 +928,19 @@ var redisCommands = map[string]redisCommand{
 		"CLUSTER",
 		[]keySpec{},
 	},
+	"CLUSTER-MIGRATESLOTS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-MIGRATION": {
+		"CLUSTER",
+		[]keySpec{},
+	},
 	"CLUSTER-MYID": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-MYSHARDID": {
 		"CLUSTER",
 		[]keySpec{},
 	},
@@ -855,7 +980,15 @@ var redisCommands = map[string]redisCommand{
 		"CLUSTER",
 		[]keySpec{},
 	},
+	"CLUSTER-SLOT-STATS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
 	"CLUSTER-SLOTS": {
+		"CLUSTER",
+		[]keySpec{},
+	},
+	"CLUSTER-SYNCSLOTS": {
 		"CLUSTER",
 		[]keySpec{},
 	},
@@ -879,6 +1012,10 @@ var redisCommands = map[string]redisCommand{
 		"CONNECTION",
 		[]keySpec{},
 	},
+	"CLIENT-CAPA": {
+		"CONNECTION",
+		[]keySpec{},
+	},
 	"CLIENT-GETNAME": {
 		"CONNECTION",
 		[]keySpec{},
@@ -892,6 +1029,10 @@ var redisCommands = map[string]redisCommand{
 		[]keySpec{},
 	},
 	"CLIENT-ID": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-IMPORT-SOURCE": {
 		"CONNECTION",
 		[]keySpec{},
 	},
@@ -911,11 +1052,19 @@ var redisCommands = map[string]redisCommand{
 		"CONNECTION",
 		[]keySpec{},
 	},
+	"CLIENT-NO-TOUCH": {
+		"CONNECTION",
+		[]keySpec{},
+	},
 	"CLIENT-PAUSE": {
 		"CONNECTION",
 		[]keySpec{},
 	},
 	"CLIENT-REPLY": {
+		"CONNECTION",
+		[]keySpec{},
+	},
+	"CLIENT-SETINFO": {
 		"CONNECTION",
 		[]keySpec{},
 	},
@@ -2731,6 +2880,10 @@ var redisCommands = map[string]redisCommand{
 		"GENERIC",
 		[]keySpec{},
 	},
+	"WAITAOF": {
+		"GENERIC",
+		[]keySpec{},
+	},
 	"DISCARD": {
 		"TRANSACTIONS",
 		[]keySpec{},
@@ -2934,6 +3087,10 @@ var redisCommands = map[string]redisCommand{
 		[]keySpec{},
 	},
 	"SCRIPT-LOAD": {
+		"SCRIPTING",
+		[]keySpec{},
+	},
+	"SCRIPT-SHOW": {
 		"SCRIPTING",
 		[]keySpec{},
 	},
@@ -4317,6 +4474,10 @@ var redisCommands = map[string]redisCommand{
 		"SENTINEL",
 		[]keySpec{},
 	},
+	"SENTINEL-GET-PRIMARY-ADDR-BY-NAME": {
+		"SENTINEL",
+		[]keySpec{},
+	},
 	"SENTINEL-HELP": {
 		"SENTINEL",
 		[]keySpec{},
@@ -4326,6 +4487,10 @@ var redisCommands = map[string]redisCommand{
 		[]keySpec{},
 	},
 	"SENTINEL-IS-MASTER-DOWN-BY-ADDR": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-IS-PRIMARY-DOWN-BY-ADDR": {
 		"SENTINEL",
 		[]keySpec{},
 	},
@@ -4346,6 +4511,14 @@ var redisCommands = map[string]redisCommand{
 		[]keySpec{},
 	},
 	"SENTINEL-PENDING-SCRIPTS": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-PRIMARIES": {
+		"SENTINEL",
+		[]keySpec{},
+	},
+	"SENTINEL-PRIMARY": {
 		"SENTINEL",
 		[]keySpec{},
 	},

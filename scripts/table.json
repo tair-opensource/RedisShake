@@ -25,6 +25,11 @@
             "COMMAND-INFO": [],
             "COMMAND-LIST": [],
             "COMMAND": [],
+            "COMMANDLOG-GET": [],
+            "COMMANDLOG-HELP": [],
+            "COMMANDLOG-LEN": [],
+            "COMMANDLOG-RESET": [],
+            "COMMANDLOG": [],
             "CONFIG-GET": [],
             "CONFIG-HELP": [],
             "CONFIG-RESETSTAT": [],
@@ -97,6 +102,7 @@
             ],
             "ROLE": [],
             "SAVE": [],
+            "SFLUSH": [],
             "SHUTDOWN": [],
             "SLAVEOF": [],
             "SLOWLOG-GET": [],
@@ -106,7 +112,8 @@
             "SLOWLOG": [],
             "SWAPDB": [],
             "SYNC": [],
-            "TIME": []
+            "TIME": [],
+            "TRIMSLOTS": []
         },
         "string": {
             "APPEND": [
@@ -142,6 +149,54 @@
                 }
             ],
             "DECRBY": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "DELEX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "DELIFEQ": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "DIGEST": [
                 {
                     "begin_search": {
                         "index": {
@@ -333,6 +388,22 @@
                     }
                 }
             ],
+            "MSETEX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 2
+                        }
+                    }
+                }
+            ],
             "MSETNX": [
                 {
                     "begin_search": {
@@ -467,20 +538,26 @@
             "CLUSTER-ADDSLOTS": [],
             "CLUSTER-ADDSLOTSRANGE": [],
             "CLUSTER-BUMPEPOCH": [],
+            "CLUSTER-CANCELSLOTMIGRATIONS": [],
             "CLUSTER-COUNT-FAILURE-REPORTS": [],
             "CLUSTER-COUNTKEYSINSLOT": [],
             "CLUSTER-DELSLOTS": [],
             "CLUSTER-DELSLOTSRANGE": [],
             "CLUSTER-FAILOVER": [],
+            "CLUSTER-FLUSHSLOT": [],
             "CLUSTER-FLUSHSLOTS": [],
             "CLUSTER-FORGET": [],
             "CLUSTER-GETKEYSINSLOT": [],
+            "CLUSTER-GETSLOTMIGRATIONS": [],
             "CLUSTER-HELP": [],
             "CLUSTER-INFO": [],
             "CLUSTER-KEYSLOT": [],
             "CLUSTER-LINKS": [],
             "CLUSTER-MEET": [],
+            "CLUSTER-MIGRATESLOTS": [],
+            "CLUSTER-MIGRATION": [],
             "CLUSTER-MYID": [],
+            "CLUSTER-MYSHARDID": [],
             "CLUSTER-NODES": [],
             "CLUSTER-REPLICAS": [],
             "CLUSTER-REPLICATE": [],
@@ -490,7 +567,9 @@
             "CLUSTER-SETSLOT": [],
             "CLUSTER-SHARDS": [],
             "CLUSTER-SLAVES": [],
+            "CLUSTER-SLOT-STATS": [],
             "CLUSTER-SLOTS": [],
+            "CLUSTER-SYNCSLOTS": [],
             "CLUSTER": [],
             "READONLY": [],
             "READWRITE": []
@@ -498,16 +577,20 @@
         "connection": {
             "AUTH": [],
             "CLIENT-CACHING": [],
+            "CLIENT-CAPA": [],
             "CLIENT-GETNAME": [],
             "CLIENT-GETREDIR": [],
             "CLIENT-HELP": [],
             "CLIENT-ID": [],
+            "CLIENT-IMPORT-SOURCE": [],
             "CLIENT-INFO": [],
             "CLIENT-KILL": [],
             "CLIENT-LIST": [],
             "CLIENT-NO-EVICT": [],
+            "CLIENT-NO-TOUCH": [],
             "CLIENT-PAUSE": [],
             "CLIENT-REPLY": [],
+            "CLIENT-SETINFO": [],
             "CLIENT-SETNAME": [],
             "CLIENT-TRACKING": [],
             "CLIENT-TRACKINGINFO": [],
@@ -2109,7 +2192,8 @@
                     }
                 }
             ],
-            "WAIT": []
+            "WAIT": [],
+            "WAITAOF": []
         },
         "transactions": {
             "DISCARD": [],
@@ -2246,6 +2330,7 @@
             "SCRIPT-HELP": [],
             "SCRIPT-KILL": [],
             "SCRIPT-LOAD": [],
+            "SCRIPT-SHOW": [],
             "SCRIPT": []
         },
         "TairHash": {
@@ -3468,14 +3553,18 @@
             "SENTINEL-FAILOVER": [],
             "SENTINEL-FLUSHCONFIG": [],
             "SENTINEL-GET-MASTER-ADDR-BY-NAME": [],
+            "SENTINEL-GET-PRIMARY-ADDR-BY-NAME": [],
             "SENTINEL-HELP": [],
             "SENTINEL-INFO-CACHE": [],
             "SENTINEL-IS-MASTER-DOWN-BY-ADDR": [],
+            "SENTINEL-IS-PRIMARY-DOWN-BY-ADDR": [],
             "SENTINEL-MASTER": [],
             "SENTINEL-MASTERS": [],
             "SENTINEL-MONITOR": [],
             "SENTINEL-MYID": [],
             "SENTINEL-PENDING-SCRIPTS": [],
+            "SENTINEL-PRIMARIES": [],
+            "SENTINEL-PRIMARY": [],
             "SENTINEL-REMOVE": [],
             "SENTINEL-REPLICAS": [],
             "SENTINEL-RESET": [],
@@ -3867,6 +3956,7 @@
         "CLIENT",
         "CLUSTER",
         "COMMAND",
+        "COMMANDLOG",
         "CONFIG",
         "FUNCTION",
         "LATENCY",

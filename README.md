@@ -18,7 +18,7 @@ RedisShake is a powerful tool for Redis data transformation and migration, offer
 
 1. **Zero Downtime Migration**: Enables seamless data migration without data loss or service interruption, ensuring continuous operation during the transfer process.
 
-2. **Valkey/Redis Compatibility**: Supports Redis (2.8 to 8.x) and Valkey (8.x to 9.x) across standalone, master–slave, sentinel, and cluster deployments. See [Version Compatibility](https://tair-opensource.github.io/RedisShake/zh/others/compatibility.html) for detailed feature support.
+2. **Valkey/Redis Compatibility**: Supports Redis (2.8 to 8.4.x) and Valkey (8.x to 9.x) across standalone, master–slave, sentinel, and cluster deployments. See [Version Compatibility](https://tair-opensource.github.io/RedisShake/zh/others/compatibility.html) for detailed feature support.
 
 3. **Cloud Service Integration**: Seamlessly works with Redis-like databases from major cloud providers:
    - Alibaba Cloud: [Tair (Redis® OSS-Compatible)](https://www.alibabacloud.com/en/product/tair)
