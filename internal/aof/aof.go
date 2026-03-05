@@ -19,7 +19,6 @@ const (
 	Empty     = 2
 	Failed    = 4
 	Truncated = 5
-	SizeMax   = 128
 )
 
 type Loader struct {
@@ -124,9 +123,6 @@ func (ld *Loader) LoadSingleAppendOnlyFile(ctx context.Context, timestamp int64)
 			}
 			argc, _ := strconv.ParseInt(string(line[1:]), 10, 64)
 			if argc < 1 {
-				log.Panicf("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", filePath)
-			}
-			if argc > int64(SizeMax) {
 				log.Panicf("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", filePath)
 			}
 			e := entry.NewEntry()
