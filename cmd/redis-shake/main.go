@@ -295,17 +295,24 @@ func waitShutdown(cancel context.CancelFunc) {
 	sigTimes := 0
 	for {
 		sig := <-quitCh
-		sigTimes++
-		if sig != syscall.SIGINT {
-			log.Infof("Got signal: %s.", sig)
-		} else {
-			log.Infof("Got signal: %s to exit. Press Ctrl+C again to force exit.", sig)
-			if sigTimes >= 2 {
-				os.Exit(0)
-			}
-			cancel()
+		if shouldForceExit := handleShutdownSignal(sig, &sigTimes, cancel); shouldForceExit {
+			os.Exit(0)
 		}
+	}
+}
 
+func handleShutdownSignal(sig os.Signal, sigTimes *int, cancel context.CancelFunc) bool {
+	if sig == syscall.SIGINT {
+		*sigTimes = *sigTimes + 1
+		log.Infof("Got signal: %s to exit. Press Ctrl+C again to force exit.", sig)
+		if *sigTimes >= 2 {
+			return true
+		}
+		cancel()
+		return false
 	}
 
+	log.Infof("Got signal: %s to exit.", sig)
+	cancel()
+	return false
 }
