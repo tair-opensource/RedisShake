@@ -727,7 +727,12 @@ func (aofInfo *INFO) ParsingSingleAppendOnlyFile(ctx context.Context, FileName s
 		log.Infof("Reading RDB Base File on AOF loading...")
 		rdbOpt := RdbReaderOptions{Filepath: AOFFilepath}
 		ldRDB := NewRDBReader(&rdbOpt)
-		ldRDB.StartRead(ctx)
+		rdbChrs := ldRDB.StartRead(ctx)
+		for _, chr := range rdbChrs {
+			for e := range chr {
+				aofInfo.ch <- e
+			}
+		}
 		return AOFOk
 	}
 	// load single aof file
