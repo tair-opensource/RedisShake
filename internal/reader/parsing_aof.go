@@ -523,7 +523,7 @@ func (aofInfo *INFO) GetBaseAndIncrAppendOnlyFilesSize(am *AOFManifest, status *
 		}
 	}
 
-	for ln := am.HistoryList.Front(); ln != nil; ln = ln.Next() {
+	for ln := am.incrAOFList.Front(); ln != nil; ln = ln.Next() {
 		ai := ln.Value.(*AOFInfo)
 		if ai.AOFFileType != AOFManifestTypeIncr {
 			log.Panicf("File type must be Incr")
