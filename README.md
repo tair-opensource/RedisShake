@@ -46,6 +46,9 @@ docker run --network host \
 ```
 
 3. Build it yourself:
+
+> **Prerequisite:** Go must be installed and available in your system before running the build script.
+   
 ```shell
 git clone https://github.com/tair-opensource/RedisShake
 cd RedisShake
