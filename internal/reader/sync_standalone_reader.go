@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"io"
 	"os"
 	"path/filepath"
@@ -40,6 +42,8 @@ type SyncReaderOptions struct {
 	PreferReplica bool                   `mapstructure:"prefer_replica" default:"false"`
 	TryDiskless   bool                   `mapstructure:"try_diskless" default:"false"`
 	Sentinel      client.SentinelOptions `mapstructure:"sentinel"`
+	BiSync        bool                   `mapstructure:"bisync" default:"true"`
+	Prefix        string                 `mapstructure:"prefix" default:"bsy&88@*"`
 }
 
 const RDB_EOF_MARKER_LEN = 40
@@ -95,10 +99,10 @@ func (s syncStandaloneReaderStat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aliasStat(s))
 }
 
-type syncStandaloneReader struct {
+type SyncStandaloneReader struct {
 	ctx    context.Context
 	opts   *SyncReaderOptions
-	client *client.Redis
+	Client *client.Redis
 
 	ch   chan *entry.Entry
 	DbId int
@@ -107,23 +111,40 @@ type syncStandaloneReader struct {
 
 	// version info
 	isDiskless bool
+
+	OriginClient *redis.Client
 }
 
 func NewSyncStandaloneReader(ctx context.Context, opts *SyncReaderOptions) Reader {
-	r := new(syncStandaloneReader)
+	r := new(SyncStandaloneReader)
 	r.opts = opts
-	r.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, opts.PreferReplica)
+	r.Client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, opts.PreferReplica)
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
 	r.stat.Address = opts.Address
 	r.stat.Status = kHandShake
 	r.stat.Dir = utils.GetAbsPath(r.stat.Name)
 	utils.CreateEmptyDir(r.stat.Dir)
 
+	var tlsConfig *tls.Config
+	if opts.Tls {
+		tlsConfig, err := client.CreateTLSConfig(opts.TlsConfig.KeyFilePath, opts.TlsConfig.CACertFilePath, opts.TlsConfig.CertFilePath)
+		_ = tlsConfig
+		if err != nil {
+			log.Panicf("failed to load Tls config.")
+		}
+	}
+	r.OriginClient = redis.NewClient(&redis.Options{
+		Addr:      opts.Address,
+		Username:  opts.Username,
+		Password:  opts.Password,
+		TLSConfig: tlsConfig,
+	})
+
 	return r
 }
 
-func (r *syncStandaloneReader) supportPSync() bool {
-	reply := r.client.DoWithStringReply("info", "server")
+func (r *SyncStandaloneReader) supportPSync() bool {
+	reply := r.Client.DoWithStringReply("info", "server")
 	for _, line := range strings.Split(reply, "\n") {
 		if strings.HasPrefix(line, "redis_version:") {
 			version := strings.Split(line, ":")[1]
@@ -142,7 +163,7 @@ func (r *syncStandaloneReader) supportPSync() bool {
 	return true
 }
 
-func (r *syncStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entry {
+func (r *SyncStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entry {
 	if r.supportPSync() { // Redis version >= 2.8
 		return r.StartReadWithPSync(ctx)
 	} else { // Redis version < 2.8
@@ -151,7 +172,7 @@ func (r *syncStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entr
 }
 
 // StartReadWithPSync is used in Redis version >= 2.8
-func (r *syncStandaloneReader) StartReadWithPSync(ctx context.Context) []chan *entry.Entry {
+func (r *SyncStandaloneReader) StartReadWithPSync(ctx context.Context) []chan *entry.Entry {
 	r.ctx = ctx
 	r.ch = make(chan *entry.Entry, 1024)
 	go func() {
@@ -175,7 +196,7 @@ func (r *syncStandaloneReader) StartReadWithPSync(ctx context.Context) []chan *e
 }
 
 // StartReadWithSync is only used in Redis version < 2.8
-func (r *syncStandaloneReader) StartReadWithSync(ctx context.Context) []chan *entry.Entry {
+func (r *SyncStandaloneReader) StartReadWithSync(ctx context.Context) []chan *entry.Entry {
 	r.ctx = ctx
 	r.ch = make(chan *entry.Entry, 1024)
 	go func() {
@@ -196,18 +217,18 @@ func (r *syncStandaloneReader) StartReadWithSync(ctx context.Context) []chan *en
 	return []chan *entry.Entry{r.ch}
 }
 
-func (r *syncStandaloneReader) sendReplconfListenPort() {
+func (r *SyncStandaloneReader) sendReplconfListenPort() {
 	// use status_port as redis-shake port
 	argv := []interface{}{"replconf", "listening-port", strconv.Itoa(config.Opt.Advanced.StatusPort)}
-	r.client.Send(argv...)
-	_, err := r.client.Receive()
+	r.Client.Send(argv...)
+	_, err := r.Client.Receive()
 	if err != nil {
 		log.Warnf("[%s] send replconf command to redis server failed. error=[%v]", r.stat.Name, err)
 	}
 }
 
 // When BGSAVE is triggered by the source Redis itself, synchronization is blocked, so need to check it
-func (r *syncStandaloneReader) checkBgsaveInProgress() {
+func (r *SyncStandaloneReader) checkBgsaveInProgress() {
 	for {
 		select {
 		case <-r.ctx.Done():
@@ -215,8 +236,8 @@ func (r *syncStandaloneReader) checkBgsaveInProgress() {
 			runtime.Goexit() // stop goroutine
 		default:
 			argv := []interface{}{"INFO", "persistence"}
-			r.client.Send(argv...)
-			receiveString := r.client.ReceiveString()
+			r.Client.Send(argv...)
+			receiveString := r.Client.ReceiveString()
 			if strings.Contains(receiveString, "rdb_bgsave_in_progress:1") || strings.Contains(receiveString, "aof_rewrite_in_progress:1") {
 				log.Warnf("[%s] source db is doing bgsave, waiting for a while.", r.stat.Name)
 			} else {
@@ -228,10 +249,10 @@ func (r *syncStandaloneReader) checkBgsaveInProgress() {
 	}
 }
 
-func (r *syncStandaloneReader) sendPSync() {
+func (r *SyncStandaloneReader) sendPSync() {
 	if r.opts.TryDiskless {
 		argv := []interface{}{"REPLCONF", "CAPA", "EOF"}
-		reply := r.client.DoWithStringReply(argv...)
+		reply := r.Client.DoWithStringReply(argv...)
 		if reply != "OK" {
 			log.Warnf("[%s] send replconf capa eof to redis server failed. reply=[%v]", r.stat.Name, reply)
 		} else {
@@ -244,7 +265,7 @@ func (r *syncStandaloneReader) sendPSync() {
 	if config.Opt.Advanced.AwsPSync != "" {
 		argv = []interface{}{config.Opt.Advanced.GetPSyncCommand(r.stat.Address), "?", "-1"}
 	}
-	r.client.Send(argv...)
+	r.Client.Send(argv...)
 
 	// format: \n\n\n+<reply>\r\n
 	for {
@@ -254,19 +275,19 @@ func (r *syncStandaloneReader) sendPSync() {
 			runtime.Goexit() // stop goroutine
 		default:
 		}
-		peakByte, err := r.client.Peek()
+		peakByte, err := r.Client.Peek()
 		if err != nil {
 			log.Panicf(err.Error())
 		}
 		if peakByte != '\n' {
 			break
 		}
-		_, err = r.client.ReadByte()
+		_, err = r.Client.ReadByte()
 		if err != nil {
 			log.Panicf("[%s] pop byte failed. error=[%v]", r.stat.Name, err)
 		}
 	}
-	reply := r.client.ReceiveString()
+	reply := r.Client.ReceiveString()
 	masterOffset, err := strconv.Atoi(strings.Split(reply, " ")[2])
 	if err != nil {
 		log.Panicf(err.Error())
@@ -274,10 +295,10 @@ func (r *syncStandaloneReader) sendPSync() {
 	r.stat.AofReceivedOffset = int64(masterOffset)
 }
 
-func (r *syncStandaloneReader) sendSync() {
+func (r *SyncStandaloneReader) sendSync() {
 	if r.opts.TryDiskless {
 		argv := []interface{}{"REPLCONF", "CAPA", "EOF"}
-		reply := r.client.DoWithStringReply(argv...)
+		reply := r.Client.DoWithStringReply(argv...)
 		if reply != "OK" {
 			log.Warnf("[%s] send replconf capa eof to redis server failed. reply=[%v]", r.stat.Name, reply)
 		}
@@ -288,7 +309,7 @@ func (r *syncStandaloneReader) sendSync() {
 	if config.Opt.Advanced.AwsPSync != "" {
 		argv = []interface{}{config.Opt.Advanced.GetPSyncCommand(r.stat.Address), "?", "-1"}
 	}
-	r.client.Send(argv...)
+	r.Client.Send(argv...)
 
 	// format: \n\n\n+<reply>\r\n
 	for {
@@ -298,28 +319,28 @@ func (r *syncStandaloneReader) sendSync() {
 			runtime.Goexit() // stop goroutine
 		default:
 		}
-		peekByte, err := r.client.Peek()
+		peekByte, err := r.Client.Peek()
 		if err != nil {
 			log.Panicf(err.Error())
 		}
 		if peekByte != '\n' {
 			break
 		}
-		_, err = r.client.ReadByte()
+		_, err = r.Client.ReadByte()
 		if err != nil {
 			log.Panicf("[%s] pop byte failed. error=[%v]", r.stat.Name, err)
 		}
 	}
 }
 
-func (r *syncStandaloneReader) receiveRDB() string {
+func (r *SyncStandaloneReader) receiveRDB() string {
 	log.Debugf("[%s] source db is doing bgsave.", r.stat.Name)
 	r.stat.Status = kWaitBgsave
 	timeStart := time.Now()
 	// format: \n\n\n$<length>\r\n<rdb>
 	// if source support repl-diskless-sync: \n\n\n$EOF:<40 characters EOF marker>\r\nstream data<EOF marker>
 	for {
-		b, err := r.client.ReadByte()
+		b, err := r.Client.ReadByte()
 		if err != nil {
 			log.Panicf(err.Error())
 		}
@@ -332,7 +353,7 @@ func (r *syncStandaloneReader) receiveRDB() string {
 		break
 	}
 	log.Debugf("[%s] source db bgsave finished. timeUsed=[%.2f]s", r.stat.Name, time.Since(timeStart).Seconds())
-	marker, err := r.client.ReadString('\n')
+	marker, err := r.Client.ReadString('\n')
 	if err != nil {
 		log.Panicf(err.Error())
 	}
@@ -380,7 +401,7 @@ func (r *syncStandaloneReader) receiveRDB() string {
 	return rdbFilePath
 }
 
-func (r *syncStandaloneReader) receiveRDBWithDiskless(marker string, wt io.Writer) {
+func (r *SyncStandaloneReader) receiveRDBWithDiskless(marker string, wt io.Writer) {
 	const bufSize int64 = 32 * 1024 * 1024 // 32MB
 	buf := make([]byte, bufSize)
 
@@ -394,7 +415,7 @@ func (r *syncStandaloneReader) receiveRDBWithDiskless(marker string, wt io.Write
 	for {
 		copy(buf, lastBytes) // copy previous tail bytes to head of buf
 
-		nread, err := r.client.Read(buf[len(lastBytes):])
+		nread, err := r.Client.Read(buf[len(lastBytes):])
 		if err != nil {
 			log.Panicf(err.Error())
 		}
@@ -426,7 +447,7 @@ func (r *syncStandaloneReader) receiveRDBWithDiskless(marker string, wt io.Write
 	}
 }
 
-func (r *syncStandaloneReader) receiveRDBWithoutDiskless(marker string, wt io.Writer) {
+func (r *SyncStandaloneReader) receiveRDBWithoutDiskless(marker string, wt io.Writer) {
 	length, err := strconv.ParseInt(marker, 10, 64)
 	if err != nil {
 		log.Panicf(err.Error())
@@ -442,7 +463,7 @@ func (r *syncStandaloneReader) receiveRDBWithoutDiskless(marker string, wt io.Wr
 		if remainder < readOnce {
 			readOnce = remainder
 		}
-		n, err := r.client.Read(buf[:readOnce])
+		n, err := r.Client.Read(buf[:readOnce])
 		if err != nil {
 			log.Panicf(err.Error())
 		}
@@ -456,7 +477,7 @@ func (r *syncStandaloneReader) receiveRDBWithoutDiskless(marker string, wt io.Wr
 	}
 }
 
-func (r *syncStandaloneReader) receiveAOF() {
+func (r *SyncStandaloneReader) receiveAOF() {
 	log.Debugf("[%s] start receiving aof data, and save to file", r.stat.Name)
 	aofWriter := rotate.NewAOFWriter(r.stat.Name, r.stat.Dir, r.stat.AofReceivedOffset)
 	defer aofWriter.Close()
@@ -466,7 +487,7 @@ func (r *syncStandaloneReader) receiveAOF() {
 		case <-r.ctx.Done():
 			return
 		default:
-			n, err := r.client.Read(buf)
+			n, err := r.Client.Read(buf)
 			if err != nil {
 				log.Panicf(err.Error())
 			}
@@ -477,7 +498,7 @@ func (r *syncStandaloneReader) receiveAOF() {
 	}
 }
 
-func (r *syncStandaloneReader) sendRDB(rdbFilePath string) {
+func (r *SyncStandaloneReader) sendRDB(rdbFilePath string) {
 	// start parse rdb
 	log.Debugf("[%s] start sending RDB to target", r.stat.Name)
 	r.stat.Status = kSyncRdb
@@ -492,7 +513,7 @@ func (r *syncStandaloneReader) sendRDB(rdbFilePath string) {
 	log.Debugf("[%s] delete RDB file", r.stat.Name)
 }
 
-func (r *syncStandaloneReader) sendAOF(offset int64) {
+func (r *SyncStandaloneReader) sendAOF(offset int64) {
 	aofReader := rotate.NewAOFReader(r.ctx, r.stat.Name, r.stat.Dir, offset)
 	defer aofReader.Close()
 	protoReader := proto.NewReader(bufio.NewReader(aofReader))
@@ -554,7 +575,7 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 }
 
 // sendReplconfAck sends replconf ack to master to maintain heartbeat between redis-shake and source redis.
-func (r *syncStandaloneReader) sendReplconfAck() {
+func (r *SyncStandaloneReader) sendReplconfAck() {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -563,17 +584,17 @@ func (r *syncStandaloneReader) sendReplconfAck() {
 			return
 		case <-ticker.C:
 			if r.stat.AofReceivedOffset != 0 {
-				r.client.Send("replconf", "ack", strconv.FormatInt(r.stat.AofReceivedOffset, 10))
+				r.Client.Send("replconf", "ack", strconv.FormatInt(r.stat.AofReceivedOffset, 10))
 			}
 		}
 	}
 }
 
-func (r *syncStandaloneReader) Status() interface{} {
+func (r *SyncStandaloneReader) Status() interface{} {
 	return r.stat
 }
 
-func (r *syncStandaloneReader) StatusString() string {
+func (r *SyncStandaloneReader) StatusString() string {
 	if r.stat.Status == kSyncRdb {
 		return fmt.Sprintf("%s, size=[%s/%s]", r.stat.Status, humanize.IBytes(r.stat.RdbSentBytes), humanize.IBytes(r.stat.RdbFileSizeBytes))
 	}
@@ -589,7 +610,7 @@ func (r *syncStandaloneReader) StatusString() string {
 	return string(r.stat.Status)
 }
 
-func (r *syncStandaloneReader) StatusConsistent() bool {
+func (r *SyncStandaloneReader) StatusConsistent() bool {
 	return r.stat.AofReceivedOffset != 0 &&
 		r.stat.AofReceivedOffset == r.stat.AofSentOffset &&
 		len(r.ch) == 0

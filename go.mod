@@ -7,6 +7,7 @@ require (
 	github.com/go-stack/stack v1.8.1
 	github.com/gofrs/flock v0.8.1
 	github.com/mcuadros/go-defaults v1.2.0
+	github.com/redis/go-redis/v9 v9.12.0
 	github.com/rs/zerolog v1.28.0
 	github.com/spf13/viper v1.18.1
 	github.com/stretchr/testify v1.8.4
@@ -16,8 +17,10 @@ require (
 )
 
 require (
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

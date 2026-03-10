@@ -2,8 +2,11 @@ package writer
 
 import (
 	"context"
+	"crypto/tls"
+	"github.com/redis/go-redis/v9"
 	"sync"
 
+	"RedisShake/internal/client"
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
 	"RedisShake/internal/utils"
@@ -12,19 +15,36 @@ import (
 const KeySlots = 16384
 
 type RedisClusterWriter struct {
-	addresses []string
-	writers   []Writer
-	router    [KeySlots]Writer
-	ch        chan *entry.Entry
-	chWg      sync.WaitGroup
-	stat      []interface{}
+	addresses    []string
+	writers      []Writer
+	router       [KeySlots]Writer
+	ch           chan *entry.Entry
+	chWg         sync.WaitGroup
+	stat         []interface{}
+	TargetClient *redis.ClusterClient
 }
 
 func NewRedisClusterWriter(ctx context.Context, opts *RedisWriterOptions) Writer {
-	rw := new(RedisClusterWriter)
+	rw := &RedisClusterWriter{}
 	rw.loadClusterNodes(ctx, opts)
 	rw.ch = make(chan *entry.Entry, 1024)
 	log.Infof("redisClusterWriter connected to redis cluster successful. addresses=%v", rw.addresses)
+
+	var tlsConfig *tls.Config
+	if opts.Tls {
+		tlsConfig, err := client.CreateTLSConfig(opts.TlsConfig.KeyFilePath, opts.TlsConfig.CACertFilePath, opts.TlsConfig.CertFilePath)
+		_ = tlsConfig
+		if err != nil {
+			log.Panicf("failed to load Tls config.")
+		}
+	}
+	rw.TargetClient = redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs:     []string{opts.Address},
+		Username:  opts.Username,
+		TLSConfig: tlsConfig,
+		Password:  opts.Password,
+	})
+
 	return rw
 }
 
@@ -33,6 +53,9 @@ func (r *RedisClusterWriter) Close() {
 	close(r.ch)
 	for _, writer := range r.writers {
 		writer.Close()
+	}
+	if r.TargetClient != nil {
+		r.TargetClient.Close()
 	}
 }
 

@@ -18,6 +18,9 @@
 
 Cluster Reader 即集群读入类，其根据源端分片数量创建同等数量的 Standalone Reader，每个 Standalone Reader 开启一个协程（Goroutinue）并行的从每个源端分片进行读入，并将数据存入相应的管道（Reader Channel）交付给下一环节处理。
 
+### 双向无环数据同步实现
+采用目标 Redis 标记法，当 Redis-A 向 Redis-B 同步数据【set name jay】时，首先检查源Redis-A是否存在标记，如果不存在则将命令进行 Hash 为MD5码 【8we34o4ew9msd03i83sfs01syer】，向目标 Redis-B 写入标记【 setex prefix:8we34o4ew9msd03i83sfs01syer 120 源Redis地址@时间戳】。
+
 ### Main
 
 Main 即主函数，其根据 Reader Channel 数量开启多个协程，并行的对管道中数据分别执行 Parse、Filter、Function 操作，再调用 Cluster Writer 的 Write 方法，将数据分发给写入端。

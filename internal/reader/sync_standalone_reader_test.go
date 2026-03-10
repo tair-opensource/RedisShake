@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"RedisShake/internal/log"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,7 +56,7 @@ func Test_syncStandaloneReader_Status(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &syncStandaloneReader{
+			r := &SyncStandaloneReader{
 				ctx:  tt.fields.ctx,
 				opts: tt.fields.opts,
 			}

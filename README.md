@@ -30,6 +30,8 @@ RedisShake is a powerful tool for Redis data transformation and migration, offer
 
 6. **Advanced Data Processing**: Enables custom [script-based data transformation](https://tair-opensource.github.io/RedisShake/zh/filter/function.html) and easy-to-use [data filter rules](https://tair-opensource.github.io/RedisShake/zh/filter/filter.html).
 
+7. **New Features**: Supported acyclic two-way synchronization, enabling bidirectional data migration between Redis instances. But the two-way synchronization feature only supports sync_reader mode, not rdb_reader and scan_reader mode. You must confirm that the redis mode is consistent with the cluster-enable configuration, otherwise the two-way synchronization feature will not work.
+
 ## How to Get RedisShake
 
 ### For Humans
@@ -79,6 +81,21 @@ address = "127.0.0.1:6380"
 [filter]
 # skip keys with "temp:" or "cache:" prefix
 block_key_prefix = ["temp:", "cache:"] 
+```
+
+2. Using the acyclic two-way synchronization feature, you need to add the following configuration to the `shake.toml` file:
+```toml
+cluster = false            # Set to true if the source is a Redis cluster
+address = "127.0.0.1:9001" # For clusters, specify the address of any cluster node; use the master or slave address in master-slave mode
+sync_rdb = true            # Set to false if RDB synchronization is not required
+sync_aof = true            # Set to false if AOF synchronization is not required
+bisync = true              # set to true for Data Synchronization Between Different Two Redis  (Preventing Infinite Sync Loops)
+#prefix = "bsy&88@*"        # as prefix of marking keys
+
+
+[redis_writer] 
+cluster = true            # set to true if target is a redis cluster
+address = "127.0.0.1:8001" # when cluster is true, set address to one of the cluster node
 ```
 
 2. Run RedisShake:
