@@ -53,6 +53,7 @@ type scanStandaloneReader struct {
 	needRestoreChan chan *needRestoreItem
 	dumpClient      *client.Redis
 	subWG           sync.WaitGroup
+	isValkey        bool
 
 	stat struct {
 		Name              string `json:"name"`
@@ -206,6 +207,8 @@ func (r *scanStandaloneReader) scan() {
 func (r *scanStandaloneReader) dump() {
 	nowDbId := 0
 	r.dumpClient = client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.TlsConfig, r.opts.PreferReplica)
+	r.isValkey = r.dumpClient.IsValkey()
+	log.Infof("[%s] detected server type: %s", r.stat.Name, map[bool]string{true: "Valkey", false: "Redis"}[r.isValkey])
 	// Support prefer_replica=true in both Cluster and Standalone mode
 	if r.opts.PreferReplica {
 		r.dumpClient.Do("READONLY")
@@ -300,9 +303,7 @@ func (r *scanStandaloneReader) restore() {
 				"rdb_restore_command_behavior setting may not work correctly for this key.", key, len(dump))
 			typeByte := dump[0]
 			anotherReader := strings.NewReader(dump[1 : len(dump)-10])
-			// TODO: detect if server is Valkey and pass appropriate flag
-			// For now, assume Redis format (false)
-			o := types.ParseObject(anotherReader, typeByte, key, false)
+			o := types.ParseObject(anotherReader, typeByte, key, r.isValkey)
 			cmdC := o.Rewrite()
 			for cmd := range cmdC {
 				e := entry.NewEntry()
