@@ -127,3 +127,7 @@ func (w *fileWriter) writeEntry(writer *bufio.Writer, e *entry.Entry) {
 		writer.WriteString("\n")
 	}
 }
+
+func (w *fileWriter) FlushAllAsync() error {
+	return nil
+}

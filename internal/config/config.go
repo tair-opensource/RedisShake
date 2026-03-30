@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/mcuadros/go-defaults"
 	"github.com/rs/zerolog"
@@ -75,6 +76,13 @@ type AdvancedOptions struct {
 	AwsPSync string `mapstructure:"aws_psync" default:""` // 10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync
 
 	EmptyDBBeforeSync bool `mapstructure:"empty_db_before_sync" default:"false"`
+
+	// flush options
+	// When true, uses FLUSHALL ASYNC and waits for lazyfree_pending_objects to be 0.
+	// When false, skips flush operation.
+	EmptyDBByAsync                      bool          `mapstructure:"empty_db_by_async" default:"false"`
+	LazyFreePendingObjectsMaxWait       time.Duration `mapstructure:"lazy_free_pending_objects_max_wait" default:"60s"`
+	LazyFreePendingObjectsCheckInterval time.Duration `mapstructure:"lazy_free_pending_objects_check_interval" default:"100ms"`
 }
 
 type ModuleOptions struct {

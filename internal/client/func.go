@@ -3,9 +3,13 @@ package client
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"RedisShake/internal/client/proto"
+	"RedisShake/internal/config"
 	"RedisShake/internal/log"
 )
 
@@ -53,4 +57,39 @@ func (r *Redis) IsValkey() bool {
 		return false
 	}
 	return isValkey
+}
+
+func (r *Redis) FlushAllAsync() error {
+	reply := r.DoWithStringReply("FLUSHALL", "ASYNC")
+	if reply != "OK" {
+		return fmt.Errorf("FLUSHALL ASYNC failed: %s", reply)
+	}
+
+	deadline := time.Now().Add(config.Opt.Advanced.LazyFreePendingObjectsMaxWait)
+	for time.Now().Before(deadline) {
+		info := r.DoWithStringReply("INFO", "memory")
+		pending := parseLazyFreePendingObjects(info)
+		if pending == 0 {
+			return nil
+		}
+		time.Sleep(config.Opt.Advanced.LazyFreePendingObjectsCheckInterval)
+	}
+	return fmt.Errorf("timeout waiting for lazyfree_pending_objects to be 0")
+}
+
+func parseLazyFreePendingObjects(info string) int {
+	for _, line := range strings.Split(info, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "lazyfree_pending_objects:") {
+			parts := strings.Split(line, ":")
+			if len(parts) >= 2 {
+				val, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+				if err != nil {
+					return -1
+				}
+				return val
+			}
+		}
+	}
+	return -1
 }

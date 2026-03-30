@@ -126,3 +126,57 @@ redis_mode:standalone
 		})
 	}
 }
+
+func TestParseLazyFreePendingObjects(t *testing.T) {
+	tests := []struct {
+		name string
+		info string
+		want int
+	}{
+		{
+			name: "lazyfree_pending_objects is 0",
+			info: `# Stats
+lazyfree_pending_objects:0
+used_cpu_sys:0.5
+`,
+			want: 0,
+		},
+		{
+			name: "lazyfree_pending_objects is 5",
+			info: `# Stats
+lazyfree_pending_objects:5
+used_cpu_sys:0.5
+`,
+			want: 5,
+		},
+		{
+			name: "no lazyfree_pending_objects field",
+			info: `# Stats
+used_cpu_sys:0.5
+`,
+			want: -1,
+		},
+		{
+			name: "empty info",
+			info: ``,
+			want: -1,
+		},
+		{
+			name: "lazyfree_pending_objects with spaces",
+			info: `# Stats
+lazyfree_pending_objects:   10
+used_cpu_sys:0.5
+`,
+			want: 10,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseLazyFreePendingObjects(tt.info)
+			if got != tt.want {
+				t.Errorf("parseLazyFreePendingObjects() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

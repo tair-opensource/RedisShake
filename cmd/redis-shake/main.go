@@ -177,10 +177,17 @@ func main() {
 			theWriter = writer.NewRedisStandaloneWriter(ctx, opts)
 		}
 		if config.Opt.Advanced.EmptyDBBeforeSync {
-			// exec FLUSHALL command to flush db
-			entry := entry.NewEntry()
-			entry.Argv = []string{"FLUSHALL"}
-			theWriter.Write(entry)
+			if config.Opt.Advanced.EmptyDBByAsync {
+				log.Infof("execute FLUSHALL ASYNC to empty target db before sync")
+				if err := theWriter.FlushAllAsync(); err != nil {
+					log.Panicf("failed to flush target db: %v", err)
+				}
+			} else {
+				log.Infof("execute FLUSHALL to empty target db before sync")
+				flushEntry := entry.NewEntry()
+				flushEntry.Argv = []string{"FLUSHALL"}
+				theWriter.Write(flushEntry)
+			}
 		}
 	default:
 		log.Panicf("no writer config entry found")

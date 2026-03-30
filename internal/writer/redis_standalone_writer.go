@@ -181,3 +181,7 @@ func (w *redisStandaloneWriter) StatusString() string {
 func (w *redisStandaloneWriter) StatusConsistent() bool {
 	return atomic.LoadInt64(&w.stat.UnansweredBytes) == 0 && atomic.LoadInt64(&w.stat.UnansweredEntries) == 0
 }
+
+func (w *redisStandaloneWriter) FlushAllAsync() error {
+	return w.client.FlushAllAsync()
+}

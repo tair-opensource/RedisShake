@@ -11,4 +11,5 @@ type Writer interface {
 	Write(entry *entry.Entry)
 	StartWrite(ctx context.Context) (ch chan *entry.Entry)
 	Close()
+	FlushAllAsync() error
 }

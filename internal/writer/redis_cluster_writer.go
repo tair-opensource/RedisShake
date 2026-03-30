@@ -121,3 +121,12 @@ func (r *RedisClusterWriter) StatusConsistent() bool {
 	}
 	return true
 }
+
+func (r *RedisClusterWriter) FlushAllAsync() error {
+	for _, writer := range r.writers {
+		if err := writer.FlushAllAsync(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
