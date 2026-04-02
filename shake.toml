@@ -165,9 +165,15 @@ aws_psync = "" # example: aws_psync = "10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379
 # This option is similar redis replicas RDB diskless load option:
 #   repl-diskless-load on-empty-db
 empty_db_before_sync = false
-flushall_command = "sf7xncm5frvddpc3flushall"         # 自定义清空命令，默认 "FLUSHALL"
-flushall_mode = "async"                               # 自定义命令执行执行模式， 同步"sync" 或 异步"async"，默认 "sync"
-flushall_async_timeout = 10                           # 自定义清空命令执行执行超时时间，单位：分钟，默认"10"分钟
+# ----- 以下为增强功能（可选）-----
+# 自定义清空命令名（当目标端通过 rename-command 重命名了 FLUSHALL 时使用）
+# flushall_command = "MYFLUSHALL"
+# 清空模式：sync（同步，默认）或 async（异步，仅集群模式 + Redis >= 4.0）
+# 异步模式下，工具会轮询等待所有主节点的 lazyfree_pending_objects 归零
+# flushall_mode = "sync"
+# 异步清空超时时间（分钟），超时后程序 panic
+# flushall_async_timeout = 10
+# ----- 以上为增强功能（可选）-----
 
 [module]
 # The data format for BF.LOADCHUNK is not compatible in different versions. v2.6.3 <=> 20603

@@ -110,3 +110,11 @@ RedisShake, actively maintained by the [Tair team](https://github.com/tair-opens
 ## License
 
 RedisShake is open-sourced under the [MIT license](https://github.com/tair-opensource/RedisShake/blob/v2/license.txt).
+
+## Advanced Flush Options (v4 Enhancement)
+
+If the target Redis has disabled the `FLUSHALL` command, or if you wish to use an asynchronous flush and wait for it to complete, you can configure the following options in the `[advanced]` section of the configuration file:
+
+- `flushall_command`: Custom flush command name (e.g., the renamed command).
+- `flushall_mode`: `sync` (default) or `async`. In `async` mode, the tool sends `FLUSHALL ASYNC` to all master nodes in the cluster and polls `lazyfree_pending_objects` until it reaches zero.
+- `flushall_async_timeout`: Timeout for asynchronous flush, in minutes.
