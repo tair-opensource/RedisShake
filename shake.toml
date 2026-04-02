@@ -165,6 +165,9 @@ aws_psync = "" # example: aws_psync = "10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379
 # This option is similar redis replicas RDB diskless load option:
 #   repl-diskless-load on-empty-db
 empty_db_before_sync = false
+flushall_command = "sf7xncm5frvddpc3flushall"         # 自定义清空命令，默认 "FLUSHALL"
+flushall_mode = "async"                               # 自定义命令执行执行模式， 同步"sync" 或 异步"async"，默认 "sync"
+flushall_async_timeout = 10                           # 自定义清空命令执行执行超时时间，单位：分钟，默认"10"分钟
 
 [module]
 # The data format for BF.LOADCHUNK is not compatible in different versions. v2.6.3 <=> 20603

@@ -10,6 +10,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"strconv"
+	"sync"
 
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
@@ -34,6 +36,86 @@ var (
 
 func getVersionString() string {
 	return fmt.Sprintf("%s %s/%s (Git SHA: %s)", Version, runtime.GOOS, runtime.GOARCH, GitCommit)
+}
+
+// 新增 parseLazyfreePending 从 INFO 输出中解析 lazyfree_pending_objects 的值
+func parseLazyfreePending(info string) int {
+    lines := strings.Split(info, "\n")
+    for _, line := range lines {
+        if strings.HasPrefix(line, "lazyfree_pending_objects:") {
+            parts := strings.SplitN(line, ":", 2)
+            if len(parts) == 2 {
+                val, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+                if err == nil {
+                    return val
+                }
+            }
+        }
+    }
+    return -1
+}
+// 新增 waitAsyncFlushForNode 等待单个 Redis 节点异步清空完成
+// 每 2s 轮询一次 lazyfree_pending_objects，默认 10 分钟内未变为 0 则 panic
+// address: 节点地址，用于日志输出
+// timeout: FLUSHALL 异步执行超时时间
+func waitAsyncFlushForNode(client *client.Redis, address string, timeout time.Duration) {
+    ticker := time.NewTicker(2 * time.Second)
+    defer ticker.Stop()
+
+    deadline := time.After(timeout)
+    for {
+        select {
+        case <-deadline:
+            log.Panicf("Timeout: async flush did not complete within %v for node %s", timeout, address)
+
+        case <-ticker.C:
+            client.Send("INFO", "memory")
+            client.Flush()
+            reply, err := client.Receive()
+            if err != nil {
+                log.Warnf("[%s] Failed to get INFO memory: %v", address, err)
+                continue
+            }
+            info, ok := reply.(string)
+            if !ok {
+                log.Warnf("[%s] Unexpected reply type for INFO memory: %T", address, reply)
+                continue
+            }
+            pending := parseLazyfreePending(info)
+            if pending == -1 {
+                log.Warnf("[%s] Could not find lazyfree_pending_objects in INFO memory output", address)
+                // 可能版本不支持，视为完成
+                return
+            }
+            // 输出当前 pending 值（INFO 级别，保持与 RedisShake 日志风格一致）
+            log.Infof("[%s] lazyfree_pending_objects = %d", address, pending)
+
+            if pending == 0 {
+                log.Infof("[%s] Node completed async flush (lazyfree_pending_objects=0)", address)
+                return
+            }
+        }
+    }
+}
+// 新增 waitAsyncFlushForCluster 等待集群所有节点异步清空完成
+// addresses: 集群所有主节点地址
+// opts: 目标 Redis 连接配置（用于创建临时客户端）
+// timeout: FLUSHALL 异步执行超时时间
+func waitAsyncFlushForCluster(addresses []string, opts *writer.RedisWriterOptions, timeout time.Duration) {
+    var wg sync.WaitGroup
+    for _, addr := range addresses {
+        wg.Add(1)
+        go func(address string) {
+            defer wg.Done()
+            // 为每个节点创建临时客户端
+            ctx := context.Background()
+            tempClient := client.NewRedisClient(ctx, address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, false)
+            defer tempClient.Close()
+            waitAsyncFlushForNode(tempClient, address, timeout) // 传入地址
+        }(addr)
+    }
+    wg.Wait()
+    log.Infof("All cluster nodes have completed async flush")
 }
 
 func main() {
@@ -138,6 +220,8 @@ func main() {
 	}
 	// create writer
 	var theWriter writer.Writer
+	// 新增，保存目标 Redis 配置，用于等待函数
+	var redisWriterOpts *writer.RedisWriterOptions
 	switch {
 	case v.IsSet("file_writer"):
 		opts := new(writer.FileWriterOptions)
@@ -157,6 +241,7 @@ func main() {
 		if opts.OffReply && config.Opt.Advanced.RDBRestoreCommandBehavior == "panic" {
 			log.Panicf("the RDBRestoreCommandBehavior can't be 'panic' when the server not reply to commands")
 		}
+		redisWriterOpts = opts // 新增，保存配置
 		if opts.Cluster {
 			log.Infof("create RedisClusterWriter")
 			log.Infof("* address (should be the address of one node in the Redis cluster): %s", opts.Address)
@@ -176,14 +261,53 @@ func main() {
 			log.Infof("* tls: %v", opts.Tls)
 			theWriter = writer.NewRedisStandaloneWriter(ctx, opts)
 		}
-		if config.Opt.Advanced.EmptyDBBeforeSync {
+		// if config.Opt.Advanced.EmptyDBBeforeSync {
 			// exec FLUSHALL command to flush db
-			entry := entry.NewEntry()
-			entry.Argv = []string{"FLUSHALL"}
-			theWriter.Write(entry)
-		}
+			// entry := entry.NewEntry()
+			// entry.Argv = []string{"FLUSHALL"}
+			// theWriter.Write(entry)
+		// }
 	default:
 		log.Panicf("no writer config entry found")
+	}
+
+	// 新增，启动 writer 的后台写协程（确保命令能够发送）
+	theWriter.StartWrite(ctx)
+	    // 新增，清空目标库（如果需要）
+	if config.Opt.Advanced.EmptyDBBeforeSync {
+		argv := strings.Fields(config.Opt.Advanced.FlushAllCommand)
+		if len(argv) == 0 {
+			log.Panicf("flushall_command is empty")
+		}
+		if config.Opt.Advanced.FlushAllMode == "async" {
+			hasAsync := false
+			for _, arg := range argv {
+				if strings.EqualFold(arg, "ASYNC") {
+					hasAsync = true
+					break
+				}
+			}
+			if !hasAsync {
+				argv = append(argv, "ASYNC")
+			}
+		}
+		log.Infof("Sending flush command: %s", strings.Join(argv, " "))
+
+		entry := entry.NewEntry()
+		entry.Argv = argv
+		theWriter.Write(entry)
+
+		if config.Opt.Advanced.FlushAllMode == "async" {
+			log.Infof("Async flush mode enabled, waiting for all cluster nodes to complete...")
+			if clusterWriter, ok := theWriter.(*writer.RedisClusterWriter); ok {
+				addresses := clusterWriter.GetAddresses()
+				// 将分钟转换为 time.Duration
+				timeout := time.Duration(config.Opt.Advanced.FlushAllAsyncTimeout) * time.Minute
+				waitAsyncFlushForCluster(addresses, redisWriterOpts, timeout)
+			} else {
+				log.Panicf("Async flush waiting is only supported for cluster writer, but got %T", theWriter)
+			}
+		}
 	}
 
 	// create status
@@ -202,7 +326,8 @@ func main() {
 
 	chrs := theReader.StartRead(ctx)
 
-	theWriter.StartWrite(ctx)
+	// 新增，注释掉下面原流程
+	// theWriter.StartWrite(ctx)
 
 	readerDone := make(chan bool)
 

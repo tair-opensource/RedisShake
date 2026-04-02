@@ -75,6 +75,9 @@ type AdvancedOptions struct {
 	AwsPSync string `mapstructure:"aws_psync" default:""` // 10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync
 
 	EmptyDBBeforeSync bool `mapstructure:"empty_db_before_sync" default:"false"`
+	FlushAllCommand      string `mapstructure:"flushall_command" default:"FLUSHALL"` // 新增自定义清空命令，如 "sf7xncm5frvddpc3flushall"
+	FlushAllMode         string `mapstructure:"flushall_mode" default:"sync"`        // 新增自定义清空命令执行执行模式， 同步"sync" 或 异步"async"
+	FlushAllAsyncTimeout int    `mapstructure:"flushall_async_timeout" default:"10"` // 新增自定义清空命令执行执行超时时间，单位：分钟
 }
 
 type ModuleOptions struct {

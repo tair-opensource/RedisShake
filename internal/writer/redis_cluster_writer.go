@@ -121,3 +121,8 @@ func (r *RedisClusterWriter) StatusConsistent() bool {
 	}
 	return true
 }
+
+// 新增 GetAddresses 返回所有主节点的地址列表
+func (r *RedisClusterWriter) GetAddresses() []string {
+	return r.addresses
+}
