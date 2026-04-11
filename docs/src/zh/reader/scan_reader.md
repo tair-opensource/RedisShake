@@ -51,6 +51,7 @@ dbs = []                   # set you want to scan dbs such as [1,5,7], if you do
 scan = true                # set to false if you don't want to scan keys
 ksn = false                # set to true to enabled Redis keyspace notifications (KSN) subscription
 count = 1                  # number of keys to scan per iteration
+scan_max_queue_len = 0     # pause SCAN when the internal dump queue reaches this length, 0 disables backpressure
 ```
 
 * `cluster`：源端是否为集群
@@ -64,3 +65,4 @@ count = 1                  # number of keys to scan per iteration
 * `scan`：是否开启 SCAN 阶段，设置为 false 时，RedisShake 会跳过全量同步阶段
 * `ksn`：开启 `ksn` 参数后，RedisShake 会订阅源端的 Key 变化，实现增量同步
 * `count`：全量同步时每次从源端拉取的 key 的个数，默认为 1，改为较大值可以显著提升同步效率，同时也会提升源端压力。
+* `scan_max_queue_len`：仅对 SCAN 阶段生效。当内部待 DUMP 队列长度达到该阈值时，RedisShake 会暂停继续执行 SCAN；当队列长度回落到阈值以下后会自动恢复。`ksn` 订阅不受影响。设置为 `0` 表示关闭该背压机制。

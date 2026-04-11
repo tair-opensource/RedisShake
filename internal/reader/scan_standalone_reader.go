@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"RedisShake/internal/client"
 	"RedisShake/internal/client/proto"
@@ -31,6 +32,7 @@ type ScanReaderOptions struct {
 	DBS             []int            `mapstructure:"dbs"`
 	PreferReplica   bool             `mapstructure:"prefer_replica" default:"false"`
 	Count           int              `mapstructure:"count" default:"1"`
+	ScanMaxQueueLen int              `mapstructure:"scan_max_queue_len" default:"0"`
 	SkipUnknownType []string         `mapstructure:"skip_unknown_type" default:"[]"`
 }
 
@@ -54,6 +56,7 @@ type scanStandaloneReader struct {
 	dumpClient      *client.Redis
 	subWG           sync.WaitGroup
 	isValkey        bool
+	queueLen        func() int
 
 	stat struct {
 		Name              string `json:"name"`
@@ -73,8 +76,41 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
 	r.needDumpQueue = utils.NewUniqueQueue(100000000)     // cache 100000000 keys
 	r.needRestoreChan = make(chan *needRestoreItem, 1024) // inflight 1024 keys
+	r.queueLen = r.needDumpQueue.Len
 	log.Infof("[%s] scanStandaloneReader init finished. dbs=[%v]", r.stat.Name, r.dbs)
 	return r
+}
+
+func (r *scanStandaloneReader) getQueueLen() int {
+	if r.queueLen != nil {
+		return r.queueLen()
+	}
+	return 0
+}
+
+func (r *scanStandaloneReader) waitForScanQueueCapacity(dbId int) bool {
+	if r.opts.ScanMaxQueueLen <= 0 {
+		return true
+	}
+
+	backpressureLogged := false
+	for r.getQueueLen() >= r.opts.ScanMaxQueueLen {
+		if !backpressureLogged {
+			log.Infof("[%s] scan backpressure activated. queue_len=[%d], scan_max_queue_len=[%d], db=[%d]",
+				r.stat.Name, r.getQueueLen(), r.opts.ScanMaxQueueLen, dbId)
+			backpressureLogged = true
+		}
+		select {
+		case <-r.ctx.Done():
+			return false
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+	if backpressureLogged {
+		log.Infof("[%s] scan backpressure released. queue_len=[%d], scan_max_queue_len=[%d], db=[%d]",
+			r.stat.Name, r.getQueueLen(), r.opts.ScanMaxQueueLen, dbId)
+	}
+	return true
 }
 
 func (r *scanStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entry {
@@ -180,6 +216,11 @@ func (r *scanStandaloneReader) scan() {
 				r.needDumpQueue.Close()
 				return
 			default:
+			}
+			if !r.waitForScanQueueCapacity(dbId) {
+				log.Infof("[%s] scanStandaloneReader scan finished.", r.stat.Name)
+				r.needDumpQueue.Close()
+				return
 			}
 
 			var keys []string
