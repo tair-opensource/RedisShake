@@ -66,7 +66,9 @@ func NewLoader(name string, updateFunc func(int64), filPath string, ch chan *ent
 	ld.ch = ch
 	ld.filPath = filPath
 	ld.name = name
-	ld.updateFunc = updateFunc
+	if updateFunc != nil {
+		ld.updateFunc = updateFunc
+	}
 	return ld
 }
 
@@ -85,9 +87,13 @@ func (ld *Loader) ParseRDB(ctx context.Context) int {
 		}
 	}()
 	rd := bufio.NewReader(ld.fp)
+	return ld.ParseRDBStream(ctx, rd)
+}
+
+func (ld *Loader) ParseRDBStream(ctx context.Context, rd *bufio.Reader) int {
 	// magic + version
 	buf := make([]byte, 9)
-	_, err = io.ReadFull(rd, buf)
+	_, err := io.ReadFull(rd, buf)
 	if err != nil {
 		log.Panicf(err.Error())
 	}
@@ -208,6 +214,7 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 		case kFlagSelect:
 			ld.nowDBId = int(structure.ReadLength(rd))
 		case kEOF:
+			io.ReadFull(rd, make([]byte, 8)) // read and ignore checksum
 			return
 		default:
 			key := structure.ReadString(rd)
