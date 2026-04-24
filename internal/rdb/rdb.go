@@ -217,17 +217,22 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			teeReader := io.TeeReader(rd, &value)
 			o := types.ParseObject(teeReader, typeByte, key, ld.isValkey)
 
-			// Rewrite() triggers the actual data reading from teeReader
+			// Rewrite() reads from teeReader in a goroutine. Drain the channel
+			// fully before checking value.Len(), otherwise value is still being
+			// populated and the size check reads 0 — letting oversized values
+			// slip through into RESTORE and blow up the target querybuf.
 			cmdC := o.Rewrite()
+			var cmds [][]string
+			for cmd := range cmdC {
+				cmds = append(cmds, cmd)
+			}
 
-			// Check if dump size exceeds limit
 			// dump size = typeByte(1) + value + version(2) + crc(8)
 			dumpSize := uint64(1 + value.Len() + 2 + 8)
 			if dumpSize > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
 				log.Warnf("key=[%s] dump size=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
 					"rdb_restore_command_behavior setting may not work correctly for this key.", key, dumpSize)
-				// Use the commands from Rewrite()
-				for cmd := range cmdC {
+				for _, cmd := range cmds {
 					e := entry.NewEntry()
 					e.DbId = ld.nowDBId
 					e.Argv = cmd
@@ -240,10 +245,6 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 					ld.ch <- e
 				}
 			} else {
-				// Drain the channel to ensure data is fully read
-				for range cmdC {
-				}
-				// Use RESTORE command
 				pttl := 0
 				if ld.expireMs > 0 {
 					pttl = int(ld.expireMs)

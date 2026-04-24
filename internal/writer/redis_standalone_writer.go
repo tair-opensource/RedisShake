@@ -123,8 +123,18 @@ func (w *redisStandaloneWriter) processWrite(ctx context.Context) {
 			}
 			// send
 			bytes := e.Serialize()
-			for e.SerializedSize+atomic.LoadInt64(&w.stat.UnansweredBytes) > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen {
-				time.Sleep(1 * time.Nanosecond)
+			// Wait only while target has in-flight bytes; otherwise a single oversized
+			// entry would spin forever (processReply can't drain what it never gets).
+			for unanswered := atomic.LoadInt64(&w.stat.UnansweredBytes); unanswered > 0 && e.SerializedSize+unanswered > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen; unanswered = atomic.LoadInt64(&w.stat.UnansweredBytes) {
+				time.Sleep(time.Millisecond)
+			}
+			if e.SerializedSize > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen {
+				key := ""
+				if len(e.Keys) > 0 {
+					key = e.Keys[0]
+				}
+				log.Warnf("[%s] entry serialized size=%d exceeds target_redis_client_max_querybuf_len=%d, sending anyway. cmd=[%s] key=[%s]",
+					w.stat.Name, e.SerializedSize, config.Opt.Advanced.TargetRedisClientMaxQuerybufLen, e.CmdName, key)
 			}
 			rl.Take()
 			log.Debugf("[%s] send cmd. cmd=[%s]", w.stat.Name, e.String())
