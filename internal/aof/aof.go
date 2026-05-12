@@ -130,21 +130,22 @@ func (ld *Loader) LoadSingleAppendOnlyFile(ctx context.Context, timestamp int64)
 
 			for j := 0; j < int(argc); j++ {
 				line, err := ReadCompleteLine(reader)
-				if err != nil || line[0] != '$' {
+				if err != nil || len(line) == 0 || line[0] != '$' {
 					log.Infof("Bad File format reading the append only File %v:make a backup of your AOF File, then use ./redis-check-AOF --fix <FileName.manifest>", filePath)
 					ret = Failed
 					return ret
 				}
 				v64, _ := strconv.ParseInt(string(line[1:]), 10, 64)
-				var argString []byte
-				argString, err = ReadCompleteLine(reader)
-				if err != nil {
+				// Read exactly v64 bytes plus the trailing CRLF. The argument
+				// payload may contain '\r' or '\n' (e.g. binary RDB dumps in
+				// RESTORE commands), so a line-based read would truncate it.
+				buf := make([]byte, v64+2)
+				if _, err := io.ReadFull(reader, buf); err != nil {
 					log.Infof("Unrecoverable error reading the append only File %v: %v", filePath, err)
 					ret = Failed
 					return ret
 				}
-				argString = argString[:v64]
-				argv = append(argv, string(argString))
+				argv = append(argv, string(buf[:v64]))
 			}
 			e.Argv = append(e.Argv, argv...)
 			ld.ch <- e
