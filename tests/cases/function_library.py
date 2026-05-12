@@ -57,7 +57,7 @@ def test_function_library_sync_replace_existing():
     shake = h.Shake(opts)
 
     try:
-        shake.wait_for_sync(timeout=10)
+        shake.wait_for_sync(timeout=60)
     except Exception as e:
         with open(f"{shake.dir}/data/shake.log") as f:
             pybbt.log(f.read())

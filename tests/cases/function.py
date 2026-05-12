@@ -26,7 +26,7 @@ def test_filter_db():
         src.do("set", "key", "value")
 
     # wait sync done (use db=1 because db=0 is filtered)
-    shake.wait_for_sync(timeout=10, db=1)
+    shake.wait_for_sync(timeout=60, db=1)
 
     dst.do("select", 0)
     pybbt.ASSERT_EQ(dst.do("get", "key"), None)

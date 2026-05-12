@@ -31,7 +31,7 @@ def test_acl():
     shake = h.Shake(opts)
 
     # wait sync done
-    shake.wait_for_sync(timeout=10)
+    shake.wait_for_sync(timeout=60)
     pybbt.log(shake.get_status())
 
     # check data

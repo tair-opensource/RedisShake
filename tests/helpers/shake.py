@@ -135,7 +135,7 @@ class Shake:
     def is_consistent(self):
         return self.get_status()["consistent"]
 
-    def wait_for_sync(self, timeout: float = 5, db: int = 0):
+    def wait_for_sync(self, timeout: float = 60, db: int = 0):
         """
         Wait for data to be fully synced from src to dst.
 

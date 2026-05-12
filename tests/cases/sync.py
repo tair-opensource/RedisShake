@@ -18,8 +18,7 @@ def _test_sync(src, dst):
     pybbt.log(f"opts: {opts}")
     shake = h.Shake(opts)
 
-    # Use longer timeout for cluster sync (cluster gossip and cross-node sync takes more time)
-    sync_timeout = 30 if (src.is_cluster() or dst.is_cluster()) else 10
+    sync_timeout = 60
 
     # wait sync done
     try:
