@@ -145,7 +145,7 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			function := structure.ReadString(rd)
 			log.Debugf("function: %s", function)
 			e := entry.NewEntry()
-			e.Argv = []string{"function", "load", function}
+			e.Argv = []string{"function", "load", "replace", function}
 			ld.ch <- e
 		case kFlagModuleAux:
 			moduleId := structure.ReadLength(rd) // module id
