@@ -17,16 +17,16 @@ jobs:
             fail-fast: false
         steps:
             -   name: Git checkout
-                uses: actions/checkout@v4
+                uses: actions/checkout@v6
 
             -   name: Setup Golang with cache
-                uses: magnetikonline/action-golang-cache@v5
+                uses: actions/setup-go@v6
                 with:
                     go-version-file: go.mod
 
             -   name: Cache Redis binary
                 id: cache-redis
-                uses: actions/cache@v4
+                uses: actions/cache@v5
                 with:
                     path: redis/bin
                     key: redis-${{ matrix.redis-version }}-${{ runner.os }}-v1
@@ -46,7 +46,7 @@ jobs:
             -   name: Cache Tair Modules
                 id: cache-tair
                 if: contains('5.0, 6.0, 7.0, 8.0', matrix.redis-version)
-                uses: actions/cache@v4
+                uses: actions/cache@v5
                 with:
                     path: tair-modules
                     key: tair-modules-${{ runner.os }}-v1
@@ -68,7 +68,7 @@ jobs:
                 run: sudo cp tair-modules/*.so /lib/
 
             -   name: Setup Python with cache
-                uses: actions/setup-python@v5
+                uses: actions/setup-python@v6
                 with:
                     python-version: '3.11'
                     cache: 'pip'
@@ -92,16 +92,16 @@ jobs:
             fail-fast: false
         steps:
             -   name: Git checkout
-                uses: actions/checkout@v4
+                uses: actions/checkout@v6
 
             -   name: Setup Golang with cache
-                uses: magnetikonline/action-golang-cache@v5
+                uses: actions/setup-go@v6
                 with:
                     go-version-file: go.mod
 
             -   name: Cache Valkey binary
                 id: cache-valkey
-                uses: actions/cache@v4
+                uses: actions/cache@v5
                 with:
                     path: valkey/bin
                     key: valkey-${{ matrix.valkey-version }}-${{ runner.os }}-v1
@@ -119,7 +119,7 @@ jobs:
                 run: echo "$GITHUB_WORKSPACE/valkey/bin" >> $GITHUB_PATH
 
             -   name: Setup Python with cache
-                uses: actions/setup-python@v5
+                uses: actions/setup-python@v6
                 with:
                     python-version: '3.11'
                     cache: 'pip'
