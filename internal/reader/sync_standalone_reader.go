@@ -159,8 +159,12 @@ func (r *syncStandaloneReader) StartReadWithPSync(ctx context.Context) []chan *e
 		r.sendPSync()
 		rdbFilePath := r.receiveRDB()
 		startOffset := r.stat.AofReceivedOffset
-		go r.sendReplconfAck() // start sent replconf ack
-		go r.receiveAOF()
+		if r.opts.SyncAof {
+			go r.sendReplconfAck() // start sent replconf ack
+			go r.receiveAOF()
+		} else {
+			r.client.Close()
+		}
 		if r.opts.SyncRdb {
 			r.sendRDB(rdbFilePath)
 		}
@@ -182,7 +186,11 @@ func (r *syncStandaloneReader) StartReadWithSync(ctx context.Context) []chan *en
 		r.sendSync()
 		rdbFilePath := r.receiveRDB()
 		startOffset := r.stat.AofReceivedOffset
-		go r.receiveAOF()
+		if r.opts.SyncAof {
+			go r.receiveAOF()
+		} else {
+			r.client.Close()
+		}
 		if r.opts.SyncRdb {
 			r.sendRDB(rdbFilePath)
 		}
