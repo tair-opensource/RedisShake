@@ -94,7 +94,9 @@ class Shake:
         self.src = opts.pop("__src", None)
         self.dst = opts.pop("__dst", None)
 
-        opts["advanced"] = {"status_port": self.status_port, "log_level": "debug"}
+        advanced = opts.setdefault("advanced", {})
+        advanced["status_port"] = self.status_port
+        advanced.setdefault("log_level", "debug")
 
         self.dir = f"{self.case_ctx.dir}/shake{self.status_port}"
         create_empty_dir(self.dir)
