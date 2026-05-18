@@ -246,6 +246,9 @@ func (r *syncStandaloneReader) sendPSync() {
 			r.isDiskless = true
 		}
 	}
+	if !r.opts.SyncAof {
+		r.sendReplconfRDBOnly()
+	}
 	r.checkBgsaveInProgress()
 	// send PSync
 	argv := []interface{}{"PSYNC", "?", "-1"}
@@ -280,6 +283,25 @@ func (r *syncStandaloneReader) sendPSync() {
 		log.Panicf(err.Error())
 	}
 	r.stat.AofReceivedOffset = int64(masterOffset)
+}
+
+func (r *syncStandaloneReader) sendReplconfRDBOnly() {
+	argv := []interface{}{"REPLCONF", "rdb-only", "1"}
+	r.client.Send(argv...)
+	reply, err := r.client.Receive()
+	if err != nil {
+		var redisErr proto.RedisError
+		if errors.As(err, &redisErr) {
+			log.Infof("[%s] source does not support replconf rdb-only. error=[%v]", r.stat.Name, err)
+			return
+		}
+		log.Panicf("[%s] send replconf rdb-only to redis server failed. error=[%v]", r.stat.Name, err)
+	}
+	if reply == "OK" {
+		log.Infof("[%s] source supports replconf rdb-only.", r.stat.Name)
+		return
+	}
+	log.Infof("[%s] source does not enable replconf rdb-only. reply=[%v]", r.stat.Name, reply)
 }
 
 func (r *syncStandaloneReader) sendSync() {
