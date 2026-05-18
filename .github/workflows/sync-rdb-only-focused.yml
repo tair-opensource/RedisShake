@@ -1,0 +1,60 @@
+name: Sync RDB Only Focused
+
+on:
+    push:
+        branches: [ feat/sync-rdb-only ]
+    workflow_dispatch:
+
+jobs:
+    sync-rdb-only:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                redis-version: [ "5.0", "7.0", "8.0" ]
+        steps:
+            -   name: Git checkout
+                uses: actions/checkout@v6
+
+            -   name: Setup Golang with cache
+                uses: actions/setup-go@v6
+                with:
+                    go-version-file: go.mod
+
+            -   name: Cache Redis binary
+                id: cache-redis
+                uses: actions/cache@v5
+                with:
+                    path: redis/bin
+                    key: focused-rdb-only-redis-${{ matrix.redis-version }}-${{ runner.os }}-v1
+
+            -   name: Build Redis
+                if: steps.cache-redis.outputs.cache-hit != 'true'
+                run: |
+                    git clone --depth 1 --branch ${{ matrix.redis-version }} https://github.com/redis/redis
+                    cd redis
+                    make -j$(nproc)
+                    mkdir -p bin
+                    cp src/redis-server bin/
+
+            -   name: Add Redis to PATH
+                run: echo "$GITHUB_WORKSPACE/redis/bin" >> $GITHUB_PATH
+
+            -   name: Setup Python with cache
+                uses: actions/setup-python@v6
+                with:
+                    python-version: '3.11'
+                    cache: 'pip'
+                    cache-dependency-path: tests/requirements.txt
+
+            -   name: Install Python dependencies
+                run: pip install -r tests/requirements.txt
+
+            -   name: Build redis-shake
+                run: sh build.sh
+
+            -   name: Run focused sync_aof_false case
+                run: |
+                    cd tests/
+                    export PYTHONPATH="$(pwd):$PYTHONPATH"
+                    python -m pybbt cases/sync_aof_false.py --verbose

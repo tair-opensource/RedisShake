@@ -4,6 +4,7 @@ import time
 import pybbt
 
 import helpers as h
+from helpers.constant import IS_VALKEY, REDIS_SERVER_VERSION
 from helpers.utils.timer import Timer
 
 
@@ -42,6 +43,11 @@ def _wait_for_reader_status(shake, expected_status, timeout):
                 f"last status={last_status}"
             )
         time.sleep(0.1)
+
+
+def _read_shake_log(shake):
+    with open(f"{shake.dir}/data/shake.log") as f:
+        return f.read()
 
 
 @pybbt.case()
@@ -90,6 +96,11 @@ def sync_aof_false_does_not_buffer_incremental_stream():
     pybbt.ASSERT_EQ(_reader_aof_files(observed_reader_dir), [])
 
     _wait_for_process_exit(shake, timeout=30)
+    log_content = _read_shake_log(shake)
+    if IS_VALKEY or REDIS_SERVER_VERSION >= 6.2:
+        pybbt.ASSERT_TRUE("source supports replconf rdb-only" in log_content)
+    else:
+        pybbt.ASSERT_TRUE("source does not support replconf rdb-only" in log_content)
 
     for i in range(0, 500, 100):
         pybbt.ASSERT_EQ(dst.do("get", f"sync_aof_false:rdb:{i}"), b"x" * 128)
