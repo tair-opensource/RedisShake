@@ -49,6 +49,10 @@ type AdvancedOptions struct {
 	LogMaxBackups int    `mapstructure:"log_max_backups" default:"3"`
 	LogCompress   bool   `mapstructure:"log_compress" default:"true"`
 
+	// Compress sync_reader's temporary RDB file.
+	// Supported values: none, zstd, snappy.
+	TempFileCompressionRDB string `mapstructure:"temp_file_compression_rdb" default:"snappy"`
+
 	// redis-shake gets key and value from rdb file, and uses RESTORE command to
 	// create the key in target redis. Redis RESTORE will return a "Target key name
 	// is busy" error when key already exists. You can use this configuration item

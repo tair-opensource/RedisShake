@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/binary"
 	"io"
-	"os"
 	"strconv"
 	"time"
 
@@ -50,8 +49,7 @@ type Loader struct {
 	idle     int64
 	freq     int64
 
-	filPath string
-	fp      *os.File
+	reader io.ReadCloser
 
 	ch         chan *entry.Entry
 	dumpBuffer bytes.Buffer
@@ -61,30 +59,38 @@ type Loader struct {
 	isValkey   bool // true if reading a Valkey RDB (VALKEY magic string)
 }
 
-func NewLoader(name string, updateFunc func(int64), filPath string, ch chan *entry.Entry) *Loader {
+type progressReader struct {
+	source io.Reader
+	offset int64
+}
+
+func (r *progressReader) Read(p []byte) (int, error) {
+	n, err := r.source.Read(p)
+	r.offset += int64(n)
+	return n, err
+}
+
+func NewLoader(name string, updateFunc func(int64), reader io.ReadCloser, ch chan *entry.Entry) *Loader {
 	ld := new(Loader)
 	ld.ch = ch
-	ld.filPath = filPath
+	ld.reader = reader
 	ld.name = name
 	ld.updateFunc = updateFunc
 	return ld
 }
 
-// ParseRDB parse rdb file
+// ParseRDB parse rdb stream
 // return repl stream db id
 func (ld *Loader) ParseRDB(ctx context.Context) int {
 	var err error
-	ld.fp, err = os.OpenFile(ld.filPath, os.O_RDONLY, 0666)
-	if err != nil {
-		log.Panicf("open file failed. file_path=[%s], error=[%s]", ld.filPath, err)
-	}
 	defer func() {
-		err = ld.fp.Close()
+		err = ld.reader.Close()
 		if err != nil {
-			log.Panicf("close file failed. file_path=[%s], error=[%s]", ld.filPath, err)
+			log.Panicf("close RDB reader failed. error=[%s]", err)
 		}
 	}()
-	rd := bufio.NewReader(ld.fp)
+	progress := &progressReader{source: ld.reader}
+	rd := bufio.NewReader(progress)
 	// magic + version
 	buf := make([]byte, 9)
 	_, err = io.ReadFull(rd, buf)
@@ -109,22 +115,18 @@ func (ld *Loader) ParseRDB(ctx context.Context) int {
 	log.Debugf("[%s] RDB version: %d", ld.name, version)
 
 	// read entries
-	ld.parseRDBEntry(ctx, rd)
+	ld.parseRDBEntry(ctx, rd, progress)
 
 	return ld.replStreamDbId
 }
 
-func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
+func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader, progress *progressReader) {
 	// for stat
 	updateProcessSize := func() {
 		if ld.updateFunc == nil {
 			return
 		}
-		offset, err := ld.fp.Seek(0, io.SeekCurrent)
-		if err != nil {
-			log.Panicf("%v", err)
-		}
-		ld.updateFunc(offset)
+		ld.updateFunc(progress.offset)
 	}
 	defer updateProcessSize()
 

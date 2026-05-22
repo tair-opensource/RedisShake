@@ -155,6 +155,7 @@ status_port = 0            # set a port to enable HTTP status monitoring
 log_file = "shake.log"
 log_level = "info"         # debug, info, warn
 log_interval = 5           # seconds
+temp_file_compression_rdb = "snappy" # none, zstd, snappy
 
 # How to handle "Target key name is busy" during RESTORE
 # "panic" = stop, "rewrite" = replace, "skip" = skip the key

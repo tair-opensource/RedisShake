@@ -3,6 +3,7 @@ package reader
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
@@ -51,7 +52,11 @@ func (r *rdbReader) StartRead(ctx context.Context) []chan *entry.Entry {
 		r.stat.Percent = fmt.Sprintf("%.2f%%", float64(offset)/float64(r.stat.FileSizeBytes)*100)
 		r.stat.Status = fmt.Sprintf("[%s] rdb file synced: %s", r.stat.Name, r.stat.Percent)
 	}
-	rdbLoader := rdb.NewLoader(r.stat.Name, updateFunc, r.stat.Filepath, r.ch)
+	rdbFileHandle, err := os.OpenFile(r.stat.Filepath, os.O_RDONLY, 0o666)
+	if err != nil {
+		log.Panicf("[%s] open RDB file failed. path=[%s], error=[%v]", r.stat.Name, r.stat.Filepath, err)
+	}
+	rdbLoader := rdb.NewLoader(r.stat.Name, updateFunc, rdbFileHandle, r.ch)
 
 	go func() {
 		_ = rdbLoader.ParseRDB(ctx)

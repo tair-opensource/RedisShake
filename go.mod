@@ -6,6 +6,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-stack/stack v1.8.1
 	github.com/gofrs/flock v0.8.1
+	github.com/klauspost/compress v1.18.6
 	github.com/mcuadros/go-defaults v1.2.0
 	github.com/rs/zerolog v1.28.0
 	github.com/spf13/viper v1.18.1

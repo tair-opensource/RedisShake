@@ -115,6 +115,9 @@ log_max_age = 7        # days, logs are kept, default 7 days
 log_max_backups = 3    # number of log backups, default 3
 log_compress = true    # enable log compression after rotate, default true
 
+# Compress sync_reader's temporary RDB file; compressed files use algorithm suffixes.
+temp_file_compression_rdb = "snappy" # none, zstd or snappy
+
 # redis-shake gets key and value from rdb file, and uses RESTORE command to
 # create the key in target redis. Redis RESTORE will return a "Target key name
 # is busy" error when key already exists. You can use this configuration item

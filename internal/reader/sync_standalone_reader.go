@@ -106,7 +106,8 @@ type syncStandaloneReader struct {
 	stat syncStandaloneReaderStat
 
 	// version info
-	isDiskless bool
+	isDiskless             bool
+	rdbTempFileCompression tempFileCompression
 }
 
 func NewSyncStandaloneReader(ctx context.Context, opts *SyncReaderOptions) Reader {
@@ -118,6 +119,11 @@ func NewSyncStandaloneReader(ctx context.Context, opts *SyncReaderOptions) Reade
 	r.stat.Status = kHandShake
 	r.stat.Dir = utils.GetAbsPath(r.stat.Name)
 	utils.CreateEmptyDir(r.stat.Dir)
+	var err error
+	r.rdbTempFileCompression, err = newTempFileCompression(config.Opt.Advanced.TempFileCompressionRDB)
+	if err != nil {
+		log.Panicf("[%s] invalid temp_file_compression_rdb. error=[%v]", r.stat.Name, err)
+	}
 
 	return r
 }
@@ -378,27 +384,35 @@ func (r *syncStandaloneReader) receiveRDB() string {
 	}
 
 	// create rdb file
-	rdbFilePath, err := filepath.Abs(r.stat.Name + "/dump.rdb")
+	rdbFilePath, err := filepath.Abs(filepath.Join(r.stat.Dir, r.rdbTempFileCompression.RDBFilename()))
 	if err != nil {
 		log.Panicf("%v", err)
 	}
 	timeStart = time.Now()
-	log.Debugf("[%s] start receiving RDB. path=[%s]", r.stat.Name, rdbFilePath)
+	log.Debugf("[%s] start receiving RDB. path=[%s], compression=[%s]", r.stat.Name, rdbFilePath, r.rdbTempFileCompression.method)
 	rdbFileHandle, err := os.OpenFile(rdbFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
 		log.Panicf("%v", err)
 	}
 
+	rdbWriter, err := r.rdbTempFileCompression.WrapWriter(rdbFileHandle)
+	if err != nil {
+		_ = rdbFileHandle.Close()
+		log.Panicf("[%s] open RDB temp writer failed. path=[%s], error=[%v]", r.stat.Name, rdbFilePath, err)
+	}
+
 	// receive rdb
 	if strings.HasPrefix(marker, "EOF") {
 		log.Infof("[%s] source db supoort diskless sync capability.", r.stat.Name)
-		r.receiveRDBWithDiskless(marker, rdbFileHandle)
+		r.receiveRDBWithDiskless(marker, rdbWriter)
 	} else {
-		r.receiveRDBWithoutDiskless(marker, rdbFileHandle)
+		r.receiveRDBWithoutDiskless(marker, rdbWriter)
 	}
-	err = rdbFileHandle.Close()
-	if err != nil {
-		log.Panicf("%v", err)
+	if err = rdbWriter.Close(); err != nil {
+		log.Panicf("[%s] close RDB temp writer failed. path=[%s], error=[%v]", r.stat.Name, rdbFilePath, err)
+	}
+	if err = rdbFileHandle.Close(); err != nil {
+		log.Panicf("[%s] close RDB temp file failed. path=[%s], error=[%v]", r.stat.Name, rdbFilePath, err)
 	}
 	log.Debugf("[%s] save RDB finished. timeUsed=[%.2f]s", r.stat.Name, time.Since(timeStart).Seconds())
 	return rdbFilePath
@@ -503,13 +517,27 @@ func (r *syncStandaloneReader) receiveAOF() {
 
 func (r *syncStandaloneReader) sendRDB(rdbFilePath string) {
 	// start parse rdb
-	log.Debugf("[%s] start sending RDB to target", r.stat.Name)
+	log.Debugf("[%s] start sending RDB to target. path=[%s], compression=[%s]", r.stat.Name, rdbFilePath, r.rdbTempFileCompression.method)
 	r.stat.Status = kSyncRdb
 	updateFunc := func(offset int64) {
 		r.stat.RdbSentBytes = uint64(offset)
 	}
-	rdbLoader := rdb.NewLoader(r.stat.Name, updateFunc, rdbFilePath, r.ch)
+	rdbFileHandle, err := os.OpenFile(rdbFilePath, os.O_RDONLY, 0o666)
+	if err != nil {
+		log.Panicf("[%s] open RDB temp file failed. path=[%s], error=[%v]", r.stat.Name, rdbFilePath, err)
+	}
+
+	rdbReader, err := r.rdbTempFileCompression.WrapReader(rdbFileHandle)
+	if err != nil {
+		_ = rdbFileHandle.Close()
+		log.Panicf("[%s] open RDB temp reader failed. path=[%s], error=[%v]", r.stat.Name, rdbFilePath, err)
+	}
+
+	rdbLoader := rdb.NewLoader(r.stat.Name, updateFunc, rdbReader, r.ch)
 	r.DbId = rdbLoader.ParseRDB(r.ctx)
+	if err = rdbFileHandle.Close(); err != nil {
+		log.Panicf("[%s] close RDB temp file failed. path=[%s], error=[%v]", r.stat.Name, rdbFilePath, err)
+	}
 	log.Debugf("[%s] send RDB finished", r.stat.Name)
 	// delete file
 	_ = os.Remove(rdbFilePath)
