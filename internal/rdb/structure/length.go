@@ -23,7 +23,7 @@ func ReadLength(rd io.Reader) uint64 {
 		log.Panicf("illegal length special=true, encoding: %d", length)
 	}
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	return length
 }

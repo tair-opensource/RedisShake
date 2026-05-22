@@ -79,7 +79,7 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysI
 			}
 			keyCount, err := strconv.Atoi(argv[keynumIdx])
 			if err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 			firstKey := spec.findKeysKeynumFirstKey
 			step := spec.findKeysKeynumKeyStep

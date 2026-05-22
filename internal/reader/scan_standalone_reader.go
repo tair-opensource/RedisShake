@@ -99,7 +99,7 @@ func (r *scanStandaloneReader) subscribe() {
 		c.Send("psubscribe", "__keyevent@*__:*")
 		_, err := c.Receive()
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 	} else {
 		args := []interface{}{"psubscribe"}
@@ -110,7 +110,7 @@ func (r *scanStandaloneReader) subscribe() {
 		for range r.dbs {
 			_, err := c.Receive()
 			if err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 		}
 	}
@@ -128,14 +128,14 @@ func (r *scanStandaloneReader) subscribe() {
 		default:
 			resp, err := c.Receive()
 			if err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 			respSlice := resp.([]interface{})
 			key := respSlice[3].(string)
 			dbId := regex.FindString(respSlice[2].(string))
 			dbIdInt, err := strconv.Atoi(dbId)
 			if err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 			// handle del action
 			eventSlice := strings.Split(respSlice[2].(string), ":")
@@ -159,7 +159,7 @@ func (r *scanStandaloneReader) scan() {
 		c.Send("info", "keyspace")
 		info, err := c.Receive()
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 		dbs = utils.ParseDBs(info.(string))
 	}
@@ -256,7 +256,7 @@ func (r *scanStandaloneReader) restore() {
 		if len(r.opts.SkipUnknownType) > 0 {
 			iType, err3 := r.dumpClient.Receive()
 			if err3 != nil {
-				log.Panicf(err3.Error())
+				log.Panicf("%v", err3)
 			}
 			typeStr := iType.(string)
 			// type in SkipUnknownType
@@ -274,9 +274,9 @@ func (r *scanStandaloneReader) restore() {
 		if errors.Is(err1, proto.Nil) {
 			continue // key not exist
 		} else if err1 != nil {
-			log.Panicf(err1.Error())
+			log.Panicf("%v", err1)
 		} else if err2 != nil {
-			log.Panicf(err2.Error())
+			log.Panicf("%v", err2)
 		}
 		dump := iDump.(string)
 		pttl := 0

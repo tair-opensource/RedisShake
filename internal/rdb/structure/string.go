@@ -17,7 +17,7 @@ const (
 func ReadString(rd io.Reader) string {
 	length, special, err := readEncodedLength(rd)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	if special {
 		switch length {

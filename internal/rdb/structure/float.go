@@ -28,7 +28,7 @@ func ReadFloat(rd io.Reader) float64 {
 
 		v, err := strconv.ParseFloat(string(buf), 64)
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 		return v
 	}
@@ -38,7 +38,7 @@ func ReadDouble(rd io.Reader) float64 {
 	var buf = make([]byte, 8)
 	_, err := io.ReadFull(rd, buf)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	num := binary.LittleEndian.Uint64(buf)
 	return math.Float64frombits(num)

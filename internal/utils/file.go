@@ -27,7 +27,7 @@ func IsExist(path string) bool {
 		if os.IsNotExist(err) {
 			return false
 		} else {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 	}
 	return true
@@ -36,7 +36,7 @@ func IsExist(path string) bool {
 func GetFileSize(path string) uint64 {
 	fi, err := os.Stat(path)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	return uint64(fi.Size())
 }
@@ -44,7 +44,7 @@ func GetFileSize(path string) uint64 {
 func GetAbsPath(path string) string {
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	return absolutePath
 }

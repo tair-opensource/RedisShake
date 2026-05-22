@@ -18,7 +18,7 @@ func EncodeArgv(argv []string, buf *bytes.Buffer) {
 	}
 	err := writer.WriteArgs(argvInterface)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 }
 

@@ -45,7 +45,7 @@ func (r *AOFReader) openFile(offset int64) {
 	var err error
 	r.file, err = os.OpenFile(r.filepath, os.O_RDONLY, 0644)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	r.offset = offset
 	r.pos = 0
@@ -83,7 +83,7 @@ func (r *AOFReader) Read(buf []byte) (n int, err error) {
 		r.readNextFile(r.offset) // try to read next file
 		_, err = r.file.Seek(0, 1)
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 		n, err = r.file.Read(buf)
 
@@ -96,7 +96,7 @@ func (r *AOFReader) Read(buf []byte) (n int, err error) {
 		}
 	}
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	r.offset += int64(n)
 	r.pos += int64(n)
@@ -113,7 +113,7 @@ func (r *AOFReader) Close() {
 	}
 	err := r.file.Close()
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	r.file = nil
 	log.Debugf("[%s] close file. filename=[%s]", r.name, r.filepath)

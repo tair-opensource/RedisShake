@@ -15,7 +15,7 @@ func ReadBytes(rd io.Reader, n int) []byte {
 	buf := make([]byte, n)
 	_, err := io.ReadFull(rd, buf)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	return buf
 }

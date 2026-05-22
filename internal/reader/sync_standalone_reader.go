@@ -267,7 +267,7 @@ func (r *syncStandaloneReader) sendPSync() {
 		}
 		peakByte, err := r.client.Peek()
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 		if peakByte != '\n' {
 			break
@@ -280,7 +280,7 @@ func (r *syncStandaloneReader) sendPSync() {
 	reply := r.client.ReceiveString()
 	masterOffset, err := strconv.Atoi(strings.Split(reply, " ")[2])
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	r.stat.AofReceivedOffset = int64(masterOffset)
 }
@@ -324,7 +324,7 @@ func (r *syncStandaloneReader) sendSync() {
 		}
 		peekByte, err := r.client.Peek()
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 		if peekByte != '\n' {
 			break
@@ -345,7 +345,7 @@ func (r *syncStandaloneReader) receiveRDB() string {
 	for {
 		b, err := r.client.ReadByte()
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 		if b == '\n' { // heartbeat
 			continue
@@ -358,7 +358,7 @@ func (r *syncStandaloneReader) receiveRDB() string {
 	log.Debugf("[%s] source db bgsave finished. timeUsed=[%.2f]s", r.stat.Name, time.Since(timeStart).Seconds())
 	marker, err := r.client.ReadString('\n')
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	marker = strings.TrimSpace(marker)
 
@@ -380,13 +380,13 @@ func (r *syncStandaloneReader) receiveRDB() string {
 	// create rdb file
 	rdbFilePath, err := filepath.Abs(r.stat.Name + "/dump.rdb")
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	timeStart = time.Now()
 	log.Debugf("[%s] start receiving RDB. path=[%s]", r.stat.Name, rdbFilePath)
 	rdbFileHandle, err := os.OpenFile(rdbFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 
 	// receive rdb
@@ -398,7 +398,7 @@ func (r *syncStandaloneReader) receiveRDB() string {
 	}
 	err = rdbFileHandle.Close()
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	log.Debugf("[%s] save RDB finished. timeUsed=[%.2f]s", r.stat.Name, time.Since(timeStart).Seconds())
 	return rdbFilePath
@@ -420,7 +420,7 @@ func (r *syncStandaloneReader) receiveRDBWithDiskless(marker string, wt io.Write
 
 		nread, err := r.client.Read(buf[len(lastBytes):])
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 
 		bufLen := len(lastBytes) + nread
@@ -429,7 +429,7 @@ func (r *syncStandaloneReader) receiveRDBWithDiskless(marker string, wt io.Write
 			log.Infof("meet EOF end marker.")
 			// Write all buf without EOF marker and break
 			if nwrite, err = wt.Write(buf[:bufLen-RDB_EOF_MARKER_LEN]); err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 			break
 		}
@@ -437,7 +437,7 @@ func (r *syncStandaloneReader) receiveRDBWithDiskless(marker string, wt io.Write
 		if bufLen >= RDB_EOF_MARKER_LEN {
 			// left RDB_EOF_MARKER_LEN bytes to next round
 			if nwrite, err = wt.Write(buf[:bufLen-RDB_EOF_MARKER_LEN]); err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 			lastBytes = buf[bufLen-RDB_EOF_MARKER_LEN : bufLen] // save last RDB_EOF_MARKER_LEN bytes into lastBytes for next round
 		} else {
@@ -453,7 +453,7 @@ func (r *syncStandaloneReader) receiveRDBWithDiskless(marker string, wt io.Write
 func (r *syncStandaloneReader) receiveRDBWithoutDiskless(marker string, wt io.Writer) {
 	length, err := strconv.ParseInt(marker, 10, 64)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	log.Debugf("[%s] rdb file size: [%v]", r.stat.Name, humanize.IBytes(uint64(length)))
 	r.stat.RdbFileSizeBytes = uint64(length)
@@ -468,12 +468,12 @@ func (r *syncStandaloneReader) receiveRDBWithoutDiskless(marker string, wt io.Wr
 		}
 		n, err := r.client.Read(buf[:readOnce])
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 		remainder -= int64(n)
 		_, err = wt.Write(buf[:n])
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 
 		r.stat.RdbReceivedBytes += uint64(n)
@@ -492,7 +492,7 @@ func (r *syncStandaloneReader) receiveAOF() {
 		default:
 			n, err := r.client.Read(buf)
 			if err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 			r.stat.AofReceivedBytes += uint64(n)
 			aofWriter.Write(buf[:n])
@@ -540,7 +540,7 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 		if strings.EqualFold(argv[0], "select") {
 			DbId, err := strconv.Atoi(argv[1])
 			if err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 			r.DbId = DbId
 			continue

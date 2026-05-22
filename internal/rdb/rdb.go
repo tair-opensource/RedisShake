@@ -89,7 +89,7 @@ func (ld *Loader) ParseRDB(ctx context.Context) int {
 	buf := make([]byte, 9)
 	_, err = io.ReadFull(rd, buf)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	var version int
 	if bytes.Equal(buf[:5], []byte("REDIS")) {
@@ -104,7 +104,7 @@ func (ld *Loader) ParseRDB(ctx context.Context) int {
 		log.Panicf("verify magic string, invalid file format. bytes=[%v]", buf[:6])
 	}
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	log.Debugf("[%s] RDB version: %d", ld.name, version)
 
@@ -122,7 +122,7 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 		}
 		offset, err := ld.fp.Seek(0, io.SeekCurrent)
 		if err != nil {
-			log.Panicf(err.Error())
+			log.Panicf("%v", err)
 		}
 		ld.updateFunc(offset)
 	}
@@ -180,7 +180,7 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 				var err error
 				ld.replStreamDbId, err = strconv.Atoi(value)
 				if err != nil {
-					log.Panicf(err.Error())
+					log.Panicf("%v", err)
 				}
 				log.Debugf("[%s] RDB repl-stream-db: [%s]", ld.name, value)
 			} else if key == "lua" {

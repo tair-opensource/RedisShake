@@ -177,7 +177,7 @@ func (r *Redis) DoWithStringReply(args ...interface{}) string {
 
 	replyInterface, err := r.Receive()
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	reply := replyInterface.(string)
 	return reply
@@ -188,7 +188,7 @@ func (r *Redis) Do(args ...interface{}) interface{} {
 
 	reply, err := r.Receive()
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	return reply
 }
@@ -200,7 +200,7 @@ func (r *Redis) Send(args ...interface{}) {
 	}
 	err := r.protoWriter.WriteArgs(argsInterface)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	r.Flush()
 }
@@ -209,14 +209,14 @@ func (r *Redis) Send(args ...interface{}) {
 func (r *Redis) SendBytesBuff(buf []byte) {
 	_, err := r.writer.Write(buf)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 }
 
 func (r *Redis) Flush() {
 	err := r.writer.Flush()
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 }
 
@@ -227,7 +227,7 @@ func (r *Redis) Receive() (interface{}, error) {
 func (r *Redis) ReceiveString() string {
 	reply, err := r.Receive()
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	return reply.(string)
 }
@@ -264,7 +264,7 @@ func (r *Redis) Scan(cursor uint64, count int) (newCursor uint64, keys []string)
 	r.Send("scan", strconv.FormatUint(cursor, 10), "count", count)
 	reply, err := r.Receive()
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 
 	array := reply.([]interface{})
@@ -275,7 +275,7 @@ func (r *Redis) Scan(cursor uint64, count int) (newCursor uint64, keys []string)
 	// cursor
 	newCursor, err = strconv.ParseUint(array[0].(string), 10, 64)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	// keys
 	keys = make([]string, 0)

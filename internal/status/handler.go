@@ -43,7 +43,7 @@ func setStatusPort() {
 		go func() {
 			addr := fmt.Sprintf(":%d", config.Opt.Advanced.StatusPort)
 			if err := http.ListenAndServe(addr, http.HandlerFunc(Handler)); err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 		}()
 		log.Infof("status information: http://localhost:%v", config.Opt.Advanced.StatusPort)

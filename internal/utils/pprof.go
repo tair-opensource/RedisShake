@@ -14,7 +14,7 @@ func SetPprofPort() {
 		go func() {
 			err := http.ListenAndServe(fmt.Sprintf("localhost:%d", config.Opt.Advanced.PprofPort), nil)
 			if err != nil {
-				log.Panicf(err.Error())
+				log.Panicf("%v", err)
 			}
 		}()
 		log.Infof("pprof information: http://localhost:%d/debug/pprof/", config.Opt.Advanced.PprofPort)

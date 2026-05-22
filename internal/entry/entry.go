@@ -46,7 +46,7 @@ func (e *Entry) Serialize() []byte {
 	}
 	err := writer.WriteArgs(argvInterface)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	e.SerializedSize = int64(buf.Len())
 	return buf.Bytes()

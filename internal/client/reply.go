@@ -4,7 +4,7 @@ import "RedisShake/internal/log"
 
 func ArrayString(replyInterface interface{}, err error) []string {
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panicf("%v", err)
 	}
 	replyArray := replyInterface.([]interface{})
 	replyArrayString := make([]string, len(replyArray))
