@@ -164,11 +164,9 @@ func (r *scanStandaloneReader) scan() {
 		dbs = utils.ParseDBs(info.(string))
 	}
 	for _, dbId := range dbs {
-		if dbId != 0 {
-			reply := c.DoWithStringReply("SELECT", strconv.Itoa(dbId))
-			if reply != "OK" {
-				log.Panicf("scanStandaloneReader select db failed. db=[%d]", dbId)
-			}
+		reply := c.DoWithStringReply("SELECT", strconv.Itoa(dbId))
+		if reply != "OK" {
+			log.Panicf("scanStandaloneReader select db failed. db=[%d]", dbId)
 		}
 
 		var cursor uint64 = 0
