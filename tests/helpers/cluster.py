@@ -20,7 +20,7 @@ class Cluster:
         self.client = redis.RedisCluster(startup_nodes=[
             ClusterNode(self.nodes[0].host, self.nodes[0].port),
             ClusterNode(self.nodes[1].host, self.nodes[1].port)
-        ], require_full_coverage=True)
+        ], require_full_coverage=True, protocol=2)
         p.ASSERT_EQ_TIMEOUT(lambda: self.client.cluster_info()["cluster_state"], "ok", 10)
 
         # Wait for all nodes to be connected and cluster is truly ready

@@ -24,7 +24,7 @@ class Redis:
         self.server = pybbt.Launcher(args=[PATH_REDIS_SERVER] + args, work_dir=self.dir)
 
         self._wait_start()
-        self.client = redis.Redis(host=self.host, port=self.port)
+        self.client = redis.Redis(host=self.host, port=self.port, protocol=2)
         self.case_ctx.add_exit_hook(lambda: self.server.stop())
         pybbt.log_yellow(f"redis server started at {self.host}:{self.port}, redis-cli -p {self.port}")
 
@@ -32,7 +32,7 @@ class Redis:
         timer = Timer()
         while True:
             try:
-                r = redis.Redis(host=self.host, port=self.port)
+                r = redis.Redis(host=self.host, port=self.port, protocol=2)
                 r.ping()
                 return
             except redis.exceptions.ConnectionError:

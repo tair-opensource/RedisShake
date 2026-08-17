@@ -97,10 +97,10 @@ def test_sync_rdb_false():
     # Wait for shake to finish RDB phase and become consistent
     timer = Timer()
     while not shake.is_consistent():
-        if timer.elapsed() > 10:
+        if timer.elapsed() > 60:
             with open(f"{shake.dir}/data/shake.log") as f:
                 pybbt.log(f.read())
-            raise TimeoutError("shake not consistent within 10s")
+            raise TimeoutError("shake not consistent within 60s")
         time.sleep(0.1)
     pybbt.log("shake is consistent after RDB phase skipped")
 

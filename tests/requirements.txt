@@ -1,4 +1,4 @@
 requests>=2.31.0
 toml>=0.10.2
-redis>=4.5.4
+redis>=5.0.0
 rich>=13.0.0
