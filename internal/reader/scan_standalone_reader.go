@@ -164,9 +164,11 @@ func (r *scanStandaloneReader) scan() {
 		dbs = utils.ParseDBs(info.(string))
 	}
 	for _, dbId := range dbs {
-		reply := c.DoWithStringReply("SELECT", strconv.Itoa(dbId))
-		if reply != "OK" {
-			log.Panicf("scanStandaloneReader select db failed. db=[%d]", dbId)
+		c.Send("SELECT", strconv.Itoa(dbId))
+		reply, err := c.Receive()
+		// Redis Cluster and some databases do not support SELECT.
+		if dbId != 0 && (err != nil || reply != "OK") {
+			log.Panicf("scanStandaloneReader select db failed. db=[%d], err=[%v], reply=[%v]", dbId, err, reply)
 		}
 
 		var cursor uint64 = 0
