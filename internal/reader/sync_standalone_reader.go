@@ -39,6 +39,8 @@ type SyncReaderOptions struct {
 	SyncAof       bool                   `mapstructure:"sync_aof" default:"true"`
 	PreferReplica bool                   `mapstructure:"prefer_replica" default:"false"`
 	TryDiskless   bool                   `mapstructure:"try_diskless" default:"false"`
+	PartialSync   bool                   `mapstructure:"partial_sync" default:"false"`
+	RdbFilePath   string                 `mapstructure:"rdb_file_path" default:""`
 	Sentinel      client.SentinelOptions `mapstructure:"sentinel"`
 }
 
@@ -49,6 +51,7 @@ type State string
 const (
 	kHandShake  State = "hand shaking"
 	kWaitBgsave State = "waiting bgsave"
+	kWaitRdb    State = "waiting rdb file"
 	kReceiveRdb State = "receiving rdb"
 	kSyncRdb    State = "syncing rdb"
 	kSyncAof    State = "syncing aof"
@@ -143,6 +146,9 @@ func (r *syncStandaloneReader) supportPSync() bool {
 }
 
 func (r *syncStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entry {
+	if r.opts.PartialSync {
+		return r.StartReadWithPartialSync(ctx)
+	}
 	if r.supportPSync() { // Redis version >= 2.8
 		return r.StartReadWithPSync(ctx)
 	} else { // Redis version < 2.8
@@ -170,12 +176,130 @@ func (r *syncStandaloneReader) StartReadWithPSync(ctx context.Context) []chan *e
 		}
 		if r.opts.SyncAof {
 			r.stat.Status = kSyncAof
-			r.sendAOF(startOffset)
+			r.sendAOF(startOffset, 0)
 		}
 		close(r.ch)
 	}()
 
 	return []chan *entry.Entry{r.ch}
+}
+
+// StartReadWithPartialSync asks the source for a partial resync from its current
+// offset, so the source never forks or buffers a full RDB for us. The stream is
+// spooled while the operator produces a snapshot elsewhere (a replica BGSAVE, a
+// managed-service backup); once that file appears at rdb_file_path it is loaded
+// and the spool is replayed from the snapshot's repl-offset. Without rdb_file_path
+// only the stream from the connect offset is replayed.
+func (r *syncStandaloneReader) StartReadWithPartialSync(ctx context.Context) []chan *entry.Entry {
+	r.ctx = ctx
+	r.ch = make(chan *entry.Entry, 1024)
+	go func() {
+		r.sendReplconfListenPort()
+		replId, offset := r.sourceReplicationOffset()
+		r.sendPartialPSync(replId, offset)
+		startOffset := r.stat.AofReceivedOffset
+		go r.sendReplconfAck()
+		go r.receiveAOF()
+
+		applyFrom := int64(0)
+		if r.opts.RdbFilePath != "" {
+			r.waitForRdbFile(r.opts.RdbFilePath)
+			ld := r.sendRDB(r.opts.RdbFilePath)
+			if ld.ReplId() == "" || ld.ReplOffset() == 0 {
+				log.Panicf("[%s] rdb file has no repl-id/repl-offset aux fields, cannot align it with the stream. path=[%s]", r.stat.Name, r.opts.RdbFilePath)
+			}
+			if ld.ReplId() != replId {
+				log.Panicf("[%s] rdb repl-id [%s] does not match source replid [%s]", r.stat.Name, ld.ReplId(), replId)
+			}
+			if ld.ReplOffset() < startOffset {
+				log.Panicf("[%s] rdb repl-offset [%d] predates the stream start [%d]; take the snapshot after RedisShake is connected", r.stat.Name, ld.ReplOffset(), startOffset)
+			}
+			applyFrom = ld.ReplOffset() + 1
+			log.Infof("[%s] rdb loaded at repl-offset [%d], replaying stream from there", r.stat.Name, ld.ReplOffset())
+		}
+		r.stat.Status = kSyncAof
+		r.sendAOF(startOffset, applyFrom)
+		close(r.ch)
+	}()
+
+	return []chan *entry.Entry{r.ch}
+}
+
+func (r *syncStandaloneReader) sourceReplicationOffset() (string, int64) {
+	reply := r.client.DoWithStringReply("info", "replication")
+	var replId string
+	var offset int64
+	for _, line := range strings.Split(reply, "\n") {
+		line = strings.TrimSpace(line)
+		if v, ok := strings.CutPrefix(line, "master_replid:"); ok {
+			replId = v
+		} else if v, ok := strings.CutPrefix(line, "master_repl_offset:"); ok {
+			var err error
+			offset, err = strconv.ParseInt(v, 10, 64)
+			if err != nil {
+				log.Panicf("[%s] bad master_repl_offset [%s]", r.stat.Name, v)
+			}
+		}
+	}
+	if replId == "" {
+		log.Panicf("[%s] INFO replication has no master_replid", r.stat.Name)
+	}
+	return replId, offset
+}
+
+func (r *syncStandaloneReader) sendPartialPSync(replId string, offset int64) {
+	cmd := "PSYNC"
+	if config.Opt.Advanced.AwsPSync != "" {
+		cmd = config.Opt.Advanced.GetPSyncCommand(r.stat.Address)
+	}
+	r.client.Send(cmd, replId, strconv.FormatInt(offset+1, 10))
+	for {
+		peakByte, err := r.client.Peek()
+		if err != nil {
+			log.Panicf("%v", err)
+		}
+		if peakByte != '\n' {
+			break
+		}
+		_, _ = r.client.ReadByte()
+	}
+	reply := r.client.ReceiveString()
+	if !strings.HasPrefix(reply, "CONTINUE") {
+		log.Panicf("[%s] partial resync refused, reply=[%s]. The offset [%d] is no longer in the source repl-backlog; raise repl-backlog-size on the source and retry", r.stat.Name, reply, offset+1)
+	}
+	r.stat.AofReceivedOffset = offset
+	log.Infof("[%s] partial resync accepted at replid [%s] offset [%d]", r.stat.Name, replId, offset)
+}
+
+func (r *syncStandaloneReader) waitForRdbFile(path string) {
+	r.stat.Status = kWaitRdb
+	log.Infof("[%s] waiting for rdb file at [%s]", r.stat.Name, path)
+	var lastSize int64 = -1
+	for {
+		select {
+		case <-r.ctx.Done():
+			runtime.Goexit()
+		case <-time.After(time.Second):
+		}
+		fi, err := os.Stat(path)
+		if err != nil {
+			continue
+		}
+		if fi.Size() > 0 && fi.Size() == lastSize {
+			return
+		}
+		lastSize = fi.Size()
+	}
+}
+
+// respArrayLen is the wire size of argv as a RESP array of bulk strings, which is
+// the only shape the replication stream uses.
+func respArrayLen(argv []string) int64 {
+	n := int64(1 + len(strconv.Itoa(len(argv))) + 2)
+	for _, a := range argv {
+		n += int64(1 + len(strconv.Itoa(len(a))) + 2 + len(a) + 2)
+	}
+	return n
 }
 
 // StartReadWithSync is only used in Redis version < 2.8
@@ -196,7 +320,7 @@ func (r *syncStandaloneReader) StartReadWithSync(ctx context.Context) []chan *en
 		}
 		if r.opts.SyncAof {
 			r.stat.Status = kSyncAof
-			r.sendAOF(startOffset)
+			r.sendAOF(startOffset, 0)
 		}
 		close(r.ch)
 	}()
@@ -501,7 +625,7 @@ func (r *syncStandaloneReader) receiveAOF() {
 	}
 }
 
-func (r *syncStandaloneReader) sendRDB(rdbFilePath string) {
+func (r *syncStandaloneReader) sendRDB(rdbFilePath string) *rdb.Loader {
 	// start parse rdb
 	log.Debugf("[%s] start sending RDB to target", r.stat.Name)
 	r.stat.Status = kSyncRdb
@@ -514,12 +638,17 @@ func (r *syncStandaloneReader) sendRDB(rdbFilePath string) {
 	// delete file
 	_ = os.Remove(rdbFilePath)
 	log.Debugf("[%s] delete RDB file", r.stat.Name)
+	return rdbLoader
 }
 
-func (r *syncStandaloneReader) sendAOF(offset int64) {
+// sendAOF replays the spooled stream. offset is the replication offset the spool
+// starts after; entries whose first byte is below applyFromOffset are skipped.
+func (r *syncStandaloneReader) sendAOF(offset int64, applyFromOffset int64) {
 	aofReader := rotate.NewAOFReader(r.ctx, r.stat.Name, r.stat.Dir, offset)
 	defer aofReader.Close()
 	protoReader := proto.NewReader(bufio.NewReader(aofReader))
+	nextEntryOffset := offset + 1
+	skipped := 0
 	for {
 		if err := r.ctx.Err(); err != nil {
 			log.Infof("[%s] sendAOF exit", r.stat.Name)
@@ -536,6 +665,16 @@ func (r *syncStandaloneReader) sendAOF(offset int64) {
 
 		argv := client.ArrayString(iArgv, nil)
 		r.stat.AofSentOffset = aofReader.Offset()
+		entryOffset := nextEntryOffset
+		nextEntryOffset += respArrayLen(argv)
+		if entryOffset < applyFromOffset {
+			skipped++
+			continue
+		}
+		if skipped > 0 {
+			log.Infof("[%s] skipped %d entries already contained in the RDB, replay starts at offset %d", r.stat.Name, skipped, entryOffset)
+			skipped = 0
+		}
 		// select
 		if strings.EqualFold(argv[0], "select") {
 			DbId, err := strconv.Atoi(argv[1])

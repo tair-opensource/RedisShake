@@ -44,6 +44,8 @@ const (
 
 type Loader struct {
 	replStreamDbId int // https://github.com/tair-opensource/RedisShake/pull/430#issuecomment-1099014464
+	replId         string
+	replOffset     int64
 
 	nowDBId  int
 	expireMs int64
@@ -112,6 +114,16 @@ func (ld *Loader) ParseRDB(ctx context.Context) int {
 	ld.parseRDBEntry(ctx, rd)
 
 	return ld.replStreamDbId
+}
+
+// ReplId returns the repl-id aux field of the RDB, empty if absent.
+func (ld *Loader) ReplId() string {
+	return ld.replId
+}
+
+// ReplOffset returns the repl-offset aux field of the RDB, 0 if absent.
+func (ld *Loader) ReplOffset() int64 {
+	return ld.replOffset
 }
 
 func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
@@ -183,6 +195,14 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 					log.Panicf("%v", err)
 				}
 				log.Debugf("[%s] RDB repl-stream-db: [%s]", ld.name, value)
+			} else if key == "repl-id" {
+				ld.replId = value
+			} else if key == "repl-offset" {
+				var err error
+				ld.replOffset, err = strconv.ParseInt(value, 10, 64)
+				if err != nil {
+					log.Panicf("%v", err)
+				}
 			} else if key == "lua" {
 				e := entry.NewEntry()
 				e.Argv = []string{"script", "load", value}

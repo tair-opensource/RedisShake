@@ -24,6 +24,8 @@ password = ""              # keep empty if no authentication is required
 tls = false
 sync_rdb = true # set to false if you don't want to sync rdb
 sync_aof = true # set to false if you don't want to sync aof
+partial_sync = false # set to true to skip the full sync and stream from the source's current offset
+rdb_file_path = ""   # with partial_sync: snapshot taken after connecting, loaded before the stream is replayed
 ```
 
 * `cluster`: Whether the source is a cluster
@@ -35,3 +37,5 @@ sync_aof = true # set to false if you don't want to sync aof
 * `tls`: Whether the source has enabled TLS/SSL, no need to configure a certificate because RedisShake does not verify the server certificate
 * `sync_rdb`: Whether to synchronize RDB, when set to false, RedisShake will skip the full synchronization phase
 * `sync_aof`: Whether to synchronize AOF, when set to false, RedisShake will skip the incremental synchronization phase, at which point RedisShake will exit after the full synchronization phase is complete.
+* `partial_sync`: Instead of `PSYNC ? -1`, RedisShake reads `master_replid` and `master_repl_offset` from `INFO replication` and asks for a partial resync from that offset. The source answers `+CONTINUE` and never forks, dumps an RDB or buffers the full-sync delta, which matters on busy sources whose replica output buffer limit cannot be raised (for example ElastiCache under heavy write load). The offset must still be inside the source's `repl-backlog`, so raise `repl-backlog-size` if the source refuses. Requires Redis >= 4.0 / Valkey.
+* `rdb_file_path`: Used with `partial_sync`. RedisShake spools the stream and waits for an RDB file to appear at this path (a `BGSAVE` on a replica, or a managed-service backup, taken **after** RedisShake connected). It loads the file, reads its `repl-id` and `repl-offset` aux fields, and replays the spooled stream from `repl-offset + 1`, so the result equals a normal full sync. Without `rdb_file_path` only the stream from the connect offset is replayed, for targets already seeded to exactly that offset.

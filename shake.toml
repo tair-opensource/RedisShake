@@ -8,6 +8,8 @@ sync_rdb = true            # Set to false if RDB synchronization is not required
 sync_aof = true            # Set to false if AOF synchronization is not required
 prefer_replica = false     # Set to true to sync from a replica node
 try_diskless = false       # Set to true for diskless sync if the source has repl-diskless-sync=yes
+partial_sync = false       # Set to true to PSYNC from the source's current offset instead of a full sync (no fork on the source)
+rdb_file_path = ""         # With partial_sync, an RDB taken after RedisShake connected; loaded, then the stream replays from its repl-offset
 
 #[scan_reader]
 #cluster = false            # set to true if source is a redis cluster
