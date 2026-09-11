@@ -43,16 +43,10 @@ jobs:
             -   name: Add Redis to PATH
                 run: echo "$GITHUB_WORKSPACE/redis/bin" >> $GITHUB_PATH
 
-            -   name: Cache Tair Modules
-                id: cache-tair
-                if: contains('5.0, 6.0, 7.0, 8.0', matrix.redis-version)
-                uses: actions/cache@v5
-                with:
-                    path: tair-modules
-                    key: tair-modules-${{ runner.os }}-v1
-
+            # TairHash builds with -march=native; a cached .so from another
+            # runner's CPU can crash redis-server, so always build locally.
             -   name: Build Tair Modules
-                if: contains('5.0, 6.0, 7.0, 8.0', matrix.redis-version) && steps.cache-tair.outputs.cache-hit != 'true'
+                if: contains('5.0, 6.0, 7.0, 8.0', matrix.redis-version)
                 run: |
                     mkdir -p tair-modules
                     for repo in TairString TairHash TairZset; do
