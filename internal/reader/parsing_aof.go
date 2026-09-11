@@ -62,8 +62,9 @@ func StringNeedsRepr(s string) int {
 }
 
 type INFO struct {
+	AOFName            string
 	AOFDirName         string
-	AOFUseRDBPreamble  int // TODO:not support parsing rdb preamble
+	AOFUseRDBPreamble  int
 	AOFManifest        *AOFManifest
 	AOFFileName        string
 	AOFCurrentSize     int64
@@ -76,8 +77,9 @@ func (aofInfo *INFO) GetAOFDirName() string {
 	return aofInfo.AOFDirName
 }
 
-func NewAOFFileInfo(aofFilePath string, ch chan *entry.Entry) *INFO {
+func NewAOFFileInfo(name, aofFilePath string, ch chan *entry.Entry) *INFO {
 	return &INFO{
+		AOFName:            name,
 		AOFDirName:         filepath.Dir(aofFilePath),
 		AOFUseRDBPreamble:  0,
 		AOFManifest:        nil,
@@ -736,6 +738,6 @@ func (aofInfo *INFO) ParsingSingleAppendOnlyFile(ctx context.Context, FileName s
 		return AOFOk
 	}
 	// load single aof file
-	aofSingleReader := aof.NewLoader(MakePath(aofInfo.AOFDirName, FileName), aofInfo.ch)
+	aofSingleReader := aof.NewLoader(aofInfo.AOFName, aofInfo.AOFUseRDBPreamble, MakePath(aofInfo.AOFDirName, FileName), aofInfo.ch)
 	return aofSingleReader.LoadSingleAppendOnlyFile(ctx, AOFTimeStamp)
 }
