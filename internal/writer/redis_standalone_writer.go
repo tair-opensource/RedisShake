@@ -26,19 +26,31 @@ type RedisWriterOptions struct {
 	Tls       bool                   `mapstructure:"tls" default:"false"`
 	TlsConfig client.TlsConfig       `mapstructure:"tls_config" default:"{}"`
 	OffReply  bool                   `mapstructure:"off_reply" default:"false"`
+	// Parallel is the number of independent target connections the writer fans
+	// entries out across. The single shared input channel hands each entry to
+	// exactly one connection worker (no key partitioning needed; RESTOREs of
+	// distinct keys are order-independent). Default 1 == original behavior.
+	Parallel  int                    `mapstructure:"parallel" default:"1"`
 	Sentinel  client.SentinelOptions `mapstructure:"sentinel"`
 }
 
-type redisStandaloneWriter struct {
-	address string
-	client  *client.Redis
-	DbId    int
-
+// connWriter is one target connection plus its in-flight reply queue. Each runs
+// its own processWrite/processReply pair; they share the writer's input channel.
+type connWriter struct {
+	client      *client.Redis
 	chWaitReply chan *entry.Entry
-	chWaitWg    sync.WaitGroup
-	offReply    bool
-	ch          chan *entry.Entry
-	chWg        sync.WaitGroup
+	DbId        int
+}
+
+type redisStandaloneWriter struct {
+	address  string
+	conns    []*connWriter
+	offReply bool
+	rl       ratelimit.Limiter // shared: target_redis_max_qps is a global cap
+
+	ch       chan *entry.Entry
+	chWg     sync.WaitGroup // processWrite goroutines
+	chWaitWg sync.WaitGroup // processReply goroutines
 
 	stat struct {
 		Name              string `json:"name"`
@@ -51,33 +63,52 @@ func NewRedisStandaloneWriter(ctx context.Context, opts *RedisWriterOptions) Wri
 	rw := new(redisStandaloneWriter)
 	rw.address = opts.Address
 	rw.stat.Name = "writer_" + strings.Replace(opts.Address, ":", "_", -1)
-	rw.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, false)
+	rw.offReply = opts.OffReply
+
+	parallel := opts.Parallel
+	if parallel < 1 {
+		parallel = 1
+	}
+	rw.rl = ratelimit.New(config.Opt.Advanced.TargetRedisMaxQPS)
+	log.Infof("set target redis max qps to %d (shared across %d writer connections)", config.Opt.Advanced.TargetRedisMaxQPS, parallel)
+
 	rw.ch = make(chan *entry.Entry, config.Opt.Advanced.PipelineCountLimit)
+	rw.conns = make([]*connWriter, parallel)
+	for i := 0; i < parallel; i++ {
+		cw := &connWriter{
+			client: client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, false),
+		}
+		if opts.OffReply {
+			cw.client.Send("CLIENT", "REPLY", "OFF")
+		} else {
+			cw.chWaitReply = make(chan *entry.Entry, config.Opt.Advanced.PipelineCountLimit*2)
+			rw.chWaitWg.Add(1)
+			go rw.processReply(cw)
+		}
+		rw.conns[i] = cw
+	}
 	if opts.OffReply {
 		log.Infof("turn off the reply of write")
-		rw.offReply = true
-		rw.client.Send("CLIENT", "REPLY", "OFF")
-	} else {
-		rw.chWaitReply = make(chan *entry.Entry, config.Opt.Advanced.PipelineCountLimit*2)
-		rw.chWaitWg.Add(1)
-		go rw.processReply()
 	}
 	return rw
 }
 
 func (w *redisStandaloneWriter) Close() {
+	close(w.ch)
+	w.chWg.Wait()
 	if !w.offReply {
-		close(w.ch)
-		w.chWg.Wait()
-		close(w.chWaitReply)
+		for _, cw := range w.conns {
+			close(cw.chWaitReply)
+		}
 		w.chWaitWg.Wait()
 	}
 }
 
 func (w *redisStandaloneWriter) StartWrite(ctx context.Context) chan *entry.Entry {
-	w.chWg = sync.WaitGroup{}
-	w.chWg.Add(1)
-	go w.processWrite(ctx)
+	for _, cw := range w.conns {
+		w.chWg.Add(1)
+		go w.processWrite(ctx, cw)
+	}
 	return w.ch
 }
 
@@ -85,41 +116,38 @@ func (w *redisStandaloneWriter) Write(e *entry.Entry) {
 	w.ch <- e
 }
 
-func (w *redisStandaloneWriter) switchDbTo(newDbId int) {
+func (w *redisStandaloneWriter) switchDbTo(cw *connWriter, newDbId int) {
 	log.Debugf("[%s] switch db to [%d]", w.stat.Name, newDbId)
-	w.client.Send("select", strconv.Itoa(newDbId))
-	w.DbId = newDbId
+	cw.client.Send("select", strconv.Itoa(newDbId))
+	cw.DbId = newDbId
 	if !w.offReply {
-		w.chWaitReply <- &entry.Entry{
+		cw.chWaitReply <- &entry.Entry{
 			Argv:    []string{"select", strconv.Itoa(newDbId)},
 			CmdName: "select",
 		}
 	}
 }
 
-func (w *redisStandaloneWriter) processWrite(ctx context.Context) {
+func (w *redisStandaloneWriter) processWrite(ctx context.Context, cw *connWriter) {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 
-	var rl ratelimit.Limiter = nil
-	rl = ratelimit.New(config.Opt.Advanced.TargetRedisMaxQPS)
-	log.Infof("set target redis max qps to %d", config.Opt.Advanced.TargetRedisMaxQPS)
 	for {
 		select {
 		case <-ctx.Done():
 			// do nothing until w.ch is closed
 		case <-ticker.C:
-			w.client.Flush()
+			cw.client.Flush()
 		case e, ok := <-w.ch:
 			if !ok {
 				// clean up and exit
-				w.client.Flush()
+				cw.client.Flush()
 				w.chWg.Done()
 				return
 			}
 			// switch db if we need
-			if w.DbId != e.DbId {
-				w.switchDbTo(e.DbId)
+			if cw.DbId != e.DbId {
+				w.switchDbTo(cw, e.DbId)
 			}
 			// send
 			bytes := e.Serialize()
@@ -136,26 +164,26 @@ func (w *redisStandaloneWriter) processWrite(ctx context.Context) {
 				log.Warnf("[%s] entry serialized size=%d exceeds target_redis_client_max_querybuf_len=%d, sending anyway. cmd=[%s] key=[%s]",
 					w.stat.Name, e.SerializedSize, config.Opt.Advanced.TargetRedisClientMaxQuerybufLen, e.CmdName, key)
 			}
-			rl.Take()
+			w.rl.Take()
 			log.Debugf("[%s] send cmd. cmd=[%s]", w.stat.Name, e.String())
 			if !w.offReply {
 				select {
-				case w.chWaitReply <- e:
+				case cw.chWaitReply <- e:
 				default:
-					w.client.Flush()
-					w.chWaitReply <- e
+					cw.client.Flush()
+					cw.chWaitReply <- e
 				}
 				atomic.AddInt64(&w.stat.UnansweredBytes, e.SerializedSize)
 				atomic.AddInt64(&w.stat.UnansweredEntries, 1)
 			}
-			w.client.SendBytesBuff(bytes)
+			cw.client.SendBytesBuff(bytes)
 		}
 	}
 }
 
-func (w *redisStandaloneWriter) processReply() {
-	for e := range w.chWaitReply {
-		reply, err := w.client.Receive()
+func (w *redisStandaloneWriter) processReply(cw *connWriter) {
+	for e := range cw.chWaitReply {
+		reply, err := cw.client.Receive()
 		log.Debugf("[%s] receive reply. reply=[%v], cmd=[%s]", w.stat.Name, reply, e.String())
 
 		// It's good to skip the nil error since some write commands will return the null reply. For example,

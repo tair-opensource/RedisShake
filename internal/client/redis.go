@@ -205,6 +205,21 @@ func (r *Redis) Send(args ...interface{}) {
 	r.Flush()
 }
 
+// SendNoFlush encodes a command into the write buffer WITHOUT flushing, so the
+// caller can pipeline many commands per syscall and Flush() in batches. (Send()
+// flushes per command — fine for request/reply, but a syscall-per-command
+// bottleneck for the scan reader's high-volume DUMP/PTTL stream.)
+func (r *Redis) SendNoFlush(args ...interface{}) {
+	argsInterface := make([]interface{}, len(args))
+	for inx, item := range args {
+		argsInterface[inx] = item
+	}
+	err := r.protoWriter.WriteArgs(argsInterface)
+	if err != nil {
+		log.Panicf("%v", err)
+	}
+}
+
 // SendBytesBuff send bytes to buffer, need to call Flush() to send the buffer
 func (r *Redis) SendBytesBuff(buf []byte) {
 	_, err := r.writer.Write(buf)

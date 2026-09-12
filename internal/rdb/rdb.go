@@ -61,6 +61,54 @@ type Loader struct {
 	isValkey   bool // true if reading a Valkey RDB (VALKEY magic string)
 }
 
+// rdbDumpFrameLen is the framing a DUMP/RESTORE payload adds around the raw value:
+// typeByte(1) + RDB version(2) + crc64(8).
+const rdbDumpFrameLen = 11
+
+// cappedValueBuffer captures an object's raw RDB bytes for the single-RESTORE fast path, but
+// stops retaining them once they exceed cap. Past the cap the value can't be replayed as one
+// RESTORE bulk anyway, so the loader streams it as individual commands and no longer needs the
+// raw bytes — dropping them keeps the loader's heap bounded regardless of object size.
+type cappedValueBuffer struct {
+	buf      bytes.Buffer
+	cap      int
+	overflow bool
+}
+
+func newCappedValueBuffer(capBytes uint64) *cappedValueBuffer {
+	const maxInt = int(^uint(0) >> 1)
+	c := maxInt
+	if capBytes < uint64(maxInt) {
+		c = int(capBytes)
+	}
+	return &cappedValueBuffer{cap: c}
+}
+
+// Write implements io.Writer for io.TeeReader. It never short-writes or errors (so it can't
+// disrupt the parse), discarding bytes once the cap is exceeded.
+func (c *cappedValueBuffer) Write(p []byte) (int, error) {
+	if !c.overflow {
+		if c.buf.Len()+len(p) > c.cap {
+			c.overflow = true
+			c.buf.Reset() // release the partial capture; we won't RESTORE this value
+		} else {
+			return c.buf.Write(p)
+		}
+	}
+	return len(p), nil
+}
+
+func (c *cappedValueBuffer) Bytes() []byte    { return c.buf.Bytes() }
+func (c *cappedValueBuffer) Overflowed() bool { return c.overflow }
+
+// emitCmd sends a single rewritten command downstream as an entry in the current DB.
+func (ld *Loader) emitCmd(argv types.RedisCmd) {
+	e := entry.NewEntry()
+	e.DbId = ld.nowDBId
+	e.Argv = argv
+	ld.ch <- e
+}
+
 func NewLoader(name string, updateFunc func(int64), filPath string, ch chan *entry.Entry) *Loader {
 	ld := new(Loader)
 	ld.ch = ch
@@ -211,53 +259,64 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			return
 		default:
 			key := structure.ReadString(rd)
-			// Use RESTORE command to properly handle duplicate key behavior (panic/skip/rewrite).
-			// Capture raw value bytes using io.TeeReader
-			var value bytes.Buffer
-			teeReader := io.TeeReader(rd, &value)
+			// Replay small values as a single RESTORE (handles duplicate-key behavior
+			// panic/skip/rewrite). Capture the raw value bytes via io.TeeReader, but CAP the
+			// capture at target_redis_proto_max_bulk_len: a value larger than that can't be
+			// RESTOREd as one bulk anyway, so once it overflows the cap we stop retaining the
+			// raw bytes and stream the object as individual commands instead. This keeps the
+			// loader's heap bounded regardless of object size — a single huge collection (e.g. a
+			// 120M-member zset) used to materialize the whole value plus every rewrite command
+			// in memory and OOM the loader.
+			capBytes := config.Opt.Advanced.TargetRedisProtoMaxBulkLen
+			if capBytes > rdbDumpFrameLen {
+				capBytes -= rdbDumpFrameLen // leave room for the dump frame (typeByte+version+crc)
+			}
+			value := newCappedValueBuffer(capBytes)
+			teeReader := io.TeeReader(rd, value)
 			o := types.ParseObject(teeReader, typeByte, key, ld.isValkey)
 
-			// Rewrite() reads from teeReader in a goroutine. Drain the channel
-			// fully before checking value.Len(), otherwise value is still being
-			// populated and the size check reads 0 — letting oversized values
-			// slip through into RESTORE and blow up the target querybuf.
+			// Rewrite() reads from teeReader in a goroutine, emitting the value as individual
+			// commands. Drain it: while the value still fits the cap, buffer the commands (it may
+			// turn out small enough to RESTORE); the moment the capture overflows the cap, flush
+			// the buffered commands and stream the rest directly — never holding the whole object.
 			cmdC := o.Rewrite()
-			var cmds [][]string
+			var buffered []types.RedisCmd
+			streaming := false
 			for cmd := range cmdC {
-				cmds = append(cmds, cmd)
+				if !streaming && value.Overflowed() {
+					log.Warnf("key=[%s] value exceeds target_redis_proto_max_bulk_len=[%d], streaming as "+
+						"individual commands instead of RESTORE.", key, config.Opt.Advanced.TargetRedisProtoMaxBulkLen)
+					streaming = true
+					for _, c := range buffered {
+						ld.emitCmd(c)
+					}
+					buffered = nil
+				}
+				if streaming {
+					ld.emitCmd(cmd)
+				} else {
+					buffered = append(buffered, cmd)
+				}
 			}
 
-			// dump size = typeByte(1) + value + version(2) + crc(8)
-			dumpSize := uint64(1 + value.Len() + 2 + 8)
-			if dumpSize > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
-				log.Warnf("key=[%s] dump size=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
-					"rdb_restore_command_behavior setting may not work correctly for this key.", key, dumpSize)
-				for _, cmd := range cmds {
-					e := entry.NewEntry()
-					e.DbId = ld.nowDBId
-					e.Argv = cmd
-					ld.ch <- e
-				}
+			if streaming {
+				// Whole object already emitted as individual commands; Rewrite()'s leading "del"
+				// gives replace semantics. Apply the expire separately.
 				if ld.expireMs != 0 {
-					e := entry.NewEntry()
-					e.DbId = ld.nowDBId
-					e.Argv = []string{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)}
-					ld.ch <- e
+					ld.emitCmd(types.RedisCmd{"PEXPIRE", key, strconv.FormatInt(ld.expireMs, 10)})
 				}
 			} else {
+				// Small enough: replay as a single RESTORE of the captured raw bytes.
 				pttl := 0
 				if ld.expireMs > 0 {
 					pttl = int(ld.expireMs)
 				}
 				v := ld.createValueDump(typeByte, value.Bytes())
-				argv := []string{"RESTORE", key, strconv.Itoa(pttl), v}
+				argv := types.RedisCmd{"RESTORE", key, strconv.Itoa(pttl), v}
 				if config.Opt.Advanced.RDBRestoreCommandBehavior == "rewrite" {
 					argv = append(argv, "replace")
 				}
-				e := entry.NewEntry()
-				e.DbId = ld.nowDBId
-				e.Argv = argv
-				ld.ch <- e
+				ld.emitCmd(argv)
 			}
 
 			ld.expireMs = 0
