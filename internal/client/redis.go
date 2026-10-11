@@ -32,8 +32,9 @@ type TlsConfig struct {
 }
 
 const (
-	defaultDialTimeout = 10 * time.Second
-	dialAttempts       = 5
+	defaultDialTimeout  = 10 * time.Second
+	defaultTcpKeepalive = 30 * time.Second
+	dialAttempts        = 5
 )
 
 // dialRetryBackoff is the pause before the first retry; it doubles after each failed attempt.
@@ -89,8 +90,12 @@ func dial(ctx context.Context, address string, Tls bool, tlsConfig TlsConfig) (n
 	if config.Opt.Advanced.DialTimeoutSec > 0 {
 		timeout = time.Duration(config.Opt.Advanced.DialTimeoutSec) * time.Second
 	}
+	keepalive := defaultTcpKeepalive
+	if config.Opt.Advanced.TcpKeepaliveSec > 0 {
+		keepalive = time.Duration(config.Opt.Advanced.TcpKeepaliveSec) * time.Second
+	}
 	dialer := &net.Dialer{
-		KeepAlive: 5 * time.Minute,
+		KeepAlive: keepalive,
 	}
 	backoff := dialRetryBackoff
 	for attempt := 1; ; attempt++ {

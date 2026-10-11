@@ -170,6 +170,11 @@ empty_db_before_sync = false
 # A failed attempt is retried up to 5 times with backoff before redis-shake exits.
 dial_timeout_sec = 10
 
+# Idle time before TCP keepalive probes start, and the interval between probes.
+# Keeps idle connections alive through NAT and VPN gateways that drop silent flows,
+# and detects a dead peer faster.
+tcp_keepalive_sec = 30
+
 [module]
 # The data format for BF.LOADCHUNK is not compatible in different versions. v2.6.3 <=> 20603
 target_mbbloom_version = 20603

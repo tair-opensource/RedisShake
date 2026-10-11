@@ -78,6 +78,10 @@ type AdvancedOptions struct {
 
 	// Timeout of a single attempt to connect to Redis, including DNS lookup and TLS handshake.
 	DialTimeoutSec int `mapstructure:"dial_timeout_sec" default:"10"`
+
+	// Idle time before TCP keepalive probes start, and the interval between probes.
+	// Keeps idle connections alive through NAT and VPN gateways that drop silent flows.
+	TcpKeepaliveSec int `mapstructure:"tcp_keepalive_sec" default:"30"`
 }
 
 type ModuleOptions struct {
