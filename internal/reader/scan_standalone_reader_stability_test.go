@@ -32,9 +32,10 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	defer os.RemoveAll(logDir)
 	log.Init("info", "shake.log", logDir, false, 0, 0, 0, false)
-	os.Exit(m.Run())
+	code := m.Run()
+	os.RemoveAll(logDir)
+	os.Exit(code)
 }
 
 func startRedis(t *testing.T, args ...string) string {
@@ -160,10 +161,16 @@ func (p *idleKillingProxy) handle(down, up *net.TCPConn) {
 	}
 }
 
-// startKsnReader starts a scan reader with keyspace notifications. On cleanup it
-// cancels the context and waits for the reader to finish before the servers stop,
-// so that a stopped server does not fail the reader.
-func startKsnReader(t *testing.T, address string) <-chan *entry.Entry {
+type ksnReader struct {
+	entries  chan *entry.Entry
+	received atomic.Int64 // all entries, including those dropped from entries
+	stop     func()
+}
+
+// startKsnReader starts a scan reader with keyspace notifications. stop, also called
+// on cleanup, cancels the context and waits for the reader to finish before the
+// servers stop, so that a stopped server does not fail the reader.
+func startKsnReader(t *testing.T, address string) *ksnReader {
 	ctx, cancel := context.WithCancel(context.Background())
 	opts := &ScanReaderOptions{}
 	defaults.SetDefaults(opts)
@@ -173,28 +180,33 @@ func startKsnReader(t *testing.T, address string) <-chan *entry.Entry {
 
 	r := NewScanStandaloneReader(ctx, opts)
 	chs := r.StartRead(ctx)
-	entries := make(chan *entry.Entry, 1024)
+	kr := &ksnReader{entries: make(chan *entry.Entry, 1024)}
 	finished := make(chan struct{})
 	go func() {
 		for e := range chs[0] {
+			kr.received.Add(1)
 			select {
-			case entries <- e:
+			case kr.entries <- e:
 			default: // nobody waits for this entry
 			}
 		}
 		close(finished)
 	}()
-	t.Cleanup(func() {
-		cancel()
-		select {
-		case <-finished:
-		case <-time.After(5 * time.Second):
-			t.Error("reader did not stop after cancel")
-		}
-		// The subscription is blocked in Receive until the next PONG wakes it up.
-		time.Sleep(3 * pingInterval)
-	})
-	return entries
+	var stopOnce sync.Once
+	kr.stop = func() {
+		stopOnce.Do(func() {
+			cancel()
+			select {
+			case <-finished:
+			case <-time.After(5 * time.Second):
+				t.Error("reader did not stop after cancel")
+			}
+			// The subscription is blocked in Receive until the next PONG wakes it up.
+			time.Sleep(3 * pingInterval)
+		})
+	}
+	t.Cleanup(kr.stop)
+	return kr
 }
 
 func waitEntry(t *testing.T, entries <-chan *entry.Entry, cmd string, key string) {
@@ -220,7 +232,7 @@ func TestScanReaderKsnSurvivesIdleConnectionDrop(t *testing.T) {
 	proxy := startIdleKillingProxy(t, src, idleTimeout)
 
 	redisDo(t, src, "SET", "before", "1")
-	entries := startKsnReader(t, proxy.address())
+	entries := startKsnReader(t, proxy.address()).entries
 	waitEntry(t, entries, "RESTORE", "before")
 
 	time.Sleep(3 * idleTimeout)
@@ -237,7 +249,7 @@ func TestScanReaderKsnSurvivesServerIdleTimeout(t *testing.T) {
 	src := startRedis(t, "--notify-keyspace-events", "EA", "--timeout", "1")
 
 	redisDo(t, src, "SET", "before", "1")
-	entries := startKsnReader(t, src)
+	entries := startKsnReader(t, src).entries
 	waitEntry(t, entries, "RESTORE", "before")
 
 	time.Sleep(3 * serverTimeout)
@@ -251,7 +263,7 @@ func TestScanReaderKsnForwardsDelWithHeartbeat(t *testing.T) {
 	src := startRedis(t, "--notify-keyspace-events", "EA")
 
 	redisDo(t, src, "SET", "k", "1")
-	entries := startKsnReader(t, src)
+	entries := startKsnReader(t, src).entries
 	waitEntry(t, entries, "RESTORE", "k")
 
 	time.Sleep(300 * time.Millisecond)
@@ -262,22 +274,25 @@ func TestScanReaderKsnForwardsDelWithHeartbeat(t *testing.T) {
 // Shutdown requested while the scan is still running: both the scan and the
 // subscription stop and close the dump queue.
 func TestScanReaderKsnStopsDuringScan(t *testing.T) {
+	const keys = 100000
 	src := startRedis(t, "--notify-keyspace-events", "EA")
 	args := []interface{}{"MSET"}
-	for i := 0; i < 20000; i++ {
+	for i := 0; i < keys; i++ {
 		args = append(args, "key:"+strconv.Itoa(i), "1")
 	}
 	redisDo(t, src, args...)
 
-	entries := startKsnReader(t, src)
+	kr := startKsnReader(t, src)
 	timeout := time.After(10 * time.Second)
 	for received := 0; received < 100; {
 		select {
-		case <-entries:
+		case <-kr.entries:
 			received++
 		case <-timeout:
 			t.Fatal("scan did not start")
 		}
 	}
-	// Cleanup cancels the reader in the middle of the scan and waits for it to stop.
+	kr.stop()
+	// Otherwise the scan finished before the cancel, and only the subscription closed the queue.
+	require.Less(t, kr.received.Load(), int64(keys), "scan finished before the reader was stopped")
 }
