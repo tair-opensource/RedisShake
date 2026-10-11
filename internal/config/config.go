@@ -79,8 +79,9 @@ type AdvancedOptions struct {
 	// Timeout of a single attempt to connect to Redis, including DNS lookup and TLS handshake.
 	DialTimeoutSec int `mapstructure:"dial_timeout_sec" default:"10"`
 
-	// Idle time before TCP keepalive probes start, and the interval between probes.
-	// Keeps idle connections alive through NAT and VPN gateways that drop silent flows.
+	// How long a connection stays idle before the first TCP keepalive probe. Probes then
+	// follow Go defaults: every 15 seconds, 9 times. Keeps idle connections alive through
+	// NAT and VPN gateways that drop silent flows.
 	TcpKeepaliveSec int `mapstructure:"tcp_keepalive_sec" default:"30"`
 }
 

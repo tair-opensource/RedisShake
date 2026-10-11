@@ -170,9 +170,9 @@ empty_db_before_sync = false
 # A failed attempt is retried up to 5 times with backoff before redis-shake exits.
 dial_timeout_sec = 10
 
-# Idle time before TCP keepalive probes start, and the interval between probes.
-# Keeps idle connections alive through NAT and VPN gateways that drop silent flows,
-# and detects a dead peer faster.
+# How long a connection stays idle before the first TCP keepalive probe, in seconds.
+# Probes then follow Go defaults: every 15 seconds, 9 times.
+# Keeps idle connections alive through NAT and VPN gateways that drop silent flows.
 tcp_keepalive_sec = 30
 
 [module]
