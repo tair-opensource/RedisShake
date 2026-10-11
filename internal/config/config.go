@@ -75,6 +75,9 @@ type AdvancedOptions struct {
 	AwsPSync string `mapstructure:"aws_psync" default:""` // 10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync
 
 	EmptyDBBeforeSync bool `mapstructure:"empty_db_before_sync" default:"false"`
+
+	// Timeout of a single attempt to connect to Redis, including DNS lookup and TLS handshake.
+	DialTimeoutSec int `mapstructure:"dial_timeout_sec" default:"10"`
 }
 
 type ModuleOptions struct {
