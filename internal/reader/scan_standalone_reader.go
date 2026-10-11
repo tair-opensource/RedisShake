@@ -43,6 +43,7 @@ type dbKey struct {
 type needRestoreItem struct {
 	dbId int
 	key  string
+	ping bool // the reply to read is PONG, not DUMP of a key
 }
 
 type scanStandaloneReader struct {
@@ -275,24 +276,37 @@ func (r *scanStandaloneReader) dump() {
 		log.Infof("running dump() in read-only mode")
 	}
 
-	for item := range r.needDumpQueue.Ch {
-		r.stat.NeedUpdateCount = int64(r.needDumpQueue.Len())
-		dbId := item.(dbKey).db
-		key := item.(dbKey).key
-		if nowDbId != dbId {
-			r.dumpClient.Send("SELECT", strconv.Itoa(dbId))
-			nowDbId = dbId
+	// Once the scan is over, keys come only from keyspace notifications, and the
+	// connection may stay idle for long. PING keeps it alive; restore reads the reply.
+	ticker := time.NewTicker(pingInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			r.dumpClient.Send("PING")
+			r.needRestoreChan <- &needRestoreItem{ping: true}
+		case item, ok := <-r.needDumpQueue.Ch:
+			if !ok {
+				close(r.needRestoreChan)
+				log.Infof("[%s] scanStandaloneReader dump finished.", r.stat.Name)
+				return
+			}
+			r.stat.NeedUpdateCount = int64(r.needDumpQueue.Len())
+			dbId := item.(dbKey).db
+			key := item.(dbKey).key
+			if nowDbId != dbId {
+				r.dumpClient.Send("SELECT", strconv.Itoa(dbId))
+				nowDbId = dbId
+			}
+			// dump
+			r.dumpClient.Send("DUMP", key)
+			r.dumpClient.Send("PTTL", key)
+			if len(r.opts.SkipUnknownType) > 0 {
+				r.dumpClient.Send("TYPE", key)
+			}
+			r.needRestoreChan <- &needRestoreItem{dbId: dbId, key: key}
 		}
-		// dump
-		r.dumpClient.Send("DUMP", key)
-		r.dumpClient.Send("PTTL", key)
-		if len(r.opts.SkipUnknownType) > 0 {
-			r.dumpClient.Send("TYPE", key)
-		}
-		r.needRestoreChan <- &needRestoreItem{dbId, key}
 	}
-	close(r.needRestoreChan)
-	log.Infof("[%s] scanStandaloneReader dump finished.", r.stat.Name)
 }
 
 // restore sends RESTORE commands to the target Redis.
@@ -302,6 +316,13 @@ func (r *scanStandaloneReader) dump() {
 func (r *scanStandaloneReader) restore() {
 	nowDbId := 0
 	for item := range r.needRestoreChan {
+		if item.ping {
+			reply, err := r.dumpClient.Receive()
+			if err != nil || reply != "PONG" {
+				log.Panicf("[%s] ping source failed. reply=[%v], err=[%v]", r.stat.Name, reply, err)
+			}
+			continue
+		}
 		dbId := item.dbId
 		key := item.key
 		if nowDbId != dbId {
