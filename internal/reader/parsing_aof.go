@@ -632,7 +632,10 @@ func (aofInfo *INFO) LoadAppendOnlyFile(ctx context.Context, am *AOFManifest, AO
 				ret = aofInfo.ParsingSingleAppendOnlyFile(ctx, AOFName, AOFTimeStamp)
 				if ret == AOFOk || (ret == AOFTruncated) {
 					log.Infof("DB loaded from History File %v: %.3f seconds", AOFName, float64(Ustime()-start)/1000000)
-					return ret
+					if ret == AOFTruncated {
+						return ret
+					}
+					ret = AOFOk
 				}
 				if ret == AOFEmpty {
 					ret = AOFOk
@@ -664,7 +667,10 @@ func (aofInfo *INFO) LoadAppendOnlyFile(ctx context.Context, am *AOFManifest, AO
 			ret = aofInfo.ParsingSingleAppendOnlyFile(ctx, AOFName, AOFTimeStamp)
 			if ret == AOFOk || (ret == AOFTruncated) {
 				log.Infof("DB loaded from incr File %v: %.3f seconds", AOFName, float64(Ustime()-start)/1000000)
-				return ret
+				if ret == AOFTruncated {
+					return ret
+				}
+				ret = AOFOk
 			}
 			if ret == AOFEmpty {
 				ret = AOFOk
