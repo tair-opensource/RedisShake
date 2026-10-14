@@ -13,6 +13,10 @@ import (
 // - true if the entry should be processed
 // - false if it should be filtered out
 func Filter(e *entry.Entry) bool {
+	if !slotFilter(e) {
+		return false
+	}
+
 	keyResults := make([]bool, len(e.Keys))
 	for i := range keyResults {
 		keyResults[i] = true

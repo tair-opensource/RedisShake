@@ -28,6 +28,8 @@ type FilterOptions struct {
 	BlockCommand      []string `mapstructure:"block_command" default:"[]"`
 	AllowCommandGroup []string `mapstructure:"allow_command_group" default:"[]"`
 	BlockCommandGroup []string `mapstructure:"block_command_group" default:"[]"`
+	AllowSlot         []string `mapstructure:"allow_slot" default:"[]"`
+	BlockSlot         []string `mapstructure:"block_slot" default:"[]"`
 	Function          string   `mapstructure:"function" default:""`
 }
 
