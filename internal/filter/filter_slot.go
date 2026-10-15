@@ -13,10 +13,20 @@ import (
 
 const clusterSlotCount = 16384
 
+type slotSet [clusterSlotCount / 64]uint64
+
+func (s *slotSet) add(slot int) {
+	s[slot>>6] |= 1 << uint(slot&63)
+}
+
+func (s *slotSet) has(slot int) bool {
+	return s[slot>>6]&(1<<uint(slot&63)) != 0
+}
+
 var (
 	slotFilterOnce sync.Once
-	allowSlots     []bool
-	blockSlots     []bool
+	allowSlots     *slotSet
+	blockSlots     *slotSet
 )
 
 func slotFilter(e *entry.Entry) bool {
@@ -53,11 +63,11 @@ func loadSlotFilters() {
 	})
 }
 
-func parseSlotRanges(ranges []string) ([]bool, error) {
+func parseSlotRanges(ranges []string) (*slotSet, error) {
 	if len(ranges) == 0 {
 		return nil, nil
 	}
-	slots := make([]bool, clusterSlotCount)
+	slots := &slotSet{}
 	for _, r := range ranges {
 		startStr, endStr, isRange := strings.Cut(strings.TrimSpace(r), "-")
 		start, err := strconv.Atoi(strings.TrimSpace(startStr))
@@ -75,7 +85,7 @@ func parseSlotRanges(ranges []string) ([]bool, error) {
 			return nil, fmt.Errorf("invalid slot range %q: slots must be within 0-%d and start <= end", r, clusterSlotCount-1)
 		}
 		for slot := start; slot <= end; slot++ {
-			slots[slot] = true
+			slots.add(slot)
 		}
 	}
 	return slots, nil
@@ -85,10 +95,10 @@ func slotAllowed(slot int) bool {
 	if slot < 0 || slot >= clusterSlotCount {
 		return false
 	}
-	if allowSlots != nil && !allowSlots[slot] {
+	if allowSlots != nil && !allowSlots.has(slot) {
 		return false
 	}
-	if blockSlots != nil && blockSlots[slot] {
+	if blockSlots != nil && blockSlots.has(slot) {
 		return false
 	}
 	return true
