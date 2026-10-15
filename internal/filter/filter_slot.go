@@ -19,6 +19,40 @@ var (
 	blockSlots     []bool
 )
 
+func slotFilter(e *entry.Entry) bool {
+	loadSlotFilters()
+	if allowSlots == nil && blockSlots == nil {
+		return true
+	}
+	passed, filtered := 0, 0
+	for _, slot := range e.Slots {
+		if slotAllowed(slot) {
+			passed++
+		} else {
+			filtered++
+		}
+	}
+	if passed > 0 && filtered > 0 {
+		log.Infof("Error: Inconsistent slot filter results for entry with %d keys", len(e.Keys))
+		log.Infof("Keys: %v, slots: %v", e.Keys, e.Slots)
+	}
+	return filtered == 0
+}
+
+func loadSlotFilters() {
+	slotFilterOnce.Do(func() {
+		var err error
+		allowSlots, err = parseSlotRanges(config.Opt.Filter.AllowSlot)
+		if err != nil {
+			log.Panicf("filter.allow_slot: %v", err)
+		}
+		blockSlots, err = parseSlotRanges(config.Opt.Filter.BlockSlot)
+		if err != nil {
+			log.Panicf("filter.block_slot: %v", err)
+		}
+	})
+}
+
 func parseSlotRanges(ranges []string) ([]bool, error) {
 	if len(ranges) == 0 {
 		return nil, nil
@@ -45,40 +79,6 @@ func parseSlotRanges(ranges []string) ([]bool, error) {
 		}
 	}
 	return slots, nil
-}
-
-func loadSlotFilters() {
-	slotFilterOnce.Do(func() {
-		var err error
-		allowSlots, err = parseSlotRanges(config.Opt.Filter.AllowSlot)
-		if err != nil {
-			log.Panicf("filter.allow_slot: %v", err)
-		}
-		blockSlots, err = parseSlotRanges(config.Opt.Filter.BlockSlot)
-		if err != nil {
-			log.Panicf("filter.block_slot: %v", err)
-		}
-	})
-}
-
-func slotFilter(e *entry.Entry) bool {
-	loadSlotFilters()
-	if allowSlots == nil && blockSlots == nil {
-		return true
-	}
-	passed, filtered := 0, 0
-	for _, slot := range e.Slots {
-		if slotAllowed(slot) {
-			passed++
-		} else {
-			filtered++
-		}
-	}
-	if passed > 0 && filtered > 0 {
-		log.Infof("Error: Inconsistent slot filter results for entry with %d keys", len(e.Keys))
-		log.Infof("Keys: %v, slots: %v", e.Keys, e.Slots)
-	}
-	return filtered == 0
 }
 
 func slotAllowed(slot int) bool {
