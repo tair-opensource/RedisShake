@@ -35,7 +35,7 @@ func ReadZipList(rd io.Reader) []string {
 	size := int(ReadUint16(rd))
 	var elements []string
 	if size == 65535 { // 2^16-1, we need to traverse the entire list to know how many items it holds.
-		for firstByte := ReadByte(rd); firstByte != 0xFE; firstByte = ReadByte(rd) {
+		for firstByte := ReadByte(rd); firstByte != 0xFF; firstByte = ReadByte(rd) {
 			ele := readZipListEntry(rd, firstByte)
 			elements = append(elements, ele)
 		}
