@@ -165,6 +165,8 @@ target_redis_max_qps = 300000
 target_redis_proto_max_bulk_len = 512_000_000
 
 empty_db_before_sync = false
+dial_timeout_sec = 10
+tcp_keepalive_sec = 30
 ```
 
 ## Example: Migrate between Two Redis Instances

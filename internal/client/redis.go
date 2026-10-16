@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"RedisShake/internal/client/proto"
+	"RedisShake/internal/config"
 	"RedisShake/internal/log"
 )
 
@@ -30,27 +31,20 @@ type TlsConfig struct {
 	KeyFilePath    string `mapstructure:"key" default:""`
 }
 
+const (
+	defaultDialTimeout  = 10 * time.Second
+	defaultTcpKeepalive = 30 * time.Second
+	dialAttempts        = 5
+)
+
+// dialRetryBackoff is the pause before the first retry; it doubles after each failed attempt.
+var dialRetryBackoff = time.Second
+
 func NewRedisClient(ctx context.Context, address string, username string, password string, Tls bool, tlsConfig TlsConfig, replica bool) *Redis {
 	r := new(Redis)
-	var conn net.Conn
-	var dialer = &net.Dialer{
-		Timeout:   5 * time.Minute,
-		KeepAlive: 5 * time.Minute,
-	}
-	ctxWithDeadline, cancel := context.WithTimeout(ctx, 1*time.Second)
-	defer cancel()
-	var err error
-	if Tls {
-		tlsDialer := &tls.Dialer{
-			NetDialer: dialer,
-			Config:    getTlsConfig(tlsConfig),
-		}
-		conn, err = tlsDialer.DialContext(ctxWithDeadline, "tcp", address)
-	} else {
-		conn, err = dialer.DialContext(ctxWithDeadline, "tcp", address)
-	}
+	conn, err := dial(ctx, address, Tls, tlsConfig)
 	if err != nil {
-		log.Panicf("dial failed. address=[%s], tls=[%v], err=[%v]", address, Tls, err)
+		log.Panicf("dial failed. address=[%s], tls=[%v], attempts=[%d], err=[%v]", address, Tls, dialAttempts, err)
 	}
 
 	r.conn = conn
@@ -87,6 +81,52 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	}
 
 	return r
+}
+
+// dial connects to address, retrying with backoff. A slow DNS resolver or a lossy network path
+// may need more than one attempt; nothing has been read from the connection yet, so a retry is safe.
+func dial(ctx context.Context, address string, Tls bool, tlsConfig TlsConfig) (net.Conn, error) {
+	timeout := defaultDialTimeout
+	if config.Opt.Advanced.DialTimeoutSec > 0 {
+		timeout = time.Duration(config.Opt.Advanced.DialTimeoutSec) * time.Second
+	}
+	keepalive := defaultTcpKeepalive
+	if config.Opt.Advanced.TcpKeepaliveSec > 0 {
+		keepalive = time.Duration(config.Opt.Advanced.TcpKeepaliveSec) * time.Second
+	}
+	dialer := &net.Dialer{
+		KeepAlive: keepalive,
+	}
+	backoff := dialRetryBackoff
+	for attempt := 1; ; attempt++ {
+		ctxWithDeadline, cancel := context.WithTimeout(ctx, timeout)
+		var conn net.Conn
+		var err error
+		if Tls {
+			tlsDialer := &tls.Dialer{
+				NetDialer: dialer,
+				Config:    getTlsConfig(tlsConfig),
+			}
+			conn, err = tlsDialer.DialContext(ctxWithDeadline, "tcp", address)
+		} else {
+			conn, err = dialer.DialContext(ctxWithDeadline, "tcp", address)
+		}
+		cancel()
+		if err == nil {
+			return conn, nil
+		}
+		if attempt == dialAttempts || ctx.Err() != nil {
+			return nil, err
+		}
+		log.Warnf("dial failed, will retry in %v. address=[%s], tls=[%v], attempt=[%d/%d], err=[%v]",
+			backoff, address, Tls, attempt, dialAttempts, err)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(backoff):
+		}
+		backoff *= 2
+	}
 }
 
 func getTlsConfig(tlsConfig TlsConfig) *tls.Config {
