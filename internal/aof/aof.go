@@ -2,14 +2,17 @@ package aof
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"io"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
+	"RedisShake/internal/rdb"
 )
 
 const (
@@ -24,12 +27,17 @@ const (
 type Loader struct {
 	filePath string
 	ch       chan *entry.Entry
+
+	name           string
+	useRDBPreamble int
 }
 
-func NewLoader(filePath string, ch chan *entry.Entry) *Loader {
+func NewLoader(name string, useRDBPreamble int, filePath string, ch chan *entry.Entry) *Loader {
 	ld := new(Loader)
 	ld.ch = ch
 	ld.filePath = filePath
+	ld.name = name
+	ld.useRDBPreamble = useRDBPreamble
 	return ld
 }
 
@@ -78,7 +86,29 @@ func (ld *Loader) LoadSingleAppendOnlyFile(ctx context.Context, timestamp int64)
 			return Empty
 		}
 	}
+	isRDB := false
+	if ld.useRDBPreamble == 1 {
+		sig := make([]byte, 6)
+		n, err := fp.Read(sig)
+		if err != nil && err != io.EOF {
+			log.Infof("Reading signature the append only File %v: %v", path.Base(filePath), err)
+			return Failed
+		}
+		isRDB = (err == nil) && (n >= 5 && bytes.Equal(sig[:5], []byte("REDIS"))) || (n >= 6 && bytes.Equal(sig[:6], []byte("VALKEY")))
+
+		if _, err := fp.Seek(0, io.SeekStart); err != nil {
+			log.Infof("Unrecoverable error reading the append only File %v: %v", path.Base(filePath), err)
+			return Failed
+		}
+	}
+
 	reader := bufio.NewReader(fp)
+	if isRDB { //Skipped RDB checksum and has not been processed yet.
+		log.Infof("Reading RDB Base File on AOF loading...")
+		rdbLoader := rdb.NewLoader(ld.name, nil, filePath, ld.ch)
+		_ = rdbLoader.ParseRDBStream(ctx, reader)
+		log.Infof("[%s] RDB preamble parse done, switching to AOF stream...", ld.name)
+	}
 	for {
 		select {
 		case <-ctx.Done():
