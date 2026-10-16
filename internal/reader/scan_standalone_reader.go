@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"RedisShake/internal/client"
 	"RedisShake/internal/client/proto"
@@ -32,6 +33,18 @@ type ScanReaderOptions struct {
 	PreferReplica   bool             `mapstructure:"prefer_replica" default:"false"`
 	Count           int              `mapstructure:"count" default:"1"`
 	SkipUnknownType []string         `mapstructure:"skip_unknown_type" default:"[]"`
+	// DumpParallel is the number of independent source connections that drain
+	// the shared needDumpQueue and run DUMP+PTTL. A single connection caps at
+	// ~22k keys/s (round-trip latency), starving downstream writers. Each worker
+	// pulls keys off the shared channel (no key partitioning needed). Default 1.
+	DumpParallel int `mapstructure:"dump_parallel" default:"1"`
+	// DumpQueueSize bounds the scan()->dump() handoff queue. scan() enumerates
+	// key names far faster than dump() processes them; an unbounded queue buffers
+	// ~the whole keyspace in RAM (OOM on large DBs) and the large live heap also
+	// degrades throughput via GC. The bounded default makes Put() block,
+	// backpressuring scan() to dump() throughput so memory stays flat. Set a
+	// large value to restore the previous effectively-unbounded behavior.
+	DumpQueueSize int `mapstructure:"dump_queue_size" default:"100000"`
 }
 
 type dbKey struct {
@@ -44,16 +57,25 @@ type needRestoreItem struct {
 	key  string
 }
 
-type scanStandaloneReader struct {
-	ctx             context.Context
-	dbs             []int
-	opts            *ScanReaderOptions
-	ch              chan *entry.Entry
-	needDumpQueue   *utils.UniqueQueue
+// dumpWorker is one source connection that drains the shared needDumpQueue.
+// Each worker runs its own dump()/restore() pair on its own connection, so
+// pipelined replies stay ordered per-connection. Workers share needDumpQueue
+// (input) and r.ch (output); the Go channel hands each key to exactly one
+// worker, so no key partitioning is needed.
+type dumpWorker struct {
+	client          *client.Redis
 	needRestoreChan chan *needRestoreItem
-	dumpClient      *client.Redis
-	subWG           sync.WaitGroup
 	isValkey        bool
+}
+
+type scanStandaloneReader struct {
+	ctx           context.Context
+	dbs           []int
+	opts          *ScanReaderOptions
+	ch            chan *entry.Entry
+	needDumpQueue *utils.UniqueQueue
+	subWG         sync.WaitGroup
+	restoreWG     sync.WaitGroup
 
 	stat struct {
 		Name              string `json:"name"`
@@ -71,9 +93,12 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 	r.opts = opts
 	r.ch = make(chan *entry.Entry, 1024)
 	r.stat.Name = "reader_" + strings.Replace(opts.Address, ":", "_", -1)
-	r.needDumpQueue = utils.NewUniqueQueue(100000000)     // cache 100000000 keys
-	r.needRestoreChan = make(chan *needRestoreItem, 1024) // inflight 1024 keys
-	log.Infof("[%s] scanStandaloneReader init finished. dbs=[%v]", r.stat.Name, r.dbs)
+	queueSize := opts.DumpQueueSize
+	if queueSize < 1 {
+		queueSize = 100000
+	}
+	r.needDumpQueue = utils.NewUniqueQueue(queueSize) // bounded: backpressure scan() to dump() speed (avoids buffering whole keyspace)
+	log.Infof("[%s] scanStandaloneReader init finished. dbs=[%v], dump_queue_size=[%d]", r.stat.Name, r.dbs, queueSize)
 	return r
 }
 
@@ -87,8 +112,25 @@ func (r *scanStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entr
 	if r.opts.Scan {
 		go r.scan()
 	}
-	go r.dump()
-	go r.restore()
+	parallel := r.opts.DumpParallel
+	if parallel < 1 {
+		parallel = 1
+	}
+	log.Infof("[%s] starting %d dump worker(s)", r.stat.Name, parallel)
+	for i := 0; i < parallel; i++ {
+		w := &dumpWorker{
+			client:          client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.TlsConfig, r.opts.PreferReplica),
+			needRestoreChan: make(chan *needRestoreItem, 1024),
+		}
+		r.restoreWG.Add(1)
+		go r.dump(w)
+		go r.restore(w)
+	}
+	// Close the output channel once every worker's restore() has drained.
+	go func() {
+		r.restoreWG.Wait()
+		close(r.ch)
+	}()
 	return []chan *entry.Entry{r.ch}
 }
 
@@ -204,57 +246,86 @@ func (r *scanStandaloneReader) scan() {
 	}
 }
 
-func (r *scanStandaloneReader) dump() {
+func (r *scanStandaloneReader) dump(w *dumpWorker) {
 	nowDbId := 0
-	r.dumpClient = client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.TlsConfig, r.opts.PreferReplica)
-	r.isValkey = r.dumpClient.IsValkey()
-	log.Infof("[%s] detected server type: %s", r.stat.Name, map[bool]string{true: "Valkey", false: "Redis"}[r.isValkey])
+	w.isValkey = w.client.IsValkey()
+	log.Infof("[%s] detected server type: %s", r.stat.Name, map[bool]string{true: "Valkey", false: "Redis"}[w.isValkey])
 	// Support prefer_replica=true in both Cluster and Standalone mode
 	if r.opts.PreferReplica {
-		r.dumpClient.Do("READONLY")
+		w.client.Do("READONLY")
 		log.Infof("running dump() in read-only mode")
 	}
 
-	for item := range r.needDumpQueue.Ch {
-		r.stat.NeedUpdateCount = int64(r.needDumpQueue.Len())
-		dbId := item.(dbKey).db
-		key := item.(dbKey).key
-		if nowDbId != dbId {
-			r.dumpClient.Send("SELECT", strconv.Itoa(dbId))
-			nowDbId = dbId
+	// Batch the DUMP/PTTL sends instead of flushing per command (Send() would do
+	// a syscall per command — the scan reader's dominant cost). Flush every
+	// `flushEvery` keys or every 5ms (whichever first) so restore() is never
+	// starved and a lull can't strand a partial batch. flushEvery stays well
+	// under the needRestoreChan capacity to avoid a send/receive deadlock.
+	const flushEvery = 128
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
+	pending := 0
+	for {
+		select {
+		case <-ticker.C:
+			if pending > 0 {
+				w.client.Flush()
+				pending = 0
+			}
+			continue
+		case item, ok := <-r.needDumpQueue.Ch:
+			if !ok {
+				if pending > 0 {
+					w.client.Flush()
+				}
+				close(w.needRestoreChan)
+				log.Infof("[%s] scanStandaloneReader dump finished.", r.stat.Name)
+				return
+			}
+			r.stat.NeedUpdateCount = int64(r.needDumpQueue.Len())
+			dbId := item.(dbKey).db
+			key := item.(dbKey).key
+			if nowDbId != dbId {
+				w.client.SendNoFlush("SELECT", strconv.Itoa(dbId))
+				nowDbId = dbId
+			}
+			// dump (buffered; flushed in batches below)
+			w.client.SendNoFlush("DUMP", key)
+			w.client.SendNoFlush("PTTL", key)
+			if len(r.opts.SkipUnknownType) > 0 {
+				w.client.SendNoFlush("TYPE", key)
+			}
+			w.needRestoreChan <- &needRestoreItem{dbId, key}
+			pending++
+			if pending >= flushEvery {
+				w.client.Flush()
+				pending = 0
+			}
 		}
-		// dump
-		r.dumpClient.Send("DUMP", key)
-		r.dumpClient.Send("PTTL", key)
-		if len(r.opts.SkipUnknownType) > 0 {
-			r.dumpClient.Send("TYPE", key)
-		}
-		r.needRestoreChan <- &needRestoreItem{dbId, key}
 	}
-	close(r.needRestoreChan)
-	log.Infof("[%s] scanStandaloneReader dump finished.", r.stat.Name)
 }
 
 // restore sends RESTORE commands to the target Redis.
 // Note: rdb_restore_command_behavior configuration only applies when RESTORE command is used.
 // For large values exceeding target_redis_proto_max_bulk_len, individual commands (SET, HSET, etc.)
 // are used instead, which may not respect the rdb_restore_command_behavior setting.
-func (r *scanStandaloneReader) restore() {
+func (r *scanStandaloneReader) restore(w *dumpWorker) {
+	defer r.restoreWG.Done()
 	nowDbId := 0
-	for item := range r.needRestoreChan {
+	for item := range w.needRestoreChan {
 		dbId := item.dbId
 		key := item.key
 		if nowDbId != dbId {
-			reply, err := r.dumpClient.Receive()
+			reply, err := w.client.Receive()
 			if err != nil || reply != "OK" {
 				log.Panicf("scanStandaloneReader select db failed. db=[%d]", dbId)
 			}
 			nowDbId = dbId
 		}
-		iDump, err1 := r.dumpClient.Receive()
-		iPttl, err2 := r.dumpClient.Receive()
+		iDump, err1 := w.client.Receive()
+		iPttl, err2 := w.client.Receive()
 		if len(r.opts.SkipUnknownType) > 0 {
-			iType, err3 := r.dumpClient.Receive()
+			iType, err3 := w.client.Receive()
 			if err3 != nil {
 				log.Panicf("%v", err3)
 			}
@@ -303,7 +374,7 @@ func (r *scanStandaloneReader) restore() {
 				"rdb_restore_command_behavior setting may not work correctly for this key.", key, len(dump))
 			typeByte := dump[0]
 			anotherReader := strings.NewReader(dump[1 : len(dump)-10])
-			o := types.ParseObject(anotherReader, typeByte, key, r.isValkey)
+			o := types.ParseObject(anotherReader, typeByte, key, w.isValkey)
 			cmdC := o.Rewrite()
 			for cmd := range cmdC {
 				e := entry.NewEntry()
@@ -329,7 +400,6 @@ func (r *scanStandaloneReader) restore() {
 		}
 	}
 	log.Infof("[%s] scanStandaloneReader restore finished.", r.stat.Name)
-	close(r.ch)
 }
 
 func (r *scanStandaloneReader) Status() interface{} {

@@ -19,6 +19,8 @@ try_diskless = false       # Set to true for diskless sync if the source has rep
 #scan = true                # set to false if you don't want to scan keys
 #ksn = false                # set to true to enabled Redis keyspace notifications (KSN) subscription
 #count = 1                  # number of keys to scan per iteration
+#dump_parallel = 1          # number of source connections draining the scan queue in parallel (DUMP+PTTL); 1 = original behavior
+#dump_queue_size = 100000   # bound on the scan()->dump() handoff queue; backpressures scan to dump speed and keeps memory flat on large DBs. Set very large to restore the old effectively-unbounded behavior
 ## RedisShake uses the TYPE command to get each key's type.
 ## If the type is in this skip list, the key will be skipped.
 #skip_unknown_type = []  # e.g. ["imset", "mbloom", "string", "hash", "list", "set", "zset"]
@@ -37,6 +39,7 @@ username = ""              # keep empty if not using ACL
 password = ""              # keep empty if no authentication is required
 tls = false
 off_reply = false          # turn off the server reply
+parallel = 1               # number of target connections to fan writes across (1 = original behavior)
 
 # [file_writer]
 # filepath = "/tmp/cmd.txt"
