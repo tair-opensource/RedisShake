@@ -75,7 +75,7 @@ tls = false
 
 ### 阿里云「云数据库 Redis」与「云原生内存数据库Tair」
 
-「云数据库 Redis」与「云原生内存数据库Tair」都支持 PSync 协议，推荐使用 `sync_reader`。用户需要创建一个具有复制权限的账号（可以执行 PSync 命令），RedisShake 使用该账号进行数据同步，具体创建步骤见 [创建与管理账号](https://help.aliyun.com/zh/redis/user-guide/create-and-manage-database-accounts)。
+「云数据库 Redis」与「云原生内存数据库Tair」都支持 PSync 协议，但默认不开放，如需使用请向阿里云提交工单申请。申请成功后需要在阿里云后台创建一个具有复制权限的账号（可以执行 PSync 命令），RedisShake 使用该账号进行数据同步。
 
 例外情况：
 1. 2.8 版本的 Redis 实例不支持创建复制权限的账号，需要 [升级大版本](https://help.aliyun.com/zh/redis/user-guide/upgrade-the-major-version-1)。
