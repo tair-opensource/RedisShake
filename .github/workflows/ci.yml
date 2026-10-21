@@ -52,7 +52,9 @@ jobs:
                     for repo in TairString TairHash TairZset; do
                         git clone --depth 1 https://github.com/tair-opensource/${repo}.git
                         cd ${repo} && mkdir build && cd build
-                        cmake .. && make -j$(nproc)
+                        # The modules declare cmake_minimum_required(VERSION 3.0),
+                        # which CMake 4 (ubuntu-latest since 26.04) rejects.
+                        cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make -j$(nproc)
                         cp ../lib/*.so $GITHUB_WORKSPACE/tair-modules/
                         cd $GITHUB_WORKSPACE
                     done
