@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"RedisShake/internal/client"
 	"RedisShake/internal/client/proto"
@@ -42,6 +43,7 @@ type dbKey struct {
 type needRestoreItem struct {
 	dbId int
 	key  string
+	ping bool // the reply to read is PONG, not DUMP of a key
 }
 
 type scanStandaloneReader struct {
@@ -118,7 +120,10 @@ func (r *scanStandaloneReader) subscribe() {
 	// wait
 	r.subWG.Done()
 
-	regex := regexp.MustCompile(`\d+`)
+	done := make(chan struct{})
+	defer close(done)
+	go pingSubscription(c, done)
+
 	for {
 		select {
 		case <-r.ctx.Done():
@@ -130,25 +135,81 @@ func (r *scanStandaloneReader) subscribe() {
 			if err != nil {
 				log.Panicf("%v", err)
 			}
-			respSlice := resp.([]interface{})
-			key := respSlice[3].(string)
-			dbId := regex.FindString(respSlice[2].(string))
-			dbIdInt, err := strconv.Atoi(dbId)
+			event, ok, err := parseKeyEvent(resp)
 			if err != nil {
-				log.Panicf("%v", err)
+				log.Panicf("[%s] %v", r.stat.Name, err)
+			}
+			if !ok {
+				continue // reply to PING
 			}
 			// handle del action
-			eventSlice := strings.Split(respSlice[2].(string), ":")
-			if eventSlice[1] == "del" {
+			if event.name == "del" {
 				e := entry.NewEntry()
-				e.DbId = dbIdInt
-				e.Argv = []string{"DEL", key}
+				e.DbId = event.dbId
+				e.Argv = []string{"DEL", event.key}
 				r.ch <- e
 				continue
 			}
-			r.needDumpQueue.Put(dbKey{db: dbIdInt, key: key})
+			r.needDumpQueue.Put(dbKey{db: event.dbId, key: event.key})
 		}
 	}
+}
+
+// pingInterval is how often an otherwise idle connection to the source is pinged.
+// NAT and VPN gateways drop flows that stay silent for long, and Redis closes idle
+// connections when `timeout` is set.
+var pingInterval = 10 * time.Second
+
+// pingSubscription keeps the keyspace notification subscription from going silent:
+// when notifications are rare, the connection carries no traffic for minutes.
+// It runs until subscribe returns, so that after shutdown is requested the next
+// PONG wakes subscribe up from Receive. Write errors are fatal, as are read errors in subscribe.
+func pingSubscription(c *client.Redis, done <-chan struct{}) {
+	ticker := time.NewTicker(pingInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-done:
+			return
+		case <-ticker.C:
+			c.Send("PING")
+		}
+	}
+}
+
+type keyEvent struct {
+	dbId int
+	name string
+	key  string
+}
+
+var keyEventChannelRegex = regexp.MustCompile(`^__keyevent@(\d+)__:(.+)$`)
+
+// parseKeyEvent parses a message received on the keyspace notification subscription.
+// It returns ok=false for a reply to PING, which carries no event.
+func parseKeyEvent(resp interface{}) (event keyEvent, ok bool, err error) {
+	msg, isArray := resp.([]interface{})
+	if !isArray || len(msg) == 0 {
+		return keyEvent{}, false, fmt.Errorf("unexpected message on keyspace notification subscription: %v", resp)
+	}
+	kind, _ := msg[0].(string)
+	switch {
+	case strings.EqualFold(kind, "pong") && len(msg) == 2:
+		return keyEvent{}, false, nil
+	case strings.EqualFold(kind, "pmessage") && len(msg) == 4:
+		channel, _ := msg[2].(string)
+		key, isString := msg[3].(string)
+		match := keyEventChannelRegex.FindStringSubmatch(channel)
+		if match == nil || !isString {
+			break
+		}
+		dbId, err := strconv.Atoi(match[1])
+		if err != nil {
+			break
+		}
+		return keyEvent{dbId: dbId, name: match[2], key: key}, true, nil
+	}
+	return keyEvent{}, false, fmt.Errorf("unexpected message on keyspace notification subscription: %v", resp)
 }
 
 func (r *scanStandaloneReader) scan() {
@@ -215,24 +276,37 @@ func (r *scanStandaloneReader) dump() {
 		log.Infof("running dump() in read-only mode")
 	}
 
-	for item := range r.needDumpQueue.Ch {
-		r.stat.NeedUpdateCount = int64(r.needDumpQueue.Len())
-		dbId := item.(dbKey).db
-		key := item.(dbKey).key
-		if nowDbId != dbId {
-			r.dumpClient.Send("SELECT", strconv.Itoa(dbId))
-			nowDbId = dbId
+	// Once the scan is over, keys come only from keyspace notifications, and the
+	// connection may stay idle for long. PING keeps it alive; restore reads the reply.
+	ticker := time.NewTicker(pingInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			r.dumpClient.Send("PING")
+			r.needRestoreChan <- &needRestoreItem{ping: true}
+		case item, ok := <-r.needDumpQueue.Ch:
+			if !ok {
+				close(r.needRestoreChan)
+				log.Infof("[%s] scanStandaloneReader dump finished.", r.stat.Name)
+				return
+			}
+			r.stat.NeedUpdateCount = int64(r.needDumpQueue.Len())
+			dbId := item.(dbKey).db
+			key := item.(dbKey).key
+			if nowDbId != dbId {
+				r.dumpClient.Send("SELECT", strconv.Itoa(dbId))
+				nowDbId = dbId
+			}
+			// dump
+			r.dumpClient.Send("DUMP", key)
+			r.dumpClient.Send("PTTL", key)
+			if len(r.opts.SkipUnknownType) > 0 {
+				r.dumpClient.Send("TYPE", key)
+			}
+			r.needRestoreChan <- &needRestoreItem{dbId: dbId, key: key}
 		}
-		// dump
-		r.dumpClient.Send("DUMP", key)
-		r.dumpClient.Send("PTTL", key)
-		if len(r.opts.SkipUnknownType) > 0 {
-			r.dumpClient.Send("TYPE", key)
-		}
-		r.needRestoreChan <- &needRestoreItem{dbId, key}
 	}
-	close(r.needRestoreChan)
-	log.Infof("[%s] scanStandaloneReader dump finished.", r.stat.Name)
 }
 
 // restore sends RESTORE commands to the target Redis.
@@ -242,6 +316,13 @@ func (r *scanStandaloneReader) dump() {
 func (r *scanStandaloneReader) restore() {
 	nowDbId := 0
 	for item := range r.needRestoreChan {
+		if item.ping {
+			reply, err := r.dumpClient.Receive()
+			if err != nil || reply != "PONG" {
+				log.Panicf("[%s] ping source failed. reply=[%v], err=[%v]", r.stat.Name, reply, err)
+			}
+			continue
+		}
 		dbId := item.dbId
 		key := item.key
 		if nowDbId != dbId {

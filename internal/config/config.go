@@ -77,6 +77,14 @@ type AdvancedOptions struct {
 	AwsPSync string `mapstructure:"aws_psync" default:""` // 10.0.0.1:6379@nmfu2sl5osync,10.0.0.1:6379@xhma21xfkssync
 
 	EmptyDBBeforeSync bool `mapstructure:"empty_db_before_sync" default:"false"`
+
+	// Timeout of a single attempt to connect to Redis, including DNS lookup and TLS handshake.
+	DialTimeoutSec int `mapstructure:"dial_timeout_sec" default:"10"`
+
+	// How long a connection stays idle before the first TCP keepalive probe. Probes then
+	// follow Go defaults: every 15 seconds, 9 times. Keeps idle connections alive through
+	// NAT and VPN gateways that drop silent flows.
+	TcpKeepaliveSec int `mapstructure:"tcp_keepalive_sec" default:"30"`
 }
 
 type ModuleOptions struct {
