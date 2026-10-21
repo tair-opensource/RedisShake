@@ -72,13 +72,14 @@ func (r *aofReader) StartRead(ctx context.Context) []chan *entry.Entry {
 
 	// start read aof
 	go func() {
-		aofFileInfo := NewAOFFileInfo(r.path, r.ch)
+		aofFileInfo := NewAOFFileInfo(r.stat.AOFName, r.path, r.ch)
 		// try load manifest file
 		aofFileInfo.AOFLoadManifestFromDisk()
 		manifestInfo := aofFileInfo.AOFManifest
 		if manifestInfo == nil { // load single aof file
 			log.Infof("start send single AOF path=[%s]", r.path)
-			aofLoader := aof.NewLoader(r.path, r.ch)
+			aofFileInfo.AOFUseRDBPreamble = 1
+			aofLoader := aof.NewLoader(r.stat.AOFName, aofFileInfo.AOFUseRDBPreamble, r.path, r.ch)
 			ret := aofLoader.LoadSingleAppendOnlyFile(ctx, r.stat.AOFTimestamp)
 			if ret == AOFOk || ret == AOFTruncated {
 				log.Infof("The AOF File was successfully loaded")
@@ -88,8 +89,7 @@ func (r *aofReader) StartRead(ctx context.Context) []chan *entry.Entry {
 			log.Infof("Send single AOF finished. path=[%s]", r.path)
 			close(r.ch)
 		} else {
-			aofLoader := NewAOFFileInfo(r.path, r.ch)
-			ret := aofLoader.LoadAppendOnlyFile(ctx, manifestInfo, r.stat.AOFTimestamp)
+			ret := aofFileInfo.LoadAppendOnlyFile(ctx, manifestInfo, r.stat.AOFTimestamp)
 			if ret == AOFOk || ret == AOFTruncated {
 				log.Infof("The AOF File was successfully loaded")
 			} else {
