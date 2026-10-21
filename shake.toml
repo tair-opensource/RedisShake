@@ -94,6 +94,9 @@ block_command = []
 allow_command_group = []
 block_command_group = []
 
+allow_slot = []
+block_slot = []
+
 # Function for custom data processing
 # For best practices and examples, visit:
 # https://tair-opensource.github.io/RedisShake/zh/filter/function.html
