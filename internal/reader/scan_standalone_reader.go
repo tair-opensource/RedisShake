@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"RedisShake/internal/client"
 	"RedisShake/internal/client/proto"
@@ -39,9 +40,13 @@ type dbKey struct {
 	key string
 }
 
+// dumpPing in needDumpQueue asks dump() to ping its connection.
+type dumpPing struct{}
+
 type needRestoreItem struct {
 	dbId int
 	key  string
+	ping bool // the reply to read is PONG, not DUMP of a key
 }
 
 type scanStandaloneReader struct {
@@ -53,6 +58,7 @@ type scanStandaloneReader struct {
 	needRestoreChan chan *needRestoreItem
 	dumpClient      *client.Redis
 	subWG           sync.WaitGroup
+	scanWG          sync.WaitGroup
 	isValkey        bool
 
 	stat struct {
@@ -79,6 +85,9 @@ func NewScanStandaloneReader(ctx context.Context, opts *ScanReaderOptions) Reade
 
 func (r *scanStandaloneReader) StartRead(ctx context.Context) []chan *entry.Entry {
 	r.ctx = ctx
+	if r.opts.Scan {
+		r.scanWG.Add(1)
+	}
 	if r.opts.KSN {
 		r.subWG.Add(1)
 		go r.subscribe()
@@ -118,19 +127,43 @@ func (r *scanStandaloneReader) subscribe() {
 	// wait
 	r.subWG.Done()
 
+	// PING keeps the subscription alive through gateways and proxies that drop silent flows.
+	// Each PONG also makes dump() ping its connection, which idles while no keys change.
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-r.ctx.Done():
+				c.Close() // unblocks Receive below
+				return
+			case <-ticker.C:
+				c.Send("PING")
+			}
+		}
+	}()
+
 	regex := regexp.MustCompile(`\d+`)
 	for {
 		select {
 		case <-r.ctx.Done():
 			log.Infof("[%s] scanStandaloneReader subscribe finished.", r.stat.Name)
+			r.scanWG.Wait() // scan keeps putting keys until it sees ctx.Done
 			r.needDumpQueue.Close()
 			return
 		default:
 			resp, err := c.Receive()
 			if err != nil {
+				if r.ctx.Err() != nil {
+					continue // the connection was closed above on shutdown
+				}
 				log.Panicf("%v", err)
 			}
 			respSlice := resp.([]interface{})
+			if len(respSlice) == 2 { // reply to PING: ["pong", ""]
+				r.needDumpQueue.Put(dumpPing{})
+				continue
+			}
 			key := respSlice[3].(string)
 			dbId := regex.FindString(respSlice[2].(string))
 			dbIdInt, err := strconv.Atoi(dbId)
@@ -152,6 +185,7 @@ func (r *scanStandaloneReader) subscribe() {
 }
 
 func (r *scanStandaloneReader) scan() {
+	defer r.scanWG.Done()
 	c := client.NewRedisClient(r.ctx, r.opts.Address, r.opts.Username, r.opts.Password, r.opts.Tls, r.opts.TlsConfig, r.opts.PreferReplica)
 	defer c.Close()
 	dbs := r.dbs
@@ -177,7 +211,9 @@ func (r *scanStandaloneReader) scan() {
 			select {
 			case <-r.ctx.Done():
 				log.Infof("[%s] scanStandaloneReader scan finished.", r.stat.Name)
-				r.needDumpQueue.Close()
+				if !r.opts.KSN {
+					r.needDumpQueue.Close()
+				}
 				return
 			default:
 			}
@@ -216,6 +252,11 @@ func (r *scanStandaloneReader) dump() {
 	}
 
 	for item := range r.needDumpQueue.Ch {
+		if _, ok := item.(dumpPing); ok {
+			r.dumpClient.Send("PING")
+			r.needRestoreChan <- &needRestoreItem{ping: true}
+			continue
+		}
 		r.stat.NeedUpdateCount = int64(r.needDumpQueue.Len())
 		dbId := item.(dbKey).db
 		key := item.(dbKey).key
@@ -229,7 +270,7 @@ func (r *scanStandaloneReader) dump() {
 		if len(r.opts.SkipUnknownType) > 0 {
 			r.dumpClient.Send("TYPE", key)
 		}
-		r.needRestoreChan <- &needRestoreItem{dbId, key}
+		r.needRestoreChan <- &needRestoreItem{dbId: dbId, key: key}
 	}
 	close(r.needRestoreChan)
 	log.Infof("[%s] scanStandaloneReader dump finished.", r.stat.Name)
@@ -242,6 +283,13 @@ func (r *scanStandaloneReader) dump() {
 func (r *scanStandaloneReader) restore() {
 	nowDbId := 0
 	for item := range r.needRestoreChan {
+		if item.ping {
+			reply, err := r.dumpClient.Receive()
+			if err != nil || reply != "PONG" {
+				log.Panicf("scanStandaloneReader ping failed. reply=[%v], err=[%v]", reply, err)
+			}
+			continue
+		}
 		dbId := item.dbId
 		key := item.key
 		if nowDbId != dbId {
