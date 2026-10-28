@@ -35,9 +35,9 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	var conn net.Conn
 	var dialer = &net.Dialer{
 		Timeout:   5 * time.Minute,
-		KeepAlive: 5 * time.Minute,
+		KeepAlive: 30 * time.Second, // NAT and VPN gateways drop flows that stay silent for minutes
 	}
-	ctxWithDeadline, cancel := context.WithTimeout(ctx, 1*time.Second)
+	ctxWithDeadline, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	var err error
 	if Tls {
