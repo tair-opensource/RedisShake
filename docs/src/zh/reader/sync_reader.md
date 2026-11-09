@@ -39,6 +39,15 @@ sync_aof = true # set to false if you don't want to sync aof
     * 当源端使用 ACL 账号时，配置 `username` 和 `password`
     * 当源端使用传统账号时，仅配置 `password`
     * 当源端无鉴权时，不配置 `username` 和 `password`
-* `tls`：源端是否开启 TLS/SSL，不需要配置证书因为 RedisShake 没有校验服务器证书
+* `tls`：是否使用 TLS/SSL 连接。默认不校验服务器证书。
+* `tls_config`（可选，`tls = true` 时生效）：
+    * `ca_cert`：CA 证书文件（PEM）。配置后 RedisShake 使用它校验服务器证书。
+    * `server_name`：服务器证书中必须包含的名称，默认为 `address` 中的主机名。集群节点通过 `CLUSTER NODES` 返回的地址（通常是 IP）连接，因此集群场景下请配置所有节点证书都包含的名称。
+    * `cert`、`key`：客户端证书和私钥文件（PEM），用于要求客户端证书的服务器，与 `ca_cert` 相互独立。
+
+```toml
+tls = true
+tls_config = { ca_cert = "/path/ca.crt", server_name = "redis.example.com", cert = "/path/client.crt", key = "/path/client.key" }
+```
 * `sync_rdb`：是否同步 RDB，设置为 false 时，RedisShake 会跳过全量同步阶段
 * `sync_aof`：是否同步 AOF，设置为 false 时，RedisShake 会跳过增量同步阶段，此时 RedisShake 会在全量同步阶段结束后退出

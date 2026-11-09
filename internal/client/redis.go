@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"net"
 	"os"
 	"regexp"
@@ -25,9 +26,16 @@ type Redis struct {
 }
 
 type TlsConfig struct {
+	// CACertFilePath enables verification of the server certificate.
 	CACertFilePath string `mapstructure:"ca_cert" default:""`
-	CertFilePath   string `mapstructure:"cert" default:""`
-	KeyFilePath    string `mapstructure:"key" default:""`
+	// CertFilePath and KeyFilePath authenticate the client (mutual TLS).
+	CertFilePath string `mapstructure:"cert" default:""`
+	KeyFilePath  string `mapstructure:"key" default:""`
+	// ServerName is the name verified in the server certificate, by default
+	// the host of the address. Cluster nodes are reached by the addresses
+	// CLUSTER NODES reports, often IPs, so set it to a name their
+	// certificates share.
+	ServerName string `mapstructure:"server_name" default:""`
 }
 
 func NewRedisClient(ctx context.Context, address string, username string, password string, Tls bool, tlsConfig TlsConfig, replica bool) *Redis {
@@ -43,7 +51,7 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	if Tls {
 		tlsDialer := &tls.Dialer{
 			NetDialer: dialer,
-			Config:    getTlsConfig(tlsConfig),
+			Config:    mustTlsConfig(tlsConfig, address),
 		}
 		conn, err = tlsDialer.DialContext(ctxWithDeadline, "tcp", address)
 	} else {
@@ -89,27 +97,50 @@ func NewRedisClient(ctx context.Context, address string, username string, passwo
 	return r
 }
 
-func getTlsConfig(tlsConfig TlsConfig) *tls.Config {
-	if tlsConfig.CACertFilePath == "" || tlsConfig.CertFilePath == "" || tlsConfig.KeyFilePath == "" {
-		return &tls.Config{InsecureSkipVerify: true}
-	}
-
-	// Use mutual authentication (mTLS)
-	cert, err := tls.LoadX509KeyPair(tlsConfig.CertFilePath, tlsConfig.KeyFilePath)
+func mustTlsConfig(tlsConfig TlsConfig, address string) *tls.Config {
+	config, err := getTlsConfig(tlsConfig, address)
 	if err != nil {
-		log.Panicf("load tls cert failed. cert=[%s], key=[%s], err=[%v]", tlsConfig.CertFilePath, tlsConfig.KeyFilePath, err)
+		log.Panicf("%v", err)
+	}
+	return config
+}
+
+// getTlsConfig verifies the server certificate when ca_cert is set; without
+// it the server is not verified. cert and key, when set, authenticate the
+// client, with or without ca_cert.
+func getTlsConfig(tlsConfig TlsConfig, address string) (*tls.Config, error) {
+	config := &tls.Config{}
+	if (tlsConfig.CertFilePath == "") != (tlsConfig.KeyFilePath == "") {
+		return nil, fmt.Errorf("tls_config needs both cert and key for a client certificate. cert=[%s], key=[%s]",
+			tlsConfig.CertFilePath, tlsConfig.KeyFilePath)
+	}
+	if tlsConfig.CertFilePath != "" {
+		cert, err := tls.LoadX509KeyPair(tlsConfig.CertFilePath, tlsConfig.KeyFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("load tls cert failed. cert=[%s], key=[%s], err=[%v]", tlsConfig.CertFilePath, tlsConfig.KeyFilePath, err)
+		}
+		config.Certificates = []tls.Certificate{cert}
+	}
+	if tlsConfig.CACertFilePath == "" {
+		config.InsecureSkipVerify = true
+		return config, nil
 	}
 	caCert, err := os.ReadFile(tlsConfig.CACertFilePath)
 	if err != nil {
-		log.Panicf("read ca cert failed. ca_cert=[%s], err=[%v]", tlsConfig.CACertFilePath, err)
+		return nil, fmt.Errorf("read ca cert failed. ca_cert=[%s], err=[%v]", tlsConfig.CACertFilePath, err)
 	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-	return &tls.Config{
-		RootCAs:            caCertPool,
-		Certificates:       []tls.Certificate{cert},
-		InsecureSkipVerify: true,
+	config.RootCAs = x509.NewCertPool()
+	if !config.RootCAs.AppendCertsFromPEM(caCert) {
+		return nil, fmt.Errorf("no PEM certificates found in ca_cert=[%s]", tlsConfig.CACertFilePath)
 	}
+	config.ServerName = tlsConfig.ServerName
+	if config.ServerName == "" {
+		config.ServerName = address
+		if host, _, err := net.SplitHostPort(address); err == nil {
+			config.ServerName = host
+		}
+	}
+	return config, nil
 }
 
 type Replica struct {

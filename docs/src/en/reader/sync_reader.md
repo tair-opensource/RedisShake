@@ -32,6 +32,15 @@ sync_aof = true # set to false if you don't want to sync aof
     * When the source uses ACL accounts, configure `username` and `password`
     * When the source uses traditional accounts, only configure `password`
     * When the source does not require authentication, do not configure `username` and `password`
-* `tls`: Whether the source has enabled TLS/SSL, no need to configure a certificate because RedisShake does not verify the server certificate
+* `tls`: Whether to connect with TLS/SSL. By default the server certificate is not verified.
+* `tls_config` (optional, used when `tls = true`):
+    * `ca_cert`: CA certificate file (PEM). When set, RedisShake verifies the server certificate against it.
+    * `server_name`: The name the server certificate must contain, by default the host of `address`. Cluster nodes are reached by the addresses `CLUSTER NODES` reports, usually IPs, so for a cluster set a name every node's certificate contains.
+    * `cert`, `key`: Client certificate and key files (PEM) for servers that require client certificates. Independent of `ca_cert`.
+
+```toml
+tls = true
+tls_config = { ca_cert = "/path/ca.crt", server_name = "redis.example.com", cert = "/path/client.crt", key = "/path/client.key" }
+```
 * `sync_rdb`: Whether to synchronize RDB, when set to false, RedisShake will skip the full synchronization phase
 * `sync_aof`: Whether to synchronize AOF, when set to false, RedisShake will skip the incremental synchronization phase, at which point RedisShake will exit after the full synchronization phase is complete.
