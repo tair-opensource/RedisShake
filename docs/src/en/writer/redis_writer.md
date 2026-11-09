@@ -21,7 +21,16 @@ tls = false
     * When using the ACL account system, configure both `username` and `password`
     * When using the traditional account system, only configure `password`
     * When no authentication is required, leave both `username` and `password` empty
-* `tls`: Whether to enable TLS/SSL. No need to configure certificates as RedisShake doesn't verify server certificates.
+* `tls`: Whether to connect with TLS/SSL. By default the server certificate is not verified.
+* `tls_config` (optional, used when `tls = true`):
+    * `ca_cert`: CA certificate file (PEM). When set, RedisShake verifies the server certificate against it.
+    * `server_name`: The name the server certificate must contain, by default the host of `address`. Cluster nodes are reached by the addresses `CLUSTER NODES` reports, usually IPs, so for a cluster set a name every node's certificate contains.
+    * `cert`, `key`: Client certificate and key files (PEM) for servers that require client certificates. Independent of `ca_cert`.
+
+```toml
+tls = true
+tls_config = { ca_cert = "/path/ca.crt", server_name = "redis.example.com", cert = "/path/client.crt", key = "/path/client.key" }
+```
 
 Important notes:
 1. When the destination is a cluster, ensure that the commands from the source satisfy the [requirement that keys' hash values belong to the same slot](https://redis.io/docs/reference/cluster-spec/#implemented-subset).
