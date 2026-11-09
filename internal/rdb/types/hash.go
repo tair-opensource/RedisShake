@@ -104,10 +104,10 @@ func (o *HashObject) readHashValkey() {
 	for i := 0; i < size; i++ {
 		key := structure.ReadString(rd)
 		value := structure.ReadString(rd)
-		// TTL is stored as 8-byte little-endian millisecond timestamp
+		// TTL is stored as 8-byte little-endian millisecond timestamp; -1 means none
 		expireAt := int64(structure.ReadUint64(rd))
 		o.cmdC <- RedisCmd{"hset", o.key, key, value}
-		if expireAt != 0 {
+		if expireAt > 0 {
 			o.cmdC <- RedisCmd{"hpexpireat", o.key, strconv.FormatInt(expireAt, 10), "fields", "1", key}
 		}
 	}
