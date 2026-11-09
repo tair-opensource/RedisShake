@@ -23,6 +23,18 @@ arch_bits:64
 			wantErr: false,
 		},
 		{
+			name: "Valkey 9.x as reported by valkey-server",
+			serverInfo: `# Server
+redis_version:7.2.4
+server_name:valkey
+valkey_version:9.0.6
+valkey_release_stage:ga
+redis_git_sha1:00000000
+`,
+			want:    true,
+			wantErr: false,
+		},
+		{
 			name: "Valkey 8.x",
 			serverInfo: `# Server
 valkey_version:8.5.1
