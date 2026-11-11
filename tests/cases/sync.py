@@ -75,14 +75,21 @@ def cluster_to_cluster():
     _test_sync(src, dst)
 
 
-@pybbt.case()
-def test_sync_rdb_false():
-    """Test that sync_rdb=false discards RDB (no dump.rdb on disk) and only syncs AOF."""
-    src = h.Redis()
+def _test_sync_rdb_false(diskless_sync):
+    """Check the empty-RDB optimization and the fallback on older sources."""
+    src = h.Redis(args=[
+        "--repl-diskless-sync", diskless_sync,
+        "--repl-diskless-sync-delay", "0",
+        "--rdbcompression", "no",
+    ])
     dst = h.Redis()
 
     # Insert data before sync — this will be part of the RDB snapshot
-    rdb_keys = {"sync_rdb_false:rdb_key1": "value1", "sync_rdb_false:rdb_key2": "value2"}
+    rdb_keys = {
+        "sync_rdb_false:rdb_key1": "value1",
+        "sync_rdb_false:rdb_key2": "value2",
+        "sync_rdb_false:large_key": "x" * (1024 * 1024),
+    }
     for k, v in rdb_keys.items():
         src.do("set", k, v)
     src.do("save")
@@ -91,7 +98,10 @@ def test_sync_rdb_false():
     # Start shake with sync_rdb=false
     opts = h.ShakeOpts.create_sync_opts(src, dst)
     opts["sync_reader"]["sync_rdb"] = False
+    # Incremental-only sync must negotiate EOF even with the default setting.
+    opts["sync_reader"]["try_diskless"] = False
     pybbt.log(f"opts: {opts}")
+    output_bytes_before = src.client.info("stats")["total_net_output_bytes"]
     shake = h.Shake(opts)
 
     # Wait for shake to finish RDB phase and become consistent
@@ -103,6 +113,19 @@ def test_sync_rdb_false():
             raise TimeoutError("shake not consistent within 60s")
         time.sleep(0.1)
     pybbt.log("shake is consistent after RDB phase skipped")
+
+    # Measure bytes sent by the source, not the reader's RDB counters: the
+    # diskless reader currently does not count its final chunk. A full RDB
+    # contains the uncompressed 1 MiB value, while an empty RDB plus handshake
+    # traffic is much smaller. This source has no other replicas or writers.
+    output_bytes = src.client.info("stats")["total_net_output_bytes"] - output_bytes_before
+    if h.REDIS_SERVER_VERSION >= 7.0:
+        pybbt.ASSERT_TRUE(output_bytes < 64 * 1024)
+    elif diskless_sync == "no":
+        pybbt.ASSERT_TRUE(output_bytes >= 1024 * 1024)
+    # Older diskless implementations write directly from the forked child and
+    # do not include the RDB transfer in the parent's network counters.
+    pybbt.log(f"source sent {output_bytes} bytes with repl-diskless-sync={diskless_sync}")
 
     # Core assertion: no dump.rdb file should exist on disk.
     # Before the fix, receiveRDB() always wrote RDB to disk even when sync_rdb=false.
@@ -142,3 +165,13 @@ def test_sync_rdb_false():
         pybbt.ASSERT_EQ(dst.do("get", k), None)
     pybbt.ASSERT_EQ(dst.dbsize(), len(aof_keys))
     pybbt.log(f"test sync_rdb_false passed. src_dbsize={src.dbsize()}, dst_dbsize={dst.dbsize()}")
+
+
+@pybbt.case()
+def test_sync_rdb_false():
+    _test_sync_rdb_false("no")
+
+
+@pybbt.case()
+def test_sync_rdb_false_diskless_source():
+    _test_sync_rdb_false("yes")

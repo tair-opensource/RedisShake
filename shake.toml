@@ -4,6 +4,8 @@ address = "127.0.0.1:6379" # For clusters, specify the address of any cluster no
 username = ""              # Keep empty if ACL is not in use
 password = ""              # Keep empty if no authentication is required
 tls = false                # Set to true to enable TLS if needed
+# When false, request an empty RDB if supported; otherwise receive and discard
+# the full RDB. Empty RDB requests negotiate EOF automatically and still fork.
 sync_rdb = true            # Set to false if RDB synchronization is not required
 sync_aof = true            # Set to false if AOF synchronization is not required
 prefer_replica = false     # Set to true to sync from a replica node

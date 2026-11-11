@@ -33,5 +33,5 @@ sync_aof = true # set to false if you don't want to sync aof
     * When the source uses traditional accounts, only configure `password`
     * When the source does not require authentication, do not configure `username` and `password`
 * `tls`: Whether the source has enabled TLS/SSL, no need to configure a certificate because RedisShake does not verify the server certificate
-* `sync_rdb`: Whether to synchronize RDB, when set to false, RedisShake will skip the full synchronization phase
+* `sync_rdb`: Whether to apply the full dataset from the RDB to the target. When false, RedisShake attempts to request an empty RDB, reducing dataset traversal, serialization, and transfer. This optimization requires source support for `REPLCONF rdb-filter-only` (available in Redis 7.0 and later) and automatically negotiates EOF capability, regardless of `try_diskless` or the source's `repl-diskless-sync` setting. If the source does not support or rejects the option, RedisShake receives and discards the full RDB instead. Even when the optimization succeeds, the source still forks and sends an empty RDB before incremental synchronization begins.
 * `sync_aof`: Whether to synchronize AOF, when set to false, RedisShake will skip the incremental synchronization phase, at which point RedisShake will exit after the full synchronization phase is complete.
