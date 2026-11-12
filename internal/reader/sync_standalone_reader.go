@@ -237,13 +237,17 @@ func (r *syncStandaloneReader) checkBgsaveInProgress() {
 }
 
 func (r *syncStandaloneReader) sendPSync() {
-	if r.opts.TryDiskless {
-		argv := []interface{}{"REPLCONF", "CAPA", "EOF"}
-		reply := r.client.DoWithStringReply(argv...)
-		if reply != "OK" {
-			log.Warnf("[%s] send replconf capa eof to redis server failed. reply=[%v]", r.stat.Name, reply)
-		} else {
-			r.isDiskless = true
+	// Filtered RDBs require EOF framing, even when diskless sync was not requested.
+	if r.opts.TryDiskless || !r.opts.SyncRdb {
+		var err error
+		r.isDiskless, err = r.sendOptionalReplconf("CAPA", "EOF")
+		if err != nil {
+			log.Panicf("[%s] %v", r.stat.Name, err)
+		}
+	}
+	if !r.opts.SyncRdb && r.isDiskless {
+		if _, err := r.sendOptionalReplconf("rdb-filter-only", ""); err != nil {
+			log.Panicf("[%s] %v", r.stat.Name, err)
 		}
 	}
 	if !r.opts.SyncAof {
@@ -283,6 +287,26 @@ func (r *syncStandaloneReader) sendPSync() {
 		log.Panicf("%v", err)
 	}
 	r.stat.AofReceivedOffset = int64(masterOffset)
+}
+
+// sendOptionalReplconf falls back on server-side rejection, but not on a broken
+// connection or an unexpected response. Probe capabilities rather than versions
+// because Redis-compatible servers may implement different REPLCONF options.
+func (r *syncStandaloneReader) sendOptionalReplconf(option, value string) (bool, error) {
+	r.client.Send("REPLCONF", option, value)
+	reply, err := r.client.Receive()
+	if err != nil {
+		var redisErr proto.RedisError
+		if errors.As(err, &redisErr) && !errors.Is(err, proto.Nil) {
+			log.Infof("[%s] source rejected REPLCONF %s, continuing without this optimization. error=[%v]", r.stat.Name, option, err)
+			return false, nil
+		}
+		return false, fmt.Errorf("send replconf %s failed: %w", option, err)
+	}
+	if reply != "OK" {
+		return false, fmt.Errorf("unexpected replconf %s reply: %v", option, reply)
+	}
+	return true, nil
 }
 
 func (r *syncStandaloneReader) sendReplconfRDBOnly() {
@@ -586,9 +610,9 @@ func (r *syncStandaloneReader) sendReplconfAck() {
 		case <-r.ctx.Done():
 			return
 		case <-ticker.C:
-			if r.stat.AofReceivedOffset != 0 {
-				r.client.Send("replconf", "ack", strconv.FormatInt(r.stat.AofReceivedOffset, 10))
-			}
+			// A new replication backlog may start at zero. Diskless sources still
+			// need this ACK before they begin sending the incremental stream.
+			r.client.Send("replconf", "ack", strconv.FormatInt(r.stat.AofReceivedOffset, 10))
 		}
 	}
 }

@@ -40,5 +40,5 @@ sync_aof = true # set to false if you don't want to sync aof
     * 当源端使用传统账号时，仅配置 `password`
     * 当源端无鉴权时，不配置 `username` 和 `password`
 * `tls`：源端是否开启 TLS/SSL，不需要配置证书因为 RedisShake 没有校验服务器证书
-* `sync_rdb`：是否同步 RDB，设置为 false 时，RedisShake 会跳过全量同步阶段
+* `sync_rdb`：是否将 RDB 中的全量数据同步到目标库。设置为 false 时，RedisShake 会尝试向源库请求空 RDB，以减少全量数据的遍历、序列化和传输。该优化需要源库支持 `REPLCONF rdb-filter-only`（Redis 7.0 及以上支持），并会自动协商 EOF 能力，不依赖 `try_diskless` 配置或源端的 `repl-diskless-sync` 开关。源库不支持或拒绝该选项时，仍会接收并丢弃完整 RDB。即使优化生效，源库仍会 fork 并发送空 RDB，之后才进入增量同步。
 * `sync_aof`：是否同步 AOF，设置为 false 时，RedisShake 会跳过增量同步阶段，此时 RedisShake 会在全量同步阶段结束后退出
