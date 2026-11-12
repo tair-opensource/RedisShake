@@ -346,9 +346,16 @@ func (r *scanStandaloneReader) restore() {
 		if pttl == -1 {
 			pttl = 0 // -1 means no expire
 		}
-		if uint64(len(dump)) > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
-			log.Warnf("key=[%s] dump len=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
-				"rdb_restore_command_behavior setting may not work correctly for this key.", key, len(dump))
+		crossServerType := len(dump) > 0 && types.IsHashWithFieldExpiry(dump[0]) && utils.TargetServerTypeDiffers(r.isValkey)
+		if crossServerType || uint64(len(dump)) > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
+			if crossServerType {
+				if config.Opt.Advanced.RDBRestoreCommandBehavior == "rewrite" {
+					r.ch <- &entry.Entry{DbId: dbId, Argv: []string{"DEL", key}}
+				}
+			} else {
+				log.Warnf("key=[%s] dump len=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
+					"rdb_restore_command_behavior setting may not work correctly for this key.", key, len(dump))
+			}
 			typeByte := dump[0]
 			anotherReader := strings.NewReader(dump[1 : len(dump)-10])
 			o := types.ParseObject(anotherReader, typeByte, key, r.isValkey)
