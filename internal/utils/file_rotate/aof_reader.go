@@ -80,7 +80,10 @@ func (r *AOFReader) Read(buf []byte) (n int, err error) {
 			return n, r.ctx.Err()
 		case <-timer.C:
 		}
-		r.readNextFile(r.offset) // try to read next file
+		// The writer only rotates after the current file exceeds MaxFileSize.
+		if r.pos > MaxFileSize {
+			r.readNextFile(r.offset)
+		}
 		_, err = r.file.Seek(0, 1)
 		if err != nil {
 			log.Panicf("%v", err)
