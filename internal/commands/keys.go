@@ -15,6 +15,36 @@ func CalcKeys(argv []string) (cmaName string, group string, keys []string, keysI
 	argc := len(argv)
 	group = "unknown"
 	cmaName = strings.ToUpper(argv[0])
+	if cmaName == "SORT" {
+		group = "GENERIC"
+		if argc < 2 {
+			log.Panicf("missing SORT source key. argv=%v", argv)
+		}
+		storeInx := 0
+		for inx := 2; inx < argc; inx++ {
+			switch strings.ToUpper(argv[inx]) {
+			case "ASC", "DESC", "ALPHA":
+			case "BY", "GET":
+				inx++
+			case "LIMIT":
+				inx += 2
+			case "STORE":
+				inx++
+				storeInx = inx // Redis uses the last STORE destination.
+			default:
+				log.Panicf("invalid SORT option. argv=%v", argv)
+			}
+			if inx >= argc {
+				log.Panicf("missing SORT option argument. argv=%v", argv)
+			}
+		}
+		keys, keysIndexes = []string{argv[1]}, []int{2}
+		if storeInx > 0 {
+			keys = append(keys, argv[storeInx])
+			keysIndexes = append(keysIndexes, storeInx+1)
+		}
+		return
+	}
 	if _, ok := containers[cmaName]; ok {
 		if len(argv) > 1 {
 			cmaName = fmt.Sprintf("%s-%s", cmaName, strings.ToUpper(argv[1]))
