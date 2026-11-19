@@ -126,6 +126,7 @@ func (w *redisStandaloneWriter) processWrite(ctx context.Context) {
 			// Wait only while target has in-flight bytes; otherwise a single oversized
 			// entry would spin forever (processReply can't drain what it never gets).
 			for unanswered := atomic.LoadInt64(&w.stat.UnansweredBytes); unanswered > 0 && e.SerializedSize+unanswered > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen; unanswered = atomic.LoadInt64(&w.stat.UnansweredBytes) {
+				w.client.Flush()
 				time.Sleep(time.Millisecond)
 			}
 			if e.SerializedSize > config.Opt.Advanced.TargetRedisClientMaxQuerybufLen {
