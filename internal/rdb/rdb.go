@@ -229,9 +229,21 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 
 			// dump size = typeByte(1) + value + version(2) + crc(8)
 			dumpSize := uint64(1 + value.Len() + 2 + 8)
-			if dumpSize > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
-				log.Warnf("key=[%s] dump size=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
-					"rdb_restore_command_behavior setting may not work correctly for this key.", key, dumpSize)
+			crossServerType := types.IsHashWithFieldExpiry(typeByte) && utils.TargetServerTypeDiffers(ld.isValkey)
+			if crossServerType || dumpSize > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
+				if crossServerType {
+					log.Debugf("[%s] key=[%s] is a hash with field expiration in a format the target cannot RESTORE, "+
+						"using individual commands", ld.name, key)
+					if config.Opt.Advanced.RDBRestoreCommandBehavior == "rewrite" {
+						e := entry.NewEntry()
+						e.DbId = ld.nowDBId
+						e.Argv = []string{"DEL", key}
+						ld.ch <- e
+					}
+				} else {
+					log.Warnf("key=[%s] dump size=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
+						"rdb_restore_command_behavior setting may not work correctly for this key.", key, dumpSize)
+				}
 				for _, cmd := range cmds {
 					e := entry.NewEntry()
 					e.DbId = ld.nowDBId

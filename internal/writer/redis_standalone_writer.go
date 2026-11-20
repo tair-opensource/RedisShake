@@ -16,6 +16,7 @@ import (
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
+	"RedisShake/internal/utils"
 )
 
 type RedisWriterOptions struct {
@@ -52,6 +53,7 @@ func NewRedisStandaloneWriter(ctx context.Context, opts *RedisWriterOptions) Wri
 	rw.address = opts.Address
 	rw.stat.Name = "writer_" + strings.Replace(opts.Address, ":", "_", -1)
 	rw.client = client.NewRedisClient(ctx, opts.Address, opts.Username, opts.Password, opts.Tls, opts.TlsConfig, false)
+	utils.SetTargetIsValkey(rw.client.IsValkey())
 	rw.ch = make(chan *entry.Entry, config.Opt.Advanced.PipelineCountLimit)
 	if opts.OffReply {
 		log.Infof("turn off the reply of write")

@@ -71,6 +71,13 @@ const (
 
 type RedisCmd []string
 
+// IsHashWithFieldExpiry reports whether typeByte is a hash with field
+// expiration (types 22-25). Redis 8 and Valkey 9 encode these types
+// differently, so a DUMP payload of one cannot be restored on the other.
+func IsHashWithFieldExpiry(typeByte byte) bool {
+	return typeByte >= rdbTypeHashWithExpiry22 && typeByte <= rdbTypeHashWithExpiry25
+}
+
 // RedisObject is interface for a redis object
 type RedisObject interface {
 	LoadFromBuffer(rd io.Reader, key string, typeByte byte)
