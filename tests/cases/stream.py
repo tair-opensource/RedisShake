@@ -7,6 +7,13 @@ def _supported(ret):
     return not (isinstance(ret, str) and ret.startswith("-"))
 
 
+def _group_fields(g):
+    # XINFO GROUPS is a dict on some redis-py versions and a flat field/value
+    # list on others; normalize to a dict with decoded keys.
+    items = g.items() if isinstance(g, dict) else zip(g[0::2], g[1::2])
+    return {(k.decode() if isinstance(k, bytes) else k): v for k, v in items}
+
+
 def _test_stream_sync(src, dst):
     key = "stream:test"
     id1 = src.do("xadd", key, "*", "f1", "v1")
@@ -29,8 +36,8 @@ def _test_stream_sync(src, dst):
 
     pybbt.ASSERT_EQ(src.do("xlen", key), dst.do("xlen", key))
     pybbt.ASSERT_EQ(src.do("xrange", key, "-", "+"), dst.do("xrange", key, "-", "+"))
-    sg = src.do("xinfo", "groups", key)
-    dg = dst.do("xinfo", "groups", key)
+    sg = [_group_fields(g) for g in src.do("xinfo", "groups", key)]
+    dg = [_group_fields(g) for g in dst.do("xinfo", "groups", key)]
     pybbt.ASSERT_EQ(len(sg), len(dg))
     for s, d in zip(sg, dg):
         for field in ("name", "consumers", "pending", "last-delivered-id"):
