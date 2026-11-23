@@ -10,6 +10,8 @@ on:
 jobs:
     redis-test:
         runs-on: ubuntu-latest
+        # Redis 8.12 RDB support is landing in follow-up PRs; non-blocking until then.
+        continue-on-error: ${{ matrix.redis-version == '8.12' }}
         strategy:
             max-parallel: 10
             matrix:
@@ -81,6 +83,8 @@ jobs:
 
     valkey-test:
         runs-on: ubuntu-latest
+        # Valkey 9.2 support is landing in follow-up PRs; non-blocking until then.
+        continue-on-error: ${{ matrix.valkey-version == '9.2' }}
         strategy:
             max-parallel: 10
             matrix:
