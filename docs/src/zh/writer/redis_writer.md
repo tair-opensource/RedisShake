@@ -25,7 +25,7 @@ tls = false
 
 注意事项：
 1. 当目的端为集群时，应保证源端发过来的命令满足 [Key 的哈希值属于同一个 slot](https://redis.io/docs/reference/cluster-spec/#implemented-subset)。
-2. 应尽量保证目的端版本大于等于源端版本，否则可能会出现不支持的命令。如确实需要降低版本，可以设置 `target_redis_proto_max_bulk_len` 为 0，来避免使用 `restore` 命令恢复数据。
+2. 应尽量保证目的端版本大于等于源端版本，否则可能会出现不支持的命令。如确实需要降低版本，或在 Redis 与 Valkey 之间跨引擎迁移（两者的 RDB 编码不同，`restore` 会报 `ERR Bad data format`），可以设置 `target_redis_proto_max_bulk_len` 为 0，让所有 key 都回退使用普通命令（如 SET、HSET 等）恢复数据。注意此时同名 key 会被直接覆盖（`rdb_restore_command_behavior` 不生效），写入命令增多、速度变慢；未知 module 的数据只能通过 `restore` 恢复，不适用此方式。
 
 ## 重复 Key 处理
 

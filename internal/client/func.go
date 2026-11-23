@@ -31,14 +31,19 @@ func (r *Redis) IsCluster() bool {
 // ParseServerVersion parses the server info string and returns whether the server is Valkey.
 // Returns true if the server is Valkey, false if it's Redis, and an error if neither is found.
 func ParseServerVersion(serverInfo string) (isValkey bool, err error) {
+	// valkey-server reports redis_version:7.2.4 before valkey_version for client compatibility, so every line must be checked.
+	foundRedis := false
 	for _, line := range strings.Split(serverInfo, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "valkey_version:") {
+		if strings.HasPrefix(line, "valkey_version:") || line == "server_name:valkey" {
 			return true, nil
 		}
 		if strings.HasPrefix(line, "redis_version:") {
-			return false, nil
+			foundRedis = true
 		}
+	}
+	if foundRedis {
+		return false, nil
 	}
 	return false, errors.New("server version not found in info string")
 }
