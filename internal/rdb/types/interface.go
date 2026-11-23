@@ -48,6 +48,8 @@ const (
 	rdbTypeStreamListpacks2 = 19 // RDB_TYPE_STREAM_LISTPACKS2
 	rdbTypeSetListpack      = 20 // RDB_TYPE_SET_LISTPACK
 	rdbTypeStreamListpacks3 = 21 // RDB_TYPE_STREAM_LISTPACKS_3
+	rdbTypeStreamListpacks4 = 26 // RDB_TYPE_STREAM_LISTPACKS_4 (IDMP, Redis 8.12)
+	rdbTypeStreamListpacks5 = 27 // RDB_TYPE_STREAM_LISTPACKS_5 (NACK, Redis 8.12)
 
 	// Hash with field expiration (type 22-25)
 	// Note: Type 22 has different formats:
@@ -107,7 +109,7 @@ func ParseObject(rd io.Reader, typeByte byte, key string, isValkey bool) RedisOb
 		o.SetIsValkey(isValkey)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
-	case rdbTypeStreamListpacks, rdbTypeStreamListpacks2, rdbTypeStreamListpacks3: // stream
+	case rdbTypeStreamListpacks, rdbTypeStreamListpacks2, rdbTypeStreamListpacks3, rdbTypeStreamListpacks4, rdbTypeStreamListpacks5: // stream
 		o := new(StreamObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
