@@ -25,7 +25,7 @@ tls = false
 
 Important notes:
 1. When the destination is a cluster, ensure that the commands from the source satisfy the [requirement that keys' hash values belong to the same slot](https://redis.io/docs/reference/cluster-spec/#implemented-subset).
-2. It's recommended to ensure that the destination version is greater than or equal to the source version, otherwise unsupported commands may occur. If a lower version is necessary, you can set `target_redis_proto_max_bulk_len` to 0 to avoid using the `restore` command for data recovery.
+2. It's recommended to ensure that the destination version is greater than or equal to the source version, otherwise unsupported commands may occur. If a lower version is necessary, or when migrating between Redis and Valkey (their RDB encodings differ, so `restore` fails with `ERR Bad data format`), you can set `target_redis_proto_max_bulk_len` to 0 so that all keys fall back to individual commands (SET, HSET, etc.) for data recovery. Note that existing keys with the same name are then overwritten directly (`rdb_restore_command_behavior` does not apply), more commands are sent and the migration is slower; unknown modules can only be recovered via `restore`, so this approach does not apply to them.
 
 ## Duplicate Key Handling
 
