@@ -4,6 +4,7 @@ import pybbt as p
 import redis
 from redis.cluster import ClusterNode
 
+from helpers.constant import CLUSTER_BUS_PORT_PROTECTED_MODE_DEFAULT
 from helpers.redis import Redis
 
 
@@ -12,7 +13,10 @@ class Cluster:
         self.num = 2
         self.nodes = []
         for i in range(self.num):
-            self.nodes.append(Redis(args=["--cluster-enabled", "yes"]))
+            args = ["--cluster-enabled", "yes"]
+            if CLUSTER_BUS_PORT_PROTECTED_MODE_DEFAULT:
+                args.extend(["--cluster-bus-port-protected-mode", "no"])
+            self.nodes.append(Redis(args=args))
         p.ASSERT_EQ(self.nodes[0].do("cluster", "addslots", *range(0, 8192)), b"OK")
         p.ASSERT_EQ(self.nodes[1].do("cluster", "addslots", *range(8192, 16384)), b"OK")
         p.ASSERT_EQ(self.nodes[0].do("cluster", "meet", self.nodes[1].host, self.nodes[1].port), b"OK")
