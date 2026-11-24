@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 380" width="1120" height="380" role="img" aria-label="RedisShake Architecture">
+  <defs>
+    <linearGradient id="canvasBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#131A26"/>
+      <stop offset="100%" stop-color="#172030"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5" fill="none" stroke="#64748B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrowAccent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 1 1.5 L 8.5 5 L 1 8.5" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, Helvetica, Arial, sans-serif; }
+      .section { font-size: 11px; font-weight: 600; fill: #8CA0B8; letter-spacing: 0.08em; }
+      .node-title { font-size: 13.5px; font-weight: 600; fill: #EDF2F7; }
+      .node-sub { font-size: 11.5px; font-weight: 400; fill: #94A3B8; }
+      .brand { font-size: 15px; font-weight: 700; fill: #38BDF8; letter-spacing: -0.01em; }
+      .stage-title { font-size: 13.5px; font-weight: 600; fill: #F8FAFC; }
+      .stage-sub { font-size: 11px; font-weight: 400; fill: #94A3B8; }
+    </style>
+  </defs>
+
+  <!-- Dual-mode friendly Soft Slate Ink canvas -->
+  <rect x="0.75" y="0.75" width="1118.5" height="378.5" rx="14" fill="url(#canvasBg)" stroke="#293548" stroke-width="1.5"/>
+
+  <!-- Column headers -->
+  <text x="28" y="34" class="section">SOURCES</text>
+  <text x="854" y="34" class="section">TARGETS</text>
+
+  <!-- ================= LEFT: SOURCES ================= -->
+  <!-- 1. Redis -->
+  <g transform="translate(24, 52)">
+    <rect width="268" height="68" rx="10" fill="#1B2434" stroke="#2C3A50" stroke-width="1.2"/>
+    <g transform="translate(14, 16)">
+      <polygon points="18,4 32,10.5 18,17 4,10.5" fill="#F05252"/>
+      <polygon points="4,16.5 18,23 32,16.5 32,20 18,26.5 4,20" fill="#E02424"/>
+      <polygon points="4,23 18,29.5 32,23 32,26 18,32.5 4,26" fill="#B91C1C"/>
+    </g>
+    <text x="60" y="29" class="node-title">Redis <tspan font-weight="500" fill="#94A3B8" font-size="12">2.8 – 8.12</tspan></text>
+    <text x="60" y="49" class="node-sub">Standalone · Sentinel · Cluster</text>
+  </g>
+
+  <!-- 2. Valkey -->
+  <g transform="translate(24, 132)">
+    <rect width="268" height="68" rx="10" fill="#1B2434" stroke="#2C3A50" stroke-width="1.2"/>
+    <g transform="translate(14, 16)">
+      <polygon points="18,3 31,10.5 31,25.5 18,33 5,25.5 5,10.5" fill="none" stroke="#818CF8" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M12 13 L18 24 L24 13" fill="none" stroke="#818CF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="60" y="29" class="node-title">Valkey <tspan font-weight="500" fill="#94A3B8" font-size="12">8.x – 9.2</tspan></text>
+    <text x="60" y="49" class="node-sub">Standalone · Sentinel · Cluster</text>
+  </g>
+
+  <!-- 3. Cloud -->
+  <g transform="translate(24, 212)">
+    <rect width="268" height="68" rx="10" fill="#1B2434" stroke="#2C3A50" stroke-width="1.2"/>
+    <g transform="translate(13, 14)">
+      <path d="M12 6 H9.5 C8.3 6 7.5 6.8 7.5 8 V12 C7.5 13.2 8.3 14 9.5 14 H12" fill="none" stroke="#FF8533" stroke-width="2" stroke-linecap="round"/>
+      <path d="M26 6 H28.5 C29.7 6 30.5 6.8 30.5 8 V12 C30.5 13.2 29.7 14 28.5 14 H26" fill="none" stroke="#FF8533" stroke-width="2" stroke-linecap="round"/>
+      <line x1="15" y1="10" x2="23" y2="10" stroke="#FF8533" stroke-width="2.2" stroke-linecap="round"/>
+      <text x="19" y="31" text-anchor="middle" font-size="10.5" font-weight="800" fill="#E2E8F0">aws</text>
+      <path d="M9 35 Q19 39.5 29 34.5" fill="none" stroke="#FFA726" stroke-width="1.8" stroke-linecap="round"/>
+    </g>
+    <text x="60" y="29" class="node-title">Cloud Services</text>
+    <text x="60" y="49" class="node-sub">Tair · ElastiCache · MemoryDB</text>
+  </g>
+
+  <!-- 4. Files -->
+  <g transform="translate(24, 292)">
+    <rect width="268" height="64" rx="10" fill="#1B2434" stroke="#2C3A50" stroke-width="1.2"/>
+    <g transform="translate(16, 16)">
+      <path d="M8 4 H20 L26 10 V28 H8 Z" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M20 4 V10 H26" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linejoin="round"/>
+      <line x1="12" y1="16" x2="22" y2="16" stroke="#94A3B8" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="12" y1="21" x2="20" y2="21" stroke="#94A3B8" stroke-width="1.6" stroke-linecap="round"/>
+    </g>
+    <text x="60" y="28" class="node-title">Backup Files</text>
+    <text x="60" y="47" class="node-sub">dump.rdb · appendonly.aof</text>
+  </g>
+
+  <!-- ================= BEZIER FLOWS: LEFT -> CENTER ================= -->
+  <g fill="none" stroke="#475569" stroke-width="1.6">
+    <path d="M 292 86 C 334 86, 330 198, 366 198" marker-end="url(#arrow)"/>
+    <path d="M 292 166 C 330 166, 330 198, 366 198"/>
+    <path d="M 292 246 C 330 246, 330 198, 366 198"/>
+    <path d="M 292 324 C 334 324, 330 198, 366 198"/>
+  </g>
+
+  <!-- ================= CENTER: REDISSHAKE ================= -->
+  <rect x="372" y="102" width="404" height="192" rx="14" fill="#172336" stroke="#38BDF8" stroke-opacity="0.65" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="392" y="88" width="114" height="26" rx="6" fill="#151E2D"/>
+  <text x="449" y="106" text-anchor="middle" class="brand">RedisShake</text>
+
+  <!-- Stage 1: Read -->
+  <g transform="translate(390, 146)">
+    <rect width="106" height="106" rx="10" fill="#1E2C42" stroke="#2D4263" stroke-width="1.3"/>
+    <text x="53" y="40" text-anchor="middle" class="stage-title">Read</text>
+    <line x1="22" y1="52" x2="84" y2="52" stroke="#2D4263" stroke-width="1.4"/>
+    <text x="53" y="70" text-anchor="middle" class="stage-sub">PSync · Scan</text>
+    <text x="53" y="87" text-anchor="middle" class="stage-sub">RDB · AOF</text>
+  </g>
+
+  <line x1="500" y1="199" x2="518" y2="199" stroke="#38BDF8" stroke-width="1.8" marker-end="url(#arrowAccent)"/>
+
+  <!-- Stage 2: Transform -->
+  <g transform="translate(522, 146)">
+    <rect width="106" height="106" rx="10" fill="#1E2C42" stroke="#2D4263" stroke-width="1.3"/>
+    <text x="53" y="40" text-anchor="middle" class="stage-title">Transform</text>
+    <line x1="22" y1="52" x2="84" y2="52" stroke="#2D4263" stroke-width="1.4"/>
+    <text x="53" y="70" text-anchor="middle" class="stage-sub">Filter Rules</text>
+    <text x="53" y="87" text-anchor="middle" class="stage-sub">Lua Function</text>
+  </g>
+
+  <line x1="632" y1="199" x2="650" y2="199" stroke="#38BDF8" stroke-width="1.8" marker-end="url(#arrowAccent)"/>
+
+  <!-- Stage 3: Write -->
+  <g transform="translate(654, 146)">
+    <rect width="106" height="106" rx="10" fill="#1E2C42" stroke="#2D4263" stroke-width="1.3"/>
+    <text x="53" y="40" text-anchor="middle" class="stage-title">Write</text>
+    <line x1="22" y1="52" x2="84" y2="52" stroke="#2D4263" stroke-width="1.4"/>
+    <text x="53" y="70" text-anchor="middle" class="stage-sub">Redis / Valkey</text>
+    <text x="53" y="87" text-anchor="middle" class="stage-sub">AOF · CMD · JSON</text>
+  </g>
+
+  <!-- Subtle caption under pipeline -->
+  <text x="574" y="278" text-anchor="middle" font-size="11" font-weight="500" fill="#94A3B8">Zero-downtime online migration · Cross-version &amp; cross-topology</text>
+
+  <!-- ================= BEZIER FLOWS: CENTER -> RIGHT ================= -->
+  <g fill="none" stroke="#475569" stroke-width="1.6">
+    <path d="M 776 198 C 814 198, 810 100, 848 100" marker-end="url(#arrow)"/>
+    <path d="M 776 198 C 814 198, 810 202, 848 202" marker-end="url(#arrow)"/>
+    <path d="M 776 198 C 814 198, 810 302, 848 302" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- ================= RIGHT: TARGETS ================= -->
+  <!-- 1. Redis / Valkey -->
+  <g transform="translate(854, 54)">
+    <rect width="242" height="92" rx="10" fill="#1B2434" stroke="#2C3A50" stroke-width="1.2"/>
+    <g transform="translate(14, 15)">
+      <polygon points="13,3 23,8 13,13 3,8" fill="#F05252"/>
+      <polygon points="3,12.5 13,17.5 23,12.5 23,15 13,20 3,15" fill="#E02424"/>
+      <polygon points="3,17.5 13,22.5 23,17.5 23,19.8 13,24.8 3,19.8" fill="#B91C1C"/>
+      <g transform="translate(30, 0)">
+        <polygon points="13,2 23,8 23,19 13,25 3,19 3,8" fill="none" stroke="#818CF8" stroke-width="1.9" stroke-linejoin="round"/>
+        <path d="M8.5 9.5 L13 17.5 L17.5 9.5" fill="none" stroke="#818CF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </g>
+    <text x="16" y="60" class="node-title">Redis &amp; Valkey</text>
+    <text x="16" y="78" class="node-sub">Standalone · Cluster · Version Upgrade</text>
+  </g>
+
+  <!-- 2. Cloud -->
+  <g transform="translate(854, 162)">
+    <rect width="242" height="80" rx="10" fill="#1B2434" stroke="#2C3A50" stroke-width="1.2"/>
+    <g transform="translate(13, 18)">
+      <path d="M11 5 H9 C8 5 7 5.8 7 7 V11 C7 12.2 8 13 9 13 H11" fill="none" stroke="#FF8533" stroke-width="1.9" stroke-linecap="round"/>
+      <path d="M24 5 H26 C27 5 28 5.8 28 7 V11 C28 12.2 27 13 26 13 H24" fill="none" stroke="#FF8533" stroke-width="1.9" stroke-linecap="round"/>
+      <line x1="14" y1="9" x2="21" y2="9" stroke="#FF8533" stroke-width="2" stroke-linecap="round"/>
+      <text x="17.5" y="30" text-anchor="middle" font-size="10" font-weight="800" fill="#E2E8F0">aws</text>
+      <path d="M8 34 Q17.5 38.5 27 33.5" fill="none" stroke="#FFA726" stroke-width="1.7" stroke-linecap="round"/>
+    </g>
+    <text x="56" y="36" class="node-title">Cloud Services</text>
+    <text x="56" y="55" class="node-sub">Tair · ElastiCache · MemoryDB</text>
+  </g>
+
+  <!-- 3. Files -->
+  <g transform="translate(854, 258)">
+    <rect width="242" height="80" rx="10" fill="#1B2434" stroke="#2C3A50" stroke-width="1.2"/>
+    <g transform="translate(16, 22)">
+      <path d="M6 4 H18 L24 10 V28 H6 Z" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M18 4 V10 H24" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M10 18 L14 22 L20 15" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <text x="56" y="36" class="node-title">File Export</text>
+    <text x="56" y="55" class="node-sub">AOF · CMD · JSON</text>
+  </g>
+</svg>

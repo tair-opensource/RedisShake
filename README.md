@@ -1,16 +1,14 @@
 # RedisShake: Redis Data Transformation and Migration Tool
 
-[![CI](https://img.shields.io/github/actions/workflow/status/tair-opensource/RedisShake/ci.yml?branch=v4&label=CI
-)](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml)
-[![Website](https://img.shields.io/website?url=https%3A%2F%2Ftair-opensource.github.io%2FRedisShake%2F&up_message=%E4%B8%AD%E6%96%87%20%2F%20English&up_color=red&label=Doc
-)](https://tair-opensource.github.io/RedisShake/)
+[![CI](https://img.shields.io/github/actions/workflow/status/tair-opensource/RedisShake/ci.yml?branch=v4&label=CI)](https://github.com/tair-opensource/RedisShake/actions/workflows/ci.yml)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Ftair-opensource.github.io%2FRedisShake%2F&up_message=%E4%B8%AD%E6%96%87%20%2F%20English&up_color=red&label=Doc)](https://tair-opensource.github.io/RedisShake/)
 [![Release](https://img.shields.io/github/v/release/tair-opensource/RedisShake?color=blue&label=Release)](https://github.com/tair-opensource/RedisShake/releases)
 [![ghcr.io](https://ghcr-badge.egpl.dev/tair-opensource/redisshake/latest_tag?color=%231d63ed&ignore=latest&label=ghcr.io&trim=)](https://github.com/tair-opensource/RedisShake/pkgs/container/redisshake)
 
 - [中文文档](https://tair-opensource.github.io/RedisShake/)
 - [English Documentation](https://tair-opensource.github.io/RedisShake/en/)
 
-![](./docs/intro.png)
+![RedisShake Architecture](./docs/intro.svg)
 
 ## Overview
 
@@ -18,7 +16,7 @@ RedisShake is a powerful tool for Redis data transformation and migration, offer
 
 1. **Zero Downtime Migration**: Enables seamless data migration without data loss or service interruption, ensuring continuous operation during the transfer process.
 
-2. **Valkey/Redis Compatibility**: Supports Redis (2.8 to 8.4.x) and Valkey (8.x to 9.x) across standalone, master–slave, sentinel, and cluster deployments. See [Version Compatibility](https://tair-opensource.github.io/RedisShake/zh/others/compatibility.html) for detailed feature support.
+2. **Valkey/Redis Compatibility**: Supports Redis (2.8 to 8.12.x) and Valkey (8.x to 9.2.x) across standalone, master–slave, sentinel, and cluster deployments. See [Version Compatibility](https://tair-opensource.github.io/RedisShake/en/others/compatibility) for detailed feature support.
 
 3. **Cloud Service Integration**: Seamlessly works with Redis-like databases from major cloud providers:
    - Alibaba Cloud: [Tair (Redis® OSS-Compatible)](https://www.alibabacloud.com/en/product/tair)
@@ -26,9 +24,9 @@ RedisShake is a powerful tool for Redis data transformation and migration, offer
 
 4. **Module Support**: Compatible with [TairString](https://github.com/tair-opensource/TairString), [TairZSet](https://github.com/tair-opensource/TairZset), and [TairHash](https://github.com/tair-opensource/TairHash).
 
-5. **Flexible Data Source**: Supports [PSync](https://tair-opensource.github.io/RedisShake/zh/reader/sync_reader.html), [RDB](https://tair-opensource.github.io/RedisShake/zh/reader/rdb_reader.html), and [Scan](https://tair-opensource.github.io/RedisShake/zh/reader/scan_reader.html) data fetch methods.
+5. **Flexible Data Source**: Supports [PSync](https://tair-opensource.github.io/RedisShake/en/reader/sync_reader), [RDB](https://tair-opensource.github.io/RedisShake/en/reader/rdb_reader), [AOF](https://tair-opensource.github.io/RedisShake/en/reader/aof_reader), and [Scan](https://tair-opensource.github.io/RedisShake/en/reader/scan_reader) data fetch methods.
 
-6. **Advanced Data Processing**: Enables custom [script-based data transformation](https://tair-opensource.github.io/RedisShake/zh/filter/function.html) and easy-to-use [data filter rules](https://tair-opensource.github.io/RedisShake/zh/filter/filter.html).
+6. **Advanced Data Processing**: Enables custom [script-based data transformation](https://tair-opensource.github.io/RedisShake/en/filter/function) and easy-to-use [data filter rules](https://tair-opensource.github.io/RedisShake/en/filter/filter).
 
 ## How to Get RedisShake
 
@@ -57,12 +55,12 @@ sh build.sh
 
 ### For LLM Agents
 
-Copy and paste this prompt to your LLM agent (Claude Code, Cursor, etc.):
+RedisShake publishes machine-readable documentation following the [llms.txt](https://llmstxt.org/) standard, generated directly from the official docs:
 
-```
-Read the RedisShake usage guide and help me with my task:
-https://raw.githubusercontent.com/tair-opensource/RedisShake/v4/README_FOR_AGENTS.md
-```
+- **Documentation index**: `https://tair-opensource.github.io/RedisShake/llms.txt`
+- **Full single-file docs (English)**: `https://tair-opensource.github.io/RedisShake/llms-full.txt`
+- **Full single-file docs (Chinese)**: `https://tair-opensource.github.io/RedisShake/llms-full-zh.txt`
+- **Per-page Markdown**: append `.md` to any docs page URL.
 
 ## How to Use RedisShake
 
@@ -86,7 +84,7 @@ block_key_prefix = ["temp:", "cache:"]
 ./redis-shake shake.toml
 ```
 
-For more help, check the [docs](https://tair-opensource.github.io/RedisShake/zh/guide/mode.html).
+For more help, check the [docs](https://tair-opensource.github.io/RedisShake/en/guide/mode).
 
 ## Limitations
 
@@ -109,4 +107,4 @@ RedisShake, actively maintained by the [Tair team](https://github.com/tair-opens
 
 ## License
 
-RedisShake is open-sourced under the [MIT license](https://github.com/tair-opensource/RedisShake/blob/v2/license.txt).
+RedisShake is open-sourced under the [MIT license](./license.txt).
