@@ -49,15 +49,28 @@ const (
 	rdbTypeSetListpack      = 20 // RDB_TYPE_SET_LISTPACK
 	rdbTypeStreamListpacks3 = 21 // RDB_TYPE_STREAM_LISTPACKS_3
 
-	// Hash with field expiration (type 22-25)
-	// Note: Type 22 has different formats:
-	//   - Redis 8.0: RDB_TYPE_HASH_METADATA_PRE_GA (format: TTL, field, value)
-	//   - Valkey 9.0: RDB_TYPE_HASH_2 (format: field, value, TTL as 8-byte ms)
+	// Hash with field expiration (type 22-25) & Valkey 9.2 Path Hash (type 23)
+	// Note: Types 22 and 23 have different formats across Redis and Valkey:
+	//   - Type 22: Redis RDB_TYPE_HASH_METADATA_PRE_GA vs Valkey RDB_TYPE_HASH_2
+	//   - Type 23: Redis RDB_TYPE_HASH_LISTPACK_EX_PRE_GA vs Valkey RDB_TYPE_PATH_HASH
 	// See: https://github.com/redis/redis/pull/13391
 	rdbTypeHashWithExpiry22 = 22
-	rdbTypeHashWithExpiry23 = 23 // Redis: RDB_TYPE_HASH_LISTPACK_EX_PRE_GA
+	rdbTypeHashWithExpiry23 = 23 // Redis: RDB_TYPE_HASH_LISTPACK_EX_PRE_GA; Valkey: RDB_TYPE_PATH_HASH
 	rdbTypeHashWithExpiry24 = 24 // Redis: RDB_TYPE_HASH_METADATA
 	rdbTypeHashWithExpiry25 = 25 // Redis: RDB_TYPE_HASH_LISTPACK_EX
+
+	// Redis 8.6 - 8.12 types (26-36)
+	rdbTypeStreamListpacks4 = 26 // RDB_TYPE_STREAM_LISTPACKS_4 (IDMP)
+	rdbTypeStreamListpacks5 = 27 // RDB_TYPE_STREAM_LISTPACKS_5 (XNACK)
+	rdbTypeArray            = 28 // RDB_TYPE_ARRAY (sparse array)
+	rdbTypeHashTmplLp       = 29 // RDB_TYPE_HASH_TMPL_LP (self-contained)
+	rdbTypeHashTmplLpRef    = 30 // RDB_TYPE_HASH_TMPL_LP_REF (RDB-only template ref)
+	rdbTypeHashTmplArray    = 31 // RDB_TYPE_HASH_TMPL_ARRAY (self-contained)
+	rdbTypeHashTmplArrayRef = 32 // RDB_TYPE_HASH_TMPL_ARRAY_REF (RDB-only template ref)
+	rdbTypeBitmap           = 33 // RDB_TYPE_BITMAP (CRoaring64)
+	rdbTypeSetListpackEx    = 34 // RDB_TYPE_SET_LISTPACK_EX (set listpack with member expiry)
+	rdbTypeSetMetadata      = 35 // RDB_TYPE_SET_METADATA (set hashtable with member expiry)
+	rdbTypeGcra             = 36 // RDB_TYPE_GCRA (GCRA rate limiter)
 
 	moduleTypeNameCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
@@ -83,7 +96,17 @@ type HashObjectValkey interface {
 	SetIsValkey(isValkey bool)
 }
 
+// RequiresRewrite reports whether typeByte cannot be sent via RESTORE and must
+// be rewritten as individual commands (e.g. Redis 8.12 RDB-only hash template refs).
+func RequiresRewrite(typeByte byte, isValkey bool) bool {
+	return !isValkey && (typeByte == rdbTypeHashTmplLpRef || typeByte == rdbTypeHashTmplArrayRef)
+}
+
 func ParseObject(rd io.Reader, typeByte byte, key string, isValkey bool) RedisObject {
+	return ParseObjectWithTemplates(rd, typeByte, key, isValkey, nil)
+}
+
+func ParseObjectWithTemplates(rd io.Reader, typeByte byte, key string, isValkey bool, hashTemplates map[uint64][]string) RedisObject {
 	switch typeByte {
 	case rdbTypeString: // string
 		o := new(StringObject)
@@ -93,7 +116,7 @@ func ParseObject(rd io.Reader, typeByte byte, key string, isValkey bool) RedisOb
 		o := new(ListObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
-	case rdbTypeSet, rdbTypeSetIntset, rdbTypeSetListpack: // set
+	case rdbTypeSet, rdbTypeSetIntset, rdbTypeSetListpack, rdbTypeSetListpackEx, rdbTypeSetMetadata: // set
 		o := new(SetObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
@@ -101,14 +124,39 @@ func ParseObject(rd io.Reader, typeByte byte, key string, isValkey bool) RedisOb
 		o := new(ZsetObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
-	case rdbTypeHash, rdbTypeHashZipmap, rdbTypeHashZiplist, rdbTypeHashListpack,
-		rdbTypeHashWithExpiry22, rdbTypeHashWithExpiry23, rdbTypeHashWithExpiry24, rdbTypeHashWithExpiry25: // hash
+	case rdbTypeHashWithExpiry23:
+		if isValkey {
+			o := new(PathHashObject)
+			o.LoadFromBuffer(rd, key, typeByte)
+			return o
+		}
 		o := new(HashObject)
-		o.SetIsValkey(isValkey)
+		o.SetIsValkey(false)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
-	case rdbTypeStreamListpacks, rdbTypeStreamListpacks2, rdbTypeStreamListpacks3: // stream
+	case rdbTypeHash, rdbTypeHashZipmap, rdbTypeHashZiplist, rdbTypeHashListpack,
+		rdbTypeHashWithExpiry22, rdbTypeHashWithExpiry24, rdbTypeHashWithExpiry25,
+		rdbTypeHashTmplLp, rdbTypeHashTmplLpRef, rdbTypeHashTmplArray, rdbTypeHashTmplArrayRef: // hash
+		o := new(HashObject)
+		o.SetIsValkey(isValkey)
+		o.SetHashTemplates(hashTemplates)
+		o.LoadFromBuffer(rd, key, typeByte)
+		return o
+	case rdbTypeStreamListpacks, rdbTypeStreamListpacks2, rdbTypeStreamListpacks3,
+		rdbTypeStreamListpacks4, rdbTypeStreamListpacks5: // stream
 		o := new(StreamObject)
+		o.LoadFromBuffer(rd, key, typeByte)
+		return o
+	case rdbTypeArray:
+		o := new(ArrayObject)
+		o.LoadFromBuffer(rd, key, typeByte)
+		return o
+	case rdbTypeBitmap:
+		o := new(BitmapObject)
+		o.LoadFromBuffer(rd, key, typeByte)
+		return o
+	case rdbTypeGcra:
+		o := new(GcraObject)
 		o.LoadFromBuffer(rd, key, typeByte)
 		return o
 	case rdbTypeModule, rdbTypeModule2: // module

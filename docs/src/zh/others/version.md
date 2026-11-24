@@ -11,3 +11,7 @@
 1. 对于二进制数据编码不兼容，可以考虑修改 `target_redis_proto_max_bulk_len` 参数，将其设置为 0。
 `target_redis_proto_max_bulk_len` 本意是为了处理超大 Key，RedisShake 会在同步过程中将大于 `target_redis_proto_max_bulk_len` 的二进制数据转换为 RESP 命令。比如元素非常多的 list 结构，RedisShake 会将其转换为多个 `RPUSH` 命令。在降低版本场景中，可以将其设置为 0，让 RedisShake 将所有二进制数据转换为 RESP 命令，以此避免二进制数据编码不兼容问题。
 2. 对于命令不支持问题，建议直接过滤掉不支持的命令。
+
+## Redis 与 Valkey 互相迁移
+
+Redis 与 Valkey 之间的跨引擎迁移同样存在 RDB 二进制编码分歧与部分独有命令差异，需要设置 `target_redis_proto_max_bulk_len = 0` 并按需过滤独有命令。完整的双向支持矩阵和限制说明请参考[版本兼容性 - Redis 与 Valkey 互相迁移支持情况](./compatibility.md#redis-与-valkey-互相迁移支持情况)。

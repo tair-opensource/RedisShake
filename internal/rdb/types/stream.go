@@ -63,7 +63,7 @@ func (o *StreamObject) Rewrite() <-chan RedisCmd {
 			o.readStream()
 		case rdbTypeStreamListpacks2:
 			o.readStream()
-		case rdbTypeStreamListpacks3:
+		case rdbTypeStreamListpacks3, rdbTypeStreamListpacks4, rdbTypeStreamListpacks5:
 			o.readStream()
 		default:
 			log.Panicf("unknown hash type. typeByte=[%d]", o.typeByte)
@@ -249,6 +249,33 @@ func (o *StreamObject) readStream() {
 				cmdC <- args
 			}
 		}
+
+		// v5 appends a NACK zone per group: count + 16-byte stream IDs.
+		if typeByte >= rdbTypeStreamListpacks5 {
+			nNack := int(structure.ReadLength(rd))
+			for j := 0; j < nNack; j++ {
+				_ = structure.ReadBytes(rd, 16)
+			}
+		}
+	}
+
+	// v4+ appends IDMP config and entries. Consumed so RESTORE keeps the raw
+	// payload intact; the command fallback does not reconstruct IDMP/NACK state.
+	if typeByte >= rdbTypeStreamListpacks4 {
+		_ = structure.ReadLength(rd) // idmp_duration
+		_ = structure.ReadLength(rd) // idmp_max_entries
+		nProducer := int(structure.ReadLength(rd))
+		for i := 0; i < nProducer; i++ {
+			_ = structure.ReadString(rd) // pid
+			nEntry := int(structure.ReadLength(rd))
+			for j := 0; j < nEntry; j++ {
+				_ = structure.ReadString(rd) // iid
+				_ = structure.ReadLength(rd) // id.ms
+				_ = structure.ReadLength(rd) // id.seq
+			}
+		}
+		_ = structure.ReadLength(rd) // iids_added
+		_ = structure.ReadLength(rd) // iids_duplicates
 	}
 }
 

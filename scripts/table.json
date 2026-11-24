@@ -2,19 +2,32 @@
     "table": {
         "server": {
             "ACL-CAT": [],
+            "ACL-DELROLE": [],
             "ACL-DELUSER": [],
+            "ACL-DIGEST": [],
             "ACL-DRYRUN": [],
             "ACL-GENPASS": [],
+            "ACL-GETROLE": [],
             "ACL-GETUSER": [],
             "ACL-HELP": [],
             "ACL-LIST": [],
             "ACL-LOAD": [],
             "ACL-LOG": [],
+            "ACL-ROLES": [],
             "ACL-SAVE": [],
+            "ACL-SETROLE": [],
             "ACL-SETUSER": [],
             "ACL-USERS": [],
             "ACL-WHOAMI": [],
             "ACL": [],
+            "BACKUP-ABORT": [],
+            "BACKUP-CLEANUP": [],
+            "BACKUP-HELP": [],
+            "BACKUP-LIST": [],
+            "BACKUP-SEAL": [],
+            "BACKUP-START": [],
+            "BACKUP-STATUS": [],
+            "BACKUP": [],
             "BGREWRITEAOF": [],
             "BGSAVE": [],
             "COMMAND-COUNT": [],
@@ -32,6 +45,7 @@
             "COMMANDLOG": [],
             "CONFIG-GET": [],
             "CONFIG-HELP": [],
+            "CONFIG-INFO": [],
             "CONFIG-RESETSTAT": [],
             "CONFIG-REWRITE": [],
             "CONFIG-SET": [],
@@ -41,6 +55,12 @@
             "FAILOVER": [],
             "FLUSHALL": [],
             "FLUSHDB": [],
+            "HOTKEYS-GET": [],
+            "HOTKEYS-HELP": [],
+            "HOTKEYS-RESET": [],
+            "HOTKEYS-START": [],
+            "HOTKEYS-STOP": [],
+            "HOTKEYS": [],
             "INFO": [],
             "LASTSAVE": [],
             "LATENCY-DOCTOR": [],
@@ -340,6 +360,22 @@
                     }
                 }
             ],
+            "INCREX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "LCS": [
                 {
                     "begin_search": {
@@ -533,6 +569,296 @@
                 }
             ]
         },
+        "array": {
+            "ARCOUNT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARDEL": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARDELRANGE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARGET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARGETRANGE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARGREP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARINFO": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARINSERT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARLASTITEMS": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARLEN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARMGET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARMSET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARNEXT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "AROP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARRING": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARSCAN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARSEEK": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ARSET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ]
+        },
         "cluster": {
             "ASKING": [],
             "CLUSTER-ADDSLOTS": [],
@@ -571,6 +897,22 @@
             "CLUSTER-SLOTS": [],
             "CLUSTER-SYNCSLOTS": [],
             "CLUSTER": [],
+            "CLUSTERSCAN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "READONLY": [],
             "READWRITE": []
         },
@@ -605,6 +947,22 @@
             "SELECT": []
         },
         "bitmap": {
+            "BITCONVERT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "BITCOUNT": [
                 {
                     "begin_search": {
@@ -699,6 +1057,52 @@
                     }
                 }
             ],
+            "BITRANGEINTARRAY": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BITROAROP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 3
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": -1,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "GETBIT": [
                 {
                     "begin_search": {
@@ -732,1035 +1136,57 @@
                 }
             ]
         },
-        "list": {
-            "BLMOVE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                },
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "BLMPOP": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "BLPOP": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": -2,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "BRPOP": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": -2,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "BRPOPLPUSH": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                },
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LINDEX": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LINSERT": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LLEN": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LMOVE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                },
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LMPOP": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "LPOP": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LPOS": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LPUSH": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LPUSHX": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LRANGE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LREM": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LSET": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "LTRIM": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "RPOP": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "RPOPLPUSH": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                },
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "RPUSH": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "RPUSHX": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ]
-        },
-        "sorted_set": {
-            "BZMPOP": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "BZPOPMAX": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": -2,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "BZPOPMIN": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": -2,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZADD": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZCARD": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZCOUNT": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZDIFF": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "ZDIFFSTORE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                },
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "ZINCRBY": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZINTER": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "ZINTERCARD": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "ZINTERSTORE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                },
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "ZLEXCOUNT": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZMPOP": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "ZMSCORE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZPOPMAX": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZPOPMIN": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZRANDMEMBER": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZRANGE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZRANGEBYLEX": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZRANGEBYSCORE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZRANGESTORE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                },
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZRANK": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZREM": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZREMRANGEBYLEX": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZREMRANGEBYRANK": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZREMRANGEBYSCORE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZREVRANGE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZREVRANGEBYLEX": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZREVRANGEBYSCORE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZREVRANK": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZSCAN": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZSCORE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                }
-            ],
-            "ZUNION": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ],
-            "ZUNIONSTORE": [
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 1
-                        }
-                    },
-                    "find_keys": {
-                        "range": {
-                            "lastkey": 0,
-                            "step": 1,
-                            "limit": 0
-                        }
-                    }
-                },
-                {
-                    "begin_search": {
-                        "index": {
-                            "pos": 2
-                        }
-                    },
-                    "find_keys": {
-                        "keynum": {
-                            "keynumidx": 0,
-                            "firstkey": 1,
-                            "step": 1
-                        }
-                    }
-                }
-            ]
-        },
         "generic": {
+            "BLESS-CLEAR": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BLESS-GET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BLESS-SCAN": [],
+            "BLESS-SET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BLESS": [],
             "COPY": [
                 {
                     "begin_search": {
@@ -2194,6 +1620,1184 @@
             ],
             "WAIT": [],
             "WAITAOF": []
+        },
+        "list": {
+            "BLMOVE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BLMOVEM": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BLMPOP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "BLPOP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": -2,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BRPOP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": -2,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BRPOPLPUSH": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LINDEX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LINSERT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LLEN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LMOVE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LMOVEM": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LMPOP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "LPOP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LPOS": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LPUSH": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LPUSHX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LRANGE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LREM": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LSET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "LTRIM": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "RPOP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "RPOPLPUSH": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "RPUSH": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "RPUSHX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ]
+        },
+        "sorted_set": {
+            "BZMOVE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BZMPOP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "BZPOPMAX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": -2,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "BZPOPMIN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": -2,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZADD": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZCARD": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZCOUNT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZDIFF": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "ZDIFFSTORE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "ZINCRBY": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZINTER": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "ZINTERCARD": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "ZINTERSTORE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "ZLEXCOUNT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZMOVE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZMOVEMEMBER": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZMPOP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "ZMSCORE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZPOPMAX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZPOPMIN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZRANDMEMBER": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZRANGE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZRANGEBYLEX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZRANGEBYSCORE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZRANGESTORE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZRANK": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZREM": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZREMRANGEBYLEX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZREMRANGEBYRANK": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZREMRANGEBYSCORE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZREVRANGE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZREVRANGEBYLEX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZREVRANGEBYSCORE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZREVRANK": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZSCAN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZSCORE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "ZUNION": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
+            "ZUNIONSTORE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                },
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ]
         },
         "transactions": {
             "DISCARD": [],
@@ -2768,6 +3372,26 @@
                     }
                 }
             ],
+            "HIMPORT-DISCARD": [],
+            "HIMPORT-DISCARDALL": [],
+            "HIMPORT-PREPARE": [],
+            "HIMPORT-SET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 2
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "HIMPORT": [],
             "HINCRBY": [
                 {
                     "begin_search": {
@@ -3154,6 +3778,200 @@
             ],
             "PFSELFTEST": []
         },
+        "pathhash": {
+            "PHDEL": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHGET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHGETALL": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHMGET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHMSET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHPATHCOUNT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHPATHDEL": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHPATHEXISTS": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHPATHSCAN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHPREFIXES": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHSCAN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "PHSET": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ]
+        },
         "pubsub": {
             "PSUBSCRIBE": [],
             "PUBLISH": [],
@@ -3233,6 +4051,22 @@
                     }
                 }
             ],
+            "SADDEX": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "SCARD": [
                 {
                     "begin_search": {
@@ -3265,6 +4099,22 @@
                     }
                 }
             ],
+            "SDIFFCARD": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
+                        }
+                    }
+                }
+            ],
             "SDIFFSTORE": [
                 {
                     "begin_search": {
@@ -3289,6 +4139,54 @@
                     "find_keys": {
                         "range": {
                             "lastkey": -1,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "SEXPIRE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "SEXPIREAT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "SEXPIRETIME": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
                             "step": 1,
                             "limit": 0
                         }
@@ -3435,7 +4333,87 @@
                     }
                 }
             ],
+            "SPERSIST": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "SPEXPIRE": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "SPEXPIREAT": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "SPEXPIRETIME": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "SPOP": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "SPTTL": [
                 {
                     "begin_search": {
                         "index": {
@@ -3499,6 +4477,22 @@
                     }
                 }
             ],
+            "STTL": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "SUNION": [
                 {
                     "begin_search": {
@@ -3511,6 +4505,22 @@
                             "lastkey": -1,
                             "step": 1,
                             "limit": 0
+                        }
+                    }
+                }
+            ],
+            "SUNIONCARD": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "keynum": {
+                            "keynumidx": 0,
+                            "firstkey": 1,
+                            "step": 1
                         }
                     }
                 }
@@ -3624,6 +4634,22 @@
                 }
             ],
             "XAUTOCLAIM": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "XCFGSET": [
                 {
                     "begin_search": {
                         "index": {
@@ -3769,6 +4795,22 @@
                 }
             ],
             "XGROUP": [],
+            "XIDMPRECORD": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
             "XINFO-CONSUMERS": [
                 {
                     "begin_search": {
@@ -3820,6 +4862,22 @@
             ],
             "XINFO": [],
             "XLEN": [
+                {
+                    "begin_search": {
+                        "index": {
+                            "pos": 1
+                        }
+                    },
+                    "find_keys": {
+                        "range": {
+                            "lastkey": 0,
+                            "step": 1,
+                            "limit": 0
+                        }
+                    }
+                }
+            ],
+            "XNACK": [
                 {
                     "begin_search": {
                         "index": {
@@ -3953,12 +5011,16 @@
     },
     "container": [
         "ACL",
+        "BACKUP",
+        "BLESS",
         "CLIENT",
         "CLUSTER",
         "COMMAND",
         "COMMANDLOG",
         "CONFIG",
         "FUNCTION",
+        "HIMPORT",
+        "HOTKEYS",
         "LATENCY",
         "MEMORY",
         "MODULE",
