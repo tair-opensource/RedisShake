@@ -12,3 +12,7 @@ If migrating to a lower version is unavoidable, you can resolve it through the f
 1. For binary data encoding incompatibility, consider modifying the `target_redis_proto_max_bulk_len` parameter by setting it to 0.
 The original purpose of `target_redis_proto_max_bulk_len` is to handle extremely large keys. RedisShake will convert binary data larger than `target_redis_proto_max_bulk_len` into RESP commands during synchronization. For example, a list structure with many elements will be converted into multiple `RPUSH` commands. In version downgrade scenarios, you can set it to 0, prompting RedisShake to convert all binary data into RESP commands, thus avoiding binary data encoding incompatibility issues.
 2. For unsupported command issues, it's recommended to directly filter out the unsupported commands.
+
+## Cross-Engine Migration (Redis ↔ Valkey)
+
+Migrating between Redis and Valkey also encounters RDB binary encoding divergence and engine-specific commands; set `target_redis_proto_max_bulk_len = 0` and filter unsupported commands as needed. See [Version Compatibility - Redis ↔ Valkey Cross-Engine Migration](./compatibility.md#redis-valkey-cross-engine-migration) for the full bidirectional support matrix and caveats.

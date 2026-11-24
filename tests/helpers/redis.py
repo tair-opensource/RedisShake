@@ -1,3 +1,4 @@
+import os
 import time
 
 import pybbt
@@ -38,10 +39,12 @@ class Redis:
             except redis.exceptions.ConnectionError:
                 time.sleep(0.1)
             if timer.elapsed() > timeout:
-                stdout = f"{self.dir}/stdout"
-                with open(stdout, "r") as f:
-                    for line in f.readlines():
-                        pybbt.log_red(line.strip())
+                for stream in ("stdout", "stderr"):
+                    log_path = f"{self.dir}/{stream}"
+                    if os.path.exists(log_path):
+                        with open(log_path, "r") as f:
+                            for line in f.readlines():
+                                pybbt.log_red(f"[{stream}] {line.strip()}")
                 raise TimeoutError("redis server not started")
 
     def do(self, *args):

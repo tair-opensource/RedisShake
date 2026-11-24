@@ -8,8 +8,11 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
+	"RedisShake/internal/client"
+	"RedisShake/internal/client/proto"
 	"RedisShake/internal/config"
 	"RedisShake/internal/entry"
 	"RedisShake/internal/log"
@@ -19,7 +22,10 @@ import (
 )
 
 const (
-	kFlagSlotInfo  = 244 // (Redis 7.4) RDB_OPCODE_SLOT_INFO: slot info
+	kFlagKeyNoEvict           = 241 // (Redis 8.12) RDB_OPCODE_KEY_NOEVICT: per-key no-evict flag (no payload)
+	kFlagHashTemplateOrUpdate = 242 // Redis 8.12: RDB_OPCODE_HASH_TEMPLATE; Valkey 9.2: RDB_OPCODE_UPDATE (inline command)
+	kFlagKeyMetaOrSlotImport  = 243 // Redis 8.12: RDB_OPCODE_KEY_META; Valkey 9.2: RDB_OPCODE_SLOT_IMPORT
+	kFlagSlotInfo             = 244 // (Redis 7.4) RDB_OPCODE_SLOT_INFO: slot info
 	kFlagFunction2 = 245 // RDB_OPCODE_FUNCTION2: function library data
 	kFlagFunction  = 246 // RDB_OPCODE_FUNCTION_PRE_GA: old function library data for 7.0 rc1 and rc2
 	kFlagModuleAux = 247 // RDB_OPCODE_MODULE_AUX: Module auxiliary data.
@@ -56,9 +62,10 @@ type Loader struct {
 	ch         chan *entry.Entry
 	dumpBuffer bytes.Buffer
 
-	name       string
-	updateFunc func(int64)
-	isValkey   bool // true if reading a Valkey RDB (VALKEY magic string)
+	name          string
+	updateFunc    func(int64)
+	isValkey      bool                // true if reading a Valkey RDB (VALKEY magic string)
+	hashTemplates map[uint64][]string // Redis 8.12 RDB_OPCODE_HASH_TEMPLATE id -> sorted field names
 }
 
 func NewLoader(name string, updateFunc func(int64), filPath string, ch chan *entry.Entry) *Loader {
@@ -135,6 +142,62 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 		typeByte := structure.ReadByte(rd)
 		log.Debugf("RDB type byte is: [%d]", typeByte)
 		switch typeByte {
+		case kFlagKeyNoEvict:
+			// Per-key no-evict flag has no payload.
+		case kFlagHashTemplateOrUpdate:
+			if ld.isValkey {
+				// Valkey 9.2 RDB_OPCODE_UPDATE: inline RESP replication command during forkless sync.
+				protoReader := proto.NewReader(rd)
+				iArgv, err := protoReader.ReadReply()
+				if err != nil {
+					log.Panicf("[%s] read inline RDB update command failed. error=[%v]", ld.name, err)
+				}
+				argv := client.ArrayString(iArgv, nil)
+				if len(argv) == 0 || strings.EqualFold(argv[0], "ping") {
+					continue
+				}
+				if strings.EqualFold(argv[0], "select") && len(argv) > 1 {
+					dbId, err := strconv.Atoi(argv[1])
+					if err != nil {
+						log.Panicf("%v", err)
+					}
+					ld.nowDBId = dbId
+					continue
+				}
+				e := entry.NewEntry()
+				e.DbId = ld.nowDBId
+				e.Argv = argv
+				ld.ch <- e
+			} else {
+				// Redis 8.12 RDB_OPCODE_HASH_TEMPLATE: [id][field_count][field1]...
+				id := structure.ReadLength(rd)
+				fieldCount := int(structure.ReadLength(rd))
+				fields := make([]string, fieldCount)
+				for i := 0; i < fieldCount; i++ {
+					fields[i] = structure.ReadString(rd)
+				}
+				if ld.hashTemplates == nil {
+					ld.hashTemplates = make(map[uint64][]string)
+				}
+				ld.hashTemplates[id] = fields
+			}
+		case kFlagKeyMetaOrSlotImport:
+			if ld.isValkey {
+				// Valkey 9.0+ RDB_OPCODE_SLOT_IMPORT: [job_name][num_ranges]([start][end])...
+				_ = structure.ReadString(rd)
+				numRanges := int(structure.ReadLength(rd))
+				for i := 0; i < numRanges; i++ {
+					_ = structure.ReadLength(rd) // start_slot
+					_ = structure.ReadLength(rd) // end_slot
+				}
+			} else {
+				// Redis 8.12 RDB_OPCODE_KEY_META: [num_classes]([4-byte class_spec][module opcodes... EOF])...
+				numClasses := int(structure.ReadLength(rd))
+				for i := 0; i < numClasses; i++ {
+					_ = structure.ReadBytes(rd, 4) // encClassSpec
+					skipModuleOpcodes(rd, "key_meta")
+				}
+			}
 		case kFlagSlotInfo:
 			_ = structure.ReadLength(rd) // slot_id
 			_ = structure.ReadLength(rd) // slot_size
@@ -153,22 +216,7 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			log.Debugf("[%s] RDB module aux: module_id=[%d], module_name=[%s]", ld.name, moduleId, moduleName)
 			_ = structure.ReadLength(rd) // when_opcode
 			_ = structure.ReadLength(rd) // when
-			opcode := structure.ReadLength(rd)
-			for opcode != kRDBModuleOpcodeEOF {
-				switch opcode {
-				case kRDBModuleOpcodeSINT, kRDBModuleOpcodeUINT:
-					_ = structure.ReadLength(rd)
-				case kRDBModuleOpcodeFLOAT:
-					_ = structure.ReadFloat(rd)
-				case kRDBModuleOpcodeDOUBLE:
-					_ = structure.ReadDouble(rd)
-				case kRDBModuleOpcodeSTRING:
-					_ = structure.ReadString(rd)
-				default:
-					log.Panicf("module aux opcode not found. module_name=[%s], opcode=[%d]", moduleName, opcode)
-				}
-				opcode = structure.ReadLength(rd)
-			}
+			skipModuleOpcodes(rd, moduleName)
 		case kFlagIdle:
 			ld.idle = int64(structure.ReadLength(rd))
 		case kFlagFreq:
@@ -215,7 +263,7 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			// Capture raw value bytes using io.TeeReader
 			var value bytes.Buffer
 			teeReader := io.TeeReader(rd, &value)
-			o := types.ParseObject(teeReader, typeByte, key, ld.isValkey)
+			o := types.ParseObjectWithTemplates(teeReader, typeByte, key, ld.isValkey, ld.hashTemplates)
 
 			// Rewrite() reads from teeReader in a goroutine. Drain the channel
 			// fully before checking value.Len(), otherwise value is still being
@@ -229,9 +277,12 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 
 			// dump size = typeByte(1) + value + version(2) + crc(8)
 			dumpSize := uint64(1 + value.Len() + 2 + 8)
-			if dumpSize > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
-				log.Warnf("key=[%s] dump size=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
-					"rdb_restore_command_behavior setting may not work correctly for this key.", key, dumpSize)
+			forceRewrite := types.RequiresRewrite(typeByte, ld.isValkey)
+			if forceRewrite || dumpSize > config.Opt.Advanced.TargetRedisProtoMaxBulkLen {
+				if !forceRewrite {
+					log.Warnf("key=[%s] dump size=[%d] exceeds target_redis_proto_max_bulk_len, falling back to individual commands. "+
+						"rdb_restore_command_behavior setting may not work correctly for this key.", key, dumpSize)
+				}
 				for _, cmd := range cmds {
 					e := entry.NewEntry()
 					e.DbId = ld.nowDBId
@@ -271,6 +322,25 @@ func (ld *Loader) parseRDBEntry(ctx context.Context, rd *bufio.Reader) {
 			return
 		default:
 		}
+	}
+}
+
+func skipModuleOpcodes(rd io.Reader, name string) {
+	opcode := structure.ReadLength(rd)
+	for opcode != kRDBModuleOpcodeEOF {
+		switch opcode {
+		case kRDBModuleOpcodeSINT, kRDBModuleOpcodeUINT:
+			_ = structure.ReadLength(rd)
+		case kRDBModuleOpcodeFLOAT:
+			_ = structure.ReadFloat(rd)
+		case kRDBModuleOpcodeDOUBLE:
+			_ = structure.ReadDouble(rd)
+		case kRDBModuleOpcodeSTRING:
+			_ = structure.ReadString(rd)
+		default:
+			log.Panicf("module aux opcode not found. name=[%s], opcode=[%d]", name, opcode)
+		}
+		opcode = structure.ReadLength(rd)
 	}
 }
 

@@ -16,6 +16,8 @@ func Handler(w http.ResponseWriter, _ *http.Request) {
 	bytesChannel := make(chan []byte, 1)
 
 	ch <- func() {
+		stat.Reader = theReader.Status()
+		stat.Writer = theWriter.Status()
 		stat.Consistent = theReader.StatusConsistent() && theWriter.StatusConsistent()
 		jsonBytes, err := json.Marshal(stat)
 		if err != nil {
