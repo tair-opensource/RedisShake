@@ -6,8 +6,8 @@ outline: deep
 
 RedisShake 是一个用于处理和迁移 Redis 数据的工具，它提供以下特性：
 
-1. **Redis 兼容性**：RedisShake 兼容从 2.8 到 8.x 的 Redis 版本，并支持各种部署方式，包括单机、主从、哨兵和集群。
-2. **Valkey 兼容性**：RedisShake 兼容 Valkey 8.x 和 9.x 版本。详细的版本特性支持请参考[版本兼容性](../others/compatibility.md)。
+1. **Redis 兼容性**：RedisShake 兼容从 2.8 到 8.12.x 的 Redis 版本，并支持各种部署方式，包括单机、主从、哨兵和集群。
+2. **Valkey 兼容性**：RedisShake 兼容 Valkey 8.x 到 9.2.x 版本。详细的版本特性支持请参考[版本兼容性](../others/compatibility.md)。
 3. **云服务兼容性**：RedisShake 与主流云服务提供商提供的流行 Redis-like 数据库无缝工作，包括但不限于：
     - [阿里云-云数据库 Redis 版](https://www.aliyun.com/product/redis)
     - [阿里云-云原生内存数据库Tair](https://www.aliyun.com/product/apsaradb/kvstore/tair)

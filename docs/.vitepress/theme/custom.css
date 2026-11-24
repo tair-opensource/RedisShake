@@ -1,0 +1,51 @@
+:root {
+    --vp-c-brand-1: #2563eb;
+    --vp-c-brand-2: #1d4ed8;
+    --vp-c-brand-3: #1e40af;
+    --vp-c-brand-soft: rgba(37, 99, 235, 0.12);
+
+    --vp-home-hero-name-color: transparent;
+    --vp-home-hero-name-background: linear-gradient(120deg, #2563eb 25%, #0891b2 100%);
+
+    --vp-home-hero-image-background-image: linear-gradient(
+        -45deg,
+        rgba(37, 99, 235, 0.25) 50%,
+        rgba(8, 145, 178, 0.25) 50%
+    );
+    --vp-home-hero-image-filter: blur(56px);
+}
+
+.dark {
+    --vp-c-brand-1: #60a5fa;
+    --vp-c-brand-2: #3b82f6;
+    --vp-c-brand-3: #2563eb;
+    --vp-c-brand-soft: rgba(96, 165, 250, 0.16);
+
+    --vp-home-hero-name-background: linear-gradient(120deg, #60a5fa 25%, #22d3ee 100%);
+}
+
+.VPHero .text,
+.VPHero .tagline {
+    max-width: 820px;
+}
+
+.home-section {
+    max-width: 1152px;
+    margin: 36px auto 0;
+    padding: 0 24px;
+}
+
+.home-section h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    border-top: none;
+    padding-top: 0;
+}
+
+.arch-diagram img {
+    width: 100%;
+    height: auto;
+    border-radius: 14px;
+    display: block;
+}

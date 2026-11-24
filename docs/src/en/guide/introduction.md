@@ -6,8 +6,8 @@ outline: deep
 
 RedisShake is a tool for processing and migrating Redis data, offering the following features:
 
-1. **Redis Compatibility**: RedisShake is compatible with Redis versions from 2.8 to 8.x and supports various deployment methods, including standalone, master-slave, sentinel, and cluster.
-2. **Valkey Compatibility**: RedisShake is compatible with Valkey 8.x and 9.x. For detailed version feature support, see [Version Compatibility](../others/compatibility.md).
+1. **Redis Compatibility**: RedisShake is compatible with Redis versions from 2.8 to 8.12.x and supports various deployment methods, including standalone, master-slave, sentinel, and cluster.
+2. **Valkey Compatibility**: RedisShake is compatible with Valkey 8.x to 9.2.x. For detailed version feature support, see [Version Compatibility](../others/compatibility.md).
 3. **Cloud Service Compatibility**: RedisShake seamlessly works with popular Redis-like databases provided by mainstream cloud service providers, including but not limited to:
     - [Alibaba Cloud - ApsaraDB for Redis](https://www.alibabacloud.com/product/apsaradb-for-redis)
     - [Alibaba Cloud - Tair](https://www.alibabacloud.com/product/tair)
